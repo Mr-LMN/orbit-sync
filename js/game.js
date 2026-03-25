@@ -1,248 +1,181 @@
-// --- DOM Elements ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const scoreDisplay = document.getElementById('scoreDisplay');
-const levelDisplay = document.getElementById('levelDisplay');
-const gameOverScreen = document.getElementById('gameOver');
-const finalScoreDisplay = document.getElementById('finalScore');
-const mainMenu = document.getElementById('mainMenu');
-const gameUi = document.getElementById('ui');
-const coinCountDisplay = document.getElementById('coinCount');
+const ui = {
+  score: document.getElementById('scoreDisplay'), stage: document.getElementById('stageDisplay'),
+  text: document.getElementById('tutorialText'), lives: document.getElementById('livesCount'),
+  multiplier: document.getElementById('multiplierCount'), coins: document.getElementById('coinCount'),
+  overlay: document.getElementById('screenOverlay'), title: document.getElementById('screenTitle'),
+  subtitle: document.getElementById('screenSubtitle'), btn: document.getElementById('actionBtn')
+};
 
-// --- Game State Variables ---
-let score = 0;
-let coins = 450;
-let angle = 0;
-let speed = 0.035;
-let isPlaying = false;
-let gameActive = false; // Is the user actually in the game screen?
-let animationId;
-let direction = 1;
+let currentLevelIdx = 0; let levelData;
+let score = 0; let stageHits = 0; let coins = 0;
+let angle = 0; let direction = 1; let isPlaying = false;
+let lives = 3; let multiplier = 1; let distanceTraveled = 0;
 
-// --- Mechanics State ---
-let targetMode = 'single'; 
-let targets = [];
-let particles = [];
-let targetRotationSpeed = 0;
+let targets = []; let particles = [];
+const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+canvas.width = size; canvas.height = size;
+const center = size / 2; const orbitRadius = size * 0.35;
 
-// --- Responsive Canvas Setup ---
-function resizeCanvas() {
-  const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
-  canvas.width = size;
-  canvas.height = size;
-}
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-const center = canvas.width / 2;
-const orbitRadius = canvas.width * 0.35;
-
-// --- UI & Shop Functions ---
-function toggleShop(show) {
-  document.getElementById('shopModal').style.bottom = show ? '0' : '-100%';
-}
-
-function buyItem(btn, cost) {
-  if (coins >= cost) {
-    coins -= cost;
-    coinCountDisplay.innerText = coins;
-    btn.className = 'buy-btn btn-equipped';
-    btn.innerText = 'Equipped';
-    btn.onclick = null;
-    alert('Purchased successfully!');
-  } else {
-    alert('Not enough coins! Go play some levels.');
-  }
-}
-
-// --- Game Flow Functions ---
-function startGame() {
-  mainMenu.style.display = 'none';
-  canvas.style.display = 'block';
-  gameUi.style.display = 'block';
-  gameActive = true;
-  resetAndPlay();
-}
-
-function returnToMenu() {
-  gameOverScreen.style.display = 'none';
-  canvas.style.display = 'none';
-  gameUi.style.display = 'none';
-  mainMenu.style.display = 'block';
-  gameActive = false;
-  cancelAnimationFrame(animationId);
-}
-
-// --- Visual Effects ---
 function createParticles(x, y, color) {
-  for (let i = 0; i < 25; i++) {
-    particles.push({
-      x: x, y: y,
-      vx: (Math.random() - 0.5) * 12,
-      vy: (Math.random() - 0.5) * 12,
-      life: 1.0, color: color
-    });
-  }
+  for (let i=0; i<20; i++) particles.push({ x:x, y:y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, life:1.0, color:color });
 }
 
-// --- Target Generation ---
-function spawnSingleTarget() {
-  targetMode = 'single';
-  targetRotationSpeed = score >= 5 ? 0.015 + (score * 0.001) : 0; // Moving targets start at score 5
+function loadLevel(idx) {
+  levelData = campaign[idx] || campaign[campaign.length-1];
+  stageHits = 0; lives = levelData.lives; multiplier = 1; distanceTraveled = 0;
   
-  let tColor = score >= 5 ? '#00e5ff' : '#00ff88';
-
-  targets = [{
-    start: Math.random() * Math.PI * 2,
-    size: Math.max(Math.PI / 6, (Math.PI / 3) - (score * 0.02)),
-    color: tColor,
-    active: true
-  }];
+  ui.stage.innerText = `Stage ${levelData.id}`;
+  ui.text.innerText = levelData.text;
+  ui.lives.innerText = lives;
+  ui.multiplier.innerText = multiplier;
   
-  speed = 0.035 + (score * 0.001);
-  levelDisplay.innerText = targetRotationSpeed > 0 ? "Target moving!" : "Sync the core";
-  scoreDisplay.style.color = tColor;
+  spawnTargets();
 }
 
-function spawnFractals() {
-  targetMode = 'fractal';
-  targetRotationSpeed = 0; // Fractals don't move
+function spawnTargets() {
   targets = [];
-  let baseOffset = Math.random() * Math.PI * 2;
-  
-  for(let i = 0; i < 3; i++) {
-    targets.push({
-      start: baseOffset + (i * (Math.PI * 2 / 3)),
-      size: Math.PI / 8, 
-      color: '#ff3366',
-      active: true
+  let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random()*3)+1 : levelData.targets;
+  let baseSize = Math.max(Math.PI / 8, (Math.PI / 3) - (currentLevelIdx * 0.02));
+  let offset = Math.random() * Math.PI * 2;
+
+  for(let i=0; i<tCount; i++) {
+    targets.push({ 
+      start: offset + (i * (Math.PI * 2 / tCount)), 
+      size: baseSize, color: tCount > 1 ? '#ff3366' : '#00ff88', active: true 
     });
   }
-  levelDisplay.innerText = "Clear the fractals!";
-  scoreDisplay.style.color = '#ff3366';
 }
 
-// --- Main Game Loop ---
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.beginPath(); ctx.arc(center, center, orbitRadius * 0.15, 0, Math.PI * 2); ctx.fillStyle = '#222'; ctx.fill();
+  ctx.beginPath(); ctx.arc(center, center, orbitRadius, 0, Math.PI * 2); ctx.strokeStyle = '#1a1a24'; ctx.lineWidth = 15; ctx.stroke();
 
-  // Central node
-  ctx.beginPath(); ctx.arc(center, center, orbitRadius * 0.15, 0, Math.PI * 2);
-  ctx.fillStyle = '#222'; ctx.fill();
-
-  // Orbit path
-  ctx.beginPath(); ctx.arc(center, center, orbitRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = '#1a1a24'; ctx.lineWidth = 15; ctx.stroke();
-
-  // Draw active targets
   targets.forEach(t => {
     if(t.active) {
       ctx.beginPath(); ctx.arc(center, center, orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = t.color; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.stroke();
+      // Draw precision center indicator for Stage 4+
+      if(currentLevelIdx >= 3) {
+         let tCenter = t.start + (t.size/2);
+         ctx.beginPath(); ctx.arc(center + Math.cos(tCenter)*orbitRadius, center + Math.sin(tCenter)*orbitRadius, 4, 0, Math.PI*2);
+         ctx.fillStyle = '#fff'; ctx.fill();
+      }
     }
   });
 
-  // Particles
   for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.life -= 0.04;
+    let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.04;
     if (p.life <= 0) particles.splice(i, 1);
-    else {
-      ctx.beginPath(); ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2);
-      ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1.0;
-    }
+    else { ctx.beginPath(); ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1.0; }
   }
 
-  // Player orb
-  const x = center + Math.cos(angle) * orbitRadius;
-  const y = center + Math.sin(angle) * orbitRadius;
-  ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2);
-  ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#fff'; ctx.fill(); ctx.shadowBlur = 0; 
+  const x = center + Math.cos(angle) * orbitRadius; const y = center + Math.sin(angle) * orbitRadius;
+  ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.shadowBlur = 10; ctx.shadowColor = '#fff'; ctx.fill(); ctx.shadowBlur = 0; 
 }
 
 function update() {
   if (!isPlaying) return;
-  
-  angle += speed * direction;
+  let moveStep = levelData.speed * direction;
+  angle += moveStep;
+  distanceTraveled += Math.abs(moveStep); // Anti-Stall Tracker
+
   if (angle > Math.PI * 2) angle -= Math.PI * 2;
   if (angle < 0) angle += Math.PI * 2;
 
-  // Move targets if they have rotation speed
-  if (targetMode === 'single' && targets[0].active && targetRotationSpeed > 0) {
-      targets[0].start += targetRotationSpeed;
-      if (targets[0].start > Math.PI * 2) targets[0].start -= Math.PI * 2;
+  targets.forEach(t => {
+    if(t.active && levelData.moveSpeed > 0) {
+      t.start += levelData.moveSpeed;
+      if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
+    }
+  });
+
+  // Anti-Stall Mechanics (Introduced after Stage 3)
+  if (currentLevelIdx >= 3) {
+    if (distanceTraveled >= Math.PI * 2 && multiplier > 1) {
+      multiplier = 1; ui.multiplier.innerText = multiplier; // Punish 360 rotation
+      ui.text.innerText = "Too slow! Multiplier lost.";
+    }
+    if (distanceTraveled >= Math.PI * 6) {
+      handleFail("IDLE TIMEOUT"); // Punish 3 rotations
+    }
   }
 
-  draw();
-  animationId = requestAnimationFrame(update);
+  draw(); requestAnimationFrame(update);
 }
 
-// --- Interaction ---
-function tap() {
-  if(!gameActive || gameOverScreen.style.display === 'flex') return;
-  if (!isPlaying) { isPlaying = true; update(); return; }
+function handleFail(reason) {
+  lives--; ui.lives.innerText = lives;
+  canvas.style.boxShadow = `0 0 50px #ff3366`;
+  setTimeout(() => canvas.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.1)', 150);
 
-  let hitIndex = -1;
+  if (lives <= 0) {
+    isPlaying = false; ui.overlay.style.display = 'flex';
+    ui.title.innerText = reason || "OUT OF SYNC"; ui.title.style.color = '#ff3366';
+    ui.subtitle.innerText = `Failed on ${levelData.title}`;
+    ui.btn.innerText = "Try Again";
+  }
+}
+
+function tap() {
+  if(ui.overlay.style.display === 'flex') return;
+  if (!isPlaying) { isPlaying = true; ui.text.innerText = "Syncing..."; update(); return; }
+
+  let hitIndex = -1; let isPerfect = false;
 
   for(let i = 0; i < targets.length; i++) {
     if(!targets[i].active) continue;
     let endAngle = targets[i].start + targets[i].size;
-    let isHit = false;
-
-    if (endAngle > Math.PI * 2) {
-      if (angle >= targets[i].start || angle <= (endAngle - Math.PI * 2)) isHit = true;
-    } else {
-      if (angle >= targets[i].start && angle <= endAngle) isHit = true;
+    let tCenter = targets[i].start + (targets[i].size / 2);
+    
+    // Standard Hit Box
+    let isHit = (endAngle > Math.PI * 2) ? (angle >= targets[i].start || angle <= (endAngle - Math.PI * 2)) : (angle >= targets[i].start && angle <= endAngle);
+    
+    if (isHit) {
+      hitIndex = i;
+      // Precision hit check (closest 25% to center)
+      let dist = Math.abs(angle - tCenter);
+      if (dist < targets[i].size / 4) isPerfect = true;
+      break;
     }
-
-    if (isHit) { hitIndex = i; break; }
   }
 
   if (hitIndex !== -1) {
-    let t = targets[hitIndex];
-    t.active = false;
-    direction *= -1;
-    score++;
-    scoreDisplay.innerText = score;
-
-    // Coins system (every 5 points = 1 coin)
-    if (score % 5 === 0) { coins++; coinCountDisplay.innerText = coins; }
-
-    const hitX = center + Math.cos(angle) * orbitRadius;
-    const hitY = center + Math.sin(angle) * orbitRadius;
-    createParticles(hitX, hitY, t.color);
-
-    canvas.style.boxShadow = `0 0 50px ${t.color}`;
-    setTimeout(() => canvas.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.1)', 150);
-
-    if (targetMode === 'single') {
-      // 30% chance to spawn fractals instead of single target after score 3
-      if (score > 3 && Math.random() < 0.3) spawnFractals();
-      else spawnSingleTarget();
-    } else if (targetMode === 'fractal') {
-      if (targets.every(tgt => !tgt.active)) spawnSingleTarget();
+    let t = targets[hitIndex]; t.active = false; direction *= -1; distanceTraveled = 0; // Reset anti-stall
+    
+    // Precision & Multiplier Scoring
+    if (isPerfect && currentLevelIdx >= 3) {
+      multiplier++; score += (2 * multiplier);
+      ui.text.innerText = "PERFECT! Multiplier up!"; ui.text.style.color = "#ffaa00";
+    } else {
+      multiplier = 1; score += 1;
+      ui.text.innerText = "Good hit."; ui.text.style.color = "#fff";
     }
-  } else {
-    isPlaying = false; cancelAnimationFrame(animationId);
-    gameOverScreen.style.display = 'flex';
-    finalScoreDisplay.innerText = score;
-  }
+    
+    coins += (1 * multiplier); ui.score.innerText = score; ui.coins.innerText = coins; ui.multiplier.innerText = multiplier;
+    createParticles(center + Math.cos(angle)*orbitRadius, center + Math.sin(angle)*orbitRadius, t.color);
+
+    if (targets.every(tgt => !tgt.active)) {
+      stageHits++;
+      if (stageHits >= levelData.hitsNeeded) {
+        isPlaying = false; currentLevelIdx++;
+        ui.overlay.style.display = 'flex'; ui.title.innerText = "STAGE CLEARED"; ui.title.style.color = '#00ff88';
+        ui.subtitle.innerText = `Coins Earned: ${coins}`; ui.btn.innerText = "Next Stage";
+      } else { spawnTargets(); }
+    }
+  } else { handleFail("MISSED"); }
 }
 
-function resetAndPlay() {
-  score = 0; angle = 0; speed = 0.035; direction = 1; particles = [];
-  scoreDisplay.innerText = score; 
-  gameOverScreen.style.display = 'none';
-  isPlaying = false;
-  spawnSingleTarget(); 
-  levelDisplay.innerText = "Tap to sync";
-  draw();
+function startGame() {
+  ui.overlay.style.display = 'none';
+  if (lives <= 0) { currentLevelIdx = 0; score = 0; coins = 0; ui.score.innerText = 0; ui.coins.innerText = 0; }
+  loadLevel(currentLevelIdx);
+  if(!isPlaying) { isPlaying = true; update(); }
 }
 
-// Event Listeners
-document.addEventListener('touchstart', (e) => { 
-  if(e.target.tagName !== 'BUTTON') { e.preventDefault(); tap(); }
-}, {passive: false});
-document.addEventListener('mousedown', (e) => {
-  if(e.target.tagName !== 'BUTTON') tap();
-});
+document.addEventListener('touchstart', (e) => { if(e.target.tagName !== 'BUTTON') { e.preventDefault(); tap(); }}, {passive: false});
+document.addEventListener('mousedown', (e) => { if(e.target.tagName !== 'BUTTON') tap(); });
+
+loadLevel(0); draw();
