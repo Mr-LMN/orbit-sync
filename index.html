@@ -24,8 +24,13 @@
 
   <div id="screenOverlay">
     <h1 class="crash-text" id="screenTitle">OUT OF SYNC</h1>
-    <p id="screenSubtitle">Final Score: 0</p>
-    <button id="actionBtn" onclick="startGame()">Continue</button>
+    <p id="screenSubtitle">Failed on Stage 1-1</p>
+    <p style="color: #ffaa00; font-weight: bold; font-size: 1.2rem;">Run Coins: <span id="runCoinsDisplay">0</span></p>
+    
+    <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+      <button id="actionBtn" onclick="startGame()">Restart World</button>
+      <button id="menuBtn" style="background: transparent; color: #888; border: 2px solid #555; font-size: 1rem; padding: 10px 20px;" onclick="alert('Main Menu coming soon! (Ad Revives will go here)')">Main Menu</button>
+    </div>
   </div>
 
   <script src="js/levels.js"></script>
