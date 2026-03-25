@@ -1,0 +1,32 @@
+body { 
+  margin: 0; padding: 0; background-color: #0f0f13; color: white; 
+  font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; 
+  display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; 
+}
+#gameCanvas { 
+  background: #0f0f13; border-radius: 50%; 
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); transition: box-shadow 0.1s ease-out;
+}
+#topBar {
+  position: absolute; top: 20px; width: 90%; display: flex; justify-content: space-between; z-index: 5;
+}
+.stat-box {
+  background: rgba(255,255,255,0.1); padding: 8px 15px; border-radius: 20px; font-weight: bold;
+}
+#multiplierBox { color: #ffaa00; transition: transform 0.1s; }
+#ui { position: absolute; top: 15%; text-align: center; pointer-events: none; width: 100%; }
+h1 { margin: 0; font-size: 3.5rem; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5); }
+h2 { margin: 0; font-size: 1.5rem; color: #fff; }
+#tutorialText { margin: 5px 0; color: #aaa; font-size: 1rem; }
+
+#screenOverlay { 
+  position: absolute; display: none; flex-direction: column; align-items: center; 
+  justify-content: center; background: rgba(15, 15, 19, 0.95); width: 100%; height: 100%; z-index: 10;
+}
+.crash-text { color: #ff3366; text-shadow: 0 0 15px rgba(255,51,102,0.8); font-size: 3rem; margin-bottom: 0;}
+button { 
+  margin-top: 30px; padding: 15px 40px; font-size: 1.5rem; background: #00ff88; color: #0f0f13; 
+  border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; 
+  box-shadow: 0 0 15px #00ff88; 
+}
+button:active { transform: scale(0.95); }

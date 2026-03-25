@@ -4,107 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Orbit Sync</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
   <div id="topBar">
-    <span class="coin-icon">🪙</span> <span id="coinCount">450</span>
+    <span class="stat-box">🪙 <span id="coinCount">0</span></span>
+    <span class="stat-box">❤️ <span id="livesCount">3</span></span>
+    <span class="stat-box" id="multiplierBox">🔥 x<span id="multiplierCount">1</span></span>
   </div>
 
-  <div id="mainMenu">
-    <h1 class="title">ORBIT</h1>
-    <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
-    <button class="btn btn-play" onclick="startGame()">Play</button><br>
-    <button class="btn btn-shop" onclick="toggleShop(true)">Shop</button>
-  </div>
-
-  <div id="ui" style="display: none;">
+  <div id="ui">
     <h1 id="scoreDisplay">0</h1>
-    <p id="levelDisplay">Tap to sync</p>
+    <h2 id="stageDisplay">Stage 1-1</h2>
+    <p id="tutorialText">Tap when inside the zone.</p>
   </div>
 
-  <canvas id="gameCanvas" style="display: none;"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-  <div id="gameOver">
-    <h1 class="crash-text">SHATTERED</h1>
-    <p style="font-size: 1.5rem; color: #fff;">Score: <span id="finalScore" style="color:#00ff88; font-weight:bold;">0</span></p>
-    <button class="btn btn-play" onclick="resetAndPlay()">Try Again</button>
-    <button class="btn btn-shop" onclick="returnToMenu()" style="margin-top: 15px;">Main Menu</button>
+  <div id="screenOverlay">
+    <h1 class="crash-text" id="screenTitle">OUT OF SYNC</h1>
+    <p id="screenSubtitle">Final Score: 0</p>
+    <button id="actionBtn" onclick="startGame()">Continue</button>
   </div>
 
-  <div id="shopModal">
-    <div class="shop-header">
-      <h2>Armory</h2>
-      <button class="close-btn" onclick="toggleShop(false)">×</button>
-    </div>
-    
-    <div class="remove-ads-banner" onclick="alert('Initiate Apple/Google Pay for $1.99')">
-      🚫 Remove All Ads - $1.99
-    </div>
-
-    <div class="shop-content">
-      <div class="shop-item equipped">
-        <div class="item-preview" style="background:#fff; box-shadow: 0 0 10px #fff;"></div>
-        <p class="item-name">Classic Core</p>
-        <button class="buy-btn btn-equipped">Equipped</button>
-      </div>
-      <div class="shop-item">
-        <div class="item-preview" style="color: #00e5ff;">💀</div>
-        <p class="item-name">Neon Skull</p>
-        <button class="buy-btn buy-coins" onclick="buyItem(this, 200)">🪙 200</button>
-      </div>
-      <div class="shop-item">
-        <div class="item-preview" style="color: #ffaa00;">🔥</div>
-        <p class="item-name">Fire Trail</p>
-        <button class="buy-btn buy-ad" onclick="alert('Show 30 sec video ad')">📺 Watch Ad</button>
-      </div>
-      <div class="shop-item">
-        <div class="item-preview" style="background: linear-gradient(45deg, #ff3366, #9900ff);">✨</div>
-        <p class="item-name">Synthwave</p>
-        <button class="buy-btn buy-iap" onclick="alert('Initiate Apple/Google Pay for $0.99')">$0.99</button>
-      </div>
-    </div>
-  </div>
-
-  <script type="module">
-    // 1. Import the Firebase modules from Google's servers
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-
-    // 2. CODEX: Replace this object with the user's actual Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyDCoZNUDL6X6WJqf3FsXhvbQhTxC-4jBqA",
-      authDomain: "orbit-sync-875cd.firebaseapp.com",
-      projectId: "orbit-sync-875cd",
-      storageBucket: "orbit-sync-875cd.firebasestorage.app",
-      messagingSenderId: "627648445034",
-      appId: "1:627648445034:web:5d30670226943ef1eda813"
-    };
-
-    // 3. Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-
-    // 4. Log the player in anonymously the second the game loads
-    signInAnonymously(auth)
-      .then(() => {
-        console.log("Player signed in anonymously to Firebase!");
-      })
-      .catch((error) => {
-        console.error("Firebase Auth Error:", error.code, error.message);
-      });
-
-    // Make db and auth accessible globally for our game logic
-    window.firebaseDB = db;
-    window.firebaseAuth = auth;
-    window.doc = doc;
-    window.setDoc = setDoc;
-    window.getDoc = getDoc;
-  </script>
-
+  <script src="js/levels.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
