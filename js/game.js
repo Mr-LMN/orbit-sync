@@ -5,40 +5,50 @@ const ui = {
   text: document.getElementById('tutorialText'), lives: document.getElementById('livesCount'),
   multiplier: document.getElementById('multiplierCount'), coins: document.getElementById('coinCount'),
   overlay: document.getElementById('screenOverlay'), title: document.getElementById('screenTitle'),
-  subtitle: document.getElementById('screenSubtitle'), btn: document.getElementById('actionBtn')
+  subtitle: document.getElementById('screenSubtitle'), btn: document.getElementById('actionBtn'),
+  runCoins: document.getElementById('runCoinsDisplay')
 };
 
 let currentLevelIdx = 0; let levelData;
-let score = 0; let stageHits = 0; 
-let rawCoins = 0; // Tracks decimals for the 0.1 ratio
+let score = 0; let stageHits = 0; let rawCoins = 0; let runCoinsTracker = 0;
 let angle = 0; let direction = 1; let isPlaying = false;
 let lives = 3; let multiplier = 1; let distanceTraveled = 0;
+
+// Boss State Logic
+let isBossPhaseTwo = false; 
 
 let targets = []; let particles = []; let popups = []; let trail = [];
 const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
 canvas.width = size; canvas.height = size;
 const center = size / 2; const orbitRadius = size * 0.35;
 
-// Multiplier Colors (1x to 8x)
 const multiColors = ['#ffffff', '#00e5ff', '#00ff88', '#ffea00', '#ffaa00', '#ff3366', '#b300ff', '#ff00ff'];
 
-function createParticles(x, y, color) {
-  for (let i=0; i<20; i++) particles.push({ x:x, y:y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, life:1.0, color:color });
+function createParticles(x, y, color, count=20) {
+  for (let i=0; i<count; i++) particles.push({ x:x, y:y, vx:(Math.random()-0.5)*12, vy:(Math.random()-0.5)*12, life:1.0, color:color });
 }
 
-function createPopup(x, y, text, color) {
-  popups.push({ x: x, y: y, text: text, color: color, life: 1.0 });
-}
+function createPopup(x, y, text, color) { popups.push({ x: x, y: y, text: text, color: color, life: 1.0 }); }
 
-function triggerScreenShake() {
-  canvas.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
-  setTimeout(() => canvas.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`, 50);
+function triggerScreenShake(intensity = 5) {
+  canvas.style.transform = `translate(${Math.random()*intensity-intensity/2}px, ${Math.random()*intensity-intensity/2}px)`;
+  setTimeout(() => canvas.style.transform = `translate(${Math.random()*intensity-intensity/2}px, ${Math.random()*intensity-intensity/2}px)`, 50);
   setTimeout(() => canvas.style.transform = `translate(0px, 0px)`, 100);
+}
+
+// Find the beginning of the current World (e.g., 2-4 goes back to 2-1)
+function getCheckpointIndex() {
+  let currentWorld = levelData.id.split('-')[0];
+  for(let i=0; i<campaign.length; i++) {
+    if(campaign[i].id.startsWith(currentWorld + "-")) return i;
+  }
+  return 0;
 }
 
 function loadLevel(idx) {
   levelData = campaign[idx] || campaign[campaign.length-1];
   stageHits = 0; lives = levelData.lives; multiplier = 1; distanceTraveled = 0; trail = [];
+  isBossPhaseTwo = false;
   
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
   ui.lives.innerText = lives; ui.multiplier.innerText = multiplier;
@@ -48,54 +58,72 @@ function loadLevel(idx) {
 
 function spawnTargets() {
   targets = [];
-  let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random()*3)+1 : levelData.targets;
   
-  // MAKING SPLIT ZONES SMALLER: If more than 1 target, shrink them by 40%
+  if (levelData.boss === 'aegis') {
+    if (!isBossPhaseTwo) {
+      // Phase 1: 3 Armor Shields
+      ui.text.innerText = "BOSS: Break the shields!"; ui.text.style.color = "#00e5ff";
+      let offset = Math.random() * Math.PI * 2;
+      for(let i=0; i<3; i++) {
+        targets.push({ start: offset + (i * (Math.PI * 2 / 3)), size: Math.PI / 4, color: '#00e5ff', active: true, hp: 3, maxHp: 3 });
+      }
+    } else {
+      // Phase 2: Exposed Core
+      ui.text.innerText = "CORE EXPOSED! Need PERFECT hit!"; ui.text.style.color = "#ff3366";
+      targets.push({ start: Math.random() * Math.PI * 2, size: Math.PI / 10, color: '#ffffff', active: true, hp: 1, maxHp: 1 });
+    }
+    return;
+  }
+
+  // Standard Target Generation
+  let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random()*3)+1 : levelData.targets;
   let sizeModifier = tCount > 1 ? 0.6 : 1.0; 
   let baseSize = Math.max(Math.PI / 8, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
   let offset = Math.random() * Math.PI * 2;
 
   for(let i=0; i<tCount; i++) {
-    targets.push({ 
-      start: offset + (i * (Math.PI * 2 / tCount)), 
-      size: baseSize, color: tCount > 1 ? '#ff3366' : '#00ff88', active: true 
-    });
+    targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : '#00ff88', active: true, hp: 1 });
   }
 }
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // Central Node & Track
-  ctx.beginPath(); ctx.arc(center, center, orbitRadius * 0.15, 0, Math.PI * 2); ctx.fillStyle = '#222'; ctx.fill();
+  // Central Node
+  ctx.beginPath(); ctx.arc(center, center, orbitRadius * 0.15, 0, Math.PI * 2); 
+  ctx.fillStyle = (levelData.boss && isBossPhaseTwo) ? '#ffffff' : '#222'; // Glows white when exposed
+  ctx.fill();
+
   ctx.beginPath(); ctx.arc(center, center, orbitRadius, 0, Math.PI * 2); ctx.strokeStyle = '#1a1a24'; ctx.lineWidth = 15; ctx.stroke();
 
-  // Targets (Gradient Style)
   targets.forEach(t => {
     if(t.active) {
       let tCenter = t.start + (t.size/2);
       
-      // Outer Faded Zone
-      ctx.beginPath(); ctx.arc(center, center, orbitRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = t.color; ctx.globalAlpha = 0.3; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.stroke();
-      
-      // Mid Hot Zone
-      ctx.beginPath(); ctx.arc(center, center, orbitRadius, tCenter - t.size/4, tCenter + t.size/4);
-      ctx.strokeStyle = t.color; ctx.globalAlpha = 0.8; ctx.stroke();
+      // Boss Shield Visuals
+      if (levelData.boss && !isBossPhaseTwo) {
+        ctx.beginPath(); ctx.arc(center, center, orbitRadius, t.start, t.start + t.size);
+        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.9; ctx.lineWidth = 20; // Thicker shields
+        ctx.lineCap = 'butt'; ctx.stroke();
+      } else {
+        // Standard Visuals
+        ctx.beginPath(); ctx.arc(center, center, orbitRadius, t.start, t.start + t.size);
+        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.3; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.stroke();
+        
+        ctx.beginPath(); ctx.arc(center, center, orbitRadius, tCenter - t.size/4, tCenter + t.size/4);
+        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.8; ctx.stroke();
 
-      // Smack Bang Dead Center (White)
-      if(currentLevelIdx >= 2) {
-         ctx.beginPath(); ctx.arc(center, center, orbitRadius, tCenter - t.size/12, tCenter + t.size/12);
-         ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 1.0; ctx.stroke();
+        if(currentLevelIdx >= 2 || levelData.boss) {
+           ctx.beginPath(); ctx.arc(center, center, orbitRadius, tCenter - t.size/12, tCenter + t.size/12);
+           ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 1.0; ctx.stroke();
+        }
       }
-      ctx.globalAlpha = 1.0; // Reset
+      ctx.globalAlpha = 1.0;
     }
   });
 
-  // Current Multiplier Color
   let orbColor = multiColors[Math.min(multiplier - 1, 7)];
 
-  // Draw Trail
   trail.forEach((p, index) => {
     let opacity = (index / trail.length) * 0.6;
     ctx.beginPath(); ctx.arc(p.x, p.y, 8 * (index/trail.length), 0, Math.PI * 2);
@@ -103,19 +131,16 @@ function draw() {
   });
   ctx.globalAlpha = 1.0;
 
-  // Player orb
   const x = center + Math.cos(angle) * orbitRadius; const y = center + Math.sin(angle) * orbitRadius;
   ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); 
   ctx.fillStyle = orbColor; ctx.shadowBlur = 15; ctx.shadowColor = orbColor; ctx.fill(); ctx.shadowBlur = 0; 
 
-  // Particles
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.04;
     if (p.life <= 0) particles.splice(i, 1);
     else { ctx.beginPath(); ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1.0; }
   }
 
-  // Floating Popups
   for (let i = popups.length - 1; i >= 0; i--) {
     let pop = popups[i]; pop.y -= 1; pop.life -= 0.02;
     if (pop.life <= 0) popups.splice(i, 1);
@@ -130,10 +155,13 @@ function draw() {
 function update() {
   if (!isPlaying) return;
   let moveStep = levelData.speed * direction;
+  
+  // Bosses move slightly faster in Phase 2
+  if (levelData.boss && isBossPhaseTwo) moveStep *= 1.3; 
+
   angle += moveStep;
   distanceTraveled += Math.abs(moveStep); 
 
-  // Trail Logic (Longer trail = higher multiplier)
   const x = center + Math.cos(angle) * orbitRadius; const y = center + Math.sin(angle) * orbitRadius;
   trail.push({x: x, y: y});
   if (trail.length > multiplier * 4) trail.shift();
@@ -161,14 +189,16 @@ function update() {
 
 function handleFail(reason) {
   lives--; ui.lives.innerText = lives;
-  triggerScreenShake();
+  triggerScreenShake(10);
   canvas.style.boxShadow = `0 0 50px #ff3366`;
   setTimeout(() => canvas.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.1)', 150);
 
   if (lives <= 0) {
     isPlaying = false; ui.overlay.style.display = 'flex';
     ui.title.innerText = reason || "OUT OF SYNC"; ui.title.style.color = '#ff3366';
-    ui.subtitle.innerText = `Failed on ${levelData.title}`; ui.btn.innerText = "Try Again";
+    ui.subtitle.innerText = `Failed on ${levelData.title}`; 
+    ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`;
+    ui.runCoins.innerText = Math.floor(runCoinsTracker); // Show coins earned this run
   }
 }
 
@@ -188,9 +218,9 @@ function tap() {
     if (isHit) {
       hitIndex = i;
       let dist = Math.abs(angle - tCenter);
-      if (dist < targets[i].size / 6) hitQuality = "perfect"; // Dead center
-      else if (dist < targets[i].size / 3) hitQuality = "good"; // Mid zone
-      else hitQuality = "ok"; // Edge
+      if (dist < targets[i].size / 6) hitQuality = "perfect";
+      else if (dist < targets[i].size / 3) hitQuality = "good";
+      else hitQuality = "ok";
       break;
     }
   }
@@ -199,38 +229,78 @@ function tap() {
   const hitY = center + Math.sin(angle) * orbitRadius;
 
   if (hitIndex !== -1) {
-    let t = targets[hitIndex]; t.active = false; direction *= -1; distanceTraveled = 0; 
+    let t = targets[hitIndex]; 
+    direction *= -1; distanceTraveled = 0; 
     
+    // -- BOSS ARMOR LOGIC --
+    if (levelData.boss && !isBossPhaseTwo) {
+      t.hp--;
+      triggerScreenShake(3);
+      if (t.hp === 2) t.color = '#ffaa00'; // Yellow
+      if (t.hp === 1) t.color = '#ff3366'; // Red
+      if (t.hp <= 0) t.active = false;
+      
+      createParticles(hitX, hitY, t.color, 10);
+      
+      if (targets.every(tgt => !tgt.active)) {
+        isBossPhaseTwo = true;
+        createPopup(center, center - 50, "CORE EXPOSED!", "#ffffff");
+        triggerScreenShake(15);
+        setTimeout(spawnTargets, 500); // Slight delay for dramatic effect
+      }
+      return; // Skip normal scoring for armor hits
+    }
+
+    // -- CORE LOGIC & STANDARD HIT LOGIC --
+    t.active = false;
+    
+    if (levelData.boss && isBossPhaseTwo) {
+      if (hitQuality === "perfect") {
+        // Boss Defeated!
+        createParticles(center, center, '#ffffff', 50);
+        createPopup(center, center - 50, "BOSS DEFEATED!", "#00ff88");
+        triggerScreenShake(20);
+        stageHits = 999; // Force stage clear
+      } else {
+        // Boss Penalty: Regenerate Shields
+        multiplier = 1; ui.multiplier.innerText = multiplier;
+        createPopup(center, center - 50, "REGENERATING...", "#ff3366");
+        triggerScreenShake(10);
+        isBossPhaseTwo = false;
+        setTimeout(spawnTargets, 500);
+        return;
+      }
+    }
+
+    // Standard Scoring
     if (hitQuality === "perfect" && currentLevelIdx >= 2) {
-      multiplier = Math.min(multiplier + 1, 8); // Cap at 8x
-      score += (3 * multiplier);
+      multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier);
       createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier-1]);
     } else if (hitQuality === "good") {
-      score += (2 * multiplier);
-      createPopup(hitX, hitY - 20, "GOOD", "#fff");
+      score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
     } else {
-      multiplier = 1; score += 1;
-      createPopup(hitX, hitY - 20, "OK", "#aaa");
+      multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa");
     }
     
-    // ECONOMY BALANCE: 10% of score earned becomes coins. Floor it for display.
-    rawCoins += ((hitQuality === "perfect" ? 3 : hitQuality === "good" ? 2 : 1) * multiplier) * 0.1;
+    let coinsEarned = ((hitQuality === "perfect" ? 3 : hitQuality === "good" ? 2 : 1) * multiplier) * 0.1;
+    rawCoins += coinsEarned;
+    runCoinsTracker += coinsEarned;
     
-    ui.score.innerText = score; 
-    ui.coins.innerText = Math.floor(rawCoins); 
-    ui.multiplier.innerText = multiplier;
+    ui.score.innerText = score; ui.coins.innerText = Math.floor(rawCoins); ui.multiplier.innerText = multiplier;
     document.getElementById('multiplierBox').style.color = multiColors[Math.min(multiplier-1, 7)];
     
     createParticles(hitX, hitY, t.color);
     canvas.style.boxShadow = `0 0 50px ${multiColors[Math.min(multiplier-1, 7)]}`;
     setTimeout(() => canvas.style.boxShadow = '0 0 20px rgba(0, 255, 136, 0.1)', 150);
 
-    if (targets.every(tgt => !tgt.active)) {
+    if (targets.every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
       stageHits++;
       if (stageHits >= levelData.hitsNeeded) {
         isPlaying = false; currentLevelIdx++;
         ui.overlay.style.display = 'flex'; ui.title.innerText = "STAGE CLEARED"; ui.title.style.color = '#00ff88';
         ui.subtitle.innerText = `Total Coins: ${Math.floor(rawCoins)}`; ui.btn.innerText = "Next Stage";
+        ui.runCoins.innerText = ""; // Hide run coins on success
+        runCoinsTracker = 0; // Reset run tracker on success
       } else { spawnTargets(); }
     }
   } else { handleFail("MISSED"); }
@@ -238,7 +308,12 @@ function tap() {
 
 function startGame() {
   ui.overlay.style.display = 'none';
-  if (lives <= 0) { currentLevelIdx = 0; score = 0; rawCoins = 0; ui.score.innerText = 0; ui.coins.innerText = 0; }
+  if (lives <= 0) { 
+    // Trigger Checkpoint Revert
+    currentLevelIdx = getCheckpointIndex(); 
+    runCoinsTracker = 0;
+    // Note: We don't reset 'rawCoins' completely so they keep what they banked previously, just not the run's unbanked amount.
+  }
   loadLevel(currentLevelIdx);
   if(!isPlaying) { isPlaying = true; update(); }
 }
