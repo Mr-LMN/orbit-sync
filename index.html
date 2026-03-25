@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Orbit Sync</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="topBar">
+    <span class="coin-icon">🪙</span> <span id="coinCount">450</span>
+  </div>
+
+  <div id="mainMenu">
+    <h1 class="title">ORBIT</h1>
+    <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
+    <button class="btn btn-play" onclick="startGame()">Play</button><br>
+    <button class="btn btn-shop" onclick="toggleShop(true)">Shop</button>
+  </div>
+
+  <div id="ui" style="display: none;">
+    <h1 id="scoreDisplay">0</h1>
+    <p id="levelDisplay">Tap to sync</p>
+  </div>
+
+  <canvas id="gameCanvas" style="display: none;"></canvas>
+
+  <div id="gameOver">
+    <h1 class="crash-text">SHATTERED</h1>
+    <p style="font-size: 1.5rem; color: #fff;">Score: <span id="finalScore" style="color:#00ff88; font-weight:bold;">0</span></p>
+    <button class="btn btn-play" onclick="resetAndPlay()">Try Again</button>
+    <button class="btn btn-shop" onclick="returnToMenu()" style="margin-top: 15px;">Main Menu</button>
+  </div>
+
+  <div id="shopModal">
+    <div class="shop-header">
+      <h2>Armory</h2>
+      <button class="close-btn" onclick="toggleShop(false)">×</button>
+    </div>
+    
+    <div class="remove-ads-banner" onclick="alert('Initiate Apple/Google Pay for $1.99')">
+      🚫 Remove All Ads - $1.99
+    </div>
+
+    <div class="shop-content">
+      <div class="shop-item equipped">
+        <div class="item-preview" style="background:#fff; box-shadow: 0 0 10px #fff;"></div>
+        <p class="item-name">Classic Core</p>
+        <button class="buy-btn btn-equipped">Equipped</button>
+      </div>
+      <div class="shop-item">
+        <div class="item-preview" style="color: #00e5ff;">💀</div>
+        <p class="item-name">Neon Skull</p>
+        <button class="buy-btn buy-coins" onclick="buyItem(this, 200)">🪙 200</button>
+      </div>
+      <div class="shop-item">
+        <div class="item-preview" style="color: #ffaa00;">🔥</div>
+        <p class="item-name">Fire Trail</p>
+        <button class="buy-btn buy-ad" onclick="alert('Show 30 sec video ad')">📺 Watch Ad</button>
+      </div>
+      <div class="shop-item">
+        <div class="item-preview" style="background: linear-gradient(45deg, #ff3366, #9900ff);">✨</div>
+        <p class="item-name">Synthwave</p>
+        <button class="buy-btn buy-iap" onclick="alert('Initiate Apple/Google Pay for $0.99')">$0.99</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/game.js"></script>
+</body>
+</html>
