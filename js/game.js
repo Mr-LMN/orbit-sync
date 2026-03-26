@@ -71,6 +71,9 @@ let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
+let ringHitFlash = 0;
+let perfectFlash = 0;
+let hitFlashColor = '#00ff88';
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 
@@ -194,10 +197,11 @@ function spawnTargets() {
 }
 
 function draw() {
-  // 1. DYNAMIC VOLUMETRIC BACKGROUND ("OH SHIT" BOSS OVERRIDE)
+  // BACKGROUND
   let isBoss = levelData && levelData.boss;
+  const time = Date.now();
   let baseHue = isBoss ? 0 : (currentLevelIdx * 40) % 360;
-  let pulse = isBoss ? Math.abs(Math.sin(Date.now() / 300)) * 0.3 : 0;
+  let pulse = isBoss ? Math.abs(Math.sin(time / 300)) * 0.3 : 0;
 
   let bgGradient = ctx.createRadialGradient(centerObj.x, centerObj.y, orbitRadius * 0.5, centerObj.x, centerObj.y, canvas.height * 0.8);
   bgGradient.addColorStop(0, `hsla(${baseHue}, ${isBoss ? '80%' : '60%'}, ${isBoss ? 15 + (pulse * 15) : 12}%, 1)`);
@@ -206,7 +210,7 @@ function draw() {
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 2. AMBIENT BACKGROUND DUST (Turns into fast-rising embers during boss)
+  // Ambient background dust (turns into fast-rising embers during boss)
   bgDust.forEach(d => {
     ctx.beginPath();
     ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
@@ -218,41 +222,61 @@ function draw() {
     if (d.y < 0) { d.y = canvas.height; d.x = Math.random() * canvas.width; }
   });
 
-  // 3. Layered energy lane orbit track
+  // ENERGY LANE
+  const laneSweep = (Math.sin(time / 550) + 1) * 0.5;
+  const laneHitBoost = Math.max(0, ringHitFlash);
+  const laneGradient = ctx.createLinearGradient(
+    centerObj.x - orbitRadius, centerObj.y - orbitRadius,
+    centerObj.x + orbitRadius, centerObj.y + orbitRadius
+  );
+  laneGradient.addColorStop(0, 'rgba(20, 26, 38, 0.96)');
+  laneGradient.addColorStop(0.45, 'rgba(8, 12, 20, 0.98)');
+  laneGradient.addColorStop(1, 'rgba(24, 32, 46, 0.96)');
+
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = '#12131c';
-  ctx.lineWidth = 18;
+  ctx.strokeStyle = laneGradient;
+  ctx.lineWidth = 20;
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 1.5, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)';
-  ctx.lineWidth = 3;
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 2.5, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(0, 229, 255, ${0.12 + laneSweep * 0.12 + laneHitBoost * 0.28})`;
+  ctx.lineWidth = 3.2;
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius - 2.5, 0, Math.PI * 2);
-  ctx.strokeStyle = 'rgba(0, 229, 255, 0.16)';
-  ctx.lineWidth = 2;
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius - 3, 0, Math.PI * 2);
+  ctx.strokeStyle = `rgba(100, 243, 255, ${0.1 + laneSweep * 0.1 + laneHitBoost * 0.22})`;
+  ctx.lineWidth = 2.3;
   ctx.stroke();
 
   ctx.save();
-  ctx.setLineDash([3, 11]);
-  ctx.lineDashOffset = -(Date.now() / 90);
+  ctx.setLineDash([4, 12]);
+  ctx.lineDashOffset = -(time / 95);
   ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 0.5, 0, Math.PI * 2);
   ctx.strokeStyle = isBoss ? 'rgba(255, 90, 120, 0.25)' : 'rgba(255, 255, 255, 0.18)';
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.4;
+  ctx.globalAlpha = 0.6 + laneSweep * 0.2;
   ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.setLineDash([]);
   ctx.restore();
 
-  // 4. Center core (reactive + breathing)
+  // CENTER CORE
   const orbColor = multiColors[Math.min(multiplier - 1, 7)];
-  const corePulse = 0.75 + Math.abs(Math.sin(Date.now() / 320)) * 0.35;
+  const corePulse = 0.72 + Math.abs(Math.sin(time / 320)) * 0.36;
   const coreGlowColor = (levelData && levelData.boss)
     ? (isBossPhaseTwo ? '#ffffff' : '#ff3366')
     : orbColor;
+
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.24, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(6, 12, 20, 0.28)';
+  ctx.shadowBlur = 18 + (corePulse * 12);
+  ctx.shadowColor = coreGlowColor;
+  ctx.fill();
 
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.19, 0, Math.PI * 2);
@@ -262,14 +286,14 @@ function draw() {
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.155, 0, Math.PI * 2);
   ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 24, 32, 0.85)';
-  ctx.shadowBlur = 14 + (corePulse * 12);
+  ctx.shadowBlur = 12 + (corePulse * 13);
   ctx.shadowColor = coreGlowColor;
   ctx.fill();
   ctx.shadowBlur = 0;
 
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.11, 0, Math.PI * 2);
-  ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? '#f5f9ff' : 'rgba(190, 235, 255, 0.85)';
+  ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? '#f5f9ff' : 'rgba(205, 240, 255, 0.9)';
   ctx.fill();
 
   ctx.beginPath();
@@ -277,7 +301,7 @@ function draw() {
   ctx.fillStyle = '#090d14';
   ctx.fill();
 
-  // 5. Diegetic Boss HP Ring
+  // Diegetic boss HP ring
   if (levelData && levelData.boss) {
     let hpSegments = bossPhase === 1 ? 2 : 1;
     ctx.lineWidth = 6;
@@ -289,7 +313,7 @@ function draw() {
       ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.22, startAngle, endAngle);
 
       let isBlinking = (bossPhase === 1 && isBossPhaseTwo && i === 1);
-      let blinkAlpha = isBlinking ? Math.abs(Math.sin(Date.now() / 80)) : 1;
+      let blinkAlpha = isBlinking ? Math.abs(Math.sin(time / 80)) : 1;
 
       if (i < hpSegments) {
         ctx.strokeStyle = `rgba(255, 51, 102, ${blinkAlpha})`;
@@ -304,8 +328,9 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // 6. Targets (standard + boss + heart)
-  const targetPulse = 0.94 + Math.abs(Math.sin(Date.now() / 180)) * 0.14;
+  // TARGETS
+  const targetPulse = 0.92 + Math.abs(Math.sin(time / 180)) * 0.17;
+  const targetSkirtPulse = 0.82 + Math.abs(Math.sin(time / 220)) * 0.28;
   targets.forEach(t => {
     if (!t.active) return;
     let tCenter = t.start + (t.size / 2);
@@ -321,12 +346,27 @@ function draw() {
     if (levelData.boss && !isBossPhaseTwo) {
       ctx.beginPath();
       ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.globalAlpha = 0.28;
+      ctx.lineWidth = 25;
+      ctx.lineCap = 'butt';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = t.color;
       ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 20;
+      ctx.lineWidth = 18;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = t.color;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 11, tCenter + t.size / 11);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 5;
+      ctx.shadowBlur = 0;
       ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.globalAlpha = 1.0;
@@ -336,17 +376,26 @@ function draw() {
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.26;
-    ctx.lineWidth = 16;
+    ctx.globalAlpha = 0.28;
+    ctx.lineWidth = 18;
     ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = t.color;
+    ctx.globalAlpha = 0.16 + (targetSkirtPulse * 0.1);
+    ctx.lineWidth = 24;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = t.color;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 3.2, tCenter + t.size / 3.2);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.78;
-    ctx.lineWidth = 10 * targetPulse;
-    ctx.shadowBlur = 10;
+    ctx.globalAlpha = 0.84;
+    ctx.lineWidth = 10.5 * targetPulse;
+    ctx.shadowBlur = 11;
     ctx.shadowColor = t.color;
     ctx.stroke();
 
@@ -355,7 +404,7 @@ function draw() {
       ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 14, tCenter + t.size / 14);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = 0.96;
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 5.5;
       ctx.shadowBlur = 0;
       ctx.stroke();
     }
@@ -364,24 +413,27 @@ function draw() {
     ctx.shadowBlur = 0;
   });
 
-  // 7. Orb trail (improved depth)
+  // TRAIL
   if (!inMenu && trail.length > 0) {
     for (let i = 0; i < trail.length; i++) {
       const p = trail[i];
       const life = i / trail.length;
-      const radius = Math.max(2.2, 8 * life);
-      const opacity = life * 0.5;
+      const radius = Math.max(1.8, 9.5 * life);
+      const opacity = life * 0.42;
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = orbColor;
       ctx.globalAlpha = opacity;
+      ctx.shadowBlur = 10 * life;
+      ctx.shadowColor = orbColor;
       ctx.fill();
     }
     ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
   }
 
-  // 8. Shockwaves (preserved behaviour + integration)
+  // Shockwaves (preserved behaviour + integration)
   for (let i = shockwaves.length - 1; i >= 0; i--) {
     let sw = shockwaves[i];
     sw.radius += sw.speed;
@@ -404,7 +456,7 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // 9. Player orb (emoji skins preserved exactly)
+  // PLAYER ORB
   const x = centerObj.x + Math.cos(angle) * orbitRadius;
   const y = centerObj.y + Math.sin(angle) * orbitRadius;
 
@@ -420,21 +472,29 @@ function draw() {
     ctx.fillText('🔥', x, y);
   } else {
     ctx.beginPath();
-    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.arc(x, y, 17.5, 0, Math.PI * 2);
     ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 0.22;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(x, y, 10, 0, Math.PI * 2);
-    ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 16;
+    ctx.globalAlpha = 0.18;
+    ctx.shadowBlur = 18;
     ctx.shadowColor = orbColor;
     ctx.fill();
 
     ctx.beginPath();
-    ctx.arc(x - 3, y - 3, 2.8, 0, Math.PI * 2);
+    ctx.arc(x, y, 11.5, 0, Math.PI * 2);
+    ctx.fillStyle = orbColor;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = orbColor;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, y, 6.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.shadowBlur = 0;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x - 4, y - 4, 3.2, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
     ctx.shadowBlur = 0;
     ctx.fill();
@@ -442,7 +502,35 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // 10. Particles & popups (preserved)
+  // Hit polish pulse (visual only)
+  if (ringHitFlash > 0.01) {
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = hitFlashColor;
+    ctx.globalAlpha = Math.min(0.4, ringHitFlash);
+    ctx.lineWidth = 7 + (ringHitFlash * 6);
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = hitFlashColor;
+    ctx.stroke();
+  }
+  if (perfectFlash > 0.01) {
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius + 4, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = Math.min(0.32, perfectFlash);
+    ctx.lineWidth = 3;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = '#ffffff';
+    ctx.stroke();
+  }
+  ringHitFlash *= 0.82;
+  perfectFlash *= 0.8;
+  if (ringHitFlash < 0.01) ringHitFlash = 0;
+  if (perfectFlash < 0.01) perfectFlash = 0;
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+
+  // PARTICLES / POPUPS (preserved)
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i];
     p.x += p.vx;
@@ -481,7 +569,9 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
   ctx.shadowColor = 'transparent';
+  ctx.lineWidth = 1;
   ctx.setLineDash([]);
+  ctx.lineCap = 'butt';
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 }
@@ -585,9 +675,12 @@ function tap() {
     let t = targets[hitIndex];
     if (levelData.reverse !== false) direction *= -1;
     distanceTraveled = 0;
+    hitFlashColor = t.color || '#00ff88';
+    ringHitFlash = Math.max(ringHitFlash, 0.26);
 
     if (t.isHeart) {
       t.active = false; lives = Math.min(lives + 1, 3); ui.lives.innerText = lives;
+      perfectFlash = Math.max(perfectFlash, 0.12);
       createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366"); createParticles(hitX, hitY, '#ff3366', 30);
       if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active)) { triggerStageClear(); }
       return;
@@ -628,15 +721,19 @@ function tap() {
     }
 
     if (hitQuality === "perfect" && currentLevelIdx >= 2) {
+      perfectFlash = Math.max(perfectFlash, 0.34);
+      ringHitFlash = Math.max(ringHitFlash, 0.34);
       multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier);
       createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1]);
       playPop(multiplier, true); vibrate(20); // Sound + Sharp Vibrate
     }
     else if (hitQuality === "good") {
+      ringHitFlash = Math.max(ringHitFlash, 0.26);
       score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
       playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
     }
     else {
+      ringHitFlash = Math.max(ringHitFlash, 0.2);
       multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa");
       playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
     }
