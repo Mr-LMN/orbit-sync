@@ -125,10 +125,11 @@ function getCheckpointIndex() {
 
 function updateWaveUI() {
   if (levelData.boss) {
-    ui.wave.style.display = 'none'; ui.bossUI.style.display = 'flex';
-    if (bossPhase === 1 && !isBossPhaseTwo) { ui.bossPhase1.className = "boss-segment active-segment"; ui.bossPhase2.className = "boss-segment active-segment"; }
+    ui.wave.style.display = 'none';
+    if (ui.bossUI) ui.bossUI.style.display = 'none'; // Hide the old HTML bar
   } else {
-    ui.bossUI.style.display = 'none'; ui.wave.style.display = 'block';
+    if (ui.bossUI) ui.bossUI.style.display = 'none';
+    ui.wave.style.display = 'block';
     ui.wave.innerText = `WAVE ${Math.min(stageHits + 1, levelData.hitsNeeded)} / ${levelData.hitsNeeded}`;
   }
 }
@@ -183,8 +184,29 @@ function spawnTargets() {
 
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 1. Center Node
   ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.15, 0, Math.PI * 2);
   ctx.fillStyle = (levelData.boss && isBossPhaseTwo) ? '#ffffff' : '#222'; ctx.fill();
+
+  // 2. NEW: Diegetic Boss HP Ring
+  if (levelData.boss) {
+    let hpSegments = bossPhase === 1 ? 2 : 1; // 2 phases total
+    ctx.lineWidth = 6; ctx.lineCap = 'round';
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath();
+      let startAngle = (i * Math.PI) - (Math.PI / 2) + 0.15;
+      let endAngle = startAngle + Math.PI - 0.3;
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.22, startAngle, endAngle);
+      ctx.strokeStyle = i < hpSegments ? '#ff3366' : '#222';
+      ctx.shadowBlur = i < hpSegments ? 15 : 0;
+      ctx.shadowColor = '#ff3366';
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0; // Reset shadow for the rest of the canvas
+  }
+
+  // 3. Main Orbit Track
   ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.strokeStyle = '#1a1a24'; ctx.lineWidth = 15; ctx.stroke();
 
