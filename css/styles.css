@@ -1,10 +1,21 @@
 body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
 #gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100vw; height: 100vh; }
-#topBar { position: absolute; top: 20px; width: 95%; display: flex; justify-content: center; gap: 10px; z-index: 5; flex-wrap: wrap;}
-.stat-box { background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem;}
-#multiplierBox { color: #ffaa00; transition: transform 0.1s; }
 
-/* NEW UI Styling */
+/* Cleaned Top Bar */
+#topBar { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; gap: 25px; z-index: 5; flex-wrap: wrap; }
+.top-stat { font-size: 0.9rem; color: #666; font-weight: bold; letter-spacing: 1px; }
+.top-stat span { color: #fff; margin-left: 5px; font-size: 1.1rem; }
+#streakBox span { color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
+
+/* NEW: Massive Right-Side Multiplier */
+#bigMultiplier {
+  position: absolute; right: 25px; top: 50%; transform: translateY(-50%);
+  font-size: 4.5rem; font-weight: 900; color: #ffffff; z-index: 5;
+  text-shadow: 0 0 20px rgba(255,255,255,0.8);
+  transition: color 0.2s, text-shadow 0.2s, transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none; opacity: 0.8;
+}
+
 #waveDisplay { margin: 5px 0 0 0; font-size: 1.1rem; color: #888; letter-spacing: 3px; text-transform: uppercase; }
 #bossUI { position: absolute; top: 75px; width: 60%; display: flex; flex-direction: column; align-items: center; z-index: 5; }
 .boss-title { color: #ff3366; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,51,102,0.8);}
@@ -42,6 +53,4 @@ h2 { margin: 0; font-size: 1.5rem; color: #fff; }
 #screenOverlay { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 10, 15, 0.85); width: 100%; height: 100%; z-index: 15; backdrop-filter: blur(8px); }
 #screenTitle { font-size: 3.5rem; margin-bottom: 0; text-shadow: 0 0 20px currentColor; }
 #screenSubtitle { font-size: 1.2rem; color: #ccc; margin-top: 5px; margin-bottom: 15px; }
-.run-coins-box { font-size: 1.5rem; color: #ffaa00; font-weight: bold; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 10px 25px; border-radius: 20px; 
-
-border: 1px solid rgba(255, 170, 0, 0.3); }
+.run-coins-box { font-size: 1.5rem; color: #ffaa00; font-weight: bold; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 10px 25px; border-radius: 20px; border: 1px solid rgba(255, 170, 0, 0.3); }
