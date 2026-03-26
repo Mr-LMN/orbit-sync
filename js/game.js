@@ -240,44 +240,64 @@ function draw() {
   });
 
   // ENERGY LANE
+  // LAYERED ENERGY LANE
   const laneSweep = (Math.sin(time / 550) + 1) * 0.5;
   const laneHitBoost = Math.max(0, ringHitFlash);
+
+  // 1) Ambient Outer Glow (behind everything)
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  ctx.lineWidth = 24;
+  ctx.strokeStyle = `rgba(0, 236, 255, ${0.16 + laneSweep * 0.1 + laneHitBoost * 0.3})`;
+  ctx.shadowBlur = 26 + laneHitBoost * 20;
+  ctx.shadowColor = isBoss ? 'rgba(255, 95, 145, 0.85)' : 'rgba(0, 245, 255, 0.95)';
+  ctx.stroke();
+  ctx.restore();
+
+  // 2) Physical Groove (base track)
   const laneGradient = ctx.createLinearGradient(
     centerObj.x - orbitRadius, centerObj.y - orbitRadius,
     centerObj.x + orbitRadius, centerObj.y + orbitRadius
   );
-  laneGradient.addColorStop(0, 'rgba(20, 26, 38, 0.96)');
-  laneGradient.addColorStop(0.45, 'rgba(8, 12, 20, 0.98)');
-  laneGradient.addColorStop(1, 'rgba(24, 32, 46, 0.96)');
-
+  laneGradient.addColorStop(0, 'rgba(10, 14, 24, 0.985)');
+  laneGradient.addColorStop(0.45, 'rgba(4, 7, 14, 0.995)');
+  laneGradient.addColorStop(1, 'rgba(12, 17, 28, 0.985)');
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.strokeStyle = laneGradient;
   ctx.lineWidth = 20;
   ctx.stroke();
 
+  // 3) Glass casing lips (inner + outer)
+  const lipAlpha = 0.68 + laneSweep * 0.14 + laneHitBoost * 0.34;
   ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 2.5, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(0, 229, 255, ${0.12 + laneSweep * 0.12 + laneHitBoost * 0.28})`;
-  ctx.lineWidth = 3.2;
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 10, 0, Math.PI * 2);
+  ctx.strokeStyle = isBoss
+    ? `rgba(255, 125, 165, ${lipAlpha})`
+    : `rgba(112, 247, 255, ${lipAlpha})`;
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius - 3, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(100, 243, 255, ${0.1 + laneSweep * 0.1 + laneHitBoost * 0.22})`;
-  ctx.lineWidth = 2.3;
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius - 10, 0, Math.PI * 2);
+  ctx.strokeStyle = isBoss
+    ? `rgba(255, 105, 150, ${0.62 + laneSweep * 0.14 + laneHitBoost * 0.32})`
+    : `rgba(64, 235, 255, ${0.62 + laneSweep * 0.14 + laneHitBoost * 0.32})`;
+  ctx.lineWidth = 1;
   ctx.stroke();
 
+  // 4) Sci-fi ticks on the outer lip
   ctx.save();
-  ctx.setLineDash([4, 12]);
+  ctx.setLineDash([3, 9]);
   ctx.lineDashOffset = -(time / 95);
   ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 0.5, 0, Math.PI * 2);
-  ctx.strokeStyle = isBoss ? 'rgba(255, 90, 120, 0.25)' : 'rgba(255, 255, 255, 0.18)';
-  ctx.lineWidth = 1.4;
-  ctx.globalAlpha = 0.6 + laneSweep * 0.2;
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 10, 0, Math.PI * 2);
+  ctx.strokeStyle = isBoss
+    ? `rgba(255, 190, 220, ${0.55 + laneSweep * 0.2})`
+    : `rgba(220, 252, 255, ${0.58 + laneSweep * 0.22})`;
+  ctx.lineWidth = 1.2;
   ctx.stroke();
-  ctx.globalAlpha = 1;
   ctx.setLineDash([]);
   ctx.restore();
 
