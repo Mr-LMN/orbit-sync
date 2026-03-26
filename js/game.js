@@ -246,15 +246,21 @@ function draw() {
   const y = centerObj.y + Math.sin(angle) * orbitRadius;
 
   if (activeSkin === 'skull') {
-    ctx.font = "24px sans-serif";
+    ctx.font = "32px sans-serif"; // Made larger
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.shadowBlur = 15;          // Added neon glow
+    ctx.shadowColor = orbColor;   // Glow matches your multiplier!
     ctx.fillText("💀", x, y);
+    ctx.shadowBlur = 0;
   } else if (activeSkin === 'fire') {
-    ctx.font = "24px sans-serif";
+    ctx.font = "32px sans-serif"; // Made larger
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    ctx.shadowBlur = 15;          // Added neon glow
+    ctx.shadowColor = orbColor;   // Glow matches your multiplier!
     ctx.fillText("🔥", x, y);
+    ctx.shadowBlur = 0;
   } else {
     ctx.beginPath();
     ctx.arc(x, y, 10, 0, Math.PI * 2);
