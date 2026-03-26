@@ -121,6 +121,23 @@ function triggerScreenShake(intensity = 5) {
   setTimeout(() => canvas.style.transform = `translate(0px, 0px)`, 100);
 }
 
+function hexToRgb(hex) {
+  const cleanHex = hex.replace('#', '');
+  const parsed = parseInt(cleanHex.length === 3
+    ? cleanHex.split('').map(ch => ch + ch).join('')
+    : cleanHex, 16);
+  return {
+    r: (parsed >> 16) & 255,
+    g: (parsed >> 8) & 255,
+    b: parsed & 255
+  };
+}
+
+function rgbaFromHex(hex, alpha) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 function updateMultiplierUI() {
   ui.multiplierCount.innerText = multiplier;
   let mColor = multiColors[Math.min(multiplier - 1, 7)];
@@ -343,68 +360,142 @@ function draw() {
       return;
     }
 
-    if (levelData.boss && !isBossPhaseTwo) {
-      ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-      ctx.globalAlpha = 0.28;
-      ctx.lineWidth = 25;
-      ctx.lineCap = 'butt';
-      ctx.stroke();
+    const isBossShield = levelData.boss && !isBossPhaseTwo;
+    const capRadius = isBossShield ? 5.2 : 4.6;
+    const baseWidth = isBossShield ? 19 : 16;
+    const housingWidth = baseWidth + 10;
+    const coreWidth = Math.max(4.2, baseWidth * 0.34);
+    const coloredStart = tCenter - t.size / 3.2;
+    const coloredEnd = tCenter + t.size / 3.2;
+    const brightColor = levelData.boss ? '#ecf7ff' : '#ffffff';
+    const edgeColor = rgbaFromHex(t.color, isBossShield ? 0.85 : 0.78);
+    const centerColor = rgbaFromHex(t.color, isBossShield ? 0.98 : 0.95);
+    const nowMs = time;
+    const sheenTravel = ((nowMs / 2200) + (t.start * 1.4)) % 1;
+    const sheenCenter = coloredStart + (coloredEnd - coloredStart) * sheenTravel;
+    const pulseCore = 0.74 + Math.sin((nowMs / 260) + (t.start * 5)) * 0.16;
+
+    // Layer 1 — dark target housing
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = 'rgba(8, 16, 28, 0.52)';
+    ctx.lineWidth = housingWidth;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.stroke();
+
+    // Layer 2 — outer glow skirt
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = t.color;
+    ctx.globalAlpha = 0.14 + (targetSkirtPulse * 0.11);
+    ctx.lineWidth = baseWidth + 12;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = t.color;
+    ctx.stroke();
+
+    // Layer 3 — main body with edge-dark / center-bright gradient
+    const mainGradient = ctx.createLinearGradient(
+      centerObj.x + Math.cos(coloredStart) * orbitRadius,
+      centerObj.y + Math.sin(coloredStart) * orbitRadius,
+      centerObj.x + Math.cos(coloredEnd) * orbitRadius,
+      centerObj.y + Math.sin(coloredEnd) * orbitRadius
+    );
+    mainGradient.addColorStop(0, edgeColor);
+    mainGradient.addColorStop(0.5, centerColor);
+    mainGradient.addColorStop(1, edgeColor);
+
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, coloredStart, coloredEnd);
+    ctx.strokeStyle = mainGradient;
+    ctx.globalAlpha = 0.84;
+    ctx.lineWidth = baseWidth * targetPulse;
+    ctx.lineCap = 'butt';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = t.color;
+    ctx.stroke();
+
+    // Layer 4 — inner energy filament
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius - 1.4, coloredStart + 0.008, coloredEnd - 0.008);
+    ctx.strokeStyle = brightColor;
+    ctx.globalAlpha = Math.min(1, pulseCore);
+    ctx.lineWidth = coreWidth;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = brightColor;
+    ctx.stroke();
+
+    // Layer 5 — custom end caps + inlays
+    const capPoints = [coloredStart, coloredEnd];
+    capPoints.forEach(capAngle => {
+      const capX = centerObj.x + Math.cos(capAngle) * orbitRadius;
+      const capY = centerObj.y + Math.sin(capAngle) * orbitRadius;
 
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = t.color;
+      ctx.arc(capX, capY, capRadius, 0, Math.PI * 2);
+      ctx.fillStyle = rgbaFromHex(t.color, 0.92);
       ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 18;
-      ctx.lineCap = 'butt';
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 8;
       ctx.shadowColor = t.color;
-      ctx.stroke();
+      ctx.fill();
+
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 11, tCenter + t.size / 11);
-      ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 5;
+      ctx.arc(capX - Math.cos(capAngle + Math.PI / 2) * 1.5, capY - Math.sin(capAngle + Math.PI / 2) * 1.5, capRadius * 0.45, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(245, 255, 255, 0.9)';
+      ctx.globalAlpha = 0.55;
       ctx.shadowBlur = 0;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1.0;
-      return;
+      ctx.fill();
+    });
+
+    if (t.size > Math.PI / 4) {
+      const separators = 3;
+      for (let i = 1; i <= separators; i++) {
+        const cut = coloredStart + ((coloredEnd - coloredStart) * (i / (separators + 1)));
+        ctx.beginPath();
+        ctx.arc(centerObj.x, centerObj.y, orbitRadius, cut - 0.004, cut + 0.004);
+        ctx.strokeStyle = 'rgba(220, 240, 255, 0.26)';
+        ctx.globalAlpha = 0.52;
+        ctx.lineWidth = baseWidth * 0.82;
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+      }
     }
 
+    // Layer 6 — animated sheen
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.28;
-    ctx.lineWidth = 18;
-    ctx.lineCap = 'round';
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius - 0.4, sheenCenter - 0.045, sheenCenter + 0.045);
+    ctx.strokeStyle = 'rgba(210, 255, 255, 0.92)';
+    ctx.globalAlpha = 0.48;
+    ctx.lineWidth = baseWidth * 0.58;
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = 'rgba(160, 245, 255, 0.8)';
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.16 + (targetSkirtPulse * 0.1);
-    ctx.lineWidth = 24;
-    ctx.shadowBlur = 14;
-    ctx.shadowColor = t.color;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 3.2, tCenter + t.size / 3.2);
-    ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.84;
-    ctx.lineWidth = 10.5 * targetPulse;
-    ctx.shadowBlur = 11;
-    ctx.shadowColor = t.color;
-    ctx.stroke();
-
+    // Perfect marker upgrade (pill + side brackets)
     if (currentLevelIdx >= 2 || levelData.boss) {
+      const markerRadius = orbitRadius - 1;
+      const markerX = centerObj.x + Math.cos(tCenter) * markerRadius;
+      const markerY = centerObj.y + Math.sin(tCenter) * markerRadius;
+      const tangentX = -Math.sin(tCenter);
+      const tangentY = Math.cos(tCenter);
+
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 14, tCenter + t.size / 14);
-      ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = 0.96;
-      ctx.lineWidth = 5.5;
+      ctx.arc(markerX, markerY, 5.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#f5ffff';
+      ctx.globalAlpha = 0.95;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = 'rgba(170, 250, 255, 0.95)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(markerX - tangentX * 10, markerY - tangentY * 10);
+      ctx.lineTo(markerX - tangentX * 6, markerY - tangentY * 6);
+      ctx.moveTo(markerX + tangentX * 10, markerY + tangentY * 10);
+      ctx.lineTo(markerX + tangentX * 6, markerY + tangentY * 6);
+      ctx.strokeStyle = 'rgba(220, 255, 255, 0.85)';
+      ctx.globalAlpha = 0.88;
+      ctx.lineWidth = 1.6;
       ctx.shadowBlur = 0;
       ctx.stroke();
     }
