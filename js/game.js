@@ -194,52 +194,60 @@ function spawnTargets() {
 }
 
 function draw() {
-  // 1. DYNAMIC VOLUMETRIC BACKGROUND
-  // The hue shifts by 40 degrees every time you beat a stage, giving a clear sense of progression!
-  let baseHue = (currentLevelIdx * 40) % 360;
+  // 1. DYNAMIC VOLUMETRIC BACKGROUND ("OH SHIT" BOSS OVERRIDE)
+  let isBoss = levelData && levelData.boss;
+  let baseHue = isBoss ? 0 : (currentLevelIdx * 40) % 360; // Boss forces deep menacing Red
+  let pulse = isBoss ? Math.abs(Math.sin(Date.now() / 300)) * 0.3 : 0; // Throbbing alarm effect
 
-  // Creates a deep radial glow behind the game board fading to black at the edges
   let bgGradient = ctx.createRadialGradient(centerObj.x, centerObj.y, orbitRadius * 0.5, centerObj.x, centerObj.y, canvas.height * 0.8);
-  bgGradient.addColorStop(0, `hsla(${baseHue}, 60%, 12%, 1)`); // Deep colored core
-  bgGradient.addColorStop(1, '#050508'); // Pitch black edges
+  bgGradient.addColorStop(0, `hsla(${baseHue}, ${isBoss ? '80%' : '60%'}, ${isBoss ? 15 + (pulse*15) : 12}%, 1)`);
+  bgGradient.addColorStop(1, isBoss ? `rgba(${20 + pulse*30}, 0, 0, 1)` : '#050508');
 
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 2. AMBIENT BACKGROUND DUST (Parallax)
+  // 2. AMBIENT BACKGROUND DUST (Turns into fast-rising embers during boss!)
   bgDust.forEach(d => {
     ctx.beginPath();
     ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255, 255, 255, ${d.opacity})`;
+    ctx.fillStyle = isBoss ? `rgba(255, 80, 50, ${d.opacity + pulse})` : `rgba(255, 255, 255, ${d.opacity})`;
     ctx.fill();
 
-    // Move dust slowly upwards
-    d.y -= (inMenu ? d.speed * 2 : d.speed);
-    if (d.y < 0) {
-      d.y = canvas.height;
-      d.x = Math.random() * canvas.width;
-    }
+    // Move dust upwards (3.5x faster during boss fight for chaotic energy)
+    let speedMult = isBoss ? 3.5 : 1;
+    d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
+    if(d.y < 0) { d.y = canvas.height; d.x = Math.random() * canvas.width; }
   });
 
   // 1. Center Node
   ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.15, 0, Math.PI * 2);
   ctx.fillStyle = (levelData.boss && isBossPhaseTwo) ? '#ffffff' : '#222'; ctx.fill();
 
-  // 2. NEW: Diegetic Boss HP Ring
-  if (levelData.boss) {
-    let hpSegments = bossPhase === 1 ? 2 : 1; // 2 phases total
+  // 3. Diegetic Boss HP Ring
+  if (levelData && levelData.boss) {
+    let hpSegments = bossPhase === 1 ? 2 : 1;
     ctx.lineWidth = 6; ctx.lineCap = 'round';
     for (let i = 0; i < 2; i++) {
       ctx.beginPath();
       let startAngle = (i * Math.PI) - (Math.PI / 2) + 0.15;
       let endAngle = startAngle + Math.PI - 0.3;
       ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.22, startAngle, endAngle);
-      ctx.strokeStyle = i < hpSegments ? '#ff3366' : '#222';
-      ctx.shadowBlur = i < hpSegments ? 15 : 0;
-      ctx.shadowColor = '#ff3366';
+
+      // If we broke the Phase 1 shields and the core is exposed, make the segment blink violently!
+      let isBlinking = (bossPhase === 1 && isBossPhaseTwo && i === 1);
+      let blinkAlpha = isBlinking ? Math.abs(Math.sin(Date.now() / 80)) : 1;
+
+      if (i < hpSegments) {
+        ctx.strokeStyle = `rgba(255, 51, 102, ${blinkAlpha})`;
+        ctx.shadowBlur = isBlinking ? 0 : 15;
+        ctx.shadowColor = '#ff3366';
+      } else {
+        ctx.strokeStyle = 'rgba(34, 34, 34, 1)'; // Dead segment
+        ctx.shadowBlur = 0;
+      }
       ctx.stroke();
     }
-    ctx.shadowBlur = 0; // Reset shadow for the rest of the canvas
+    ctx.shadowBlur = 0;
   }
 
   // 3. Main Orbit Track
