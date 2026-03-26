@@ -35,6 +35,7 @@ let score = 0; let stageHits = 0; let runCents = 0;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
+let currentReviveCost = 50;
 
 let targets = []; let particles = []; let popups = []; let trail = [];
 
@@ -243,7 +244,7 @@ function update() {
 
 function handleFail(reason) {
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
-  streak = 0; ui.streak.innerText = streak;
+  streak = 0; ui.streak.innerText = streak; 
   triggerScreenShake(10); canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
@@ -251,6 +252,22 @@ function handleFail(reason) {
     let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
     ui.title.innerText = reason || "OUT OF SYNC"; ui.title.style.color = '#ff3366'; ui.subtitle.innerText = `Failed on ${levelData.title}`;
     ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`; ui.btn.onclick = restartFromCheckpoint; ui.runCoins.innerText = coinsToBank;
+
+    // --- NEW REVIVE LOGIC ---
+    let reviveBtn = document.getElementById('reviveBtn');
+    reviveBtn.style.display = 'block';
+    reviveBtn.innerText = `Revive (🪙 ${currentReviveCost})`;
+    reviveBtn.onclick = function() {
+      if (globalCoins >= currentReviveCost) {
+        globalCoins -= currentReviveCost; saveData(); ui.coins.innerText = Math.floor(globalCoins);
+        currentReviveCost *= 2; // Double the cost for the next time!
+        lives = 3; ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
+        if (levelData.boss) ui.bossUI.style.display = 'flex';
+        runCents = 0; loadLevel(currentLevelIdx); isPlaying = true;
+      } else {
+        alert("Not enough coins for a Revive! Restart the World.");
+      }
+    };
   }
 }
 
@@ -366,12 +383,13 @@ function triggerStageClear() {
 function startCampaign() {
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = 0;
-  lives = 3;
+  lives = 3; currentReviveCost = 50;
   loadLevel(currentLevelIdx);
 }
 
 function restartFromCheckpoint() {
   ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
+  currentReviveCost = 50;
   if (lives <= 0) { currentLevelIdx = getCheckpointIndex(); runCents = 0; lives = 3; streak = 0; }
   loadLevel(currentLevelIdx); isPlaying = true;
 }
