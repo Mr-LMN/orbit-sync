@@ -357,27 +357,52 @@ function tap() {
 
 function triggerStageClear() {
   stageHits++;
-  updateWaveUI();
-
+  updateWaveUI(); 
+  
   if (stageHits >= levelData.hitsNeeded) {
-    isPlaying = false; currentLevelIdx++;
-
+    // Check if the level we JUST beat was a Boss
+    let wasBoss = levelData.boss ? true : false;
+    
+    currentLevelIdx++;
     let currentLevelObj = campaign[currentLevelIdx];
     let newWorld = currentLevelObj ? parseInt(currentLevelObj.id.split('-')[0]) : maxWorldUnlocked;
     if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
 
-    let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
+    if (wasBoss || !currentLevelObj) {
+      // WORLD CLEARED! (Pause the game and show the Win Screen)
+      isPlaying = false;
+      let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
 
-    ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-    ui.title.innerText = "STAGE CLEARED"; ui.title.style.color = '#00ff88'; ui.subtitle.innerText = `Coins Earned: ${coinsToBank}`;
+      ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+      ui.title.innerText = "WORLD CLEARED!"; ui.title.style.color = '#00ff88'; ui.subtitle.innerText = `Coins Earned: ${coinsToBank}`;
+      
+      // Hide revive button if it's there
+      let reviveBtn = document.getElementById('reviveBtn');
+      if (reviveBtn) reviveBtn.style.display = 'none';
+      
+      ui.btn.innerText = "Next World";
+      ui.btn.onclick = function () {
+        ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
+        runCents = 0; loadLevel(currentLevelIdx); isPlaying = true;
+      };
+      ui.runCoins.innerText = ""; runCents = 0;
+      
+    } else {
+      // SEAMLESS TRANSITION! (Keep playing, flash the screen, load next wave)
+      createPopup(centerObj.x, centerObj.y - 50, "WAVE CLEARED!", "#00ff88");
+      createParticles(centerObj.x, centerObj.y, '#00ff88', 50);
+      triggerScreenShake(8);
+      
+      // Briefly flash the screen neon green
+      canvas.style.boxShadow = `inset 0 0 50px #00ff88`; 
+      setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
-    ui.btn.innerText = "Next Stage";
-    ui.btn.onclick = function () {
-      ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
-      runCents = 0; loadLevel(currentLevelIdx); isPlaying = true;
-    };
-    ui.runCoins.innerText = ""; runCents = 0;
-  } else { spawnTargets(); }
+      // Load next level without stopping the 'isPlaying' loop!
+      loadLevel(currentLevelIdx);
+    }
+  } else { 
+    spawnTargets(); 
+  }
 }
 
 function startCampaign() {
