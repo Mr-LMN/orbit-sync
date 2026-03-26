@@ -249,16 +249,12 @@ function draw() {
     ctx.font = "32px sans-serif"; // Made larger
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowBlur = 15;          // Added neon glow
-    ctx.shadowColor = orbColor;   // Glow matches your multiplier!
     ctx.fillText("💀", x, y);
     ctx.shadowBlur = 0;
   } else if (activeSkin === 'fire') {
     ctx.font = "32px sans-serif"; // Made larger
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowBlur = 15;          // Added neon glow
-    ctx.shadowColor = orbColor;   // Glow matches your multiplier!
     ctx.fillText("🔥", x, y);
     ctx.shadowBlur = 0;
   } else {
