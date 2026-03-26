@@ -72,13 +72,24 @@ let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 
-let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = [];
+let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 
 const size = Math.min(window.innerWidth, window.innerHeight);
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 const centerObj = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 const orbitRadius = Math.min(window.innerWidth, window.innerHeight) * 0.28;
 const multiColors = ['#ffffff', '#00e5ff', '#00ff88', '#ffea00', '#ffaa00', '#ff3366', '#b300ff', '#ff00ff'];
+
+// Generate subtle background dust for depth
+for (let i = 0; i < 75; i++) {
+  bgDust.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    size: Math.random() * 1.5 + 0.5,
+    speed: Math.random() * 0.2 + 0.05,
+    opacity: Math.random() * 0.4 + 0.1
+  });
+}
 
 document.getElementById('menuBtn').onclick = returnToMenu;
 
@@ -183,7 +194,32 @@ function spawnTargets() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 1. DYNAMIC VOLUMETRIC BACKGROUND
+  // The hue shifts by 40 degrees every time you beat a stage, giving a clear sense of progression!
+  let baseHue = (currentLevelIdx * 40) % 360;
+
+  // Creates a deep radial glow behind the game board fading to black at the edges
+  let bgGradient = ctx.createRadialGradient(centerObj.x, centerObj.y, orbitRadius * 0.5, centerObj.x, centerObj.y, canvas.height * 0.8);
+  bgGradient.addColorStop(0, `hsla(${baseHue}, 60%, 12%, 1)`); // Deep colored core
+  bgGradient.addColorStop(1, '#050508'); // Pitch black edges
+
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // 2. AMBIENT BACKGROUND DUST (Parallax)
+  bgDust.forEach(d => {
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 255, 255, ${d.opacity})`;
+    ctx.fill();
+
+    // Move dust slowly upwards
+    d.y -= (inMenu ? d.speed * 2 : d.speed);
+    if (d.y < 0) {
+      d.y = canvas.height;
+      d.x = Math.random() * canvas.width;
+    }
+  });
 
   // 1. Center Node
   ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.15, 0, Math.PI * 2);
