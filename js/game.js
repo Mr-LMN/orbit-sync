@@ -8,7 +8,9 @@ const ui = {
   subtitle: document.getElementById('screenSubtitle'), btn: document.getElementById('actionBtn'),
   runCoins: document.getElementById('runCoinsDisplay'), topBar: document.getElementById('topBar'),
   gameUI: document.getElementById('ui'), mainMenu: document.getElementById('mainMenu'),
-  shopModal: document.getElementById('shopModal'), shopCoinCount: document.getElementById('shopCoinCount')
+  shopModal: document.getElementById('shopModal'), shopCoinCount: document.getElementById('shopCoinCount'),
+  streak: document.getElementById('streakCount'), wave: document.getElementById('waveDisplay'),
+  bossUI: document.getElementById('bossUI'), bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2')
 };
 
 // --- SAVE SYSTEM ---
@@ -24,21 +26,14 @@ function saveData() {
   localStorage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
 }
 
-ui.coins.innerText = Math.floor(globalCoins);
-ui.shopCoinCount.innerText = Math.floor(globalCoins);
+ui.coins.innerText = Math.floor(globalCoins); ui.shopCoinCount.innerText = Math.floor(globalCoins);
 
 // --- GAME VARIABLES ---
 let currentLevelIdx = 0; let levelData;
 let score = 0; let stageHits = 0; let runCents = 0;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
-
-// New Mechanics State
-let lives = 3; 
-let multiplier = 1; 
-let distanceTraveled = 0;
-let totalStageDistance = 0; // Tracks distance for heart expirations
-let isBossPhaseTwo = false; 
-let bossPhase = 1; // 1 = Normal Shields, 2 = Enraged Shields
+let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0; 
+let isBossPhaseTwo = false; let bossPhase = 1; 
 
 let targets = []; let particles = []; let popups = []; let trail = [];
 
@@ -52,7 +47,6 @@ document.getElementById('menuBtn').onclick = returnToMenu;
 
 // --- SHOP LOGIC ---
 function toggleShop(show) { ui.shopModal.style.bottom = show ? '0' : '-100%'; updateShopUI(); }
-
 function updateShopUI() {
   ui.shopCoinCount.innerText = Math.floor(globalCoins);
   const items = ['classic', 'skull', 'fire'];
@@ -63,11 +57,7 @@ function updateShopUI() {
     else { card.classList.remove('equipped'); }
   });
 }
-
-function buyItem(id, cost) {
-  if (globalCoins >= cost) { globalCoins -= cost; unlockedSkins.push(id); saveData(); equipSkin(id); } 
-  else { alert("Not enough coins! Play the campaign to earn more."); }
-}
+function buyItem(id, cost) { if (globalCoins >= cost) { globalCoins -= cost; unlockedSkins.push(id); saveData(); equipSkin(id); } else { alert("Not enough coins! Play the campaign to earn more."); } }
 function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
 
 // --- GAME LOGIC ---
@@ -85,21 +75,37 @@ function getCheckpointIndex() {
   return 0;
 }
 
+function updateWaveUI() {
+  if (levelData.boss) {
+    ui.wave.style.display = 'none';
+    ui.bossUI.style.display = 'flex';
+    // Reset Boss HP visual on load
+    if(bossPhase === 1 && !isBossPhaseTwo) {
+      ui.bossPhase1.className = "boss-segment active-segment";
+      ui.bossPhase2.className = "boss-segment active-segment";
+    }
+  } else {
+    ui.bossUI.style.display = 'none';
+    ui.wave.style.display = 'block';
+    ui.wave.innerText = `WAVE ${Math.min(stageHits + 1, levelData.hitsNeeded)} / ${levelData.hitsNeeded}`;
+  }
+}
+
 function loadLevel(idx) {
   levelData = campaign[idx] || campaign[campaign.length - 1];
-  stageHits = 0; multiplier = 1; distanceTraveled = 0; totalStageDistance = 0; trail = [];
+  stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
   isBossPhaseTwo = false; bossPhase = 1;
   
-  // NOTE: We no longer reset lives here! Lives carry over.
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
-  ui.lives.innerText = lives; ui.multiplier.innerText = multiplier;
+  ui.lives.innerText = lives; ui.multiplier.innerText = multiplier; ui.streak.innerText = streak;
+  
+  updateWaveUI();
   spawnTargets();
 }
 
 function spawnTargets() {
   targets = [];
   
-  // 1. BOSS TARGETS
   if (levelData.boss === 'aegis') {
     if (!isBossPhaseTwo) {
       ui.text.innerText = bossPhase === 1 ? "BOSS: Break the shields!" : "BOSS ENRAGED: Faster & Unpredictable!";
@@ -107,11 +113,9 @@ function spawnTargets() {
       let offset = Math.random() * Math.PI * 2;
       for (let i = 0; i < 3; i++) {
         targets.push({ 
-          start: offset + (i * (Math.PI * 2 / 3)), 
-          size: bossPhase === 1 ? Math.PI / 4 : Math.PI / 6, // Smaller in Phase 2
-          color: bossPhase === 1 ? '#00e5ff' : '#ff3366', 
-          active: true, hp: 3, isBossShield: true,
-          moveSpeed: bossPhase === 1 ? undefined : 0.045 * (Math.random() > 0.5 ? 1 : -1) // Fast & custom in Phase 2
+          start: offset + (i * (Math.PI * 2 / 3)), size: bossPhase === 1 ? Math.PI / 4 : Math.PI / 6, 
+          color: bossPhase === 1 ? '#00e5ff' : '#ff3366', active: true, hp: 3, isBossShield: true,
+          moveSpeed: bossPhase === 1 ? undefined : 0.045 * (Math.random() > 0.5 ? 1 : -1) 
         });
       }
     } else {
@@ -121,21 +125,31 @@ function spawnTargets() {
     return;
   }
 
-  // 2. STANDARD TARGETS
+  // DYNAMIC TARGET COUNT (For levels like 1-5)
   let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
-  let sizeModifier = tCount > 1 ? 0.6 : 1.0;
-  let baseSize = Math.max(Math.PI / 8, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
+  
+  // Dynamic Fractal Logic: If a level naturally has 3 targets, rotate between 3, 2, and 4
+  if (tCount === 3) {
+    const patterns = [3, 2, 4];
+    tCount = patterns[stageHits % patterns.length];
+  }
+
+  let sizeModifier = 1.0;
+  if (tCount === 2) sizeModifier = 0.6;
+  if (tCount === 3) sizeModifier = 0.5;
+  if (tCount === 4) sizeModifier = 0.35; // Tiny!
+
+  let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
   let offset = Math.random() * Math.PI * 2;
   
   for (let i = 0; i < tCount; i++) {
     targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : '#00ff88', active: true, hp: 1 });
   }
 
-  // 3. HEART SPAWN
   if (levelData.hasHeart && !inMenu) {
     targets.push({
       start: Math.random() * Math.PI * 2, size: Math.PI / 12, color: '#ff3366', active: true, 
-      isHeart: true, expireDistance: Math.PI * 4 // Expires after 2 rotations
+      isHeart: true, expireDistance: Math.PI * 4 
     });
   }
 }
@@ -143,33 +157,25 @@ function spawnTargets() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
-  // Track & Center
   ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.15, 0, Math.PI * 2);
   ctx.fillStyle = (levelData.boss && isBossPhaseTwo) ? '#ffffff' : '#222'; ctx.fill();
   ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.strokeStyle = '#1a1a24'; ctx.lineWidth = 15; ctx.stroke();
 
-  // Targets
   targets.forEach(t => {
     if (t.active) {
       let tCenter = t.start + (t.size / 2);
-      
       if (t.isHeart) {
-        // Draw Heart
         ctx.font = "24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("❤️", centerObj.x + Math.cos(tCenter)*orbitRadius, centerObj.y + Math.sin(tCenter)*orbitRadius);
       } else if (levelData.boss && !isBossPhaseTwo) {
-        // Draw Boss Shields
         ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
         ctx.strokeStyle = t.color; ctx.globalAlpha = 0.9; ctx.lineWidth = 20; ctx.lineCap = 'butt'; ctx.stroke();
       } else {
-        // Draw Normal Targets
         ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
         ctx.strokeStyle = t.color; ctx.globalAlpha = 0.3; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.stroke();
-
         ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 4, tCenter + t.size / 4);
         ctx.strokeStyle = t.color; ctx.globalAlpha = 0.8; ctx.stroke();
-
         if (currentLevelIdx >= 2 || levelData.boss) {
           ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 12, tCenter + t.size / 12);
           ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 1.0; ctx.stroke();
@@ -189,13 +195,11 @@ function draw() {
     });
   }
 
-  // Draw Player Orb
   const x = centerObj.x + Math.cos(angle) * orbitRadius; const y = centerObj.y + Math.sin(angle) * orbitRadius;
   if (activeSkin === 'skull') { ctx.font = "32px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("💀", x, y); } 
   else if (activeSkin === 'fire') { ctx.font = "32px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🔥", x, y); } 
   else { ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = orbColor; ctx.shadowBlur = 15; ctx.shadowColor = orbColor; ctx.fill(); ctx.shadowBlur = 0; }
 
-  // Effects
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.04;
     if (p.life <= 0) particles.splice(i, 1);
@@ -221,21 +225,14 @@ function update() {
   if (angle > Math.PI * 2) angle -= Math.PI * 2;
   if (angle < 0) angle += Math.PI * 2;
 
-  // BOSS ATTACK: Random Screen Shake
   if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
 
   targets.forEach(t => {
     if (t.active) {
-      
-      // Heart Expiration Logic
       if (t.isHeart && totalStageDistance > t.expireDistance) {
-        t.active = false;
-        createParticles(centerObj.x + Math.cos(t.start)*orbitRadius, centerObj.y + Math.sin(t.start)*orbitRadius, '#555', 10);
+        t.active = false; createParticles(centerObj.x + Math.cos(t.start)*orbitRadius, centerObj.y + Math.sin(t.start)*orbitRadius, '#555', 10);
       }
-
       let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
-      
-      // Boss Enrage (Phase 2): Shields randomly change direction
       if (!inMenu && t.isBossShield && bossPhase === 2 && Math.random() < 0.015) { t.moveSpeed *= -1; }
 
       if (currentMoveSpeed !== 0) {
@@ -247,7 +244,10 @@ function update() {
   });
 
   if (!inMenu && currentLevelIdx >= 3) {
-    if (distanceTraveled >= Math.PI * 2 && multiplier > 1) { multiplier = 1; ui.multiplier.innerText = multiplier; ui.text.innerText = "Too slow! Multiplier lost."; document.getElementById('multiplierBox').style.color = "#fff"; }
+    if (distanceTraveled >= Math.PI * 2 && multiplier > 1) { 
+      multiplier = 1; streak = 0; ui.streak.innerText = streak;
+      ui.multiplier.innerText = multiplier; ui.text.innerText = "Too slow! Streak lost."; document.getElementById('multiplierBox').style.color = "#fff"; 
+    }
     if (distanceTraveled >= Math.PI * 6) handleFail("IDLE TIMEOUT");
   }
 
@@ -256,10 +256,11 @@ function update() {
 
 function handleFail(reason) {
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; ui.multiplier.innerText = multiplier;
+  streak = 0; ui.streak.innerText = streak; // Reset Streak on fail
   triggerScreenShake(10); canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
-    isPlaying = false; ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none';
+    isPlaying = false; ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none';
     let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
     ui.title.innerText = reason || "OUT OF SYNC"; ui.title.style.color = '#ff3366'; ui.subtitle.innerText = `Failed on ${levelData.title}`;
     ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`; ui.btn.onclick = restartFromCheckpoint; ui.runCoins.innerText = coinsToBank;
@@ -292,64 +293,64 @@ function tap() {
     if (levelData.reverse !== false) direction *= -1;
     distanceTraveled = 0;
 
-    // -- HEART LOGIC --
     if (t.isHeart) {
-      t.active = false;
-      lives = Math.min(lives + 1, 3); // Max 3 lives
-      ui.lives.innerText = lives;
-      createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366");
-      createParticles(hitX, hitY, '#ff3366', 30);
-      
-      // If heart was the last target active, clear the stage
+      t.active = false; lives = Math.min(lives + 1, 3); ui.lives.innerText = lives;
+      createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366"); createParticles(hitX, hitY, '#ff3366', 30);
       if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active)) { triggerStageClear(); }
       return; 
     }
 
-    // -- BOSS ARMOR LOGIC --
     if (levelData.boss && !isBossPhaseTwo) {
       t.hp--; triggerScreenShake(4);
       if (t.hp === 2) t.color = '#ffaa00'; if (t.hp === 1) t.color = '#ff3366'; if (t.hp <= 0) t.active = false;
       createParticles(hitX, hitY, t.color, 10);
       if (targets.every(tgt => !tgt.active)) {
-        isBossPhaseTwo = true; createPopup(centerObj.x, centerObj.y - 50, "CORE EXPOSED!", "#ffffff"); triggerScreenShake(15); setTimeout(spawnTargets, 500);
+        isBossPhaseTwo = true; 
+        
+        // Update Boss HP UI
+        if(bossPhase === 1) ui.bossPhase1.className = "boss-segment";
+        else ui.bossPhase2.className = "boss-segment";
+        
+        createPopup(centerObj.x, centerObj.y - 50, "CORE EXPOSED!", "#ffffff"); triggerScreenShake(15); setTimeout(spawnTargets, 500);
       } return;
     }
 
     t.active = false;
 
-    // -- BOSS CORE LOGIC --
     if (levelData.boss && isBossPhaseTwo) {
       if (hitQuality === "perfect") {
         if (bossPhase === 1) {
-          // Trigger Enrage Phase!
-          bossPhase = 2; isBossPhaseTwo = false;
-          multiplier = 1; ui.multiplier.innerText = multiplier;
-          createParticles(centerObj.x, centerObj.y, '#ff3366', 50);
-          createPopup(centerObj.x, centerObj.y - 50, "ENRAGED!", "#ff3366");
+          bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; ui.streak.innerText = streak; ui.multiplier.innerText = multiplier;
+          createParticles(centerObj.x, centerObj.y, '#ff3366', 50); createPopup(centerObj.x, centerObj.y - 50, "ENRAGED!", "#ff3366");
           triggerScreenShake(20); setTimeout(spawnTargets, 500); return;
         } else {
-          // Boss Truly Defeated!
+          ui.bossPhase2.className = "boss-segment"; // Final hit drains last block
           createParticles(centerObj.x, centerObj.y, '#ffffff', 50); createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
           triggerScreenShake(20); stageHits = 999;
         }
       } else {
-        // Missed perfect hit, regenerate shields
-        multiplier = 1; ui.multiplier.innerText = multiplier; createPopup(centerObj.x, centerObj.y - 50, "REGENERATING...", "#ffaa00");
+        multiplier = 1; streak = 0; ui.streak.innerText = streak; ui.multiplier.innerText = multiplier; 
+        createPopup(centerObj.x, centerObj.y - 50, "REGENERATING...", "#ffaa00");
+        
+        // Heal Boss HP visual
+        if(bossPhase === 1) ui.bossPhase1.className = "boss-segment active-segment";
+        else ui.bossPhase2.className = "boss-segment active-segment";
+
         triggerScreenShake(10); isBossPhaseTwo = false; setTimeout(spawnTargets, 500); return;
       }
     }
 
-    // -- STANDARD SCORING --
     if (hitQuality === "perfect" && currentLevelIdx >= 2) { multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier); createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1]); } 
     else if (hitQuality === "good") { score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff"); } 
     else { multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa"); }
+
+    streak++; ui.streak.innerText = streak;
 
     let centsEarned = (hitQuality === "perfect" ? 3 : hitQuality === "good" ? 2 : 1) * multiplier;
     runCents += centsEarned; ui.score.innerText = score; ui.coins.innerText = Math.floor(globalCoins + (runCents / 10)); ui.multiplier.innerText = multiplier;
     document.getElementById('multiplierBox').style.color = multiColors[Math.min(multiplier - 1, 7)];
     createParticles(hitX, hitY, t.color);
 
-    // Check Stage Clear
     if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
       triggerStageClear();
     }
@@ -358,6 +359,8 @@ function tap() {
 
 function triggerStageClear() {
   stageHits++;
+  updateWaveUI(); // Updates the visual Wave text
+  
   if (stageHits >= levelData.hitsNeeded) {
     isPlaying = false; currentLevelIdx++;
     
@@ -367,7 +370,7 @@ function triggerStageClear() {
 
     let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
 
-    ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none';
+    ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none';
     ui.title.innerText = "STAGE CLEARED"; ui.title.style.color = '#00ff88'; ui.subtitle.innerText = `Coins Earned: ${coinsToBank}`;
     
     ui.btn.innerText = "Next Stage";
@@ -381,19 +384,19 @@ function triggerStageClear() {
 
 function startCampaign() {
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block';
-  inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; runCents = 0; ui.score.innerText = 0;
-  lives = 3; // Reset lives to 3 only on a completely fresh run
+  inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = 0;
+  lives = 3; 
   loadLevel(currentLevelIdx);
 }
 
 function restartFromCheckpoint() {
   ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block';
-  if (lives <= 0) { currentLevelIdx = getCheckpointIndex(); runCents = 0; lives = 3; } // Reset lives to 3 on a game over restart
+  if (lives <= 0) { currentLevelIdx = getCheckpointIndex(); runCents = 0; lives = 3; streak = 0; } 
   loadLevel(currentLevelIdx); isPlaying = true;
 }
 
 function returnToMenu() {
-  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none';
+  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none';
   inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
 }
 
