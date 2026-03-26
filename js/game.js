@@ -41,7 +41,7 @@ let targets = []; let particles = []; let popups = []; let trail = [];
 const size = Math.min(window.innerWidth, window.innerHeight);
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 const centerObj = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const orbitRadius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+const orbitRadius = Math.min(window.innerWidth, window.innerHeight) * 0.28;
 const multiColors = ['#ffffff', '#00e5ff', '#00ff88', '#ffea00', '#ffaa00', '#ff3366', '#b300ff', '#ff00ff'];
 
 document.getElementById('menuBtn').onclick = returnToMenu;
