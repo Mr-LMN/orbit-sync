@@ -8,9 +8,10 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 #streakBox span { color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
 
 /* NEW: Massive Right-Side Multiplier */
+/* Scaled down font for mobile */
 #bigMultiplier {
-  position: absolute; right: 25px; top: 50%; transform: translateY(-50%);
-  font-size: 4.5rem; font-weight: 900; color: #ffffff; z-index: 5;
+  position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+  font-size: 3rem; font-weight: 900; color: #ffffff; z-index: 5;
   text-shadow: 0 0 20px rgba(255,255,255,0.8);
   transition: color 0.2s, text-shadow 0.2s, transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   pointer-events: none; opacity: 0.8;
@@ -23,7 +24,10 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 .boss-segment { flex: 1; background: #333; border-radius: 6px; transition: background 0.3s, box-shadow 0.3s; }
 .active-segment { background: #ff3366; box-shadow: 0 0 10px #ff3366; }
 
-#ui { position: absolute; top: 15%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
+/* Nudged higher up the screen */
+#ui { 
+  position: absolute; top: 8%; text-align: center; pointer-events: none; width: 100%; z-index: 5;
+}
 h1 { margin: 0; font-size: 3.5rem; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5); }
 h2 { margin: 0; font-size: 1.5rem; color: #fff; }
 #tutorialText { margin: 5px 0; color: #aaa; font-size: 1rem; }
