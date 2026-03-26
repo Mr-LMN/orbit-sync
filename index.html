@@ -8,19 +8,54 @@
 </head>
 <body>
 
-  <div id="topBar">
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="topBar" style="display: none;">
     <span class="stat-box">🪙 <span id="coinCount">0</span></span>
     <span class="stat-box">❤️ <span id="livesCount">3</span></span>
     <span class="stat-box" id="multiplierBox">🔥 x<span id="multiplierCount">1</span></span>
   </div>
 
-  <div id="ui">
+  <div id="ui" style="display: none;">
     <h1 id="scoreDisplay">0</h1>
     <h2 id="stageDisplay">Stage 1-1</h2>
     <p id="tutorialText">Tap when inside the zone.</p>
   </div>
 
-  <canvas id="gameCanvas"></canvas>
+  <div id="mainMenu">
+    <h1 class="title">ORBIT</h1>
+    <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
+    <button class="btn btn-play" onclick="startCampaign()">Play</button><br>
+    <button class="btn btn-shop" onclick="toggleShop(true)">Shop</button>
+  </div>
+
+  <div id="shopModal">
+    <div class="shop-header">
+      <h2>Armory</h2>
+      <div style="font-size: 1.5rem; color: #ffaa00; font-weight: bold;">🪙 <span id="shopCoinCount">0</span></div>
+      <button class="close-btn" onclick="toggleShop(false)">×</button>
+    </div>
+    
+    <div class="shop-content">
+      <div class="shop-item" id="item-classic">
+        <div class="item-preview" style="background:#fff; box-shadow: 0 0 10px #fff; border-radius: 50%;"></div>
+        <p class="item-name">Classic Core</p>
+        <button class="buy-btn" id="btn-classic" onclick="equipSkin('classic')">Equipped</button>
+      </div>
+
+      <div class="shop-item" id="item-skull">
+        <div class="item-preview" style="color: #00e5ff;">💀</div>
+        <p class="item-name">Neon Skull</p>
+        <button class="buy-btn buy-coins" id="btn-skull" onclick="buyItem('skull', 50)">🪙 50</button>
+      </div>
+
+      <div class="shop-item" id="item-fire">
+        <div class="item-preview" style="color: #ffaa00;">🔥</div>
+        <p class="item-name">Demon Core</p>
+        <button class="buy-btn buy-coins" id="btn-fire" onclick="buyItem('fire', 150)">🪙 150</button>
+      </div>
+    </div>
+  </div>
 
   <div id="screenOverlay">
     <h1 class="crash-text" id="screenTitle">OUT OF SYNC</h1>
@@ -28,8 +63,8 @@
     <p style="color: #ffaa00; font-weight: bold; font-size: 1.2rem;">Run Coins: <span id="runCoinsDisplay">0</span></p>
     
     <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
-      <button id="actionBtn" onclick="startGame()">Restart World</button>
-      <button id="menuBtn" style="background: transparent; color: #888; border: 2px solid #555; font-size: 1rem; padding: 10px 20px;" onclick="alert('Main Menu coming soon! (Ad Revives will go here)')">Main Menu</button>
+      <button id="actionBtn" onclick="restartFromCheckpoint()">Restart World</button>
+      <button id="menuBtn" style="background: transparent; color: #888; border: 2px solid #555; font-size: 1rem; padding: 10px 20px;" onclick="returnToMenu()">Main Menu</button>
     </div>
   </div>
 
