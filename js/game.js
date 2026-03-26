@@ -72,7 +72,7 @@ let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 
-let targets = []; let particles = []; let popups = []; let trail = [];
+let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = [];
 
 const size = Math.min(window.innerWidth, window.innerHeight);
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -98,6 +98,9 @@ function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
 
 function createParticles(x, y, color, count = 20) { for (let i = 0; i < count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12, life: 1.0, color: color }); } }
 function createPopup(x, y, text, color) { popups.push({ x: x, y: y, text: text, color: color, life: 1.0 }); }
+function createShockwave(color, speed = 25) {
+  shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
+}
 function triggerScreenShake(intensity = 5) {
   canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`;
   setTimeout(() => canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`, 50);
@@ -217,6 +220,29 @@ function draw() {
       ctx.fillStyle = orbColor; ctx.globalAlpha = opacity; ctx.fill();
     });
   }
+  
+  // --- SHOCKWAVE EFFECT ---
+  for (let i = shockwaves.length - 1; i >= 0; i--) {
+    let sw = shockwaves[i];
+    sw.radius += sw.speed; // Fast outward expansion
+    sw.opacity -= 0.035;   // Fade out
+    sw.width += 1.5;       // Line gets thicker as it pushes out
+    
+    if (sw.opacity <= 0) {
+      shockwaves.splice(i, 1);
+    } else {
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, sw.radius, 0, Math.PI * 2);
+      ctx.strokeStyle = sw.color;
+      ctx.globalAlpha = sw.opacity;
+      ctx.lineWidth = sw.width;
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = sw.color;
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
 
   const x = centerObj.x + Math.cos(angle) * orbitRadius; const y = centerObj.y + Math.sin(angle) * orbitRadius;
   if (activeSkin === 'skull') { ctx.font = "32px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("💀", x, y); }
@@ -441,6 +467,11 @@ function triggerStageClear() {
       createPopup(centerObj.x, centerObj.y - 50, "WAVE CLEARED!", "#00ff88");
       createParticles(centerObj.x, centerObj.y, '#00ff88', 50);
       triggerScreenShake(8);
+      
+      // NEW: The Double-Pulse Shockwave & Haptics
+      createShockwave('#00ff88', 35); // Main heavy neon wave
+      setTimeout(() => createShockwave('#ffffff', 45), 100); // Faster white aftershock
+      if (typeof vibrate === 'function') vibrate([40, 40, 80]); // Double-thump haptic rumble
       
       // Briefly flash the screen neon green
       canvas.style.boxShadow = `inset 0 0 50px #00ff88`; 
