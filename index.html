@@ -11,11 +11,12 @@
   <canvas id="gameCanvas"></canvas>
 
   <div id="topBar" style="display: none;">
-    <span class="stat-box">🪙 <span id="coinCount">0</span></span>
-    <span class="stat-box">❤️ <span id="livesCount">3</span></span>
-    <span class="stat-box" id="streakBox" style="color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.5);">⚡ <span id="streakCount">0</span></span>
-    <span class="stat-box" id="multiplierBox">🔥 x<span id="multiplierCount">1</span></span>
+    <div class="top-stat">COINS <span id="coinCount">0</span></div>
+    <div class="top-stat">LIVES <span id="livesCount">3</span></div>
+    <div class="top-stat" id="streakBox">STREAK <span id="streakCount">0</span></div>
   </div>
+
+  <div id="bigMultiplier" style="display: none;">x<span id="multiplierCount">1</span></div>
 
   <div id="bossUI" style="display: none;">
     <span class="boss-title">BOSS HP</span>
@@ -54,12 +55,12 @@
       <div class="shop-item" id="item-skull">
         <div class="item-preview" style="color: #00e5ff; text-shadow: none;">💀</div>
         <p class="item-name">Neon Skull</p>
-        <button class="buy-btn buy-coins" id="btn-skull" onclick="buyItem('skull', 50)">🪙 50</button>
+        <button class="buy-btn buy-coins" id="btn-skull" onclick="buyItem('skull', 50)">COINS 50</button>
       </div>
       <div class="shop-item" id="item-fire">
         <div class="item-preview" style="color: #ffaa00; text-shadow: none;">🔥</div>
         <p class="item-name">Demon Core</p>
-        <button class="buy-btn buy-coins" id="btn-fire" onclick="buyItem('fire', 150)">🪙 150</button>
+        <button class="buy-btn buy-coins" id="btn-fire" onclick="buyItem('fire', 150)">COINS 150</button>
       </div>
     </div>
   </div>
@@ -67,7 +68,7 @@
   <div id="screenOverlay">
     <h1 id="screenTitle">OUT OF SYNC</h1>
     <p id="screenSubtitle">Failed on Stage 1-1</p>
-    <div class="run-coins-box">🪙 +<span id="runCoinsDisplay">0</span></div>
+    <div class="run-coins-box">COINS +<span id="runCoinsDisplay">0</span></div>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;">
       <button id="actionBtn" class="btn btn-play">Continue</button>
       <button id="menuBtn" class="btn btn-shop">Main Menu</button>
