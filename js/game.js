@@ -14,6 +14,41 @@ const ui = {
   bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2')
 };
 
+// --- SENSORY FEEDBACK (Audio & Haptics) ---
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function initAudio() {
+  if (!audioCtx) { audioCtx = new AudioContext(); }
+  if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+}
+
+function playPop(multiplier, isPerfect, isFail = false) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+  osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+
+  if (isFail) {
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2);
+    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+  } else {
+    osc.type = isPerfect ? 'sine' : 'triangle';
+    osc.frequency.setValueAtTime((isPerfect ? 400 : 250) + (multiplier * 40), audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+  }
+}
+
+function vibrate(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
 // --- SAVE SYSTEM ---
 let globalCoins = parseInt(localStorage.getItem('orbitSync_coins')) || 0;
 let unlockedSkins = JSON.parse(localStorage.getItem('orbitSync_unlocks')) || ['classic'];
@@ -244,8 +279,11 @@ function update() {
 
 function handleFail(reason) {
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
-  streak = 0; ui.streak.innerText = streak; 
-  triggerScreenShake(10); canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
+  streak = 0; ui.streak.innerText = streak;
+  triggerScreenShake(10);
+  playPop(1, false, true); // Play failure sound
+  vibrate([50, 50, 50]);   // Heavy stutter vibration
+  canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
     isPlaying = false; ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
@@ -272,6 +310,7 @@ function handleFail(reason) {
 }
 
 function tap() {
+  initAudio(); // Ensures audio wakes up on iOS/Safari
   if (inMenu || ui.overlay.style.display === 'flex') return;
   if (!isPlaying) { isPlaying = true; ui.text.innerText = "Syncing..."; return; }
 
@@ -338,9 +377,19 @@ function tap() {
       }
     }
 
-    if (hitQuality === "perfect" && currentLevelIdx >= 2) { multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier); createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1]); }
-    else if (hitQuality === "good") { score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff"); }
-    else { multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa"); }
+    if (hitQuality === "perfect" && currentLevelIdx >= 2) {
+      multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier);
+      createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1]);
+      playPop(multiplier, true); vibrate(20); // Sound + Sharp Vibrate
+    }
+    else if (hitQuality === "good") {
+      score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
+      playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
+    }
+    else {
+      multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa");
+      playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
+    }
 
     streak++; ui.streak.innerText = streak;
 
@@ -406,6 +455,7 @@ function triggerStageClear() {
 }
 
 function startCampaign() {
+  initAudio(); // Initialize sound engine on first interaction
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = 0;
   lives = 3; currentReviveCost = 50;
