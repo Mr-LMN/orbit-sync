@@ -196,44 +196,98 @@ function spawnTargets() {
 function draw() {
   // 1. DYNAMIC VOLUMETRIC BACKGROUND ("OH SHIT" BOSS OVERRIDE)
   let isBoss = levelData && levelData.boss;
-  let baseHue = isBoss ? 0 : (currentLevelIdx * 40) % 360; // Boss forces deep menacing Red
-  let pulse = isBoss ? Math.abs(Math.sin(Date.now() / 300)) * 0.3 : 0; // Throbbing alarm effect
+  let baseHue = isBoss ? 0 : (currentLevelIdx * 40) % 360;
+  let pulse = isBoss ? Math.abs(Math.sin(Date.now() / 300)) * 0.3 : 0;
 
   let bgGradient = ctx.createRadialGradient(centerObj.x, centerObj.y, orbitRadius * 0.5, centerObj.x, centerObj.y, canvas.height * 0.8);
-  bgGradient.addColorStop(0, `hsla(${baseHue}, ${isBoss ? '80%' : '60%'}, ${isBoss ? 15 + (pulse*15) : 12}%, 1)`);
-  bgGradient.addColorStop(1, isBoss ? `rgba(${20 + pulse*30}, 0, 0, 1)` : '#050508');
+  bgGradient.addColorStop(0, `hsla(${baseHue}, ${isBoss ? '80%' : '60%'}, ${isBoss ? 15 + (pulse * 15) : 12}%, 1)`);
+  bgGradient.addColorStop(1, isBoss ? `rgba(${20 + pulse * 30}, 0, 0, 1)` : '#050508');
 
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // 2. AMBIENT BACKGROUND DUST (Turns into fast-rising embers during boss!)
+  // 2. AMBIENT BACKGROUND DUST (Turns into fast-rising embers during boss)
   bgDust.forEach(d => {
     ctx.beginPath();
     ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
     ctx.fillStyle = isBoss ? `rgba(255, 80, 50, ${d.opacity + pulse})` : `rgba(255, 255, 255, ${d.opacity})`;
     ctx.fill();
 
-    // Move dust upwards (3.5x faster during boss fight for chaotic energy)
     let speedMult = isBoss ? 3.5 : 1;
     d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
-    if(d.y < 0) { d.y = canvas.height; d.x = Math.random() * canvas.width; }
+    if (d.y < 0) { d.y = canvas.height; d.x = Math.random() * canvas.width; }
   });
 
-  // 1. Center Node
-  ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.15, 0, Math.PI * 2);
-  ctx.fillStyle = (levelData.boss && isBossPhaseTwo) ? '#ffffff' : '#222'; ctx.fill();
+  // 3. Layered energy lane orbit track
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  ctx.strokeStyle = '#12131c';
+  ctx.lineWidth = 18;
+  ctx.stroke();
 
-  // 3. Diegetic Boss HP Ring
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 1.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.2)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius - 2.5, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.16)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.save();
+  ctx.setLineDash([3, 11]);
+  ctx.lineDashOffset = -(Date.now() / 90);
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  ctx.strokeStyle = isBoss ? 'rgba(255, 90, 120, 0.25)' : 'rgba(255, 255, 255, 0.18)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // 4. Center core (reactive + breathing)
+  const orbColor = multiColors[Math.min(multiplier - 1, 7)];
+  const corePulse = 0.75 + Math.abs(Math.sin(Date.now() / 320)) * 0.35;
+  const coreGlowColor = (levelData && levelData.boss)
+    ? (isBossPhaseTwo ? '#ffffff' : '#ff3366')
+    : orbColor;
+
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.19, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(5, 8, 12, 0.65)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.155, 0, Math.PI * 2);
+  ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 24, 32, 0.85)';
+  ctx.shadowBlur = 14 + (corePulse * 12);
+  ctx.shadowColor = coreGlowColor;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.11, 0, Math.PI * 2);
+  ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? '#f5f9ff' : 'rgba(190, 235, 255, 0.85)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.075, 0, Math.PI * 2);
+  ctx.fillStyle = '#090d14';
+  ctx.fill();
+
+  // 5. Diegetic Boss HP Ring
   if (levelData && levelData.boss) {
     let hpSegments = bossPhase === 1 ? 2 : 1;
-    ctx.lineWidth = 6; ctx.lineCap = 'round';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
     for (let i = 0; i < 2; i++) {
       ctx.beginPath();
       let startAngle = (i * Math.PI) - (Math.PI / 2) + 0.15;
       let endAngle = startAngle + Math.PI - 0.3;
       ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.22, startAngle, endAngle);
 
-      // If we broke the Phase 1 shields and the core is exposed, make the segment blink violently!
       let isBlinking = (bossPhase === 1 && isBossPhaseTwo && i === 1);
       let blinkAlpha = isBlinking ? Math.abs(Math.sin(Date.now() / 80)) : 1;
 
@@ -242,7 +296,7 @@ function draw() {
         ctx.shadowBlur = isBlinking ? 0 : 15;
         ctx.shadowColor = '#ff3366';
       } else {
-        ctx.strokeStyle = 'rgba(34, 34, 34, 1)'; // Dead segment
+        ctx.strokeStyle = 'rgba(34, 34, 34, 1)';
         ctx.shadowBlur = 0;
       }
       ctx.stroke();
@@ -250,50 +304,90 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // 3. Main Orbit Track
-  ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = '#1a1a24'; ctx.lineWidth = 15; ctx.stroke();
-
+  // 6. Targets (standard + boss + heart)
+  const targetPulse = 0.94 + Math.abs(Math.sin(Date.now() / 180)) * 0.14;
   targets.forEach(t => {
-    if (t.active) {
-      let tCenter = t.start + (t.size / 2);
-      if (t.isHeart) {
-        ctx.font = "24px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("❤️", centerObj.x + Math.cos(tCenter) * orbitRadius, centerObj.y + Math.sin(tCenter) * orbitRadius);
-      } else if (levelData.boss && !isBossPhaseTwo) {
-        ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.9; ctx.lineWidth = 20; ctx.lineCap = 'butt'; ctx.stroke();
-      } else {
-        ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.3; ctx.lineWidth = 15; ctx.lineCap = 'round'; ctx.stroke();
-        ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 4, tCenter + t.size / 4);
-        ctx.strokeStyle = t.color; ctx.globalAlpha = 0.8; ctx.stroke();
-        if (currentLevelIdx >= 2 || levelData.boss) {
-          ctx.beginPath(); ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 12, tCenter + t.size / 12);
-          ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 1.0; ctx.stroke();
-        }
-      }
-      ctx.globalAlpha = 1.0;
+    if (!t.active) return;
+    let tCenter = t.start + (t.size / 2);
+
+    if (t.isHeart) {
+      ctx.font = '24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('❤️', centerObj.x + Math.cos(tCenter) * orbitRadius, centerObj.y + Math.sin(tCenter) * orbitRadius);
+      return;
     }
+
+    if (levelData.boss && !isBossPhaseTwo) {
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = t.color;
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 20;
+      ctx.lineCap = 'butt';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = t.color;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1.0;
+      return;
+    }
+
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = t.color;
+    ctx.globalAlpha = 0.26;
+    ctx.lineWidth = 16;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 3.2, tCenter + t.size / 3.2);
+    ctx.strokeStyle = t.color;
+    ctx.globalAlpha = 0.78;
+    ctx.lineWidth = 10 * targetPulse;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = t.color;
+    ctx.stroke();
+
+    if (currentLevelIdx >= 2 || levelData.boss) {
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - t.size / 14, tCenter + t.size / 14);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.96;
+      ctx.lineWidth = 6;
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
   });
 
-  let orbColor = multiColors[Math.min(multiplier - 1, 7)];
+  // 7. Orb trail (improved depth)
+  if (!inMenu && trail.length > 0) {
+    for (let i = 0; i < trail.length; i++) {
+      const p = trail[i];
+      const life = i / trail.length;
+      const radius = Math.max(2.2, 8 * life);
+      const opacity = life * 0.5;
 
-  if (!inMenu) {
-    trail.forEach((p, index) => {
-      let opacity = (index / trail.length) * 0.6;
-      ctx.beginPath(); ctx.arc(p.x, p.y, 8 * (index / trail.length), 0, Math.PI * 2);
-      ctx.fillStyle = orbColor; ctx.globalAlpha = opacity; ctx.fill();
-    });
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = orbColor;
+      ctx.globalAlpha = opacity;
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
   }
-  
-  // --- SHOCKWAVE EFFECT ---
+
+  // 8. Shockwaves (preserved behaviour + integration)
   for (let i = shockwaves.length - 1; i >= 0; i--) {
     let sw = shockwaves[i];
-    sw.radius += sw.speed; // Fast outward expansion
-    sw.opacity -= 0.035;   // Fade out
-    sw.width += 1.5;       // Line gets thicker as it pushes out
-    
+    sw.radius += sw.speed;
+    sw.opacity -= 0.035;
+    sw.width += 1.5;
+
     if (sw.opacity <= 0) {
       shockwaves.splice(i, 1);
     } else {
@@ -310,23 +404,87 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  const x = centerObj.x + Math.cos(angle) * orbitRadius; const y = centerObj.y + Math.sin(angle) * orbitRadius;
-  if (activeSkin === 'skull') { ctx.font = "32px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("💀", x, y); }
-  else if (activeSkin === 'fire') { ctx.font = "32px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText("🔥", x, y); }
-  else { ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fillStyle = orbColor; ctx.shadowBlur = 15; ctx.shadowColor = orbColor; ctx.fill(); ctx.shadowBlur = 0; }
+  // 9. Player orb (emoji skins preserved exactly)
+  const x = centerObj.x + Math.cos(angle) * orbitRadius;
+  const y = centerObj.y + Math.sin(angle) * orbitRadius;
 
+  if (activeSkin === 'skull') {
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💀', x, y);
+  } else if (activeSkin === 'fire') {
+    ctx.font = '32px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔥', x, y);
+  } else {
+    ctx.beginPath();
+    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.fillStyle = orbColor;
+    ctx.globalAlpha = 0.22;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.fillStyle = orbColor;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 16;
+    ctx.shadowColor = orbColor;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(x - 3, y - 3, 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.shadowBlur = 0;
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+
+  // 10. Particles & popups (preserved)
   for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= 0.04;
-    if (p.life <= 0) particles.splice(i, 1);
-    else { ctx.beginPath(); ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2); ctx.fillStyle = p.color; ctx.globalAlpha = p.life; ctx.fill(); ctx.globalAlpha = 1.0; }
+    let p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.04;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.life;
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+    }
   }
-  for (let i = popups.length - 1; i >= 0; i--) {
-    let pop = popups[i]; pop.y -= 1; pop.life -= 0.02;
-    if (pop.life <= 0) popups.splice(i, 1);
-    else { ctx.fillStyle = pop.color; ctx.globalAlpha = pop.life; ctx.font = "bold 1.2rem sans-serif"; ctx.textAlign = "center"; ctx.fillText(pop.text, pop.x, pop.y); ctx.globalAlpha = 1.0; }
-  }
-}
 
+  for (let i = popups.length - 1; i >= 0; i--) {
+    let pop = popups[i];
+    pop.y -= 1;
+    pop.life -= 0.02;
+    if (pop.life <= 0) {
+      popups.splice(i, 1);
+    } else {
+      ctx.fillStyle = pop.color;
+      ctx.globalAlpha = pop.life;
+      ctx.font = 'bold 1.2rem sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(pop.text, pop.x, pop.y);
+      ctx.globalAlpha = 1.0;
+    }
+  }
+
+  // Ensure drawing state is clean for the next frame
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+  ctx.shadowColor = 'transparent';
+  ctx.setLineDash([]);
+  ctx.textAlign = 'start';
+  ctx.textBaseline = 'alphabetic';
+}
 function update() {
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
