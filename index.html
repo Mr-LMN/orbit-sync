@@ -37,7 +37,14 @@
   <div id="mainMenu">
     <h1 class="title">ORBIT</h1>
     <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
-    <button class="btn btn-play" onclick="if(audioCtx) soundUIClick(); startCampaign();">Play</button><br>
+
+    <div id="worldSelector" style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px;">
+      <button class="arrow-btn" onclick="if(audioCtx) soundUIClick(); changeWorld(-1)">◀</button>
+      <span id="menuWorldLabel" style="font-size: 1.5rem; font-weight: bold; color: #fff; width: 120px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px;">WORLD 1</span>
+      <button class="arrow-btn" onclick="if(audioCtx) soundUIClick(); changeWorld(1)">▶</button>
+    </div>
+
+    <button class="btn btn-play" onclick="startCampaign()">Play</button><br>
     <button class="btn btn-shop" onclick="if(audioCtx) soundUIClick(); toggleShop(true);">Shop</button>
   </div>
 

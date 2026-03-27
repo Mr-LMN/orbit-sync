@@ -83,3 +83,20 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   color: #ffaa00;
   text-shadow: 0 0 15px rgba(255,170,0,0.6);
 }
+
+/* World Selector Main Menu */
+.arrow-btn {
+  background: transparent;
+  border: 2px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.arrow-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.1); }
