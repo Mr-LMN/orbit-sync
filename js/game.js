@@ -806,6 +806,25 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
+  // Boss shield contrast pass: gently recess the base ring directly behind active shields
+  // so shield segments remain readable against the bright lane, especially on small screens.
+  if (isBoss) {
+    const activeBossShields = targets.filter(t => t.active && t.isBossShield);
+    if (activeBossShields.length > 0) {
+      ctx.save();
+      ctx.lineCap = 'butt';
+      activeBossShields.forEach(t => {
+        ctx.beginPath();
+        ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+        ctx.strokeStyle = 'rgba(4, 8, 16, 0.42)';
+        ctx.lineWidth = 3.2;
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+  }
+
   const orbColor = multiColors[Math.min(multiplier - 1, 7)];
 
   // TARGETS
@@ -820,7 +839,9 @@ function draw() {
     const hitFlash = t.hitFlash || 0;
     const hitScalePulse = t.hitScalePulse || 0;
     const dynamicRadius = orbitRadius + (hitScalePulse * 1.4);
+    const isBossShield = !!t.isBossShield;
     const bodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
+    const shieldBodyWidth = bodyWidth + 1.4;
     const glowWidth = bodyWidth + 4;
     const housingWidth = glowWidth + 4;
 
@@ -873,29 +894,61 @@ function draw() {
     // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = 'rgba(5, 10, 18, 0.9)';
-    ctx.globalAlpha = 0.74 + (approach * 0.08);
-    ctx.lineWidth = housingWidth;
+    ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
+    ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
+    ctx.lineWidth = isBossShield ? (housingWidth + 2.6) : housingWidth;
     ctx.lineCap = 'butt';
     ctx.shadowBlur = 0;
     ctx.stroke();
+
+    if (isBossShield) {
+      // Inner recess lip to make mounted shield weak-point feel more mechanical.
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.52)';
+      ctx.globalAlpha = 0.78 + (approach * 0.1);
+      ctx.lineWidth = shieldBodyWidth + 2.8;
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+
+      // Dark separator layer between bright lane and colored shield segment.
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = 'rgba(3, 7, 14, 0.92)';
+      ctx.globalAlpha = 0.86 + (approach * 0.08);
+      ctx.lineWidth = shieldBodyWidth + 1.6;
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+    }
 
     // --- ACTIVE TARGET BODY (glow + crisp core for timing window readability) ---
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = (0.22 + approach * 0.32 + hitFlash * 0.22) * pulse;
-    ctx.lineWidth = glowWidth + (approach * 1.5) + (hitFlash * 1.2);
-    ctx.shadowBlur = 16 + (approach * 18) + (hitFlash * 14);
+    ctx.globalAlpha = isBossShield
+      ? ((0.27 + approach * 0.27 + hitFlash * 0.2) * pulse)
+      : ((0.22 + approach * 0.32 + hitFlash * 0.22) * pulse);
+    ctx.lineWidth = isBossShield
+      ? (shieldBodyWidth + 3.6 + (approach * 1.15) + (hitFlash * 1.05))
+      : (glowWidth + (approach * 1.5) + (hitFlash * 1.2));
+    ctx.shadowBlur = isBossShield
+      ? (12 + (approach * 12) + (hitFlash * 10))
+      : (16 + (approach * 18) + (hitFlash * 14));
     ctx.shadowColor = t.color;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = Math.min(1, 0.84 + (approach * 0.14) + (hitFlash * 0.3));
-    ctx.lineWidth = bodyWidth + (approach * 0.8) + (hitFlash * 0.9);
-    ctx.shadowBlur = 10 + (approach * 12) + (hitFlash * 16);
+    ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
+    ctx.globalAlpha = isBossShield
+      ? Math.min(1, 0.94 + (approach * 0.06) + (hitFlash * 0.18))
+      : Math.min(1, 0.84 + (approach * 0.14) + (hitFlash * 0.3));
+    ctx.lineWidth = isBossShield
+      ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
+      : (bodyWidth + (approach * 0.8) + (hitFlash * 0.9));
+    ctx.shadowBlur = isBossShield
+      ? (7 + (approach * 6) + (hitFlash * 9))
+      : (10 + (approach * 12) + (hitFlash * 16));
     ctx.shadowColor = t.color;
     ctx.stroke();
 
