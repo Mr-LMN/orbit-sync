@@ -270,7 +270,7 @@ function spawnTargets() {
   let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
   let offset = Math.random() * Math.PI * 2;
 
-  for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : palette.secondary, active: true, hp: 1 }); }
+  for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : palette.primary, active: true, hp: 1 }); }
   if (levelData.hasHeart && !inMenu) { targets.push({ start: Math.random() * Math.PI * 2, size: Math.PI / 12, color: '#ff3366', active: true, isHeart: true, expireDistance: Math.PI * 4 }); }
 }
 
@@ -339,21 +339,29 @@ function draw() {
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.25;
-    ctx.lineWidth = 20;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 28;
     ctx.lineCap = 'round';
-    ctx.shadowBlur = 30;
+    ctx.shadowBlur = 40;
     ctx.shadowColor = t.color;
     ctx.stroke();
 
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 0.95;
-    ctx.lineWidth = 3;
+    ctx.globalAlpha = 1.0;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 20;
     ctx.shadowColor = t.color;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.6;
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 0;
     ctx.stroke();
 
     ctx.globalAlpha = 1.0;
