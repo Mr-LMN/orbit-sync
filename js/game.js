@@ -75,6 +75,7 @@ let currentReviveCost = 50;
 let ringHitFlash = 0;
 let perfectFlash = 0;
 let hitFlashColor = '#00ff88';
+let tempTextTimeout = null;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 
@@ -279,7 +280,20 @@ function spawnTargets() {
   let offset = Math.random() * Math.PI * 2;
 
   for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : palette.primary, active: true, hp: 1 }); }
-  if (levelData.hasHeart && !inMenu) { targets.push({ start: Math.random() * Math.PI * 2, size: Math.PI / 12, color: '#ff3366', active: true, isHeart: true, expireDistance: Math.PI * 4 }); }
+  if (levelData.hasHeart && !inMenu) {
+    const spawnChance = lives === 1 ? 0.85 : lives === 2 ? 0.4 : 0.15;
+    if (Math.random() < spawnChance) {
+      targets.push({
+        start: Math.random() * Math.PI * 2,
+        size: Math.PI / 10,
+        color: '#ffaa00',
+        active: true,
+        isHeart: true,
+        expireDistance: Math.PI * 5,
+        isLifeZone: true
+      });
+    }
+  }
 }
 
 function draw() {
@@ -329,11 +343,45 @@ function draw() {
     if (!t.active) return;
     let tCenter = t.start + (t.size / 2);
 
-    if (t.isHeart) {
-      ctx.font = '24px sans-serif';
+    if (t.isLifeZone) {
+      // Pulsing gold arc — same style as targets but amber/gold
+      const pulse = 0.7 + Math.abs(Math.sin(Date.now() / 400)) * 0.3;
+
+      // Glow layer
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ffaa00';
+      ctx.globalAlpha = 0.3 * pulse;
+      ctx.lineWidth = 28;
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 40;
+      ctx.shadowColor = '#ffaa00';
+      ctx.stroke();
+
+      // Core line
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 20;
+      ctx.shadowColor = '#ffaa00';
+      ctx.stroke();
+
+      // Small + symbol at centre of arc
+      const midAngle = t.start + t.size / 2;
+      const lx = centerObj.x + Math.cos(midAngle) * orbitRadius;
+      const ly = centerObj.y + Math.sin(midAngle) * orbitRadius;
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = '#ffaa00';
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 14px Orbitron';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('❤️', centerObj.x + Math.cos(tCenter) * orbitRadius, centerObj.y + Math.sin(tCenter) * orbitRadius);
+      ctx.fillText('+1', lx, ly);
+
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
       return;
     }
 
@@ -543,6 +591,26 @@ function draw() {
   ctx.textAlign = 'start';
   ctx.textBaseline = 'alphabetic';
 }
+
+function isInsideOrPastTarget(playerAngle, t) {
+  const end = t.start + t.size;
+  if (end > Math.PI * 2) {
+    return playerAngle >= t.start || playerAngle <= (end - Math.PI * 2);
+  }
+  return playerAngle >= t.start && playerAngle <= end;
+}
+
+function showTempText(text, color, duration) {
+  ui.text.style.display = 'block';
+  ui.text.innerText = text;
+  ui.text.style.color = color;
+  if (tempTextTimeout) clearTimeout(tempTextTimeout);
+  tempTextTimeout = setTimeout(() => {
+    ui.text.style.display = 'none';
+    ui.text.style.color = '';
+  }, duration);
+}
+
 function update() {
   if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
 
@@ -573,16 +641,38 @@ function update() {
         if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
         if (t.start < 0) t.start += Math.PI * 2;
       }
+
+      if (!t.active || t.isHeart) return;
+
+      // Check if orb has passed through this target without hitting it
+      // The trailing edge of the target (t.start if going clockwise,
+      // t.start + t.size if counter-clockwise) passing the orb angle = miss
+      const trailingEdge = direction > 0
+        ? t.start  // clockwise: trailing edge is the start
+        : t.start + t.size; // counter-clockwise: trailing edge is the end
+
+      // Normalise angles to 0-2PI
+      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const normTrail = ((trailingEdge % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+      // If target was ahead of orb last frame and trailing edge just passed it
+      if (!t._wasMissable && isInsideOrPastTarget(normAngle, t)) {
+        t._wasMissable = true; // orb entered the target zone
+      }
+      if (t._wasMissable && !isInsideOrPastTarget(normAngle, t)) {
+        // Orb has exited the target without a hit — genuine miss
+        t.active = false;
+        t._wasMissable = false;
+        if (multiplier > 1) {
+          multiplier = 1;
+          streak = 0;
+          ui.streak.innerText = streak;
+          updateMultiplierUI();
+          showTempText("MISSED ZONE", '#ff3366', 1200);
+        }
+      }
     }
   });
-
-  if (!inMenu && currentLevelIdx >= 3) {
-    if (distanceTraveled >= Math.PI * 2 && multiplier > 1) {
-      multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
-      ui.text.innerText = "Too slow! Streak lost.";
-    }
-    if (distanceTraveled >= Math.PI * 6) handleFail("IDLE TIMEOUT");
-  }
 
   draw(); requestAnimationFrame(update);
 }
@@ -667,7 +757,7 @@ function handleFail(reason) {
 function tap() {
   initAudio(); // Ensures audio wakes up on iOS/Safari
   if (inMenu || ui.overlay.style.display === 'flex') return;
-  if (!isPlaying) { isPlaying = true; ui.text.innerText = "Syncing..."; ui.text.style.display = 'none'; return; }
+  if (!isPlaying) { isPlaying = true; showTempText("Syncing...", "#00e5ff", 1000); return; }
 
   let hitIndex = -1; let hitQuality = "miss";
 
