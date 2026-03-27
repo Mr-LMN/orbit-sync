@@ -121,7 +121,22 @@ function updateShopUI() {
 function buyItem(id, cost) { if (globalCoins >= cost) { globalCoins -= cost; unlockedSkins.push(id); saveData(); equipSkin(id); } else { alert("Not enough coins! Play the campaign to earn more."); } }
 function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
 
-function createParticles(x, y, color, count = 20) { for (let i = 0; i < count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12, life: 1.0, color: color }); } }
+function createParticles(x, y, color, count = 20) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 6 + 2;
+    const length = Math.random() * 10 + 5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      angle,
+      length,
+      life: 1.0,
+      color
+    });
+  }
+}
 function createPopup(x, y, text, color) { popups.push({ x: x, y: y, text: text, color: color, life: 1.0 }); }
 function createShockwave(color, speed = 25) {
   shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
@@ -549,10 +564,15 @@ function draw() {
       particles.splice(i, 1);
     } else {
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 4 * p.life, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - Math.cos(p.angle) * p.length * p.life, p.y - Math.sin(p.angle) * p.length * p.life);
+      ctx.strokeStyle = p.color;
       ctx.globalAlpha = p.life;
-      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = p.color;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1.0;
     }
   }
