@@ -312,6 +312,7 @@ let globalCoins = parseInt(localStorage.getItem('orbitSync_coins')) || 0;
 let unlockedSkins = JSON.parse(localStorage.getItem('orbitSync_unlocks')) || ['classic'];
 let activeSkin = localStorage.getItem('orbitSync_equipped') || 'classic';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
+let menuSelectedWorld = maxWorldUnlocked;
 let personalBest = {
   score: parseInt(localStorage.getItem('orbitSync_pbScore')) || 0,
   streak: parseInt(localStorage.getItem('orbitSync_pbStreak')) || 0,
@@ -1906,7 +1907,7 @@ function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   ui.text.style.display = 'none';
-  inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = '0';
+  inMenu = false; isPlaying = true; currentLevelIdx = getStartingIndexForWorld(menuSelectedWorld); score = 0; streak = 0; runCents = 0; ui.score.innerText = '0';
   lives = 3; currentReviveCost = 50;
   reviveCount = 0;
   scoreAtCheckpoint = 0;
@@ -1945,7 +1946,29 @@ function returnToMenu() {
   inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
 }
 
+function changeWorld(dir) {
+  menuSelectedWorld += dir;
+  if (menuSelectedWorld < 1) menuSelectedWorld = 1;
+  if (menuSelectedWorld > maxWorldUnlocked) menuSelectedWorld = maxWorldUnlocked;
+  updateWorldSelectorUI();
+}
+
+function updateWorldSelectorUI() {
+  let label = document.getElementById('menuWorldLabel');
+  if (label) {
+    label.innerText = "WORLD " + menuSelectedWorld;
+    label.style.color = (menuSelectedWorld === 2) ? '#ff00cc' : '#00ff88'; // Matches world themes!
+  }
+}
+
+function getStartingIndexForWorld(worldNum) {
+  for (let i = 0; i < campaign.length; i++) {
+    if (campaign[i].id.startsWith(worldNum + "-")) return i;
+  }
+  return 0; // Fallback
+}
+
 document.addEventListener('touchstart', (e) => { if (e.target.tagName !== 'BUTTON') { e.preventDefault(); tap(); } }, { passive: false });
 document.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') tap(); });
 
-levelData = campaign[0]; spawnTargets(); updateShopUI(); requestAnimationFrame(update);
+levelData = campaign[0]; spawnTargets(); updateShopUI(); menuSelectedWorld = maxWorldUnlocked; updateWorldSelectorUI(); requestAnimationFrame(update);
