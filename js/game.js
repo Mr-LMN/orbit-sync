@@ -707,6 +707,20 @@ function loadLevel(idx) {
   }
 }
 
+function buildTarget(start, size, config = {}) {
+  const target = {
+    start,
+    size,
+    baseSize: size,
+    spawnDistance: totalStageDistance,
+    ...config
+  };
+  if (!target.shrinkConfig && levelData && levelData.shrink && !target.isHeart && !target.isBossShield) {
+    target.shrinkConfig = levelData.shrink;
+  }
+  return target;
+}
+
 function spawnTargets() {
   targets = [];
   const palette = getWorldPalette();
@@ -716,15 +730,18 @@ function spawnTargets() {
       ui.text.style.color = bossPhase === 1 ? "#00e5ff" : "#ff3366";
       let offset = Math.random() * Math.PI * 2;
       for (let i = 0; i < 3; i++) {
-        targets.push({
-          start: offset + (i * (Math.PI * 2 / 3)), size: bossPhase === 1 ? Math.PI / 4 : Math.PI / 6,
-          color: bossPhase === 1 ? '#00e5ff' : '#ff3366', active: true, hp: 3, isBossShield: true,
-          moveSpeed: bossPhase === 1 ? undefined : 0.045 * (Math.random() > 0.5 ? 1 : -1)
-        });
+        targets.push(buildTarget(
+          offset + (i * (Math.PI * 2 / 3)),
+          bossPhase === 1 ? Math.PI / 4 : Math.PI / 6,
+          {
+            color: bossPhase === 1 ? '#00e5ff' : '#ff3366', active: true, hp: 3, isBossShield: true,
+            moveSpeed: bossPhase === 1 ? undefined : 0.045 * (Math.random() > 0.5 ? 1 : -1)
+          }
+        ));
       }
     } else {
       ui.text.innerText = "CORE EXPOSED! Need PERFECT hit!"; ui.text.style.color = "#ffffff";
-      targets.push({ start: Math.random() * Math.PI * 2, size: Math.PI / 10, color: '#ffffff', active: true, hp: 1 });
+      targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 10, { color: '#ffffff', active: true, hp: 1 }));
     }
     return;
   }
@@ -740,7 +757,13 @@ function spawnTargets() {
   let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
   let offset = Math.random() * Math.PI * 2;
 
-  for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : palette.primary, active: true, hp: 1 }); }
+  for (let i = 0; i < tCount; i++) {
+    targets.push(buildTarget(offset + (i * (Math.PI * 2 / tCount)), baseSize, {
+      color: tCount > 1 ? '#ff3366' : palette.primary,
+      active: true,
+      hp: 1
+    }));
+  }
   if (levelData.hasHeart && !inMenu && !levelData.boss) {
     // No life zones during boss fights at all
     // Diminishing returns: each spawn reduces future probability
@@ -751,15 +774,13 @@ function spawnTargets() {
     // Hard cap at 4 life zones per run
     if (lifeZonesSpawnedThisRun < 4 && Math.random() < finalChance) {
       lifeZonesSpawnedThisRun++;
-      targets.push({
-        start: Math.random() * Math.PI * 2,
-        size: Math.PI / 10,
+      targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 10, {
         color: '#ffaa00',
         active: true,
         isHeart: true,
         expireDistance: Math.PI * 5,
         isLifeZone: true
-      });
+      }));
       setTimeout(() => soundLifeZone(), 100);
     }
   }
@@ -1257,6 +1278,15 @@ function update() {
         t.start += currentMoveSpeed;
         if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
         if (t.start < 0) t.start += Math.PI * 2;
+      }
+
+      if (!inMenu && t.shrinkConfig && t.baseSize && t.shrinkConfig.distance > 0) {
+        const waveDistance = Math.max(0, totalStageDistance - (t.spawnDistance || 0));
+        const progress = Math.min(1, waveDistance / t.shrinkConfig.distance);
+        const startScale = t.shrinkConfig.startScale ?? 1;
+        const endScale = t.shrinkConfig.endScale ?? 1;
+        const scale = startScale + ((endScale - startScale) * progress);
+        t.size = t.baseSize * scale;
       }
 
       if (t.isLifeZone && t.active) {
