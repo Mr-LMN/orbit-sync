@@ -793,7 +793,11 @@ function spawnTargets() {
   }
 
   let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
-  if (tCount === 3) { const patterns = [3, 2, 4]; tCount = patterns[stageHits % patterns.length]; }
+  const isFixedThreeTargetTutorialStage = levelData.id === '1-5';
+  if (tCount === 3 && !isFixedThreeTargetTutorialStage) {
+    const patterns = [3, 2, 4];
+    tCount = patterns[stageHits % patterns.length];
+  }
 
   let sizeModifier = 1.0;
   if (tCount === 2) sizeModifier = 0.6;
