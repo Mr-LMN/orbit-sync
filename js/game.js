@@ -1329,9 +1329,15 @@ function tap() {
     }
 
     if (levelData.boss && !isBossPhaseTwo) {
-      t.hp--; triggerScreenShake(4);
-      if (t.hp === 2) t.color = '#ffaa00'; if (t.hp === 1) t.color = '#ff3366'; if (t.hp <= 0) { t.active = false; soundShieldBreak(); }
-      createParticles(hitX, hitY, t.color, 10);
+      t.hp--;
+      triggerScreenShake(5);
+      if (t.hp > 1) t.color = '#ffaa00'; // warning
+      if (t.hp === 1) t.color = '#ff3366'; // critical
+      if (t.hp <= 0) { t.active = false; soundShieldBreak(); }
+      createParticles(hitX, hitY, t.color, 14);
+      if (t.hp > 0) createPopup(hitX, hitY - 18, `${t.hp} HIT${t.hp > 1 ? 'S' : ''}`, t.color);
+      const shieldsLeft = targets.filter(tgt => tgt.isBossShield && tgt.active).length;
+      createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, "#ffffff");
       if (targets.every(tgt => !tgt.active)) {
         isBossPhaseTwo = true;
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";
