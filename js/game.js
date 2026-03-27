@@ -72,6 +72,7 @@ let bossIntroPlaying = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
+let lifeZonesSpawnedThisRun = 0;
 let ringHitFlash = 0;
 let perfectFlash = 0;
 let hitFlashColor = '#00ff88';
@@ -280,9 +281,16 @@ function spawnTargets() {
   let offset = Math.random() * Math.PI * 2;
 
   for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : palette.primary, active: true, hp: 1 }); }
-  if (levelData.hasHeart && !inMenu) {
-    const spawnChance = lives === 1 ? 0.85 : lives === 2 ? 0.4 : 0.15;
-    if (Math.random() < spawnChance) {
+  if (levelData.hasHeart && !inMenu && !levelData.boss) {
+    // No life zones during boss fights at all
+    // Diminishing returns: each spawn reduces future probability
+    const baseProbability = lives === 1 ? 0.85 : lives === 2 ? 0.4 : 0.15;
+    const diminishingFactor = Math.pow(0.5, lifeZonesSpawnedThisRun);
+    const finalChance = baseProbability * diminishingFactor;
+
+    // Hard cap at 4 life zones per run
+    if (lifeZonesSpawnedThisRun < 4 && Math.random() < finalChance) {
+      lifeZonesSpawnedThisRun++;
       targets.push({
         start: Math.random() * Math.PI * 2,
         size: Math.PI / 10,
@@ -592,7 +600,7 @@ function draw() {
   ctx.textBaseline = 'alphabetic';
 }
 
-function isInsideOrPastTarget(playerAngle, t) {
+function isInsideTarget(playerAngle, t) {
   const end = t.start + t.size;
   if (end > Math.PI * 2) {
     return playerAngle >= t.start || playerAngle <= (end - Math.PI * 2);
@@ -642,33 +650,13 @@ function update() {
         if (t.start < 0) t.start += Math.PI * 2;
       }
 
-      if (!t.active || t.isHeart) return;
-
-      // Check if orb has passed through this target without hitting it
-      // The trailing edge of the target (t.start if going clockwise,
-      // t.start + t.size if counter-clockwise) passing the orb angle = miss
-      const trailingEdge = direction > 0
-        ? t.start  // clockwise: trailing edge is the start
-        : t.start + t.size; // counter-clockwise: trailing edge is the end
-
-      // Normalise angles to 0-2PI
-      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-      const normTrail = ((trailingEdge % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-
-      // If target was ahead of orb last frame and trailing edge just passed it
-      if (!t._wasMissable && isInsideOrPastTarget(normAngle, t)) {
-        t._wasMissable = true; // orb entered the target zone
-      }
-      if (t._wasMissable && !isInsideOrPastTarget(normAngle, t)) {
-        // Orb has exited the target without a hit — genuine miss
-        t.active = false;
-        t._wasMissable = false;
-        if (multiplier > 1) {
-          multiplier = 1;
-          streak = 0;
-          ui.streak.innerText = streak;
-          updateMultiplierUI();
-          showTempText("MISSED ZONE", '#ff3366', 1200);
+      if (t.isLifeZone && t.active) {
+        const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        if (!t._wasMissable && isInsideTarget(normAngle, t)) {
+          t._wasMissable = true;
+        }
+        if (t._wasMissable && !isInsideTarget(normAngle, t)) {
+          t.active = false; // life zone missed — just disappears silently
         }
       }
     }
@@ -920,8 +908,9 @@ function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   ui.text.style.display = 'none';
-  inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = 0;
+  inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = '0';
   lives = 3; currentReviveCost = 50;
+  lifeZonesSpawnedThisRun = 0;
   loadLevel(currentLevelIdx);
 }
 
@@ -929,6 +918,7 @@ function restartFromCheckpoint() {
   ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   currentReviveCost = 50;
   if (lives <= 0) { currentLevelIdx = getCheckpointIndex(); runCents = 0; lives = 3; streak = 0; }
+  lifeZonesSpawnedThisRun = 0;
   loadLevel(currentLevelIdx); isPlaying = true;
 }
 
