@@ -1022,43 +1022,29 @@ function draw() {
     const housingWidth = glowWidth + 4;
 
     if (t.isPhantom) {
-      // Phantom: dim, dashed, warning colour — DO NOT HIT
       ctx.save();
-      ctx.setLineDash([6, 8]);
-
-      // Dim glow
+      ctx.setLineDash([4, 12]);
+      
+      // Very faint glow — barely there
       buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y,
         orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ff3366';
-      ctx.globalAlpha = 0.2;
-      ctx.lineWidth = 10;
+      ctx.globalAlpha = 0.12;
+      ctx.lineWidth = 8;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#ff3366';
+      ctx.shadowBlur = 0;
       ctx.stroke();
-
-      // Dashed core
+      
+      // Thin dashed line only, no fill, no X label
       buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y,
         orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ff3366';
-      ctx.globalAlpha = 0.7;
-      ctx.lineWidth = 2;
-      ctx.shadowBlur = 6;
-      ctx.stroke();
-
-      // Warning label at centre
-      const midAngle = t.start + t.size / 2;
-      const midPt = getPointOnShape(midAngle, getWorldShape(),
-                                    centerObj.x, centerObj.y, orbitRadius);
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 0.8;
-      ctx.fillStyle = '#ff3366';
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 1.5;
       ctx.shadowBlur = 0;
-      ctx.font = 'bold 11px Orbitron';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('✕', midPt.x, midPt.y);
-
+      ctx.stroke();
+      
+      ctx.setLineDash([]);
       ctx.restore();
       ctx.globalAlpha = 1.0;
       return;
@@ -1652,7 +1638,10 @@ function tap() {
   if (hitIndex !== -1) {
     let t = targets[hitIndex];
     triggerTargetHitFeedback(t, hitX, hitY);
-    if (levelData.reverse !== false) direction *= -1;
+    if (levelData.reverse !== false) {
+      direction *= -1;
+      trail = []; // Clear trail on direction flip — prevents corner artifacts
+    }
     distanceTraveled = 0;
     hitFlashColor = t.color || '#00ff88';
     ringHitFlash = Math.max(ringHitFlash, 0.26);
@@ -1663,7 +1652,7 @@ function tap() {
       createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366"); createParticles(hitX, hitY, '#ff3366', 30);
       soundLifeGained();
       vibrate([20, 10, 40]);
-      if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active)) { triggerStageClear(); }
+      if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom).every(tgt => !tgt.active)) { triggerStageClear(); }
       return;
     }
 
@@ -1771,7 +1760,7 @@ function tap() {
     updateMultiplierUI();
     createParticles(hitX, hitY, t.color);
 
-    if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
+    if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
       triggerStageClear();
     }
   } else {
@@ -1824,7 +1813,8 @@ function triggerStageClear() {
     let newWorld = currentLevelObj ? parseInt(currentLevelObj.id.split('-')[0]) : maxWorldUnlocked;
     if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
 
-    if (newWorld === 2) {
+    const previousWorld = parseInt(levelData.id.split('-')[0]);
+    if (newWorld === 2 && previousWorld === 1) {
       // World 2 intro — brief pause then shape reveal
       isPlaying = false;
       ui.overlay.style.display = 'flex';
