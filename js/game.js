@@ -322,6 +322,10 @@ let ringHitFlash = 0;
 let perfectFlash = 0;
 let hitFlashColor = '#00ff88';
 let tempTextTimeout = null;
+let bossSpawnTimeout = null;
+let bossPauseUntil = 0;
+let bossTransitionLock = false;
+let brightnessPulseTimeout = null;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
@@ -411,6 +415,36 @@ function triggerScreenShake(intensity = 5) {
   canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`;
   setTimeout(() => canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`, 50);
   setTimeout(() => canvas.style.transform = `translate(0px, 0px)`, 100);
+}
+
+function pulseBrightness(amount = 1.6, duration = 120) {
+  if (brightnessPulseTimeout) clearTimeout(brightnessPulseTimeout);
+  canvas.style.filter = `brightness(${amount})`;
+  brightnessPulseTimeout = setTimeout(() => {
+    canvas.style.filter = 'brightness(1)';
+    brightnessPulseTimeout = null;
+  }, duration);
+}
+
+function scheduleBossSpawn(delay = 700) {
+  if (bossSpawnTimeout) clearTimeout(bossSpawnTimeout);
+  bossSpawnTimeout = setTimeout(() => {
+    spawnTargets();
+    bossSpawnTimeout = null;
+  }, delay);
+}
+
+function pauseGameplayBriefly(duration = 750) {
+  const now = performance.now();
+  bossPauseUntil = Math.max(bossPauseUntil, now + duration);
+  bossTransitionLock = true;
+  isPlaying = false;
+  setTimeout(() => {
+    if (performance.now() >= bossPauseUntil) {
+      bossTransitionLock = false;
+      isPlaying = true;
+    }
+  }, duration + 20);
 }
 
 function hexToRgb(hex) {
@@ -1135,9 +1169,11 @@ function showTempText(text, color, duration) {
 
 function update() {
   if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
+  const isBossTransitionPaused = performance.now() < bossPauseUntil;
 
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
+  if (isBossTransitionPaused) moveStep = 0;
 
   angle += moveStep;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
@@ -1162,6 +1198,7 @@ function update() {
       }
       let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
       if (!inMenu && t.isBossShield && bossPhase === 2 && Math.random() < 0.015) { t.moveSpeed *= -1; }
+      if (isBossTransitionPaused) currentMoveSpeed = 0;
 
       if (currentMoveSpeed !== 0) {
         t.start += currentMoveSpeed;
@@ -1294,6 +1331,7 @@ function handleFail(reason) {
 function tap() {
   initAudio(); // Ensures audio wakes up on iOS/Safari
   if (inMenu || ui.overlay.style.display === 'flex') return;
+  if (bossTransitionLock) return;
   if (!isPlaying) { isPlaying = true; showTempText("Syncing...", "#00e5ff", 1000); return; }
 
   let hitIndex = -1; let hitQuality = "miss";
@@ -1345,7 +1383,13 @@ function tap() {
         isBossPhaseTwo = true;
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";
         else ui.bossPhase2.className = "boss-segment";
-        createPopup(centerObj.x, centerObj.y - 50, "CORE EXPOSED!", "#ffffff"); triggerScreenShake(15); setTimeout(spawnTargets, 500);
+        pauseGameplayBriefly(760);
+        createPopup(centerObj.x, centerObj.y - 50, "CORE EXPOSED", "#ffffff");
+        triggerScreenShake(26);
+        createShockwave('#ffffff', 48);
+        createShockwave('#00e5ff', 34);
+        pulseBrightness(2.0, 140);
+        scheduleBossSpawn(760);
       } return;
     }
 
@@ -1356,9 +1400,12 @@ function tap() {
       if (hitQuality === "perfect" || hitQuality === "good" || hitQuality === "ok") {
         if (bossPhase === 1) {
           bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
-          createParticles(centerObj.x, centerObj.y, '#ff3366', 50); createPopup(centerObj.x, centerObj.y - 50, "ENRAGED!", "#ff3366");
+          createParticles(centerObj.x, centerObj.y, '#ff3366', 72);
+          createShockwave('#ff3366', 44);
+          pulseBrightness(1.7, 120);
+          createPopup(centerObj.x, centerObj.y - 50, "ENRAGED", "#ff3366");
           escalateBossDrone();
-          triggerScreenShake(20); setTimeout(spawnTargets, 500); return;
+          triggerScreenShake(24); scheduleBossSpawn(700); return;
         } else {
           ui.bossPhase2.className = "boss-segment";
           createParticles(centerObj.x, centerObj.y, '#ffffff', 50); createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
@@ -1370,7 +1417,7 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 50, "REGENERATING...", "#ffaa00");
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment active-segment";
         else ui.bossPhase2.className = "boss-segment active-segment";
-        triggerScreenShake(10); isBossPhaseTwo = false; setTimeout(spawnTargets, 500); return;
+        triggerScreenShake(10); isBossPhaseTwo = false; scheduleBossSpawn(700); return;
       }
     }
 
