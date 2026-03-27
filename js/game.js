@@ -83,6 +83,17 @@ const centerObj = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 const orbitRadius = Math.min(window.innerWidth, window.innerHeight) * 0.28;
 const multiColors = ['#ffffff', '#00e5ff', '#00ff88', '#ffea00', '#ffaa00', '#ff3366', '#b300ff', '#ff00ff'];
 
+function getWorldPalette() {
+  const worldNum = parseInt(levelData ? levelData.id.split('-')[0] : '1');
+  if (levelData && levelData.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
+  switch (worldNum) {
+    case 1: return { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
+    case 2: return { primary: '#ff00cc', secondary: '#cc00ff', bg: '#0a0008' };
+    case 3: return { primary: '#ffaa00', secondary: '#ff6600', bg: '#080500' };
+    default: return { primary: '#00ff88', secondary: '#00e5ff', bg: '#050508' };
+  }
+}
+
 // Generate subtle background dust for depth
 for (let i = 0; i < 75; i++) {
   bgDust.push({
@@ -179,6 +190,7 @@ function loadLevel(idx) {
 
 function spawnTargets() {
   targets = [];
+  const palette = getWorldPalette();
   if (levelData.boss === 'aegis') {
     if (!isBossPhaseTwo) {
       ui.text.innerText = bossPhase === 1 ? "BOSS: Break the shields!" : "BOSS ENRAGED: Faster & Unpredictable!";
@@ -209,11 +221,12 @@ function spawnTargets() {
   let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
   let offset = Math.random() * Math.PI * 2;
 
-  for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : '#00ff88', active: true, hp: 1 }); }
+  for (let i = 0; i < tCount; i++) { targets.push({ start: offset + (i * (Math.PI * 2 / tCount)), size: baseSize, color: tCount > 1 ? '#ff3366' : palette.secondary, active: true, hp: 1 }); }
   if (levelData.hasHeart && !inMenu) { targets.push({ start: Math.random() * Math.PI * 2, size: Math.PI / 12, color: '#ff3366', active: true, isHeart: true, expireDistance: Math.PI * 4 }); }
 }
 
 function draw() {
+  const palette = getWorldPalette();
   // BACKGROUND
   let isBoss = levelData && levelData.boss;
   const time = Date.now();
@@ -222,7 +235,7 @@ function draw() {
 
   let bgGradient = ctx.createRadialGradient(centerObj.x, centerObj.y, orbitRadius * 0.5, centerObj.x, centerObj.y, canvas.height * 0.8);
   bgGradient.addColorStop(0, `hsla(${baseHue}, ${isBoss ? '80%' : '60%'}, ${isBoss ? 15 + (pulse * 15) : 12}%, 1)`);
-  bgGradient.addColorStop(1, isBoss ? `rgba(${20 + pulse * 30}, 0, 0, 1)` : '#050508');
+  bgGradient.addColorStop(1, isBoss ? `rgba(${20 + pulse * 30}, 0, 0, 1)` : palette.bg);
 
   ctx.fillStyle = bgGradient;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -249,9 +262,9 @@ function draw() {
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 24;
-  ctx.strokeStyle = `rgba(0, 236, 255, ${0.16 + laneSweep * 0.1 + laneHitBoost * 0.3})`;
+  ctx.strokeStyle = rgbaFromHex(palette.primary, 0.16 + laneSweep * 0.1 + laneHitBoost * 0.3);
   ctx.shadowBlur = 26 + laneHitBoost * 20;
-  ctx.shadowColor = isBoss ? 'rgba(255, 95, 145, 0.85)' : 'rgba(0, 245, 255, 0.95)';
+  ctx.shadowColor = isBoss ? 'rgba(255, 95, 145, 0.85)' : rgbaFromHex(palette.primary, 0.95);
   ctx.stroke();
   ctx.restore();
 
@@ -275,7 +288,7 @@ function draw() {
   ctx.arc(centerObj.x, centerObj.y, orbitRadius + 10, 0, Math.PI * 2);
   ctx.strokeStyle = isBoss
     ? `rgba(255, 125, 165, ${lipAlpha})`
-    : `rgba(112, 247, 255, ${lipAlpha})`;
+    : rgbaFromHex(palette.primary, lipAlpha);
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -283,7 +296,7 @@ function draw() {
   ctx.arc(centerObj.x, centerObj.y, orbitRadius - 10, 0, Math.PI * 2);
   ctx.strokeStyle = isBoss
     ? `rgba(255, 105, 150, ${0.62 + laneSweep * 0.14 + laneHitBoost * 0.32})`
-    : `rgba(64, 235, 255, ${0.62 + laneSweep * 0.14 + laneHitBoost * 0.32})`;
+    : rgbaFromHex(palette.primary, 0.62 + laneSweep * 0.14 + laneHitBoost * 0.32);
   ctx.lineWidth = 1;
   ctx.stroke();
 
@@ -295,7 +308,7 @@ function draw() {
   ctx.arc(centerObj.x, centerObj.y, orbitRadius + 10, 0, Math.PI * 2);
   ctx.strokeStyle = isBoss
     ? `rgba(255, 190, 220, ${0.55 + laneSweep * 0.2})`
-    : `rgba(220, 252, 255, ${0.58 + laneSweep * 0.22})`;
+    : rgbaFromHex(palette.primary, 0.58 + laneSweep * 0.22);
   ctx.lineWidth = 1.2;
   ctx.stroke();
   ctx.setLineDash([]);
