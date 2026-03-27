@@ -473,33 +473,40 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText('🔥', x, y);
   } else {
+    const tangent = angle + (direction > 0 ? Math.PI / 2 : -Math.PI / 2);
+    const size = 12;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tangent);
+
+    // Outer glow
     ctx.beginPath();
-    ctx.arc(x, y, 17.5, 0, Math.PI * 2);
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * 0.6, size * 0.7);
+    ctx.lineTo(0, size * 0.3);
+    ctx.lineTo(-size * 0.6, size * 0.7);
+    ctx.closePath();
     ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 0.18;
-    ctx.shadowBlur = 18;
+    ctx.globalAlpha = 0.3;
+    ctx.shadowBlur = 20;
     ctx.shadowColor = orbColor;
     ctx.fill();
 
+    // Core shape
     ctx.beginPath();
-    ctx.arc(x, y, 11.5, 0, Math.PI * 2);
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * 0.6, size * 0.7);
+    ctx.lineTo(0, size * 0.3);
+    ctx.lineTo(-size * 0.6, size * 0.7);
+    ctx.closePath();
     ctx.fillStyle = orbColor;
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 15;
     ctx.shadowColor = orbColor;
     ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(x, y, 6.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.shadowBlur = 0;
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.arc(x - 4, y - 4, 3.2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.shadowBlur = 0;
-    ctx.fill();
+    ctx.restore();
   }
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
