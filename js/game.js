@@ -286,22 +286,15 @@ function draw() {
   const palette = getWorldPalette();
   // BACKGROUND
   let isBoss = levelData && levelData.boss;
-  const time = Date.now();
-  let baseHue = isBoss ? 0 : (currentLevelIdx * 40) % 360;
-  let pulse = isBoss ? Math.abs(Math.sin(time / 300)) * 0.3 : 0;
 
-  let bgGradient = ctx.createRadialGradient(centerObj.x, centerObj.y, orbitRadius * 0.5, centerObj.x, centerObj.y, canvas.height * 0.8);
-  bgGradient.addColorStop(0, `hsla(${baseHue}, ${isBoss ? '80%' : '60%'}, ${isBoss ? 15 + (pulse * 15) : 12}%, 1)`);
-  bgGradient.addColorStop(1, isBoss ? `rgba(${20 + pulse * 30}, 0, 0, 1)` : palette.bg);
-
-  ctx.fillStyle = bgGradient;
+  ctx.fillStyle = '#07070a';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Ambient background dust (turns into fast-rising embers during boss)
+  // Ambient background dust
   bgDust.forEach(d => {
     ctx.beginPath();
     ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-    ctx.fillStyle = isBoss ? `rgba(255, 80, 50, ${d.opacity + pulse})` : `rgba(255, 255, 255, ${d.opacity})`;
+    ctx.fillStyle = `rgba(255,255,255, ${d.opacity})`;
     ctx.fill();
 
     let speedMult = isBoss ? 3.5 : 1;
