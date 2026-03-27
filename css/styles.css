@@ -18,7 +18,6 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   pointer-events: none; opacity: 0.8;
 }
 
-#waveDisplay { margin: 5px 0 0 0; font-size: 1.1rem; color: #888; letter-spacing: 4px; text-transform: uppercase; }
 #bossUI { position: absolute; top: 120px; width: 60%; display: flex; flex-direction: column; align-items: center; z-index: 5; }
 .boss-title { color: #ff3366; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,51,102,0.8);}
 .boss-bar-container { display: flex; gap: 5px; width: 100%; height: 12px; }
@@ -26,10 +25,11 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 .active-segment { background: #ff3366; box-shadow: 0 0 10px #ff3366; }
 
 /* Nudged higher up the screen */
-#ui { position: absolute; top: 5%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
+#ui { position: absolute; top: 2%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
 h1 { margin: 0; font-size: 3.5rem; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5); }
-h2 { margin: 0; font-size: 1.5rem; color: #fff; }
-#scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; }
+#ui h2 { margin: 0; font-size: 0.8rem; color: #fff; opacity: 0.5; }
+#ui h3 { margin: 5px 0 0 0; font-size: 0.75rem; letter-spacing: 4px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+#scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: 4rem; color: #fff; text-shadow: none; }
 #tutorialText { margin: 5px 0; color: #aaa; font-size: 1rem; }
 
 #mainMenu { position: absolute; text-align: center; z-index: 10; background: rgba(15,15,19,0.85); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
