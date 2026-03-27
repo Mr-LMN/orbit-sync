@@ -744,8 +744,8 @@ function draw() {
       ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffaa00';
       ctx.globalAlpha = 0.3 * pulse;
-      ctx.lineWidth = 28;
-      ctx.lineCap = 'round';
+      ctx.lineWidth = 10;
+      ctx.lineCap = 'butt';
       ctx.shadowBlur = 40;
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
@@ -777,36 +777,31 @@ function draw() {
       return;
     }
 
+    // Layer 1 — tight glow only
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.35;
-    ctx.lineWidth = 28;
-    ctx.lineCap = 'round';
-    ctx.shadowBlur = 40;
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'butt';
+    ctx.shadowBlur = 25;
     ctx.shadowColor = t.color;
     ctx.stroke();
 
+    // Layer 2 — sharp bright core line
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = 1.0;
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.shadowBlur = 20;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'butt';
+    ctx.shadowBlur = 8;
     ctx.shadowColor = t.color;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 0.6;
-    ctx.lineWidth = 1.5;
-    ctx.shadowBlur = 0;
     ctx.stroke();
 
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
+    ctx.lineCap = 'butt';
   });
 
   // TRAIL
