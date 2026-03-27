@@ -17,6 +17,8 @@ const ui = {
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
+let bossDrone = null;
+let bossDroneGain = null;
 
 function initAudio() {
   if (!audioCtx) { audioCtx = new AudioContext(); }
@@ -42,6 +44,54 @@ function playTone(freq, type, vol, attack, decay, startTime) {
   gain.gain.exponentialRampToValueAtTime(0.001, startTime + attack + decay);
   osc.start(startTime);
   osc.stop(startTime + attack + decay + 0.05);
+}
+
+function startBossDrone() {
+  if (!audioCtx || bossDrone) return;
+
+  // Low pulsing drone — two detuned oscillators for thickness
+  bossDrone = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  bossDroneGain = makeGain(0);
+
+  bossDrone.connect(bossDroneGain);
+  osc2.connect(bossDroneGain);
+
+  bossDrone.type = 'sine';
+  bossDrone.frequency.setValueAtTime(55, audioCtx.currentTime);
+
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(57.5, audioCtx.currentTime); // slight detune
+
+  // Fade in
+  bossDroneGain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 1.5);
+
+  bossDrone.start();
+  osc2.start();
+
+  // Store osc2 reference for stopping
+  bossDrone._osc2 = osc2;
+}
+
+function stopBossDrone() {
+  if (!bossDrone) return;
+  bossDroneGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+  setTimeout(() => {
+    try {
+      bossDrone.stop();
+      bossDrone._osc2.stop();
+    } catch (e) {}
+    bossDrone = null;
+    bossDroneGain = null;
+  }, 900);
+}
+
+// Drone pitch rises when entering phase 2 — increases tension
+function escalateBossDrone() {
+  if (!bossDrone || !audioCtx) return;
+  bossDrone.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.5);
+  bossDrone._osc2.frequency.linearRampToValueAtTime(83, audioCtx.currentTime + 0.5);
+  bossDroneGain.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.5);
 }
 
 // OK hit — dull thud, low confidence
@@ -571,7 +621,12 @@ function loadLevel(idx) {
   spawnTargets();
 
   if (levelData.boss) {
-    setTimeout(triggerBossIntro, 200);
+    setTimeout(() => {
+      triggerBossIntro();
+      startBossDrone();
+    }, 200);
+  } else {
+    stopBossDrone();
   }
 }
 
@@ -1159,6 +1214,7 @@ function tap() {
         if (bossPhase === 1) {
           bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
           createParticles(centerObj.x, centerObj.y, '#ff3366', 50); createPopup(centerObj.x, centerObj.y - 50, "ENRAGED!", "#ff3366");
+          escalateBossDrone();
           triggerScreenShake(20); setTimeout(spawnTargets, 500); return;
         } else {
           ui.bossPhase2.className = "boss-segment";
@@ -1229,6 +1285,7 @@ function triggerStageClear() {
     if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
 
     if (wasBoss || !currentLevelObj) {
+      if (wasBoss) stopBossDrone();
       const newRecords = wasBoss ? checkAndSavePB(score, streak) : { score: false, streak: false, world: false };
       soundWorldClear();
       // WORLD CLEARED! (Pause the game and show the Win Screen)
@@ -1311,6 +1368,7 @@ function restartFromCheckpoint() {
 }
 
 function returnToMenu() {
+  stopBossDrone();
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
