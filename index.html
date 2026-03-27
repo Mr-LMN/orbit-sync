@@ -37,8 +37,8 @@
   <div id="mainMenu">
     <h1 class="title">ORBIT</h1>
     <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
-    <button class="btn btn-play" onclick="startCampaign()">Play</button><br>
-    <button class="btn btn-shop" onclick="toggleShop(true)">Shop</button>
+    <button class="btn btn-play" onclick="if(audioCtx) soundUIClick(); startCampaign();">Play</button><br>
+    <button class="btn btn-shop" onclick="if(audioCtx) soundUIClick(); toggleShop(true);">Shop</button>
   </div>
 
   <div id="shopModal">
@@ -92,13 +92,13 @@
       style="background:transparent; border:1px solid rgba(255,255,255,0.2);
       color:rgba(255,255,255,0.6); font-size:0.8rem; padding:10px 25px;
       width:auto; margin-bottom:5px;"
-      onclick="generateShareCard()">
+      onclick="if(audioCtx) soundUIClick(); generateShareCard();">
       SHARE SCORE
     </button>
     <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;">
-      <button id="reviveBtn" class="btn" style="background: #ffaa00; color: #0f0f13; box-shadow: 0 0 15px rgba(255,170,0,0.6); display: none;">Revive (🪙 50)</button>
-      <button id="actionBtn" class="btn btn-play">Restart World</button>
-      <button id="menuBtn" class="btn btn-shop">Main Menu</button>
+      <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="background: #ffaa00; color: #0f0f13; box-shadow: 0 0 15px rgba(255,170,0,0.6); display: none;">Revive (🪙 50)</button>
+      <button id="actionBtn" class="btn btn-play" onclick="if(audioCtx) soundUIClick();">Restart World</button>
+      <button id="menuBtn" class="btn btn-shop" onclick="if(audioCtx) soundUIClick();">Main Menu</button>
     </div>
   </div>
 

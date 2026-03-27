@@ -628,6 +628,7 @@ function spawnTargets() {
         expireDistance: Math.PI * 5,
         isLifeZone: true
       });
+      setTimeout(() => soundLifeZone(), 100);
     }
   }
 }
@@ -1057,8 +1058,13 @@ function handleFail(reason) {
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
   triggerScreenShake(10);
-  playPop(1, false, true); // Play failure sound
-  vibrate([50, 50, 50]);   // Heavy stutter vibration
+  if (lives > 0) {
+    soundLifeLost();
+    vibrate([30, 20, 30]);
+  } else {
+    soundFail();
+    vibrate([50, 30, 50, 30, 80]);
+  }
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
@@ -1127,13 +1133,15 @@ function tap() {
       t.active = false; lives = Math.min(lives + 1, 3); ui.lives.innerText = lives;
       perfectFlash = Math.max(perfectFlash, 0.12);
       createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366"); createParticles(hitX, hitY, '#ff3366', 30);
+      soundLifeGained();
+      vibrate([20, 10, 40]);
       if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active)) { triggerStageClear(); }
       return;
     }
 
     if (levelData.boss && !isBossPhaseTwo) {
       t.hp--; triggerScreenShake(4);
-      if (t.hp === 2) t.color = '#ffaa00'; if (t.hp === 1) t.color = '#ff3366'; if (t.hp <= 0) t.active = false;
+      if (t.hp === 2) t.color = '#ffaa00'; if (t.hp === 1) t.color = '#ff3366'; if (t.hp <= 0) { t.active = false; soundShieldBreak(); }
       createParticles(hitX, hitY, t.color, 10);
       if (targets.every(tgt => !tgt.active)) {
         isBossPhaseTwo = true;
@@ -1155,6 +1163,7 @@ function tap() {
         } else {
           ui.bossPhase2.className = "boss-segment";
           createParticles(centerObj.x, centerObj.y, '#ffffff', 50); createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
+          soundBossDefeated();
           triggerScreenShake(20); stageHits = 999;
         }
       } else {
@@ -1169,23 +1178,28 @@ function tap() {
     if (hitQuality === "perfect" && currentLevelIdx >= 2) {
       perfectFlash = Math.max(perfectFlash, 0.34);
       ringHitFlash = Math.max(ringHitFlash, 0.34);
-      multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier);
+      multiplier = Math.min(multiplier + 1, 8);
+      soundMultiplierUp(multiplier);
+      score += (3 * multiplier);
       createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1], 'perfect');
       canvas.style.filter = 'brightness(1.8)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 80);
-      playPop(multiplier, true); vibrate(20); // Sound + Sharp Vibrate
+      soundPerfect(multiplier);
+      vibrate([10, 20, 10]);
     }
     else if (hitQuality === "good") {
       ringHitFlash = Math.max(ringHitFlash, 0.26);
       score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
       canvas.style.filter = 'brightness(1.4)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
-      playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
+      soundGood(multiplier);
+      vibrate(20);
     }
     else {
       ringHitFlash = Math.max(ringHitFlash, 0.2);
       multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa");
-      playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
+      soundOk();
+      vibrate(15);
     }
 
     streak++; ui.streak.innerText = streak;
@@ -1216,6 +1230,7 @@ function triggerStageClear() {
 
     if (wasBoss || !currentLevelObj) {
       const newRecords = wasBoss ? checkAndSavePB(score, streak) : { score: false, streak: false, world: false };
+      soundWorldClear();
       // WORLD CLEARED! (Pause the game and show the Win Screen)
       isPlaying = false;
       let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
@@ -1237,6 +1252,7 @@ function triggerStageClear() {
       
     } else {
       // SEAMLESS TRANSITION! (Keep playing, flash the screen, load next wave)
+      soundWaveClear();
       createPopup(centerObj.x, centerObj.y - 50, "WAVE CLEARED!", "#00ff88");
       createParticles(centerObj.x, centerObj.y, '#00ff88', 50);
       triggerScreenShake(8);
