@@ -307,6 +307,9 @@ ui.coins.innerText = Math.floor(globalCoins); ui.shopCoinCount.innerText = Math.
 let currentLevelIdx = 0; let levelData;
 let score = 0; let stageHits = 0; let runCents = 0;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
+const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
+const NEAR_MISS_COOLDOWN_MS = 700;
+let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
@@ -1408,7 +1411,41 @@ function tap() {
     if (targets.filter(tgt => !tgt.isHeart).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
       triggerStageClear();
     }
-  } else { handleFail("MISSED"); }
+  } else {
+    let nearestEdgeDistance = Infinity;
+    for (let i = 0; i < targets.length; i++) {
+      const t = targets[i];
+      if (!t.active) continue;
+
+      const startEdge = normalizeAngle(t.start);
+      const endEdge = normalizeAngle(t.start + t.size);
+      const distToStart = Math.abs(signedAngularDistance(angle, startEdge));
+      const distToEnd = Math.abs(signedAngularDistance(angle, endEdge));
+      const edgeDistance = Math.min(distToStart, distToEnd);
+      if (edgeDistance < nearestEdgeDistance) nearestEdgeDistance = edgeDistance;
+    }
+
+    const now = Date.now();
+    const nearMissAvailable = (now - lastNearMissAt) >= NEAR_MISS_COOLDOWN_MS;
+    const isNearMiss = streak > 0 && nearMissAvailable && nearestEdgeDistance <= NEAR_MISS_THRESHOLD;
+
+    if (isNearMiss) {
+      lastNearMissAt = now;
+      multiplier = 1;
+      streak = 0;
+      ui.streak.innerText = streak;
+      updateMultiplierUI();
+
+      ringHitFlash = Math.max(ringHitFlash, 0.16);
+      createShockwave('#ffaa00', 28);
+      createPopup(hitX, hitY - 24, nearestEdgeDistance <= (NEAR_MISS_THRESHOLD * 0.5) ? "SO CLOSE" : "CLOSE!", "#ffaa00");
+      canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
+      setTimeout(() => canvas.style.boxShadow = 'none', 100);
+      if (navigator.vibrate) vibrate(12);
+    } else {
+      handleFail("MISSED");
+    }
+  }
 }
 
 function triggerStageClear() {
