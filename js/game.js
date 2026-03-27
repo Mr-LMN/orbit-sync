@@ -658,7 +658,7 @@ function handleFail(reason) {
 function tap() {
   initAudio(); // Ensures audio wakes up on iOS/Safari
   if (inMenu || ui.overlay.style.display === 'flex') return;
-  if (!isPlaying) { isPlaying = true; ui.text.innerText = "Syncing..."; return; }
+  if (!isPlaying) { isPlaying = true; ui.text.innerText = "Syncing..."; ui.text.style.display = 'none'; return; }
 
   let hitIndex = -1; let hitQuality = "miss";
 
