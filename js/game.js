@@ -138,8 +138,8 @@ function createParticles(x, y, color, count = 20) {
     });
   }
 }
-function createPopup(x, y, text, color) { popups.push({ x: x, y: y, text: text, color: color, life: 1.0 }); }
-function createShockwave(color, speed = 25) {
+function createPopup(x, y, text, color, hitQuality = null) { popups.push({ x: x, y: y, text: text, color: color, life: 1.0, hitQuality }); }
+function createShockwave(color, speed = 40) {
   shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
 }
 function triggerScreenShake(intensity = 5) {
@@ -167,6 +167,14 @@ function rgbaFromHex(hex, alpha) {
 
 function updateMultiplierUI() {
   ui.multiplierCount.innerText = multiplier;
+
+  if (multiplier <= 1) {
+    ui.bigMultiplier.style.display = 'none';
+    return;
+  } else {
+    ui.bigMultiplier.style.display = 'block';
+  }
+
   let mColor = multiColors[Math.min(multiplier - 1, 7)];
   ui.bigMultiplier.style.color = mColor;
   ui.bigMultiplier.style.textShadow = `0 0 20px ${mColor}`;
@@ -392,7 +400,7 @@ function draw() {
   for (let i = shockwaves.length - 1; i >= 0; i--) {
     let sw = shockwaves[i];
     sw.radius += sw.speed;
-    sw.opacity -= 0.035;
+    sw.opacity -= 0.03;
     sw.width += 1.5;
 
     if (sw.opacity <= 0) {
@@ -524,7 +532,7 @@ function draw() {
     } else {
       ctx.fillStyle = pop.color;
       ctx.globalAlpha = pop.life;
-      ctx.font = 'bold 1.2rem sans-serif';
+      ctx.font = pop.hitQuality === 'perfect' ? 'bold 1.6rem Orbitron' : 'bold 1rem Orbitron';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(pop.text, pop.x, pop.y);
@@ -739,12 +747,16 @@ function tap() {
       perfectFlash = Math.max(perfectFlash, 0.34);
       ringHitFlash = Math.max(ringHitFlash, 0.34);
       multiplier = Math.min(multiplier + 1, 8); score += (3 * multiplier);
-      createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1]);
+      createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1], 'perfect');
+      canvas.style.filter = 'brightness(1.8)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 80);
       playPop(multiplier, true); vibrate(20); // Sound + Sharp Vibrate
     }
     else if (hitQuality === "good") {
       ringHitFlash = Math.max(ringHitFlash, 0.26);
       score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
+      canvas.style.filter = 'brightness(1.4)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       playPop(multiplier, false); vibrate(10); // Sound + Light Vibrate
     }
     else {
