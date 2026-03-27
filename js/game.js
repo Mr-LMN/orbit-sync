@@ -829,6 +829,7 @@ function triggerStageClear() {
 function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
+  ui.text.style.display = 'none';
   inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = 0;
   lives = 3; currentReviveCost = 50;
   loadLevel(currentLevelIdx);
@@ -843,6 +844,7 @@ function restartFromCheckpoint() {
 
 function returnToMenu() {
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+  ui.text.style.display = 'block';
   inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
 }
 
