@@ -23,26 +23,188 @@ function initAudio() {
   if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 }
 
-function playPop(multiplier, isPerfect, isFail = false) {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gainNode = audioCtx.createGain();
-  osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+// Master utility — creates a gain node connected to destination
+function makeGain(vol) {
+  const g = audioCtx.createGain();
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.connect(audioCtx.destination);
+  return g;
+}
 
+// Utility — plays a single oscillator burst
+function playTone(freq, type, vol, attack, decay, startTime) {
+  const osc = audioCtx.createOscillator();
+  const gain = makeGain(0.001);
+  osc.connect(gain);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, startTime);
+  gain.gain.linearRampToValueAtTime(vol, startTime + attack);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + attack + decay);
+  osc.start(startTime);
+  osc.stop(startTime + attack + decay + 0.05);
+}
+
+// OK hit — dull thud, low confidence
+function soundOk() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  playTone(180, 'triangle', 0.18, 0.005, 0.12, t);
+  playTone(90, 'sine', 0.1, 0.005, 0.15, t);
+}
+
+// GOOD hit — clean mid punch
+function soundGood(multiplier) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const baseFreq = 300 + (multiplier * 30);
+  playTone(baseFreq, 'triangle', 0.22, 0.004, 0.1, t);
+  playTone(baseFreq * 1.5, 'sine', 0.1, 0.004, 0.14, t);
+}
+
+// PERFECT hit — bright ting with reverb tail
+function soundPerfect(multiplier) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const baseFreq = 520 + (multiplier * 40);
+
+  // Main ting
+  playTone(baseFreq, 'sine', 0.25, 0.002, 0.08, t);
+  // Harmonic overtone
+  playTone(baseFreq * 2, 'sine', 0.12, 0.002, 0.18, t);
+  // Shimmer tail
+  playTone(baseFreq * 3, 'sine', 0.06, 0.005, 0.35, t);
+}
+
+// Multiplier milestone sounds (x2 through x8)
+// Each level plays a rising musical note
+const multiNotes = [0, 0, 262, 294, 330, 370, 415, 466, 523];
+function soundMultiplierUp(multiplier) {
+  if (!audioCtx || multiplier < 2) return;
+  const t = audioCtx.currentTime;
+  const freq = multiNotes[Math.min(multiplier, 8)];
+  playTone(freq, 'sine', 0.2, 0.005, 0.2, t);
+  playTone(freq * 1.5, 'sine', 0.08, 0.005, 0.25, t);
+}
+
+// Miss/fail — descending crunch
+function soundFail() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = makeGain(0.001);
+  osc.connect(gain);
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(200, t);
+  osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+  gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  osc.start(t);
+  osc.stop(t + 0.35);
+}
+
+// Life lost (not game over) — shorter warning sting
+function soundLifeLost() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  playTone(160, 'sawtooth', 0.2, 0.005, 0.15, t);
+  playTone(120, 'sawtooth', 0.15, 0.01, 0.2, t + 0.1);
+}
+
+// Stage/wave clear — 3 note ascending arpeggio
+function soundWaveClear() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [330, 415, 523].forEach((freq, i) => {
+    playTone(freq, 'sine', 0.2, 0.005, 0.15, t + i * 0.1);
+    playTone(freq * 2, 'sine', 0.06, 0.005, 0.2, t + i * 0.1);
+  });
+}
+
+// World clear — full 5 note fanfare
+function soundWorldClear() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const melody = [262, 330, 392, 330, 523];
+  melody.forEach((freq, i) => {
+    playTone(freq, 'sine', 0.25, 0.01, 0.2, t + i * 0.13);
+    playTone(freq * 1.5, 'sine', 0.08, 0.01, 0.25, t + i * 0.13);
+  });
+  // Bass hit underneath
+  playTone(65, 'sine', 0.3, 0.01, 0.5, t);
+}
+
+// Boss shield break — heavy metallic crash
+function soundShieldBreak() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  // Noise burst (white noise approximation)
+  const bufferSize = audioCtx.sampleRate * 0.3;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const noiseGain = makeGain(0.001);
+  noise.connect(noiseGain);
+  noiseGain.gain.linearRampToValueAtTime(0.3, t + 0.01);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  noise.start(t);
+  // Metallic tone underneath
+  playTone(120, 'sawtooth', 0.2, 0.005, 0.25, t);
+  playTone(80, 'sine', 0.25, 0.005, 0.4, t);
+}
+
+// Boss defeated — dramatic descending + resolution
+function soundBossDefeated() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  // Descend
+  [523, 466, 392, 330, 262].forEach((freq, i) => {
+    playTone(freq, 'sine', 0.2, 0.01, 0.18, t + i * 0.1);
+  });
+  // Resolution chord at end
+  setTimeout(() => {
+    const t2 = audioCtx.currentTime;
+    [262, 330, 392, 523].forEach((freq, j) => {
+      playTone(freq, 'sine', 0.18, 0.02, 0.5, t2 + j * 0.04);
+    });
+  }, 650);
+}
+
+// Life zone appear — gentle ascending chime
+function soundLifeZone() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  [523, 659, 784].forEach((freq, i) => {
+    playTone(freq, 'sine', 0.12, 0.005, 0.2, t + i * 0.08);
+  });
+}
+
+// Life gained — warm positive sting
+function soundLifeGained() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  playTone(523, 'sine', 0.2, 0.005, 0.1, t);
+  playTone(659, 'sine', 0.2, 0.005, 0.1, t + 0.1);
+  playTone(784, 'sine', 0.22, 0.005, 0.25, t + 0.2);
+}
+
+// UI button click — subtle tick
+function soundUIClick() {
+  if (!audioCtx) return;
+  playTone(800, 'sine', 0.08, 0.002, 0.04, audioCtx.currentTime);
+}
+
+function playPop(multiplier, isPerfect, isFail = false) {
   if (isFail) {
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.2);
-    gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-  } else {
-    osc.type = isPerfect ? 'sine' : 'triangle';
-    osc.frequency.setValueAtTime((isPerfect ? 400 : 250) + (multiplier * 40), audioCtx.currentTime);
-    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+    soundFail();
+    return;
   }
+  if (isPerfect) {
+    soundPerfect(multiplier);
+    return;
+  }
+  soundGood(multiplier);
 }
 
 function vibrate(pattern) {
