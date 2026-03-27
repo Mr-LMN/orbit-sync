@@ -1,15 +1,16 @@
-body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: Orbitron, sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
 #gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100vw; height: 100vh; }
 
 /* Cleaned Top Bar */
 #topBar { position: absolute; top: 20px; width: 100%; display: flex; justify-content: center; gap: 25px; z-index: 5; flex-wrap: wrap; }
-.top-stat { font-size: 0.9rem; color: #666; font-weight: bold; letter-spacing: 1px; }
+.top-stat { font-size: 0.9rem; color: #666; font-weight: bold; letter-spacing: 3px; }
 .top-stat span { color: #fff; margin-left: 5px; font-size: 1.1rem; }
 #streakBox span { color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
 
 /* NEW: Massive Right-Side Multiplier */
 /* Scaled down font for mobile */
 #bigMultiplier {
+  font-family: 'Bebas Neue', sans-serif;
   position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
   font-size: 3rem; font-weight: 900; color: #ffffff; z-index: 5;
   text-shadow: 0 0 20px rgba(255,255,255,0.8);
@@ -17,7 +18,7 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   pointer-events: none; opacity: 0.8;
 }
 
-#waveDisplay { margin: 5px 0 0 0; font-size: 1.1rem; color: #888; letter-spacing: 3px; text-transform: uppercase; }
+#waveDisplay { margin: 5px 0 0 0; font-size: 1.1rem; color: #888; letter-spacing: 4px; text-transform: uppercase; }
 #bossUI { position: absolute; top: 120px; width: 60%; display: flex; flex-direction: column; align-items: center; z-index: 5; }
 .boss-title { color: #ff3366; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,51,102,0.8);}
 .boss-bar-container { display: flex; gap: 5px; width: 100%; height: 12px; }
@@ -28,6 +29,7 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 #ui { position: absolute; top: 5%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
 h1 { margin: 0; font-size: 3.5rem; color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5); }
 h2 { margin: 0; font-size: 1.5rem; color: #fff; }
+#scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: 5rem; }
 #tutorialText { margin: 5px 0; color: #aaa; font-size: 1rem; }
 
 #mainMenu { position: absolute; text-align: center; z-index: 10; background: rgba(15,15,19,0.85); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
