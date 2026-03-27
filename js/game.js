@@ -302,130 +302,26 @@ function draw() {
   });
 
   // ENERGY LANE
-  // LAYERED ENERGY LANE
-  const laneSweep = (Math.sin(time / 550) + 1) * 0.5;
-  const laneHitBoost = Math.max(0, ringHitFlash);
-
-  // 1) Ambient Outer Glow (behind everything)
-  ctx.save();
+  // 1) Dark groove
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-  ctx.lineWidth = 24;
-  ctx.strokeStyle = rgbaFromHex(palette.primary, 0.16 + laneSweep * 0.1 + laneHitBoost * 0.3);
-  ctx.shadowBlur = 26 + laneHitBoost * 20;
-  ctx.shadowColor = isBoss ? 'rgba(255, 95, 145, 0.85)' : rgbaFromHex(palette.primary, 0.95);
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
   ctx.stroke();
-  ctx.restore();
 
-  // 2) Physical Groove (base track)
-  const laneGradient = ctx.createLinearGradient(
-    centerObj.x - orbitRadius, centerObj.y - orbitRadius,
-    centerObj.x + orbitRadius, centerObj.y + orbitRadius
-  );
-  laneGradient.addColorStop(0, 'rgba(10, 14, 24, 0.985)');
-  laneGradient.addColorStop(0.45, 'rgba(4, 7, 14, 0.995)');
-  laneGradient.addColorStop(1, 'rgba(12, 17, 28, 0.985)');
+  // 2) Crisp glowing line
   ctx.beginPath();
   ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = laneGradient;
-  ctx.lineWidth = 20;
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = palette.primary;
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = palette.primary;
   ctx.stroke();
-
-  // 3) Glass casing lips (inner + outer)
-  const lipAlpha = 0.68 + laneSweep * 0.14 + laneHitBoost * 0.34;
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 10, 0, Math.PI * 2);
-  ctx.strokeStyle = isBoss
-    ? `rgba(255, 125, 165, ${lipAlpha})`
-    : rgbaFromHex(palette.primary, lipAlpha);
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius - 10, 0, Math.PI * 2);
-  ctx.strokeStyle = isBoss
-    ? `rgba(255, 105, 150, ${0.62 + laneSweep * 0.14 + laneHitBoost * 0.32})`
-    : rgbaFromHex(palette.primary, 0.62 + laneSweep * 0.14 + laneHitBoost * 0.32);
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // 4) Sci-fi ticks on the outer lip
-  ctx.save();
-  ctx.setLineDash([3, 9]);
-  ctx.lineDashOffset = -(time / 95);
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius + 10, 0, Math.PI * 2);
-  ctx.strokeStyle = isBoss
-    ? `rgba(255, 190, 220, ${0.55 + laneSweep * 0.2})`
-    : rgbaFromHex(palette.primary, 0.58 + laneSweep * 0.22);
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-
-  // CENTER CORE
-  const orbColor = multiColors[Math.min(multiplier - 1, 7)];
-  const corePulse = 0.72 + Math.abs(Math.sin(time / 320)) * 0.36;
-  const coreGlowColor = (levelData && levelData.boss)
-    ? (isBossPhaseTwo ? '#ffffff' : '#ff3366')
-    : orbColor;
-
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.24, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(6, 12, 20, 0.28)';
-  ctx.shadowBlur = 18 + (corePulse * 12);
-  ctx.shadowColor = coreGlowColor;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.19, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(5, 8, 12, 0.65)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.155, 0, Math.PI * 2);
-  ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? 'rgba(255, 255, 255, 0.12)' : 'rgba(20, 24, 32, 0.85)';
-  ctx.shadowBlur = 12 + (corePulse * 13);
-  ctx.shadowColor = coreGlowColor;
-  ctx.fill();
+  ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.11, 0, Math.PI * 2);
-  ctx.fillStyle = (levelData && levelData.boss && isBossPhaseTwo) ? '#f5f9ff' : 'rgba(205, 240, 255, 0.9)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.075, 0, Math.PI * 2);
-  ctx.fillStyle = '#090d14';
-  ctx.fill();
-
-  // Diegetic boss HP ring
-  if (levelData && levelData.boss) {
-    let hpSegments = bossPhase === 1 ? 2 : 1;
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    for (let i = 0; i < 2; i++) {
-      ctx.beginPath();
-      let startAngle = (i * Math.PI) - (Math.PI / 2) + 0.15;
-      let endAngle = startAngle + Math.PI - 0.3;
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius * 0.22, startAngle, endAngle);
-
-      let isBlinking = (bossPhase === 1 && isBossPhaseTwo && i === 1);
-      let blinkAlpha = isBlinking ? Math.abs(Math.sin(time / 80)) : 1;
-
-      if (i < hpSegments) {
-        ctx.strokeStyle = `rgba(255, 51, 102, ${blinkAlpha})`;
-        ctx.shadowBlur = isBlinking ? 0 : 15;
-        ctx.shadowColor = '#ff3366';
-      } else {
-        ctx.strokeStyle = 'rgba(34, 34, 34, 1)';
-        ctx.shadowBlur = 0;
-      }
-      ctx.stroke();
-    }
-    ctx.shadowBlur = 0;
-  }
+  const orbColor = multiColors[Math.min(multiplier - 1, 7)];
 
   // TARGETS
   targets.forEach(t => {
