@@ -46,6 +46,31 @@ function playTone(freq, type, vol, attack, decay, startTime) {
   osc.stop(startTime + attack + decay + 0.05);
 }
 
+// Utility — short filtered noise burst for impact textures
+function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) {
+  if (!audioCtx) return;
+  const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * decay));
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - (i / bufferSize));
+
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = filterType;
+  filter.frequency.setValueAtTime(filterFreq, startTime);
+  filter.Q.setValueAtTime(q, startTime);
+
+  const noiseGain = makeGain(0.001);
+  noise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.gain.linearRampToValueAtTime(vol, startTime + 0.005);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + decay);
+  noise.start(startTime);
+  noise.stop(startTime + decay + 0.04);
+}
+
 function startBossDrone() {
   if (!audioCtx || bossDrone) return;
 
@@ -187,21 +212,42 @@ function soundWorldClear() {
 function soundShieldBreak() {
   if (!audioCtx) return;
   const t = audioCtx.currentTime;
-  // Noise burst (white noise approximation)
-  const bufferSize = audioCtx.sampleRate * 0.3;
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-  const noise = audioCtx.createBufferSource();
-  noise.buffer = buffer;
-  const noiseGain = makeGain(0.001);
-  noise.connect(noiseGain);
-  noiseGain.gain.linearRampToValueAtTime(0.3, t + 0.01);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-  noise.start(t);
+  playNoiseBurst(0.26, 0.24, t, 'bandpass', 950, 1.4);
   // Metallic tone underneath
-  playTone(120, 'sawtooth', 0.2, 0.005, 0.25, t);
-  playTone(80, 'sine', 0.25, 0.005, 0.4, t);
+  playTone(150, 'square', 0.18, 0.004, 0.18, t);
+  playTone(112, 'sawtooth', 0.2, 0.005, 0.22, t + 0.01);
+  playTone(74, 'sine', 0.22, 0.004, 0.32, t);
+}
+
+// Boss shield hit — short synthetic impact cue
+function soundBossShieldHit(hp) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  const danger = Math.max(0, 3 - Math.max(0, hp));
+  const base = 260 + (danger * 24);
+  playNoiseBurst(0.12 + (danger * 0.02), 0.085, t, 'bandpass', 1300 + (danger * 120), 2.2);
+  playTone(base, 'square', 0.13, 0.002, 0.065, t);
+  playTone(base * 0.72, 'triangle', 0.09, 0.002, 0.09, t + 0.004);
+}
+
+// Boss core exposed — dramatic payoff cue
+function soundCoreExposed() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  playNoiseBurst(0.16, 0.12, t, 'highpass', 700, 0.7);
+  playTone(220, 'sawtooth', 0.14, 0.006, 0.09, t);
+  playTone(330, 'triangle', 0.18, 0.006, 0.12, t + 0.045);
+  playTone(495, 'sine', 0.2, 0.004, 0.16, t + 0.095);
+}
+
+// Boss core damage — strongest hit cue before final defeat
+function soundCoreDamage() {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  playNoiseBurst(0.2, 0.11, t, 'bandpass', 980, 1.8);
+  playTone(180, 'square', 0.2, 0.003, 0.08, t);
+  playTone(240, 'sawtooth', 0.18, 0.003, 0.1, t + 0.018);
+  playTone(360, 'triangle', 0.16, 0.003, 0.14, t + 0.05);
 }
 
 // Boss defeated — dramatic descending + resolution
@@ -1455,6 +1501,7 @@ function tap() {
     if (levelData.boss && !isBossPhaseTwo) {
       t.hp--;
       triggerScreenShake(5);
+      if (t.hp > 0) soundBossShieldHit(t.hp);
       if (t.hp > 1) t.color = '#ffaa00'; // warning
       if (t.hp === 1) t.color = '#ff3366'; // critical
       if (t.hp <= 0) { t.active = false; soundShieldBreak(); }
@@ -1472,6 +1519,7 @@ function tap() {
         createShockwave('#ffffff', 48);
         createShockwave('#00e5ff', 34);
         pulseBrightness(2.0, 140);
+        soundCoreExposed();
         scheduleBossSpawn(760);
       } return;
     }
@@ -1481,6 +1529,7 @@ function tap() {
     if (levelData.boss && isBossPhaseTwo) {
       // Allow ANY hit inside the core window (perfect, good, or ok) to count!
       if (hitQuality === "perfect" || hitQuality === "good" || hitQuality === "ok") {
+        soundCoreDamage();
         if (bossPhase === 1) {
           bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
           createParticles(centerObj.x, centerObj.y, '#ff3366', 72);
