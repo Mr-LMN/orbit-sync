@@ -1157,40 +1157,51 @@ function draw() {
     ctx.textBaseline = 'middle';
     ctx.fillText('🔥', x, y);
   } else {
-    const tangent = angle + (direction > 0 ? Math.PI / 2 : -Math.PI / 2);
-    const size = 12;
+    // Calculate a dynamic pulse for the plasma aura
+    let orbPulse = Math.abs(Math.sin(Date.now() / 200)) * 2.5;
 
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(tangent);
-
-    // Outer glow
+    // 1. Outer Plasma Aura (Breathing)
     ctx.beginPath();
-    ctx.moveTo(0, -size);
-    ctx.lineTo(size * 0.6, size * 0.7);
-    ctx.lineTo(0, size * 0.3);
-    ctx.lineTo(-size * 0.6, size * 0.7);
-    ctx.closePath();
+    ctx.arc(x, y, 17 + orbPulse, 0, Math.PI * 2);
     ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 0.3;
-    ctx.shadowBlur = 20;
+    ctx.globalAlpha = 0.15;
+    ctx.shadowBlur = 25;
     ctx.shadowColor = orbColor;
     ctx.fill();
 
-    // Core shape
+    // 2. Mid Energy Layer
     ctx.beginPath();
-    ctx.moveTo(0, -size);
-    ctx.lineTo(size * 0.6, size * 0.7);
-    ctx.lineTo(0, size * 0.3);
-    ctx.lineTo(-size * 0.6, size * 0.7);
-    ctx.closePath();
+    ctx.arc(x, y, 12.5, 0, Math.PI * 2);
     ctx.fillStyle = orbColor;
+    ctx.globalAlpha = 0.7;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = orbColor;
+    ctx.fill();
+
+    // 3. Inner Hot Core (Radial Gradient for 3D depth)
+    let coreGrad = ctx.createRadialGradient(x - 2, y - 2, 0, x, y, 8);
+    coreGrad.addColorStop(0, '#ffffff'); // Pure white hot center
+    coreGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+    coreGrad.addColorStop(1, orbColor); // Fades into multiplier color
+
+    ctx.beginPath();
+    ctx.arc(x, y, 8.5, 0, Math.PI * 2);
+    ctx.fillStyle = coreGrad;
     ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = orbColor;
+    ctx.shadowBlur = 0;
     ctx.fill();
 
-    ctx.restore();
+    // 4. Curved Specular Highlight (Makes it look like a shiny glass orb)
+    ctx.beginPath();
+    ctx.ellipse(x - 3.5, y - 4.5, 4.5, 2.5, Math.PI / 5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fill();
+
+    // 5. Tiny Energy Sparkle reflection
+    ctx.beginPath();
+    ctx.arc(x + 4, y + 4, 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fill();
   }
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
