@@ -812,7 +812,8 @@ function tap() {
     t.active = false;
 
     if (levelData.boss && isBossPhaseTwo) {
-      if (hitQuality === "perfect") {
+      // Allow ANY hit inside the core window (perfect, good, or ok) to count!
+      if (hitQuality === "perfect" || hitQuality === "good" || hitQuality === "ok") {
         if (bossPhase === 1) {
           bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
           createParticles(centerObj.x, centerObj.y, '#ff3366', 50); createPopup(centerObj.x, centerObj.y - 50, "ENRAGED!", "#ff3366");
