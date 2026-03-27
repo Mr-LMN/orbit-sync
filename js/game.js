@@ -68,6 +68,7 @@ ui.coins.innerText = Math.floor(globalCoins); ui.shopCoinCount.innerText = Math.
 let currentLevelIdx = 0; let levelData;
 let score = 0; let stageHits = 0; let runCents = 0;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
+let bossIntroPlaying = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
@@ -191,6 +192,35 @@ function updateWaveUI() {
   }
 }
 
+
+function triggerBossIntro() {
+  bossIntroPlaying = true;
+  isPlaying = false;
+
+  const introText = "AEGIS CORE ONLINE";
+  let displayed = "";
+  let i = 0;
+
+  canvas.style.boxShadow = "inset 0 0 80px #ff3366";
+  setTimeout(() => canvas.style.boxShadow = "none", 200);
+
+  const typeInterval = setInterval(() => {
+    displayed += introText[i];
+    ui.text.innerText = displayed;
+    ui.text.style.color = "#ff3366";
+    ui.text.style.letterSpacing = "6px";
+    i++;
+    if (i >= introText.length) {
+      clearInterval(typeInterval);
+      setTimeout(() => {
+        bossIntroPlaying = false;
+        isPlaying = true;
+        ui.text.style.letterSpacing = "";
+      }, 600);
+    }
+  }, 60);
+}
+
 function loadLevel(idx) {
   levelData = campaign[idx] || campaign[campaign.length - 1];
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
@@ -201,6 +231,10 @@ function loadLevel(idx) {
   updateMultiplierUI();
   updateWaveUI();
   spawnTargets();
+
+  if (levelData.boss) {
+    setTimeout(triggerBossIntro, 200);
+  }
 }
 
 function spawnTargets() {
@@ -605,6 +639,8 @@ function draw() {
   ctx.textBaseline = 'alphabetic';
 }
 function update() {
+  if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
+
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
 
