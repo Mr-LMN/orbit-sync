@@ -682,6 +682,47 @@ function update() {
   draw(); requestAnimationFrame(update);
 }
 
+
+function glitchCanvas(duration, callback) {
+  const startTime = Date.now();
+  const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+  function glitchFrame() {
+    if (Date.now() - startTime > duration) {
+      callback();
+      return;
+    }
+    ctx.putImageData(originalImageData, 0, 0);
+    const slices = 6;
+    for (let s = 0; s < slices; s++) {
+      const sliceY = Math.random() * canvas.height;
+      const sliceH = Math.random() * 30 + 5;
+      const shift = (Math.random() - 0.5) * 30;
+      const slice = ctx.getImageData(0, sliceY, canvas.width, sliceH);
+      ctx.putImageData(slice, shift, sliceY);
+    }
+    requestAnimationFrame(glitchFrame);
+  }
+  glitchFrame();
+}
+
+function scrambleText(element, finalText, duration) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%";
+  const startTime = Date.now();
+
+  function frame() {
+    const progress = Math.min((Date.now() - startTime) / duration, 1);
+    const resolvedCount = Math.floor(progress * finalText.length);
+    let result = finalText.slice(0, resolvedCount);
+    for (let i = resolvedCount; i < finalText.length; i++) {
+      result += finalText[i] === ' ' ? ' ' : chars[Math.floor(Math.random() * chars.length)];
+    }
+    element.innerText = result;
+    if (progress < 1) requestAnimationFrame(frame);
+  }
+  frame();
+}
+
 function handleFail(reason) {
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
@@ -691,9 +732,13 @@ function handleFail(reason) {
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
-    isPlaying = false; ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+    isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
-    ui.title.innerText = reason || "OUT OF SYNC"; ui.title.style.color = '#ff3366'; ui.subtitle.innerText = `Failed on ${levelData.title}`;
+    glitchCanvas(400, () => {
+      ui.overlay.style.display = 'flex';
+      scrambleText(ui.title, reason || "OUT OF SYNC", 600);
+    });
+    ui.title.style.color = '#ff3366'; ui.subtitle.innerText = `Failed on ${levelData.title}`;
     ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`; ui.btn.onclick = restartFromCheckpoint; ui.runCoins.innerText = coinsToBank;
 
     // --- NEW REVIVE LOGIC ---
