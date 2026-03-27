@@ -321,6 +321,7 @@ let hitFlashColor = '#00ff88';
 let tempTextTimeout = null;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
+let targetHitRipples = [];
 
 const size = Math.min(window.innerWidth, window.innerHeight);
 canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -386,6 +387,23 @@ function createPopup(x, y, text, color, hitQuality = null) { popups.push({ x: x,
 function createShockwave(color, speed = 40) {
   shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
 }
+function createTargetHitRipple(x, y, color = '#ffffff') {
+  targetHitRipples.push({
+    x,
+    y,
+    radius: 3,
+    speed: 2.6,
+    life: 1.0,
+    color: color === '#ffffff' ? 'rgba(255,255,255,0.95)' : rgbaFromHex(color, 0.95)
+  });
+}
+
+function triggerTargetHitFeedback(target, x, y) {
+  target.hitFlash = 1.0;
+  target.hitScalePulse = 1.0;
+  createTargetHitRipple(x, y, target.color || '#ffffff');
+}
+
 function triggerScreenShake(intensity = 5) {
   canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`;
   setTimeout(() => canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`, 50);
@@ -407,6 +425,28 @@ function hexToRgb(hex) {
 function rgbaFromHex(hex, alpha) {
   const { r, g, b } = hexToRgb(hex);
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function normalizeAngle(a) {
+  return ((a % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+}
+
+function signedAngularDistance(from, to) {
+  let diff = normalizeAngle(to) - normalizeAngle(from);
+  if (diff > Math.PI) diff -= Math.PI * 2;
+  if (diff < -Math.PI) diff += Math.PI * 2;
+  return diff;
+}
+
+function getTargetApproachIntensity(target, playerAngle, playerDirection) {
+  const targetCenter = target.start + (target.size / 2);
+  const signedDiff = signedAngularDistance(playerAngle, targetCenter);
+  const forwardDiff = signedDiff * playerDirection;
+  if (forwardDiff <= 0) return 0;
+
+  const threshold = Math.max(target.size * 1.8, 0.34);
+  if (forwardDiff >= threshold) return 0;
+  return 1 - (forwardDiff / threshold);
 }
 
 function generateTitle(score, world, streak, revives) {
@@ -690,6 +730,7 @@ function spawnTargets() {
 
 function draw() {
   const palette = getWorldPalette();
+  const now = performance.now();
   // BACKGROUND
   let isBoss = levelData && levelData.boss;
 
@@ -734,7 +775,14 @@ function draw() {
   targets.forEach(t => {
     if (!t.active) return;
     const tCenter = t.start + (t.size / 2);
-    const pulse = 0.88 + (Math.sin(Date.now() / 320 + tCenter * 2.1) * 0.12);
+    const approach = getTargetApproachIntensity(t, angle, direction);
+    const idlePulse = 0.94 + (Math.sin(now / 620 + tCenter * 2.4) * 0.06);
+    const pulseSpeed = 620 - (approach * 250);
+    const anticipationPulse = 0.96 + (Math.sin(now / pulseSpeed + tCenter * 2.8) * (0.035 + approach * 0.07));
+    const pulse = idlePulse * anticipationPulse;
+    const hitFlash = t.hitFlash || 0;
+    const hitScalePulse = t.hitScalePulse || 0;
+    const dynamicRadius = orbitRadius + (hitScalePulse * 1.4);
     const bodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
     const glowWidth = bodyWidth + 4;
     const housingWidth = glowWidth + 4;
@@ -746,29 +794,29 @@ function draw() {
 
       // Glow layer
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffaa00';
-      ctx.globalAlpha = 0.3 * lifePulse;
+      ctx.globalAlpha = (0.28 + approach * 0.18) * lifePulse;
       ctx.lineWidth = 10;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = 40;
+      ctx.shadowBlur = 40 + (approach * 10);
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
 
       // Core line
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 4;
-      ctx.shadowBlur = 20;
+      ctx.globalAlpha = 0.86 + (approach * 0.12);
+      ctx.lineWidth = 4 + (approach * 0.8);
+      ctx.shadowBlur = 20 + (approach * 8);
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
 
       // Small + symbol at centre of arc
       const midAngle = t.start + t.size / 2;
-      const lx = centerObj.x + Math.cos(midAngle) * orbitRadius;
-      const ly = centerObj.y + Math.sin(midAngle) * orbitRadius;
+      const lx = centerObj.x + Math.cos(midAngle) * dynamicRadius;
+      const ly = centerObj.y + Math.sin(midAngle) * dynamicRadius;
       ctx.globalAlpha = 1.0;
       ctx.fillStyle = '#ffaa00';
       ctx.shadowBlur = 0;
@@ -787,9 +835,9 @@ function draw() {
 
     // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = 'rgba(5, 10, 18, 0.9)';
-    ctx.globalAlpha = 0.78;
+    ctx.globalAlpha = 0.74 + (approach * 0.08);
     ctx.lineWidth = housingWidth;
     ctx.lineCap = 'butt';
     ctx.shadowBlur = 0;
@@ -797,30 +845,41 @@ function draw() {
 
     // --- ACTIVE TARGET BODY (glow + crisp core for timing window readability) ---
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.3 * pulse;
-    ctx.lineWidth = glowWidth;
-    ctx.shadowBlur = 18;
+    ctx.globalAlpha = (0.22 + approach * 0.32 + hitFlash * 0.22) * pulse;
+    ctx.lineWidth = glowWidth + (approach * 1.5) + (hitFlash * 1.2);
+    ctx.shadowBlur = 16 + (approach * 18) + (hitFlash * 14);
     ctx.shadowColor = t.color;
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 0.92;
-    ctx.lineWidth = bodyWidth;
-    ctx.shadowBlur = 10;
+    ctx.globalAlpha = Math.min(1, 0.84 + (approach * 0.14) + (hitFlash * 0.3));
+    ctx.lineWidth = bodyWidth + (approach * 0.8) + (hitFlash * 0.9);
+    ctx.shadowBlur = 10 + (approach * 12) + (hitFlash * 16);
     ctx.shadowColor = t.color;
     ctx.stroke();
+
+    if (hitFlash > 0.02) {
+      ctx.beginPath();
+      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = Math.min(0.95, hitFlash * 0.85);
+      ctx.lineWidth = bodyWidth + 2.8;
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = '#ffffff';
+      ctx.stroke();
+    }
 
     // --- MIDPOINT MARKER (ideal precision hit cue) ---
     const markerSpan = Math.min(t.size * 0.25, 0.055);
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - markerSpan, tCenter + markerSpan);
+    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
     ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 1.0;
-    ctx.lineWidth = bodyWidth + 1;
+    ctx.globalAlpha = Math.min(1, 0.82 + (approach * 0.15) + (hitFlash * 0.2));
+    ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
     ctx.lineCap = 'round';
     ctx.shadowBlur = 14;
     ctx.shadowColor = t.color;
@@ -828,8 +887,8 @@ function draw() {
 
     // --- EDGE BRACKETS (small inward ticks framing the timing zone) ---
     const drawBracketTick = (angle) => {
-      const px = centerObj.x + Math.cos(angle) * orbitRadius;
-      const py = centerObj.y + Math.sin(angle) * orbitRadius;
+      const px = centerObj.x + Math.cos(angle) * dynamicRadius;
+      const py = centerObj.y + Math.sin(angle) * dynamicRadius;
       const inwardX = centerObj.x - px;
       const inwardY = centerObj.y - py;
       const inwardLen = Math.hypot(inwardX, inwardY) || 1;
@@ -842,10 +901,10 @@ function draw() {
       ctx.moveTo(px - nx * tickOuter, py - ny * tickOuter);
       ctx.lineTo(px + nx * tickInner, py + ny * tickInner);
       ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = 0.8;
+      ctx.globalAlpha = 0.65 + (approach * 0.22) + (hitFlash * 0.15);
       ctx.lineWidth = Math.max(1.5, bodyWidth * 0.42);
       ctx.lineCap = 'round';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 8 + (approach * 6);
       ctx.shadowColor = t.color;
       ctx.stroke();
     };
@@ -894,6 +953,28 @@ function draw() {
       ctx.shadowColor = sw.color;
       ctx.stroke();
     }
+  }
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+
+  // Target-local hit ripples
+  for (let i = targetHitRipples.length - 1; i >= 0; i--) {
+    const ripple = targetHitRipples[i];
+    ripple.radius += ripple.speed;
+    ripple.life -= 0.085;
+    if (ripple.life <= 0) {
+      targetHitRipples.splice(i, 1);
+      continue;
+    }
+
+    ctx.beginPath();
+    ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = ripple.color;
+    ctx.globalAlpha = ripple.life * 0.7;
+    ctx.lineWidth = 1.5 + ((1 - ripple.life) * 1.8);
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = ripple.color;
+    ctx.stroke();
   }
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
@@ -1068,6 +1149,11 @@ function update() {
 
   targets.forEach(t => {
     if (t.active) {
+      if (t.hitFlash) t.hitFlash *= 0.76;
+      if (t.hitFlash && t.hitFlash < 0.02) t.hitFlash = 0;
+      if (t.hitScalePulse) t.hitScalePulse *= 0.42;
+      if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
+
       if (t.isHeart && totalStageDistance > t.expireDistance) {
         t.active = false; createParticles(centerObj.x + Math.cos(t.start) * orbitRadius, centerObj.y + Math.sin(t.start) * orbitRadius, '#555', 10);
       }
@@ -1226,6 +1312,7 @@ function tap() {
 
   if (hitIndex !== -1) {
     let t = targets[hitIndex];
+    triggerTargetHitFeedback(t, hitX, hitY);
     if (levelData.reverse !== false) direction *= -1;
     distanceTraveled = 0;
     hitFlashColor = t.color || '#00ff88';
