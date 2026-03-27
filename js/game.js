@@ -194,6 +194,119 @@ function rgbaFromHex(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function generateTitle(score, world, streak) {
+  if (world >= 3 && score > 200) return "SYNC GOD";
+  if (world >= 3) return "WORLD BREAKER";
+  if (streak >= 20) return "CHAIN MASTER";
+  if (streak >= 10) return "COMBO KING";
+  if (score >= 150) return "ORBIT ELITE";
+  if (score >= 75) return "SYNC RUNNER";
+  if (world >= 2) return "WORLD JUMPER";
+  return "SYNC ROOKIE";
+}
+
+function generateShareCard() {
+  // Create an offscreen canvas for the share card
+  const card = document.createElement('canvas');
+  card.width = 800;
+  card.height = 450;
+  const c = card.getContext('2d');
+  const palette = getWorldPalette();
+
+  // Background
+  c.fillStyle = '#07070a';
+  c.fillRect(0, 0, 800, 450);
+
+  // Accent border
+  c.strokeStyle = palette.primary;
+  c.lineWidth = 3;
+  c.shadowBlur = 20;
+  c.shadowColor = palette.primary;
+  c.strokeRect(12, 12, 776, 426);
+  c.shadowBlur = 0;
+
+  // Game title
+  c.fillStyle = 'rgba(255,255,255,0.2)';
+  c.font = '600 14px Orbitron, sans-serif';
+  c.letterSpacing = '6px';
+  c.textAlign = 'left';
+  c.fillText('ORBIT SYNC', 40, 50);
+
+  // Player title
+  const title = generateTitle(score, personalBest.world, personalBest.streak);
+  c.fillStyle = palette.primary;
+  c.font = '900 52px Orbitron, sans-serif';
+  c.letterSpacing = '2px';
+  c.textAlign = 'left';
+  c.shadowBlur = 25;
+  c.shadowColor = palette.primary;
+  c.fillText(title, 40, 130);
+  c.shadowBlur = 0;
+
+  // Divider line
+  c.strokeStyle = 'rgba(255,255,255,0.08)';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(40, 155);
+  c.lineTo(760, 155);
+  c.stroke();
+
+  // Stats
+  const stats = [
+    { label: 'SCORE', value: score },
+    { label: 'BEST STREAK', value: personalBest.streak },
+    { label: 'WORLD REACHED', value: personalBest.world }
+  ];
+
+  stats.forEach((stat, i) => {
+    const x = 40 + (i * 245);
+    c.fillStyle = 'rgba(255,255,255,0.3)';
+    c.font = '400 11px Orbitron, sans-serif';
+    c.letterSpacing = '3px';
+    c.textAlign = 'left';
+    c.fillText(stat.label, x, 195);
+
+    c.fillStyle = '#ffffff';
+    c.font = '400 72px Bebas Neue, sans-serif';
+    c.letterSpacing = '2px';
+    c.fillText(stat.value, x, 280);
+  });
+
+  // World colour strip at bottom
+  c.fillStyle = palette.primary;
+  c.globalAlpha = 0.15;
+  c.fillRect(0, 370, 800, 80);
+  c.globalAlpha = 1.0;
+
+  // CTA
+  c.fillStyle = 'rgba(255,255,255,0.2)';
+  c.font = '400 12px Orbitron, sans-serif';
+  c.letterSpacing = '4px';
+  c.textAlign = 'right';
+  c.fillText('CAN YOU BEAT THIS?', 760, 415);
+
+  // Try to share natively, fall back to download
+  card.toBlob(blob => {
+    const file = new File([blob], 'orbitsync.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        title: 'Orbit Sync',
+        text: `I just got "${title}" with a score of ${score}. Can you beat it?`,
+        files: [file]
+      }).catch(() => downloadCard(card));
+    } else {
+      downloadCard(card);
+    }
+  });
+}
+
+function downloadCard(card) {
+  const link = document.createElement('a');
+  link.download = 'orbitsync-score.png';
+  link.href = card.toDataURL();
+  link.click();
+}
+
 function updateMultiplierUI() {
   ui.multiplierCount.innerText = multiplier;
 
