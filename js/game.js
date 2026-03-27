@@ -1129,9 +1129,10 @@ function handleFail(reason) {
     updatePBDisplay(newRecords);
     glitchCanvas(400, () => {
       ui.overlay.style.display = 'flex';
+      ui.title.style.color = '#ff3366';
+      ui.subtitle.innerText = `Failed on ${levelData.title}`;
       scrambleText(ui.title, reason || "OUT OF SYNC", 600);
     });
-    ui.title.style.color = '#ff3366'; ui.subtitle.innerText = `Failed on ${levelData.title}`;
     ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`; ui.btn.onclick = restartFromCheckpoint; ui.runCoins.innerText = coinsToBank;
 
     // --- NEW REVIVE LOGIC ---
