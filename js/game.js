@@ -387,9 +387,60 @@ function getWorldPalette() {
   if (levelData && levelData.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
   switch (worldNum) {
     case 1: return { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
-    case 2: return { primary: '#ff00cc', secondary: '#cc00ff', bg: '#0a0008' };
+    case 2: return { primary: '#ff00cc', secondary: '#cc00ff', bg: '#07070a' };
     case 3: return { primary: '#ffaa00', secondary: '#ff6600', bg: '#080500' };
     default: return { primary: '#00ff88', secondary: '#00e5ff', bg: '#050508' };
+  }
+}
+
+function getWorldShape() {
+  if (!levelData) return 'circle';
+  const worldNum = parseInt(levelData.id.split('-')[0]);
+  switch(worldNum) {
+    case 1: return 'circle';
+    case 2: return 'diamond';
+    case 3: return 'triangle';
+    default: return 'circle';
+  }
+}
+
+function getPointOnShape(t, shape, cx, cy, radius) {
+  if (shape === 'circle') {
+    return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
+  }
+  const sides = shape === 'diamond' ? 4 : shape === 'triangle' ? 3 : 5;
+  // Diamond rotated so corners point up/down/left/right
+  const rotation = shape === 'diamond' ? -Math.PI / 4 : -Math.PI / 2;
+  const corners = [];
+  for (let i = 0; i < sides; i++) {
+    const a = rotation + (i * Math.PI * 2 / sides);
+    corners.push({ x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius });
+  }
+  const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const sectorSize = Math.PI * 2 / sides;
+  const sectorIdx = Math.floor(normalized / sectorSize) % sides;
+  const progress = (normalized - sectorIdx * sectorSize) / sectorSize;
+  const p1 = corners[sectorIdx];
+  const p2 = corners[(sectorIdx + 1) % sides];
+  return {
+    x: p1.x + (p2.x - p1.x) * progress,
+    y: p1.y + (p2.y - p1.y) * progress
+  };
+}
+
+// Helper to draw a path segment along any shape
+// Used by ring drawing and target drawing
+function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps = 40) {
+  const rawSpan = endAngle - startAngle;
+  let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
+  if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
+  const actualSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
+  ctx.beginPath();
+  for (let i = 0; i <= actualSteps; i++) {
+    const t = startAngle + (span * i / actualSteps);
+    const pt = getPointOnShape(t, shape, cx, cy, radius);
+    if (i === 0) ctx.moveTo(pt.x, pt.y);
+    else ctx.lineTo(pt.x, pt.y);
   }
 }
 
@@ -707,17 +758,20 @@ function triggerBossIntro() {
   bossIntroPlaying = true;
   isPlaying = false;
 
-  const introText = "AEGIS CORE ONLINE";
+  const introText = levelData.boss === 'prism'
+    ? "PRISM PROTOCOL ACTIVE"
+    : "AEGIS CORE ONLINE";
+  const introColor = levelData.boss === 'prism' ? '#ff00cc' : '#ff3366';
   let displayed = "";
   let i = 0;
 
-  canvas.style.boxShadow = "inset 0 0 80px #ff3366";
+  canvas.style.boxShadow = `inset 0 0 80px ${introColor}`;
   setTimeout(() => canvas.style.boxShadow = "none", 200);
 
   const typeInterval = setInterval(() => {
     displayed += introText[i];
     ui.text.innerText = displayed;
-    ui.text.style.color = "#ff3366";
+    ui.text.style.color = introColor;
     ui.text.style.letterSpacing = "6px";
     i++;
     if (i >= introText.length) {
@@ -794,6 +848,42 @@ function spawnTargets() {
     return;
   }
 
+  if (levelData.boss === 'prism') {
+    if (!isBossPhaseTwo) {
+      ui.text.innerText = bossPhase === 1
+        ? "BOSS: Destroy all 4 corner shields!"
+        : "PRISM ENRAGED: Faster corners!";
+      ui.text.style.color = bossPhase === 1 ? '#ff00cc' : '#ff3366';
+      // 4 shields, one per corner of diamond
+      for (let i = 0; i < 4; i++) {
+        targets.push(buildTarget(
+          (i * Math.PI / 2) + 0.1,
+          Math.PI / 6,
+          {
+            color: bossPhase === 1 ? '#ff00cc' : '#ff3366',
+            active: true,
+            hp: bossPhase === 1 ? 2 : 1,
+            isBossShield: true,
+            moveSpeed: bossPhase === 1 ? 0 : 0.035 * (i % 2 === 0 ? 1 : -1)
+          }
+        ));
+      }
+    } else {
+      ui.text.innerText = "PRISM CORE OPEN — HIT IT!";
+      ui.text.style.color = '#ffffff';
+      targets.push(buildTarget(
+        Math.random() * Math.PI * 2,
+        Math.PI / 10,
+        {
+          color: '#ff00cc',
+          active: true,
+          hp: 1
+        }
+      ));
+    }
+    return;
+  }
+
   let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
   const isFixedThreeTargetTutorialStage = levelData.id === '1-5' || levelData.fixedTargetCount === true;
   if (tCount === 3 && !isFixedThreeTargetTutorialStage) {
@@ -836,6 +926,19 @@ function spawnTargets() {
       setTimeout(() => soundLifeZone(), 100);
     }
   }
+
+  if (levelData.hasPhantom && !inMenu && !levelData.boss) {
+    // Spawn 1 phantom zone offset from real targets
+    const realTargetAngle = targets.length > 0
+      ? targets[0].start + targets[0].size + (Math.PI * 0.4)
+      : Math.random() * Math.PI * 2;
+    targets.push(buildTarget(((realTargetAngle) % (Math.PI * 2)), Math.PI / 9, {
+      color: '#ff3366',
+      active: true,
+      isPhantom: true,
+      hp: 1
+    }));
+  }
 }
 
 function draw() {
@@ -860,16 +963,16 @@ function draw() {
   });
 
   // ENERGY LANE
-  // 1) Dark groove
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  // Dark groove
+  buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 8;
   ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1.0;
   ctx.stroke();
 
-  // 2) Crisp glowing line
-  ctx.beginPath();
-  ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  // Glowing line
+  buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 2;
   ctx.globalAlpha = 0.9;
   ctx.strokeStyle = palette.primary;
@@ -887,8 +990,7 @@ function draw() {
       ctx.save();
       ctx.lineCap = 'butt';
       activeBossShields.forEach(t => {
-        ctx.beginPath();
-        ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+        buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
         ctx.strokeStyle = 'rgba(4, 8, 16, 0.42)';
         ctx.lineWidth = 3.2;
         ctx.shadowBlur = 0;
@@ -918,6 +1020,49 @@ function draw() {
     const glowWidth = bodyWidth + 4;
     const housingWidth = glowWidth + 4;
 
+    if (t.isPhantom) {
+      // Phantom: dim, dashed, warning colour — DO NOT HIT
+      ctx.save();
+      ctx.setLineDash([6, 8]);
+
+      // Dim glow
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y,
+        orbitRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ff3366';
+      ctx.globalAlpha = 0.2;
+      ctx.lineWidth = 10;
+      ctx.lineCap = 'butt';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ff3366';
+      ctx.stroke();
+
+      // Dashed core
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y,
+        orbitRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ff3366';
+      ctx.globalAlpha = 0.7;
+      ctx.lineWidth = 2;
+      ctx.shadowBlur = 6;
+      ctx.stroke();
+
+      // Warning label at centre
+      const midAngle = t.start + t.size / 2;
+      const midPt = getPointOnShape(midAngle, getWorldShape(),
+                                    centerObj.x, centerObj.y, orbitRadius);
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = '#ff3366';
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 11px Orbitron';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✕', midPt.x, midPt.y);
+
+      ctx.restore();
+      ctx.globalAlpha = 1.0;
+      return;
+    }
+
     if (t.isLifeZone) {
       ctx.save();
       // Pulsing gold arc — same style as targets but amber/gold
@@ -925,7 +1070,7 @@ function draw() {
 
       // Glow layer
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffaa00';
       ctx.globalAlpha = (0.28 + approach * 0.18) * lifePulse;
       ctx.lineWidth = 10;
@@ -936,7 +1081,7 @@ function draw() {
 
       // Core line
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = 0.86 + (approach * 0.12);
       ctx.lineWidth = 4 + (approach * 0.8);
@@ -946,8 +1091,9 @@ function draw() {
 
       // Small + symbol at centre of arc
       const midAngle = t.start + t.size / 2;
-      const lx = centerObj.x + Math.cos(midAngle) * dynamicRadius;
-      const ly = centerObj.y + Math.sin(midAngle) * dynamicRadius;
+      const lifeMidPt = getPointOnShape(midAngle, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius);
+      const lx = lifeMidPt.x;
+      const ly = lifeMidPt.y;
       ctx.globalAlpha = 1.0;
       ctx.fillStyle = '#ffaa00';
       ctx.shadowBlur = 0;
@@ -966,7 +1112,7 @@ function draw() {
 
     // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
     ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
     ctx.lineWidth = isBossShield ? (housingWidth + 2.6) : housingWidth;
@@ -977,7 +1123,7 @@ function draw() {
     if (isBossShield) {
       // Inner recess lip to make mounted shield weak-point feel more mechanical.
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.52)';
       ctx.globalAlpha = 0.78 + (approach * 0.1);
       ctx.lineWidth = shieldBodyWidth + 2.8;
@@ -986,7 +1132,7 @@ function draw() {
 
       // Dark separator layer between bright lane and colored shield segment.
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = 'rgba(3, 7, 14, 0.92)';
       ctx.globalAlpha = 0.86 + (approach * 0.08);
       ctx.lineWidth = shieldBodyWidth + 1.6;
@@ -996,7 +1142,7 @@ function draw() {
 
     // --- ACTIVE TARGET BODY (glow + crisp core for timing window readability) ---
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
     ctx.globalAlpha = isBossShield
       ? ((0.27 + approach * 0.27 + hitFlash * 0.2) * pulse)
@@ -1011,7 +1157,7 @@ function draw() {
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
     ctx.globalAlpha = isBossShield
       ? Math.min(1, 0.94 + (approach * 0.06) + (hitFlash * 0.18))
@@ -1027,7 +1173,7 @@ function draw() {
 
     if (hitFlash > 0.02) {
       ctx.beginPath();
-      ctx.arc(centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = Math.min(0.95, hitFlash * 0.85);
       ctx.lineWidth = bodyWidth + 2.8;
@@ -1039,7 +1185,7 @@ function draw() {
     // --- MIDPOINT MARKER (ideal precision hit cue) ---
     const markerSpan = Math.min(t.size * 0.25, 0.055);
     ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
+    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = Math.min(1, 0.82 + (approach * 0.15) + (hitFlash * 0.2));
     ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
@@ -1143,8 +1289,9 @@ function draw() {
   ctx.shadowBlur = 0;
 
   // PLAYER ORB
-  const x = centerObj.x + Math.cos(angle) * orbitRadius;
-  const y = centerObj.y + Math.sin(angle) * orbitRadius;
+  const orbPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  const x = orbPt.x;
+  const y = orbPt.y;
 
   if (activeSkin === 'skull') {
     ctx.font = '32px sans-serif';
@@ -1208,8 +1355,7 @@ function draw() {
 
   // Hit polish pulse (visual only)
   if (ringHitFlash > 0.01) {
-    ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
     ctx.strokeStyle = hitFlashColor;
     ctx.globalAlpha = Math.min(0.4, ringHitFlash);
     ctx.lineWidth = 7 + (ringHitFlash * 6);
@@ -1218,8 +1364,7 @@ function draw() {
     ctx.stroke();
   }
   if (perfectFlash > 0.01) {
-    ctx.beginPath();
-    ctx.arc(centerObj.x, centerObj.y, orbitRadius + 4, 0, Math.PI * 2);
+    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius + 4, 0, Math.PI * 2);
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = Math.min(0.32, perfectFlash);
     ctx.lineWidth = 3;
@@ -1315,8 +1460,8 @@ function update() {
   angle += moveStep;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
-  const x = centerObj.x + Math.cos(angle) * orbitRadius; const y = centerObj.y + Math.sin(angle) * orbitRadius;
-  trail.push({ x: x, y: y }); if (trail.length > multiplier * 4) trail.shift();
+  const tPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  trail.push({ x: tPt.x, y: tPt.y }); if (trail.length > multiplier * 4) trail.shift();
 
   if (angle > Math.PI * 2) angle -= Math.PI * 2;
   if (angle < 0) angle += Math.PI * 2;
@@ -1331,7 +1476,8 @@ function update() {
       if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
 
       if (t.isHeart && totalStageDistance > t.expireDistance) {
-        t.active = false; createParticles(centerObj.x + Math.cos(t.start) * orbitRadius, centerObj.y + Math.sin(t.start) * orbitRadius, '#555', 10);
+        t.active = false; const expPt = getPointOnShape(t.start, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+        createParticles(expPt.x, expPt.y, '#555', 10);
       }
       let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
       if (!inMenu && t.isBossShield && bossPhase === 2 && performance.now() >= (t.nextDirectionSwapAt || 0)) {
@@ -1498,7 +1644,9 @@ function tap() {
     }
   }
 
-  const hitX = centerObj.x + Math.cos(angle) * orbitRadius; const hitY = centerObj.y + Math.sin(angle) * orbitRadius;
+  const hitPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  const hitX = hitPt.x;
+  const hitY = hitPt.y;
 
   if (hitIndex !== -1) {
     let t = targets[hitIndex];
@@ -1545,6 +1693,21 @@ function tap() {
     }
 
     t.active = false;
+
+    if (t.isPhantom) {
+      // Player hit a phantom — punish without the usual hit flow
+      t.active = false;
+      triggerScreenShake(8);
+      canvas.style.filter = 'brightness(2)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 100);
+      createShockwave('#ff3366', 30);
+      createPopup(hitX, hitY - 20, "TRAP!", "#ff3366");
+      createParticles(hitX, hitY, '#ff3366', 20);
+      soundFail();
+      vibrate([40, 20, 40]);
+      handleFail("HIT A PHANTOM");
+      return;
+    }
 
     if (levelData.boss && isBossPhaseTwo) {
       // Allow ANY hit inside the core window (perfect, good, or ok) to count!
@@ -1659,6 +1822,38 @@ function triggerStageClear() {
     let currentLevelObj = campaign[currentLevelIdx];
     let newWorld = currentLevelObj ? parseInt(currentLevelObj.id.split('-')[0]) : maxWorldUnlocked;
     if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
+
+    if (newWorld === 2) {
+      // World 2 intro — brief pause then shape reveal
+      isPlaying = false;
+      ui.overlay.style.display = 'flex';
+      ui.title.innerText = 'WORLD 2';
+      ui.title.style.color = '#ff00cc';
+      ui.subtitle.innerText = 'The Diamond Protocol';
+
+      let reviveBtn = document.getElementById('reviveBtn');
+      if (reviveBtn) reviveBtn.style.display = 'none';
+
+      document.getElementById('newRecordBanner').style.display = 'none';
+      document.getElementById('pbStatsBlock').style.display = 'none';
+      document.getElementById('shareBtn').style.display = 'none';
+      ui.runCoins.innerText = '';
+
+      ui.btn.innerText = 'ENTER WORLD 2';
+      ui.btn.onclick = function() {
+        // Restore pb block for future game overs
+        document.getElementById('pbStatsBlock').style.display = 'flex';
+        document.getElementById('shareBtn').style.display = 'block';
+        ui.overlay.style.display = 'none';
+        ui.topBar.style.display = 'flex';
+        ui.gameUI.style.display = 'block';
+        ui.bigMultiplier.style.display = 'block';
+        runCents = 0;
+        loadLevel(currentLevelIdx);
+        isPlaying = true;
+      };
+      return; // Skip normal world clear flow
+    }
 
     if (wasBoss || !currentLevelObj) {
       if (wasBoss) stopBossDrone();
