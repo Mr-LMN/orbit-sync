@@ -99,6 +99,9 @@ let bossIntroPlaying = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
+let reviveCount = 0;
+let scoreAtCheckpoint = 0;
+let scoreAtLevelStart = 0;
 let lifeZonesSpawnedThisRun = 0;
 let ringHitFlash = 0;
 let perfectFlash = 0;
@@ -194,14 +197,17 @@ function rgbaFromHex(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function generateTitle(score, world, streak) {
-  if (world >= 3 && score > 200) return "SYNC GOD";
-  if (world >= 3) return "WORLD BREAKER";
+function generateTitle(score, world, streak, revives) {
+  if (revives === 0 && world >= 3 && score > 200) return "SYNC GOD";
+  if (revives === 0 && streak >= 20) return "GHOST RUN";
+  if (revives === 0 && world >= 2) return "CLEAN SWEEP";
+  if (world >= 3 && score > 200) return "WORLD BREAKER";
   if (streak >= 20) return "CHAIN MASTER";
   if (streak >= 10) return "COMBO KING";
   if (score >= 150) return "ORBIT ELITE";
   if (score >= 75) return "SYNC RUNNER";
   if (world >= 2) return "WORLD JUMPER";
+  if (revives >= 3) return "NEVER GIVE UP";
   return "SYNC ROOKIE";
 }
 
@@ -233,7 +239,7 @@ function generateShareCard() {
   c.fillText('ORBIT SYNC', 40, 50);
 
   // Player title
-  const title = generateTitle(score, personalBest.world, personalBest.streak);
+  const title = generateTitle(score, personalBest.world, personalBest.streak, reviveCount);
   c.fillStyle = palette.primary;
   c.font = '900 52px Orbitron, sans-serif';
   c.letterSpacing = '2px';
@@ -255,11 +261,12 @@ function generateShareCard() {
   const stats = [
     { label: 'SCORE', value: score },
     { label: 'BEST STREAK', value: personalBest.streak },
-    { label: 'WORLD REACHED', value: personalBest.world }
+    { label: 'WORLD', value: personalBest.world },
+    { label: 'REVIVES USED', value: reviveCount }
   ];
 
   stats.forEach((stat, i) => {
-    const x = 40 + (i * 245);
+    const x = 40 + (i * 180);
     c.fillStyle = 'rgba(255,255,255,0.3)';
     c.font = '400 11px Orbitron, sans-serif';
     c.letterSpacing = '3px';
@@ -271,6 +278,21 @@ function generateShareCard() {
     c.letterSpacing = '2px';
     c.fillText(stat.value, x, 280);
   });
+
+  if (reviveCount === 0) {
+    c.fillStyle = 'rgba(0, 229, 255, 0.12)';
+    c.beginPath();
+    c.roundRect(40, 300, 160, 32, 6);
+    c.fill();
+    c.strokeStyle = 'rgba(0, 229, 255, 0.4)';
+    c.lineWidth = 1;
+    c.stroke();
+    c.fillStyle = '#00e5ff';
+    c.font = '400 11px Orbitron, sans-serif';
+    c.letterSpacing = '3px';
+    c.textAlign = 'left';
+    c.fillText('✦ CLEAN RUN', 55, 321);
+  }
 
   // World colour strip at bottom
   c.fillStyle = palette.primary;
@@ -289,9 +311,12 @@ function generateShareCard() {
   card.toBlob(blob => {
     const file = new File([blob], 'orbitsync.png', { type: 'image/png' });
     if (navigator.share && navigator.canShare({ files: [file] })) {
+      const reviveText = reviveCount === 0
+        ? 'No revives used — clean run!'
+        : `Used ${reviveCount} revive${reviveCount > 1 ? 's' : ''}.`;
       navigator.share({
         title: 'Orbit Sync',
-        text: `I just got "${title}" with a score of ${score}. Can you beat it?`,
+        text: `I got "${title}" with a score of ${score}. ${reviveText} Can you beat it?`,
         files: [file]
       }).catch(() => downloadCard(card));
     } else {
@@ -372,6 +397,7 @@ function triggerBossIntro() {
 }
 
 function loadLevel(idx) {
+  scoreAtLevelStart = score;
   levelData = campaign[idx] || campaign[campaign.length - 1];
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
   isBossPhaseTwo = false; bossPhase = 1;
@@ -893,6 +919,9 @@ function handleFail(reason) {
       if (globalCoins >= currentReviveCost) {
         globalCoins -= currentReviveCost; saveData(); ui.coins.innerText = Math.floor(globalCoins);
         currentReviveCost *= 2; // Double the cost for the next time!
+        reviveCount++;
+        score = scoreAtLevelStart; // reset score to what it was when this level started
+        ui.score.innerText = score;
         lives = 3; ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
         if (levelData.boss) ui.bossUI.style.display = 'flex';
         runCents = 0; loadLevel(currentLevelIdx); isPlaying = true;
@@ -1073,16 +1102,34 @@ function startCampaign() {
   ui.text.style.display = 'none';
   inMenu = false; isPlaying = true; currentLevelIdx = 0; score = 0; streak = 0; runCents = 0; ui.score.innerText = '0';
   lives = 3; currentReviveCost = 50;
+  reviveCount = 0;
+  scoreAtCheckpoint = 0;
   lifeZonesSpawnedThisRun = 0;
   loadLevel(currentLevelIdx);
 }
 
 function restartFromCheckpoint() {
-  ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
+  ui.overlay.style.display = 'none';
+  ui.topBar.style.display = 'flex';
+  ui.gameUI.style.display = 'block';
+  ui.bigMultiplier.style.display = 'block';
+  
   currentReviveCost = 50;
-  if (lives <= 0) { currentLevelIdx = getCheckpointIndex(); runCents = 0; lives = 3; streak = 0; }
-  lifeZonesSpawnedThisRun = 0;
-  loadLevel(currentLevelIdx); isPlaying = true;
+  reviveCount = 0;
+  score = 0;
+  scoreAtCheckpoint = 0;
+  runCents = 0;
+  lives = 3;
+  streak = 0;
+  multiplier = 1;
+  
+  ui.score.innerText = 0;
+  ui.streak.innerText = 0;
+  updateMultiplierUI();
+  
+  currentLevelIdx = getCheckpointIndex();
+  loadLevel(currentLevelIdx);
+  isPlaying = true;
 }
 
 function returnToMenu() {
