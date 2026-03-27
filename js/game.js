@@ -772,16 +772,18 @@ function spawnTargets() {
   const palette = getWorldPalette();
   if (levelData.boss === 'aegis') {
     if (!isBossPhaseTwo) {
-      ui.text.innerText = bossPhase === 1 ? "BOSS: Break the shields!" : "BOSS ENRAGED: Faster & Unpredictable!";
+      ui.text.innerText = bossPhase === 1 ? "BOSS: Break the shields!" : "BOSS ENRAGED: Faster & Sharper!";
       ui.text.style.color = bossPhase === 1 ? "#00e5ff" : "#ff3366";
       let offset = Math.random() * Math.PI * 2;
-      for (let i = 0; i < 3; i++) {
+      const shieldCount = bossPhase === 1 ? 3 : 2;
+      for (let i = 0; i < shieldCount; i++) {
         targets.push(buildTarget(
-          offset + (i * (Math.PI * 2 / 3)),
+          offset + (i * (Math.PI * 2 / shieldCount)),
           bossPhase === 1 ? Math.PI / 4 : Math.PI / 6,
           {
             color: bossPhase === 1 ? '#00e5ff' : '#ff3366', active: true, hp: 3, isBossShield: true,
-            moveSpeed: bossPhase === 1 ? undefined : 0.045 * (Math.random() > 0.5 ? 1 : -1)
+            moveSpeed: bossPhase === 1 ? undefined : 0.038 * (i % 2 === 0 ? 1 : -1),
+            nextDirectionSwapAt: bossPhase === 1 ? 0 : (performance.now() + 1100 + Math.random() * 900)
           }
         ));
       }
@@ -1321,7 +1323,10 @@ function update() {
         t.active = false; createParticles(centerObj.x + Math.cos(t.start) * orbitRadius, centerObj.y + Math.sin(t.start) * orbitRadius, '#555', 10);
       }
       let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
-      if (!inMenu && t.isBossShield && bossPhase === 2 && Math.random() < 0.015) { t.moveSpeed *= -1; }
+      if (!inMenu && t.isBossShield && bossPhase === 2 && performance.now() >= (t.nextDirectionSwapAt || 0)) {
+        if (Math.random() < 0.42) t.moveSpeed *= -1;
+        t.nextDirectionSwapAt = performance.now() + 1200 + Math.random() * 1000;
+      }
       if (isBossTransitionPaused) currentMoveSpeed = 0;
 
       if (currentMoveSpeed !== 0) {
