@@ -54,12 +54,39 @@ let globalCoins = parseInt(localStorage.getItem('orbitSync_coins')) || 0;
 let unlockedSkins = JSON.parse(localStorage.getItem('orbitSync_unlocks')) || ['classic'];
 let activeSkin = localStorage.getItem('orbitSync_equipped') || 'classic';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
+let personalBest = {
+  score: parseInt(localStorage.getItem('orbitSync_pbScore')) || 0,
+  streak: parseInt(localStorage.getItem('orbitSync_pbStreak')) || 0,
+  world: parseInt(localStorage.getItem('orbitSync_pbWorld')) || 1
+};
 
 function saveData() {
   localStorage.setItem('orbitSync_coins', Math.floor(globalCoins));
   localStorage.setItem('orbitSync_unlocks', JSON.stringify(unlockedSkins));
   localStorage.setItem('orbitSync_equipped', activeSkin);
   localStorage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
+}
+
+function checkAndSavePB(currentScore, currentStreak) {
+  let newRecords = { score: false, streak: false, world: false };
+  const currentWorld = parseInt(levelData ? levelData.id.split('-')[0] : '1');
+
+  if (currentScore > personalBest.score) {
+    personalBest.score = currentScore;
+    localStorage.setItem('orbitSync_pbScore', currentScore);
+    newRecords.score = true;
+  }
+  if (currentStreak > personalBest.streak) {
+    personalBest.streak = currentStreak;
+    localStorage.setItem('orbitSync_pbStreak', currentStreak);
+    newRecords.streak = true;
+  }
+  if (currentWorld > personalBest.world) {
+    personalBest.world = currentWorld;
+    localStorage.setItem('orbitSync_pbWorld', currentWorld);
+    newRecords.world = true;
+  }
+  return newRecords;
 }
 
 ui.coins.innerText = Math.floor(globalCoins); ui.shopCoinCount.innerText = Math.floor(globalCoins);
@@ -706,6 +733,25 @@ function scrambleText(element, finalText, duration) {
   frame();
 }
 
+function updatePBDisplay(newRecords) {
+  document.getElementById('pbScoreDisplay').innerText = personalBest.score;
+  document.getElementById('pbStreakDisplay').innerText = personalBest.streak;
+  document.getElementById('pbWorldDisplay').innerText = personalBest.world;
+
+  // Highlight new records in gold
+  document.getElementById('pbScoreDisplay').className =
+    newRecords.score ? 'pb-value new-record' : 'pb-value';
+  document.getElementById('pbStreakDisplay').className =
+    newRecords.streak ? 'pb-value new-record' : 'pb-value';
+  document.getElementById('pbWorldDisplay').className =
+    newRecords.world ? 'pb-value new-record' : 'pb-value';
+
+  // Show banner if any record was broken
+  const anyNew = newRecords.score || newRecords.streak || newRecords.world;
+  document.getElementById('newRecordBanner').style.display =
+    anyNew ? 'block' : 'none';
+}
+
 function handleFail(reason) {
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
@@ -715,8 +761,10 @@ function handleFail(reason) {
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
+    const newRecords = checkAndSavePB(score, streak);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
+    updatePBDisplay(newRecords);
     glitchCanvas(400, () => {
       ui.overlay.style.display = 'flex';
       scrambleText(ui.title, reason || "OUT OF SYNC", 600);
@@ -863,9 +911,11 @@ function triggerStageClear() {
     if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
 
     if (wasBoss || !currentLevelObj) {
+      const newRecords = wasBoss ? checkAndSavePB(score, streak) : { score: false, streak: false, world: false };
       // WORLD CLEARED! (Pause the game and show the Win Screen)
       isPlaying = false;
       let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
+      updatePBDisplay(newRecords);
 
       ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
       ui.title.innerText = "WORLD CLEARED!"; ui.title.style.color = '#00ff88'; ui.subtitle.innerText = `Coins Earned: ${coinsToBank}`;
