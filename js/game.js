@@ -733,17 +733,22 @@ function draw() {
   // TARGETS
   targets.forEach(t => {
     if (!t.active) return;
-    let tCenter = t.start + (t.size / 2);
+    const tCenter = t.start + (t.size / 2);
+    const pulse = 0.88 + (Math.sin(Date.now() / 320 + tCenter * 2.1) * 0.12);
+    const bodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
+    const glowWidth = bodyWidth + 4;
+    const housingWidth = glowWidth + 4;
 
     if (t.isLifeZone) {
+      ctx.save();
       // Pulsing gold arc — same style as targets but amber/gold
-      const pulse = 0.7 + Math.abs(Math.sin(Date.now() / 400)) * 0.3;
+      const lifePulse = 0.7 + Math.abs(Math.sin(Date.now() / 400)) * 0.3;
 
       // Glow layer
       ctx.beginPath();
       ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffaa00';
-      ctx.globalAlpha = 0.3 * pulse;
+      ctx.globalAlpha = 0.3 * lifePulse;
       ctx.lineWidth = 10;
       ctx.lineCap = 'butt';
       ctx.shadowBlur = 40;
@@ -774,34 +779,80 @@ function draw() {
 
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
+      ctx.restore();
       return;
     }
 
-    // Layer 1 — tight glow only
+    ctx.save();
+
+    // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = 'rgba(5, 10, 18, 0.9)';
+    ctx.globalAlpha = 0.78;
+    ctx.lineWidth = housingWidth;
+    ctx.lineCap = 'butt';
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+
+    // --- ACTIVE TARGET BODY (glow + crisp core for timing window readability) ---
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
-    ctx.globalAlpha = 0.4;
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'butt';
-    ctx.shadowBlur = 25;
+    ctx.globalAlpha = 0.3 * pulse;
+    ctx.lineWidth = glowWidth;
+    ctx.shadowBlur = 18;
     ctx.shadowColor = t.color;
     ctx.stroke();
 
-    // Layer 2 — sharp bright core line
     ctx.beginPath();
     ctx.arc(centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
     ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = 1.0;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'butt';
-    ctx.shadowBlur = 8;
+    ctx.globalAlpha = 0.92;
+    ctx.lineWidth = bodyWidth;
+    ctx.shadowBlur = 10;
     ctx.shadowColor = t.color;
     ctx.stroke();
 
+    // --- MIDPOINT MARKER (ideal precision hit cue) ---
+    const markerSpan = Math.min(t.size * 0.25, 0.055);
+    ctx.beginPath();
+    ctx.arc(centerObj.x, centerObj.y, orbitRadius, tCenter - markerSpan, tCenter + markerSpan);
+    ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-    ctx.lineCap = 'butt';
+    ctx.lineWidth = bodyWidth + 1;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = t.color;
+    ctx.stroke();
+
+    // --- EDGE BRACKETS (small inward ticks framing the timing zone) ---
+    const drawBracketTick = (angle) => {
+      const px = centerObj.x + Math.cos(angle) * orbitRadius;
+      const py = centerObj.y + Math.sin(angle) * orbitRadius;
+      const inwardX = centerObj.x - px;
+      const inwardY = centerObj.y - py;
+      const inwardLen = Math.hypot(inwardX, inwardY) || 1;
+      const nx = inwardX / inwardLen;
+      const ny = inwardY / inwardLen;
+      const tickOuter = Math.max(3, bodyWidth * 0.6);
+      const tickInner = Math.max(8, bodyWidth * 1.9);
+
+      ctx.beginPath();
+      ctx.moveTo(px - nx * tickOuter, py - ny * tickOuter);
+      ctx.lineTo(px + nx * tickInner, py + ny * tickInner);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = Math.max(1.5, bodyWidth * 0.42);
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = t.color;
+      ctx.stroke();
+    };
+
+    drawBracketTick(t.start);
+    drawBracketTick(t.start + t.size);
+    ctx.restore();
   });
 
   // TRAIL
