@@ -452,7 +452,9 @@ for (let i = 0; i < 75; i++) {
     y: Math.random() * window.innerHeight,
     size: Math.random() * 1.5 + 0.5,
     speed: Math.random() * 0.2 + 0.05,
-    opacity: Math.random() * 0.4 + 0.1
+    opacity: Math.random() * 0.4 + 0.1,
+    driftPhase: Math.random() * Math.PI * 2,
+    driftAmp: Math.random() * 0.25 + 0.08
   });
 }
 
@@ -988,6 +990,7 @@ function spawnTargets() {
 
 function draw() {
   const palette = getWorldPalette();
+  const worldNum = parseInt(levelData ? levelData.id.split('-')[0] : '1', 10);
   const now = performance.now();
   // BACKGROUND
   let isBoss = levelData && levelData.boss;
@@ -1003,6 +1006,11 @@ function draw() {
     ctx.fill();
 
     let speedMult = isBoss ? 3.5 : 1;
+    if (worldNum === 2 && !isBoss) {
+      d.x += Math.sin((now * 0.0012) + d.driftPhase + (d.y * 0.005)) * d.driftAmp;
+      if (d.x < -2) d.x = canvas.width + 2;
+      if (d.x > canvas.width + 2) d.x = -2;
+    }
     d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
     if (d.y < 0) { d.y = canvas.height; d.x = Math.random() * canvas.width; }
   });
@@ -1026,6 +1034,25 @@ function draw() {
   ctx.stroke();
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
+
+  // World 2 corner accents: faint prism glows at each diamond point
+  if (worldNum === 2 && !isBoss) {
+    const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+    ctx.save();
+    cornerAngles.forEach((corner, idx) => {
+      const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
+      const pulse = 0.55 + (Math.sin(now / 620 + idx * 1.35) * 0.2);
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 34);
+      grad.addColorStop(0, `rgba(255,120,245,${0.20 * pulse})`);
+      grad.addColorStop(0.55, `rgba(195,110,255,${0.11 * pulse})`);
+      grad.addColorStop(1, 'rgba(195,110,255,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 34, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
 
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
   // so shield segments remain readable against the bright lane, especially on small screens.
@@ -2005,17 +2032,20 @@ function triggerStageClear() {
     } else {
       // SEAMLESS TRANSITION! (Keep playing, flash the screen, load next wave)
       soundWaveClear();
-      createPopup(centerObj.x, centerObj.y - 50, "WAVE CLEARED!", "#00ff88");
-      createParticles(centerObj.x, centerObj.y, '#00ff88', 50);
+      const worldNum = parseInt(levelData.id.split('-')[0], 10);
+      const waveClearColor = worldNum === 2 ? '#ff4fd8' : '#00ff88';
+      const waveClearAftershockColor = worldNum === 2 ? '#c68cff' : '#ffffff';
+      createPopup(centerObj.x, centerObj.y - 50, "WAVE CLEARED!", waveClearColor);
+      createParticles(centerObj.x, centerObj.y, waveClearColor, 50);
       triggerScreenShake(8);
       
       // NEW: The Double-Pulse Shockwave & Haptics
-      createShockwave('#00ff88', 35); // Main heavy neon wave
-      setTimeout(() => createShockwave('#ffffff', 45), 100); // Faster white aftershock
+      createShockwave(waveClearColor, 35); // Main heavy neon wave
+      setTimeout(() => createShockwave(waveClearAftershockColor, 45), 100); // Faster aftershock
       if (typeof vibrate === 'function') vibrate([40, 40, 80]); // Double-thump haptic rumble
       
-      // Briefly flash the screen neon green
-      canvas.style.boxShadow = `inset 0 0 50px #00ff88`; 
+      // Briefly flash the screen to match world identity
+      canvas.style.boxShadow = `inset 0 0 50px ${waveClearColor}`; 
       setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
       // Load next level without stopping the 'isPlaying' loop!
