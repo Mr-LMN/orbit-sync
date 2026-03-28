@@ -1321,8 +1321,10 @@ function draw() {
       ctx.stroke();
     };
 
-    drawBracketTick(t.start);
-    drawBracketTick(t.start + t.size);
+    if (getWorldShape() === 'circle') {
+      drawBracketTick(t.start);
+      drawBracketTick(t.start + t.size);
+    }
     ctx.restore();
   });
 
