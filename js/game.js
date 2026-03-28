@@ -402,6 +402,7 @@ let lifeZonesSpawnedThisRun = 0;
 let ringHitFlash = 0;
 let perfectFlash = 0;
 let hitFlashColor = '#00ff88';
+let lastMultiplierDisplay = multiplier;
 let tempTextTimeout = null;
 let bossSpawnTimeout = null;
 let bossPauseUntil = 0;
@@ -560,10 +561,16 @@ function releaseParticle(particle) {
 }
 
 function getPopup() {
-  return popupPool.length ? popupPool.pop() : { x: 0, y: 0, text: '', color: '#fff', life: 0, hitQuality: null };
+  return popupPool.length
+    ? popupPool.pop()
+    : { x: 0, y: 0, text: '', color: '#fff', life: 0, hitQuality: null, animType: 'default', riseSpeed: 1, fadeSpeed: 0.02, shadow: 0 };
 }
 
 function releasePopup(popup) {
+  popup.animType = 'default';
+  popup.riseSpeed = 1;
+  popup.fadeSpeed = 0.02;
+  popup.shadow = 0;
   popup.life = 0;
   popupPool.push(popup);
 }
@@ -606,6 +613,29 @@ function createParticles(x, y, color, count = 20) {
     particles.splice(0, overflow);
   }
 }
+
+function createUpwardBurstParticles(x, y, color, count = 36) {
+  const burstCount = Math.min(count, 40);
+  for (let i = 0; i < burstCount; i++) {
+    const angle = (-Math.PI / 2) + ((Math.random() - 0.5) * 1.25); // mostly upward fan
+    const speed = Math.random() * 5 + 3.5;
+    const particle = getParticle();
+    particle.x = x;
+    particle.y = y;
+    particle.vx = Math.cos(angle) * speed * 0.85;
+    particle.vy = Math.sin(angle) * speed;
+    particle.angle = angle;
+    particle.length = Math.random() * 11 + 6;
+    particle.life = 1.0;
+    particle.color = color;
+    particles.push(particle);
+  }
+  if (particles.length > MAX_PARTICLES) {
+    const overflow = particles.length - MAX_PARTICLES;
+    for (let i = 0; i < overflow; i++) releaseParticle(particles[i]);
+    particles.splice(0, overflow);
+  }
+}
 function createPopup(x, y, text, color, hitQuality = null) {
   const popup = getPopup();
   popup.x = x;
@@ -614,11 +644,34 @@ function createPopup(x, y, text, color, hitQuality = null) {
   popup.color = color;
   popup.life = 1.0;
   popup.hitQuality = hitQuality;
+  popup.animType = 'default';
+  popup.riseSpeed = 1;
+  popup.fadeSpeed = 0.02;
+  popup.shadow = 0;
   popups.push(popup);
   if (popups.length > MAX_POPUPS) {
     const oldest = popups.shift();
     if (oldest) releasePopup(oldest);
   }
+  return popup;
+}
+
+function showComboPopup(multiplierLevel) {
+  const comboMilestones = {
+    4: { label: 'x4 COMBO!', color: '#00f7ff' },
+    6: { label: 'x6 RAMPAGE!', color: '#ff67f3' },
+    8: { label: 'x8 GOD MODE!', color: '#ffd84d' }
+  };
+  const milestone = comboMilestones[multiplierLevel];
+  if (!milestone) return;
+
+  const comboPopup = createPopup(centerObj.x, centerObj.y - 60, milestone.label, milestone.color);
+  comboPopup.animType = 'combo';
+  comboPopup.riseSpeed = 0.75;
+  comboPopup.fadeSpeed = 0.028;
+  comboPopup.shadow = 24;
+
+  createShockwave(milestone.color, 42);
 }
 function createShockwave(color, speed = 40) {
   shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
@@ -855,10 +908,13 @@ function downloadCard(card) {
 }
 
 function updateMultiplierUI() {
+  const prevMultiplier = lastMultiplierDisplay;
+  const didChange = multiplier !== prevMultiplier;
   ui.multiplierCount.innerText = multiplier;
 
   if (multiplier <= 1) {
     ui.bigMultiplier.style.display = 'none';
+    lastMultiplierDisplay = multiplier;
     return;
   } else {
     ui.bigMultiplier.style.display = 'block';
@@ -867,9 +923,15 @@ function updateMultiplierUI() {
   let mColor = multiColors[Math.min(multiplier - 1, 7)];
   ui.bigMultiplier.style.color = mColor;
   ui.bigMultiplier.style.textShadow = `0 0 20px ${mColor}`;
-  // Add a quick pop animation
-  ui.bigMultiplier.style.transform = "translateY(-50%) scale(1.3)";
-  setTimeout(() => ui.bigMultiplier.style.transform = "translateY(-50%) scale(1)", 150);
+  // Heavier right-side pop, still snappy.
+  ui.bigMultiplier.style.transform = "translateY(-50%) scale(1.6)";
+  setTimeout(() => ui.bigMultiplier.style.transform = "translateY(-50%) scale(1)", 120);
+
+  if (didChange && (multiplier === 4 || multiplier === 6 || multiplier === 8)) {
+    showComboPopup(multiplier);
+  }
+
+  lastMultiplierDisplay = multiplier;
 }
 
 function getCheckpointIndex() {
@@ -1670,18 +1732,40 @@ function draw() {
 
   for (let i = popups.length - 1; i >= 0; i--) {
     let pop = popups[i];
-    pop.y -= 1;
-    pop.life -= 0.02;
+    const riseSpeed = pop.riseSpeed || 1;
+    const fadeSpeed = pop.fadeSpeed || 0.02;
+    pop.y -= riseSpeed;
+    pop.life -= fadeSpeed;
     if (pop.life <= 0) {
       const deadPopup = popups.splice(i, 1)[0];
       if (deadPopup) releasePopup(deadPopup);
     } else {
+      const age = 1 - pop.life;
+      let scale = 1;
+      if (pop.animType === 'perfect') {
+        // Quick "YES!" bloom then settle.
+        scale = age < 0.18 ? (1.38 - (age * 1.1)) : (1.18 - ((age - 0.18) * 0.34));
+      } else if (pop.animType === 'combo') {
+        scale = age < 0.2 ? (1.55 - (age * 1.2)) : (1.25 - ((age - 0.2) * 0.42));
+      }
       ctx.fillStyle = pop.color;
       ctx.globalAlpha = pop.life;
-      ctx.font = pop.hitQuality === 'perfect' ? 'bold 1.6rem Orbitron' : 'bold 1rem Orbitron';
+      const perfectFontSize = isMobile ? '2.2rem' : '1.95rem';
+      ctx.font = pop.hitQuality === 'perfect'
+        ? `900 ${perfectFontSize} Orbitron`
+        : (pop.animType === 'combo' ? '900 1.75rem Orbitron' : 'bold 1rem Orbitron');
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillText(pop.text, pop.x, pop.y);
+      ctx.save();
+      ctx.translate(pop.x, pop.y);
+      ctx.scale(scale, scale);
+      if (pop.shadow > 0) {
+        ctx.shadowBlur = pop.shadow;
+        ctx.shadowColor = pop.color;
+      }
+      ctx.fillText(pop.text, 0, 0);
+      ctx.restore();
+      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1.0;
     }
   }
@@ -2079,11 +2163,17 @@ function tap() {
       multiplier = Math.min(multiplier + 1, 8);
       soundMultiplierUp(multiplier);
       score += (3 * multiplier);
-      createPopup(hitX, hitY - 20, "PERFECT!", multiColors[multiplier - 1], 'perfect');
-      canvas.style.filter = 'brightness(1.8)';
-      setTimeout(() => canvas.style.filter = 'brightness(1)', 80);
+      const perfectPopup = createPopup(hitX, hitY - 18, "PERFECT!", '#fff36a', 'perfect');
+      perfectPopup.animType = 'perfect';
+      perfectPopup.riseSpeed = 0.95;
+      perfectPopup.fadeSpeed = 0.026;
+      perfectPopup.shadow = 22;
+      // Punchier but ultra-short flash to keep input feeling instant.
+      canvas.style.filter = 'brightness(2.2)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundPerfect(multiplier);
-      vibrate([10, 20, 10]);
+      vibrate([12, 25, 12]);
+      createUpwardBurstParticles(hitX, hitY - 6, '#fff36a', 38);
     }
     else if (hitQuality === "good") {
       ringHitFlash = Math.max(ringHitFlash, 0.26);
@@ -2226,15 +2316,21 @@ function triggerStageClear() {
       const worldNum = parseInt(levelData.id.split('-')[0], 10);
       const waveClearColor = worldNum === 2 ? '#ff4fd8' : '#00ff88';
       const waveClearAftershockColor = worldNum === 2 ? '#c68cff' : '#ffffff';
-      createPopup(centerObj.x, centerObj.y - 50, "WAVE CLEARED!", waveClearColor);
-      createParticles(centerObj.x, centerObj.y, waveClearColor, 50);
+      const wavePopup = createPopup(centerObj.x, centerObj.y - 56, "WAVE CLEARED!", waveClearColor);
+      wavePopup.animType = 'combo';
+      wavePopup.riseSpeed = 0.82;
+      wavePopup.fadeSpeed = 0.023;
+      wavePopup.shadow = 26;
+      createParticles(centerObj.x, centerObj.y, waveClearColor, Math.min(54, MAX_PARTICLES));
+      createUpwardBurstParticles(centerObj.x, centerObj.y + 8, waveClearAftershockColor, 28);
       triggerScreenShake(8);
       
-      // NEW: The Double-Pulse Shockwave & Haptics
+      // Triple pulse with a lightweight cap-safe finish.
       createShockwave(waveClearColor, 35); // Main heavy neon wave
       setTimeout(() => createShockwave(waveClearAftershockColor, 45), 100); // Faster aftershock
-      if (typeof vibrate === 'function') vibrate([40, 40, 80]); // Double-thump haptic rumble
-      
+      setTimeout(() => createShockwave(waveClearColor, 52), 155); // Extra celebration pop
+      if (typeof vibrate === 'function') vibrate([28, 28, 42, 20, 70]); // Stronger double-thump
+
       // Briefly flash the screen to match world identity
       canvas.style.boxShadow = `inset 0 0 50px ${waveClearColor}`; 
       setTimeout(() => canvas.style.boxShadow = 'none', 150);
