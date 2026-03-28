@@ -19,6 +19,8 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 let bossDrone = null;
 let bossDroneGain = null;
+let lastSoundTime = 0;
+let audioThrottleBypassUntil = 0;
 
 function initAudio() {
   if (!audioCtx) { audioCtx = new AudioContext(); }
@@ -33,8 +35,23 @@ function makeGain(vol) {
   return g;
 }
 
+function getMinSoundIntervalMs() {
+  return isMobile ? 40 : 16;
+}
+
+function shouldThrottleAudio(allowBypassWindow = false) {
+  if (!audioCtx || !isMobile) return false;
+  const nowMs = audioCtx.currentTime * 1000;
+  if (allowBypassWindow && nowMs <= audioThrottleBypassUntil) return false;
+  if ((nowMs - lastSoundTime) < getMinSoundIntervalMs()) return true;
+  lastSoundTime = nowMs;
+  audioThrottleBypassUntil = nowMs + Math.max(40, getMinSoundIntervalMs());
+  return false;
+}
+
 // Utility — plays a single oscillator burst
 function playTone(freq, type, vol, attack, decay, startTime) {
+  if (shouldThrottleAudio(true)) return;
   const osc = audioCtx.createOscillator();
   const gain = makeGain(0.001);
   osc.connect(gain);
@@ -49,6 +66,7 @@ function playTone(freq, type, vol, attack, decay, startTime) {
 // Utility — short filtered noise burst for impact textures
 function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) {
   if (!audioCtx) return;
+  if (shouldThrottleAudio(true)) return;
   const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * decay));
   const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
   const data = buffer.getChannelData(0);
@@ -122,6 +140,7 @@ function escalateBossDrone() {
 // OK hit — dull thud, low confidence
 function soundOk() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   playTone(180, 'triangle', 0.18, 0.005, 0.12, t);
   playTone(90, 'sine', 0.1, 0.005, 0.15, t);
@@ -130,6 +149,7 @@ function soundOk() {
 // GOOD hit — clean mid punch
 function soundGood(multiplier) {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   const baseFreq = 300 + (multiplier * 30);
   playTone(baseFreq, 'triangle', 0.22, 0.004, 0.1, t);
@@ -139,6 +159,7 @@ function soundGood(multiplier) {
 // PERFECT hit — bright ting with reverb tail
 function soundPerfect(multiplier) {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   const baseFreq = 520 + (multiplier * 40);
 
@@ -155,6 +176,7 @@ function soundPerfect(multiplier) {
 const multiNotes = [0, 0, 262, 294, 330, 370, 415, 466, 523];
 function soundMultiplierUp(multiplier) {
   if (!audioCtx || multiplier < 2) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   const freq = multiNotes[Math.min(multiplier, 8)];
   playTone(freq, 'sine', 0.2, 0.005, 0.2, t);
@@ -164,6 +186,7 @@ function soundMultiplierUp(multiplier) {
 // Miss/fail — descending crunch
 function soundFail() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   const osc = audioCtx.createOscillator();
   const gain = makeGain(0.001);
@@ -180,6 +203,7 @@ function soundFail() {
 // Life lost (not game over) — shorter warning sting
 function soundLifeLost() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   playTone(160, 'sawtooth', 0.2, 0.005, 0.15, t);
   playTone(120, 'sawtooth', 0.15, 0.01, 0.2, t + 0.1);
@@ -188,6 +212,7 @@ function soundLifeLost() {
 // Stage/wave clear — 3 note ascending arpeggio
 function soundWaveClear() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   [330, 415, 523].forEach((freq, i) => {
     playTone(freq, 'sine', 0.2, 0.005, 0.15, t + i * 0.1);
@@ -198,6 +223,7 @@ function soundWaveClear() {
 // World clear — full 5 note fanfare
 function soundWorldClear() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   const melody = [262, 330, 392, 330, 523];
   melody.forEach((freq, i) => {
@@ -211,6 +237,7 @@ function soundWorldClear() {
 // Boss shield break — heavy metallic crash
 function soundShieldBreak() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   playNoiseBurst(0.26, 0.24, t, 'bandpass', 950, 1.4);
   // Metallic tone underneath
@@ -222,6 +249,7 @@ function soundShieldBreak() {
 // Boss shield hit — short synthetic impact cue
 function soundBossShieldHit(hp) {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   const danger = Math.max(0, 3 - Math.max(0, hp));
   const base = 260 + (danger * 24);
@@ -233,6 +261,7 @@ function soundBossShieldHit(hp) {
 // Boss core exposed — dramatic payoff cue
 function soundCoreExposed() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   playNoiseBurst(0.16, 0.12, t, 'highpass', 700, 0.7);
   playTone(220, 'sawtooth', 0.14, 0.006, 0.09, t);
@@ -243,6 +272,7 @@ function soundCoreExposed() {
 // Boss core damage — strongest hit cue before final defeat
 function soundCoreDamage() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   playNoiseBurst(0.2, 0.11, t, 'bandpass', 980, 1.8);
   playTone(180, 'square', 0.2, 0.003, 0.08, t);
@@ -253,6 +283,7 @@ function soundCoreDamage() {
 // Boss defeated — dramatic descending + resolution
 function soundBossDefeated() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   // Descend
   [523, 466, 392, 330, 262].forEach((freq, i) => {
@@ -270,6 +301,7 @@ function soundBossDefeated() {
 // Life zone appear — gentle ascending chime
 function soundLifeZone() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   [523, 659, 784].forEach((freq, i) => {
     playTone(freq, 'sine', 0.12, 0.005, 0.2, t + i * 0.08);
@@ -279,6 +311,7 @@ function soundLifeZone() {
 // Life gained — warm positive sting
 function soundLifeGained() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
   playTone(523, 'sine', 0.2, 0.005, 0.1, t);
   playTone(659, 'sine', 0.2, 0.005, 0.1, t + 0.1);
@@ -288,6 +321,7 @@ function soundLifeGained() {
 // UI button click — subtle tick
 function soundUIClick() {
   if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
   playTone(800, 'sine', 0.08, 0.002, 0.04, audioCtx.currentTime);
 }
 
@@ -387,6 +421,9 @@ let currentWorldPalette = { primary: '#00e5ff', secondary: '#00ff88', bg: '#0505
 let currentWorldShape = 'circle';
 let drawTick = 0;
 let lastFrameTime = performance.now();
+let hudScoreCoinDirty = false;
+let pendingHudUpdates = 0;
+let hudLastFlushAt = 0;
 const MAX_PARTICLES = 55;
 const MAX_POPUPS = 24;
 const MAX_SHOCKWAVES = 10;
@@ -529,6 +566,22 @@ function getPopup() {
 function releasePopup(popup) {
   popup.life = 0;
   popupPool.push(popup);
+}
+
+function markScoreCoinDirty(force = false) {
+  hudScoreCoinDirty = true;
+  pendingHudUpdates++;
+  const batchSize = isMobile ? 3 : 1;
+  if (force || pendingHudUpdates >= batchSize) flushScoreCoinUI();
+}
+
+function flushScoreCoinUI() {
+  if (!hudScoreCoinDirty) return;
+  ui.score.innerText = score;
+  ui.coins.innerText = Math.floor(globalCoins + (runCents / 10));
+  hudLastFlushAt = performance.now();
+  hudScoreCoinDirty = false;
+  pendingHudUpdates = 0;
 }
 
 function createParticles(x, y, color, count = 20) {
@@ -1162,6 +1215,8 @@ function draw() {
   }
 
   const orbColor = multiColors[Math.min(multiplier - 1, 7)];
+  const baseBodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
+  const shouldDrawTargetMarkers = useHeavyEffects || worldShape === 'circle';
 
   // TARGETS
   targets.forEach(t => {
@@ -1176,10 +1231,11 @@ function draw() {
     const hitScalePulse = t.hitScalePulse || 0;
     const dynamicRadius = orbitRadius + (hitScalePulse * 1.4);
     const isBossShield = !!t.isBossShield;
-    const bodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
+    const bodyWidth = baseBodyWidth;
     const shieldBodyWidth = bodyWidth + 1.4;
     const glowWidth = bodyWidth + 4;
     const housingWidth = glowWidth + 4;
+    const isLiteTargetRender = !useHeavyEffects && !isBossShield;
 
     if (t.isPhantom) {
       ctx.save();
@@ -1220,9 +1276,9 @@ function draw() {
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffaa00';
       ctx.globalAlpha = (0.28 + approach * 0.18) * lifePulse;
-      ctx.lineWidth = 10;
+      ctx.lineWidth = useHeavyEffects ? 10 : 7.5;
       ctx.lineCap = 'butt';
-      setShadowBlur(40 + (approach * 10));
+      setShadowBlur(useHeavyEffects ? (40 + (approach * 10)) : (8 + (approach * 4)));
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
 
@@ -1232,7 +1288,7 @@ function draw() {
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = 0.86 + (approach * 0.12);
       ctx.lineWidth = 4 + (approach * 0.8);
-      setShadowBlur(20 + (approach * 8));
+      setShadowBlur(useHeavyEffects ? (20 + (approach * 8)) : (4 + (approach * 3)));
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
 
@@ -1267,7 +1323,7 @@ function draw() {
       ctx.globalAlpha = (0.36 + approach * 0.28 + hitFlash * 0.2) * bonusPulse;
       ctx.lineWidth = glowWidth + (approach * 0.6);
       ctx.lineCap = 'round';
-      setShadowBlur(14 + (approach * 8));
+      setShadowBlur(useHeavyEffects ? (14 + (approach * 8)) : (4 + (approach * 3)));
       ctx.shadowColor = '#ffd54a';
       ctx.stroke();
 
@@ -1276,7 +1332,7 @@ function draw() {
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = Math.min(1, 0.86 + approach * 0.12 + hitFlash * 0.25);
       ctx.lineWidth = coreWidth;
-      setShadowBlur(6 + (approach * 6));
+      setShadowBlur(useHeavyEffects ? (6 + (approach * 6)) : 0);
       ctx.shadowColor = '#ffd54a';
       ctx.stroke();
 
@@ -1287,7 +1343,7 @@ function draw() {
       ctx.rotate(Math.PI / 4);
       ctx.fillStyle = '#ffd54a';
       ctx.globalAlpha = 0.88 + approach * 0.12;
-      setShadowBlur(12);
+      setShadowBlur(useHeavyEffects ? 12 : 0);
       ctx.shadowColor = '#ffd54a';
       ctx.fillRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
       ctx.strokeStyle = '#ffffff';
@@ -1302,15 +1358,17 @@ function draw() {
 
     ctx.save();
 
-    // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
-    ctx.beginPath();
-    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
-    ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
-    ctx.lineWidth = isBossShield ? (housingWidth + 2.6) : housingWidth;
-    ctx.lineCap = 'butt';
-    ctx.shadowBlur = 0;
-    ctx.stroke();
+    if (!isLiteTargetRender) {
+      // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
+      ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
+      ctx.lineWidth = isBossShield ? (housingWidth + 2.6) : housingWidth;
+      ctx.lineCap = 'butt';
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+    }
 
     if (isBossShield) {
       // Inner recess lip to make mounted shield weak-point feel more mechanical.
@@ -1348,20 +1406,31 @@ function draw() {
     ctx.shadowColor = t.color;
     ctx.stroke();
 
-    ctx.beginPath();
-    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
-    ctx.globalAlpha = isBossShield
-      ? Math.min(1, 0.94 + (approach * 0.06) + (hitFlash * 0.18))
-      : Math.min(1, 0.84 + (approach * 0.14) + (hitFlash * 0.3));
-    ctx.lineWidth = isBossShield
-      ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
-      : (bodyWidth + (approach * 0.8) + (hitFlash * 0.9));
-    setShadowBlur(isBossShield
-      ? (7 + (approach * 6) + (hitFlash * 9))
-      : (10 + (approach * 12) + (hitFlash * 16)));
-    ctx.shadowColor = t.color;
-    ctx.stroke();
+    if (!isLiteTargetRender) {
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
+      ctx.globalAlpha = isBossShield
+        ? Math.min(1, 0.94 + (approach * 0.06) + (hitFlash * 0.18))
+        : Math.min(1, 0.84 + (approach * 0.14) + (hitFlash * 0.3));
+      ctx.lineWidth = isBossShield
+        ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
+        : (bodyWidth + (approach * 0.8) + (hitFlash * 0.9));
+      setShadowBlur(isBossShield
+        ? (7 + (approach * 6) + (hitFlash * 9))
+        : (10 + (approach * 12) + (hitFlash * 16)));
+      ctx.shadowColor = t.color;
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = t.color;
+      ctx.globalAlpha = Math.min(1, 0.78 + (approach * 0.16) + (hitFlash * 0.24));
+      ctx.lineWidth = bodyWidth + 1 + (approach * 0.8) + (hitFlash * 0.9);
+      setShadowBlur(6 + (approach * 6) + (hitFlash * 8));
+      ctx.shadowColor = t.color;
+      ctx.stroke();
+    }
 
     if (hitFlash > 0.02) {
       ctx.beginPath();
@@ -1375,16 +1444,18 @@ function draw() {
     }
 
     // --- MIDPOINT MARKER (ideal precision hit cue) ---
-    const markerSpan = Math.min(t.size * 0.25, 0.055);
-    ctx.beginPath();
-    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
-    ctx.strokeStyle = '#ffffff';
-    ctx.globalAlpha = Math.min(1, 0.82 + (approach * 0.15) + (hitFlash * 0.2));
-    ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
-    ctx.lineCap = 'round';
-    setShadowBlur(14);
-    ctx.shadowColor = t.color;
-    ctx.stroke();
+    if (shouldDrawTargetMarkers) {
+      const markerSpan = Math.min(t.size * 0.25, 0.055);
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = Math.min(1, 0.82 + (approach * 0.15) + (hitFlash * 0.2));
+      ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
+      ctx.lineCap = 'round';
+      setShadowBlur(14);
+      ctx.shadowColor = t.color;
+      ctx.stroke();
+    }
 
     // --- EDGE BRACKETS (small inward ticks framing the timing zone) ---
     const drawBracketTick = (angle) => {
@@ -1410,7 +1481,7 @@ function draw() {
       ctx.stroke();
     };
 
-    if (worldShape === 'circle') {
+    if (shouldDrawTargetMarkers && worldShape === 'circle') {
       drawBracketTick(t.start);
       drawBracketTick(t.start + t.size);
     }
@@ -1662,7 +1733,9 @@ function update() {
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
   const tPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
-  trail.push({ x: tPt.x, y: tPt.y }); if (trail.length > multiplier * 4) trail.shift();
+  trail.push({ x: tPt.x, y: tPt.y });
+  const maxTrailMultiplier = isMobile ? 3 : 4;
+  if (trail.length > multiplier * maxTrailMultiplier) trail.shift();
 
   if (angle > Math.PI * 2) angle -= Math.PI * 2;
   if (angle < 0) angle += Math.PI * 2;
@@ -1732,6 +1805,22 @@ function update() {
       }
     }
   });
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (particles[i].life <= 0) {
+      const deadParticle = particles.splice(i, 1)[0];
+      if (deadParticle) releaseParticle(deadParticle);
+    }
+  }
+  for (let i = popups.length - 1; i >= 0; i--) {
+    if (popups[i].life <= 0) {
+      const deadPopup = popups.splice(i, 1)[0];
+      if (deadPopup) releasePopup(deadPopup);
+    }
+  }
+  if (hudScoreCoinDirty && (frameNow - hudLastFlushAt) > (isMobile ? 120 : 16)) {
+    flushScoreCoinUI();
+  }
 
   draw(); requestAnimationFrame(update);
 }
@@ -1936,13 +2025,13 @@ function tap() {
       const cornerBonusScore = 5;
       score += cornerBonusScore;
       runCents += cornerBonusScore;
-      ui.score.innerText = score;
-      ui.coins.innerText = Math.floor(globalCoins + (runCents / 10));
+      markScoreCoinDirty();
       createPopup(hitX, hitY - 24, `CORNER +${cornerBonusScore}`, '#ffd54a');
       createParticles(hitX, hitY, '#ffd54a', 28);
       createShockwave('#ffd54a', 24);
       soundPerfect(Math.max(1, multiplier - 1));
       vibrate([8, 20, 8]);
+      flushScoreCoinUI();
       return;
     }
 
@@ -2014,9 +2103,13 @@ function tap() {
     streak++; ui.streak.innerText = streak;
 
     let centsEarned = (hitQuality === "perfect" ? 3 : hitQuality === "good" ? 2 : 1) * multiplier;
-    runCents += centsEarned; ui.score.innerText = score; ui.coins.innerText = Math.floor(globalCoins + (runCents / 10));
+    runCents += centsEarned;
+    markScoreCoinDirty();
     updateMultiplierUI();
     createParticles(hitX, hitY, t.color);
+    const shouldForceHudFlush = targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active)
+      || stageHits >= levelData.hitsNeeded;
+    if (shouldForceHudFlush) flushScoreCoinUI();
 
     if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
       triggerStageClear();
