@@ -6,9 +6,9 @@ const campaign = [
   { id: "1-5", title: "Split Focus", hitsNeeded: 8, speed: 0.04, lives: 3, targets: 3, fixedTargetCount: true, moveSpeed: 0.01, reverse: false, text: "Three zones are active at once. Keep your attention split and steady." },
   { id: "1-6", title: "The Aegis Core", hitsNeeded: 99, speed: 0.045, lives: 3, boss: 'aegis', moveSpeed: 0.03, reverse: true, text: "BOSS: Break the shields. Expose the core." },
   { id: "2-1", title: "New Geometry", hitsNeeded: 4, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, cornerBonusChance: 0.3, text: "New shape. Same timing. Find your rhythm." },
-  { id: "2-2", title: "Diamond Drift", hitsNeeded: 6, speed: 0.036, lives: 3, targets: 1, moveSpeed: 0.014, reverse: true, cornerBonusChance: 0.38, text: "Direction flips on every hit. Track the moving zone." },
+  { id: "2-2", title: "Diamond Drift", hitsNeeded: 6, speed: 0.036, lives: 3, targets: 1, moveSpeed: 0.014, reverse: true, cornerBonusChance: 0.38, pulse: { amplitude: 0.07, period: 2800, minBonusWindow: 0.055, minHitBonus: 1 }, text: "Direction flips on every hit. Track the moving zone." },
   { id: "2-3", title: "The Trap", hitsNeeded: 6, speed: 0.038, lives: 3, targets: 1, moveSpeed: 0.008, reverse: true, hasPhantom: true, cornerBonusChance: 0.42, text: "The red dashed zone is a trap. Hit the white. Avoid the red." },
-  { id: "2-4", title: "Split & Dodge", hitsNeeded: 8, speed: 0.04, lives: 3, targets: 2, moveSpeed: 0.01, reverse: true, hasPhantom: true, cornerBonusChance: 0.46, text: "Two real zones. One trap. Stay sharp." },
+  { id: "2-4", title: "Split & Dodge", hitsNeeded: 8, speed: 0.04, lives: 3, targets: 2, moveSpeed: 0.01, reverse: true, hasPhantom: true, cornerBonusChance: 0.46, pulse: { amplitude: 0.06, period: 2600, minBonusWindow: 0.06, minHitBonus: 1 }, text: "Two real zones. One trap. Stay sharp." },
   { id: "2-5", title: "High Pressure", hitsNeeded: 10, speed: 0.044, lives: 3, targets: 2, moveSpeed: 0.018, reverse: true, hasPhantom: true, hasHeart: true, cornerBonusChance: 0.52, cornerBonusMax: 2, text: "Faster. More chaos. You know what to do." },
   { id: "2-6", title: "The Prism", hitsNeeded: 99, speed: 0.048, lives: 3, boss: 'prism', moveSpeed: 0.025, reverse: true, text: "BOSS: The Prism defends each corner. Break them all." }
 ];

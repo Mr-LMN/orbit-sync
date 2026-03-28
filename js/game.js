@@ -824,6 +824,11 @@ function buildTarget(start, size, config = {}) {
   if (!target.shrinkConfig && levelData && levelData.shrink && !target.isHeart && !target.isBossShield) {
     target.shrinkConfig = levelData.shrink;
   }
+  if (!target.pulseConfig && levelData && levelData.pulse && !target.isHeart && !target.isBossShield && !target.isPhantom && !target.isCornerBonus) {
+    target.pulseConfig = levelData.pulse;
+    target.pulsePhaseOffset = (target.start % (Math.PI * 2)) * 420;
+    target.pulseAtMinimum = false;
+  }
   return target;
 }
 
@@ -1522,7 +1527,8 @@ function showTempText(text, color, duration) {
 
 function update() {
   if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
-  const isBossTransitionPaused = performance.now() < bossPauseUntil;
+  const frameNow = performance.now();
+  const isBossTransitionPaused = frameNow < bossPauseUntil;
 
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
@@ -1563,13 +1569,31 @@ function update() {
         if (t.start < 0) t.start += Math.PI * 2;
       }
 
+      let sizeScale = 1;
       if (!inMenu && t.shrinkConfig && t.baseSize && t.shrinkConfig.distance > 0) {
         const waveDistance = Math.max(0, totalStageDistance - (t.spawnDistance || 0));
         const progress = Math.min(1, waveDistance / t.shrinkConfig.distance);
         const startScale = t.shrinkConfig.startScale ?? 1;
         const endScale = t.shrinkConfig.endScale ?? 1;
-        const scale = startScale + ((endScale - startScale) * progress);
-        t.size = t.baseSize * scale;
+        const shrinkScale = startScale + ((endScale - startScale) * progress);
+        sizeScale *= shrinkScale;
+      }
+
+      if (!inMenu && t.pulseConfig && t.baseSize) {
+        const pulseAmplitude = Math.max(0, Math.min(0.18, t.pulseConfig.amplitude ?? 0.06));
+        const pulsePeriod = Math.max(1400, t.pulseConfig.period ?? 2600);
+        const phase = ((frameNow + (t.pulsePhaseOffset || 0)) / pulsePeriod) * (Math.PI * 2);
+        const pulseNormalized = (Math.sin(phase) + 1) * 0.5;
+        const pulseScale = 1 + ((pulseNormalized - 0.5) * 2 * pulseAmplitude);
+        const minWindow = Math.max(0.02, Math.min(0.25, t.pulseConfig.minBonusWindow ?? 0.06));
+        t.pulseAtMinimum = pulseNormalized <= minWindow;
+        sizeScale *= pulseScale;
+      } else {
+        t.pulseAtMinimum = false;
+      }
+
+      if (t.baseSize) {
+        t.size = t.baseSize * sizeScale;
       }
 
       if (t.isLifeZone && t.active) {
@@ -1822,6 +1846,17 @@ function tap() {
         else ui.bossPhase2.className = "boss-segment active-segment";
         triggerScreenShake(10); isBossPhaseTwo = false; scheduleBossSpawn(700); return;
       }
+    }
+
+    if (t.pulseConfig && t.pulseAtMinimum) {
+      const pulseBonus = Math.max(1, Math.min(3, t.pulseConfig.minHitBonus ?? 1));
+      score += pulseBonus;
+      runCents += pulseBonus;
+      ringHitFlash = Math.max(ringHitFlash, 0.32);
+      createPopup(hitX, hitY - 44, `PULSE +${pulseBonus}`, '#7dfffb');
+      createParticles(hitX, hitY, '#7dfffb', 10);
+      createTargetHitRipple(hitX, hitY, '#7dfffb');
+      vibrate(12);
     }
 
     if (hitQuality === "perfect" && currentLevelIdx >= 2) {
