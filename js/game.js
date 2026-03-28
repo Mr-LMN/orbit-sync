@@ -827,6 +827,38 @@ function buildTarget(start, size, config = {}) {
   return target;
 }
 
+function spawnWorld2CornerBonusTargets() {
+  const worldNum = parseInt(levelData.id.split('-')[0], 10);
+  if (worldNum !== 2 || levelData.boss || inMenu) return;
+
+  const spawnChance = levelData.cornerBonusChance ?? 0.38;
+  if (Math.random() > spawnChance) return;
+
+  const maxCorners = levelData.cornerBonusMax ?? 1;
+  const bonusCount = (maxCorners > 1 && Math.random() < 0.22) ? 2 : 1;
+  const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+  const jitterRange = levelData.cornerBonusJitter ?? 0.045;
+  const cornerSize = levelData.cornerBonusSize ?? (Math.PI / 20);
+  const bonusColor = '#ffd54a';
+  const chosen = [];
+
+  while (chosen.length < bonusCount && chosen.length < cornerAngles.length) {
+    const idx = Math.floor(Math.random() * cornerAngles.length);
+    if (!chosen.includes(idx)) chosen.push(idx);
+  }
+
+  chosen.forEach(idx => {
+    const jitter = (Math.random() * 2 - 1) * jitterRange;
+    targets.push(buildTarget(cornerAngles[idx] + jitter, cornerSize, {
+      color: bonusColor,
+      active: true,
+      hp: 1,
+      moveSpeed: 0,
+      isCornerBonus: true
+    }));
+  });
+}
+
 function spawnTargets() {
   targets = [];
   const palette = getWorldPalette();
@@ -945,6 +977,8 @@ function spawnTargets() {
       hp: 1
     }));
   }
+
+  spawnWorld2CornerBonusTargets();
 }
 
 function draw() {
@@ -1096,6 +1130,51 @@ function draw() {
 
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
+      ctx.restore();
+      return;
+    }
+
+    if (t.isCornerBonus) {
+      ctx.save();
+      const bonusPulse = 0.92 + (Math.sin(now / 360 + tCenter * 3.1) * 0.1);
+      const glowWidth = Math.max(3, bodyWidth * 0.85);
+      const coreWidth = Math.max(1.8, bodyWidth * 0.45);
+
+      ctx.beginPath();
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ffd54a';
+      ctx.globalAlpha = (0.36 + approach * 0.28 + hitFlash * 0.2) * bonusPulse;
+      ctx.lineWidth = glowWidth + (approach * 0.6);
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 14 + (approach * 8);
+      ctx.shadowColor = '#ffd54a';
+      ctx.stroke();
+
+      ctx.beginPath();
+      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = Math.min(1, 0.86 + approach * 0.12 + hitFlash * 0.25);
+      ctx.lineWidth = coreWidth;
+      ctx.shadowBlur = 6 + (approach * 6);
+      ctx.shadowColor = '#ffd54a';
+      ctx.stroke();
+
+      const cornerPt = getPointOnShape(tCenter, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius);
+      const diamondSize = Math.max(5, orbitRadius * 0.022);
+      ctx.save();
+      ctx.translate(cornerPt.x, cornerPt.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#ffd54a';
+      ctx.globalAlpha = 0.88 + approach * 0.12;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ffd54a';
+      ctx.fillRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.95;
+      ctx.strokeRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
+      ctx.restore();
+
       ctx.restore();
       return;
     }
@@ -1657,7 +1736,7 @@ function tap() {
       createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366"); createParticles(hitX, hitY, '#ff3366', 30);
       soundLifeGained();
       vibrate([20, 10, 40]);
-      if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom).every(tgt => !tgt.active)) { triggerStageClear(); }
+      if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active)) { triggerStageClear(); }
       return;
     }
 
@@ -1701,6 +1780,20 @@ function tap() {
       soundFail();
       vibrate([40, 20, 40]);
       handleFail("HIT A PHANTOM");
+      return;
+    }
+
+    if (t.isCornerBonus) {
+      const cornerBonusScore = 5;
+      score += cornerBonusScore;
+      runCents += cornerBonusScore;
+      ui.score.innerText = score;
+      ui.coins.innerText = Math.floor(globalCoins + (runCents / 10));
+      createPopup(hitX, hitY - 24, `CORNER +${cornerBonusScore}`, '#ffd54a');
+      createParticles(hitX, hitY, '#ffd54a', 28);
+      createShockwave('#ffd54a', 24);
+      soundPerfect(Math.max(1, multiplier - 1));
+      vibrate([8, 20, 8]);
       return;
     }
 
@@ -1765,7 +1858,7 @@ function tap() {
     updateMultiplierUI();
     createParticles(hitX, hitY, t.color);
 
-    if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
+    if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
       triggerStageClear();
     }
   } else {
