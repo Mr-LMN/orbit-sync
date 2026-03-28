@@ -377,15 +377,33 @@ let brightnessPulseTimeout = null;
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
 
-const size = Math.min(window.innerWidth, window.innerHeight);
-canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-const centerObj = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-const orbitRadius = Math.min(window.innerWidth, window.innerHeight) * 0.28;
+let viewportWidth = window.innerWidth;
+let viewportHeight = window.innerHeight;
+let dpr = Math.min(2, window.devicePixelRatio || 1);
+const centerObj = { x: viewportWidth / 2, y: viewportHeight / 2 };
+let orbitRadius = Math.min(viewportWidth, viewportHeight) * 0.28;
+let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || viewportWidth < 768;
+let currentWorldPalette = { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
+let currentWorldShape = 'circle';
+let drawTick = 0;
+let lastFrameTime = performance.now();
+const MAX_PARTICLES = 55;
+const MAX_POPUPS = 24;
+const MAX_SHOCKWAVES = 10;
+const MAX_HIT_RIPPLES = 20;
 const multiColors = ['#ffffff', '#00e5ff', '#00ff88', '#ffea00', '#ffaa00', '#ff3366', '#b300ff', '#ff00ff'];
 
 function getWorldPalette() {
-  const worldNum = parseInt(levelData ? levelData.id.split('-')[0] : '1');
-  if (levelData && levelData.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
+  return currentWorldPalette;
+}
+
+function getWorldShape() {
+  return currentWorldShape;
+}
+
+function computeWorldPalette(level) {
+  const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
+  if (level && level.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
   switch (worldNum) {
     case 1: return { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
     case 2: return { primary: '#ff00cc', secondary: '#cc00ff', bg: '#07070a' };
@@ -394,9 +412,9 @@ function getWorldPalette() {
   }
 }
 
-function getWorldShape() {
-  if (!levelData) return 'circle';
-  const worldNum = parseInt(levelData.id.split('-')[0]);
+function computeWorldShape(level) {
+  if (!level) return 'circle';
+  const worldNum = parseInt(level.id.split('-')[0], 10);
   switch(worldNum) {
     case 1: return 'circle';
     case 2: return 'diamond';
@@ -404,6 +422,24 @@ function getWorldShape() {
     default: return 'circle';
   }
 }
+
+function updateCanvasSize() {
+  viewportWidth = window.innerWidth;
+  viewportHeight = window.innerHeight;
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  canvas.style.width = `${viewportWidth}px`;
+  canvas.style.height = `${viewportHeight}px`;
+  canvas.width = Math.floor(viewportWidth * dpr);
+  canvas.height = Math.floor(viewportHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  centerObj.x = viewportWidth / 2;
+  centerObj.y = viewportHeight / 2;
+  orbitRadius = Math.min(viewportWidth, viewportHeight) * 0.28;
+  isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || viewportWidth < 768;
+}
+
+updateCanvasSize();
+window.addEventListener('resize', updateCanvasSize);
 
 function getPointOnShape(t, shape, cx, cy, radius) {
   if (shape === 'circle') {
@@ -446,7 +482,7 @@ function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps 
 }
 
 // Generate subtle background dust for depth
-for (let i = 0; i < 75; i++) {
+for (let i = 0; i < 50; i++) {
   bgDust.push({
     x: Math.random() * window.innerWidth,
     y: Math.random() * window.innerHeight,
@@ -474,25 +510,66 @@ function updateShopUI() {
 function buyItem(id, cost) { if (globalCoins >= cost) { globalCoins -= cost; unlockedSkins.push(id); saveData(); equipSkin(id); } else { alert("Not enough coins! Play the campaign to earn more."); } }
 function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
 
+const particlePool = [];
+const popupPool = [];
+
+function getParticle() {
+  return particlePool.length ? particlePool.pop() : { x: 0, y: 0, vx: 0, vy: 0, angle: 0, length: 0, life: 0, color: '#fff' };
+}
+
+function releaseParticle(particle) {
+  particle.life = 0;
+  particlePool.push(particle);
+}
+
+function getPopup() {
+  return popupPool.length ? popupPool.pop() : { x: 0, y: 0, text: '', color: '#fff', life: 0, hitQuality: null };
+}
+
+function releasePopup(popup) {
+  popup.life = 0;
+  popupPool.push(popup);
+}
+
 function createParticles(x, y, color, count = 20) {
   for (let i = 0; i < count; i++) {
     const angle = Math.random() * Math.PI * 2;
     const speed = Math.random() * 6 + 2;
     const length = Math.random() * 10 + 5;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      angle,
-      length,
-      life: 1.0,
-      color
-    });
+    const particle = getParticle();
+    particle.x = x;
+    particle.y = y;
+    particle.vx = Math.cos(angle) * speed;
+    particle.vy = Math.sin(angle) * speed;
+    particle.angle = angle;
+    particle.length = length;
+    particle.life = 1.0;
+    particle.color = color;
+    particles.push(particle);
+  }
+  if (particles.length > MAX_PARTICLES) {
+    const overflow = particles.length - MAX_PARTICLES;
+    for (let i = 0; i < overflow; i++) releaseParticle(particles[i]);
+    particles.splice(0, overflow);
   }
 }
-function createPopup(x, y, text, color, hitQuality = null) { popups.push({ x: x, y: y, text: text, color: color, life: 1.0, hitQuality }); }
+function createPopup(x, y, text, color, hitQuality = null) {
+  const popup = getPopup();
+  popup.x = x;
+  popup.y = y;
+  popup.text = text;
+  popup.color = color;
+  popup.life = 1.0;
+  popup.hitQuality = hitQuality;
+  popups.push(popup);
+  if (popups.length > MAX_POPUPS) {
+    const oldest = popups.shift();
+    if (oldest) releasePopup(oldest);
+  }
+}
 function createShockwave(color, speed = 40) {
   shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
+  if (shockwaves.length > MAX_SHOCKWAVES) shockwaves.splice(0, shockwaves.length - MAX_SHOCKWAVES);
 }
 function createTargetHitRipple(x, y, color = '#ffffff') {
   targetHitRipples.push({
@@ -503,6 +580,9 @@ function createTargetHitRipple(x, y, color = '#ffffff') {
     life: 1.0,
     color: color === '#ffffff' ? 'rgba(255,255,255,0.95)' : rgbaFromHex(color, 0.95)
   });
+  if (targetHitRipples.length > MAX_HIT_RIPPLES) {
+    targetHitRipples.splice(0, targetHitRipples.length - MAX_HIT_RIPPLES);
+  }
 }
 
 function triggerTargetHitFeedback(target, x, y) {
@@ -797,6 +877,8 @@ function triggerBossIntro() {
 function loadLevel(idx) {
   scoreAtLevelStart = score;
   levelData = campaign[idx] || campaign[campaign.length - 1];
+  currentWorldPalette = computeWorldPalette(levelData);
+  currentWorldShape = computeWorldShape(levelData);
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
   isBossPhaseTwo = false; bossPhase = 1;
 
@@ -989,14 +1071,19 @@ function spawnTargets() {
 }
 
 function draw() {
-  const palette = getWorldPalette();
+  const palette = currentWorldPalette;
+  const worldShape = currentWorldShape;
   const worldNum = parseInt(levelData ? levelData.id.split('-')[0] : '1', 10);
   const now = performance.now();
+  const useHeavyEffects = !isMobile || multiplier > 2;
+  const shadowBlurCap = useHeavyEffects ? 999 : 8;
+  const setShadowBlur = (value) => { ctx.shadowBlur = Math.min(shadowBlurCap, value); };
+  drawTick++;
   // BACKGROUND
   let isBoss = levelData && levelData.boss;
 
   ctx.fillStyle = '#07070a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, viewportWidth, viewportHeight);
 
   // Ambient background dust
   bgDust.forEach(d => {
@@ -1008,16 +1095,18 @@ function draw() {
     let speedMult = isBoss ? 3.5 : 1;
     if (worldNum === 2 && !isBoss) {
       d.x += Math.sin((now * 0.0012) + d.driftPhase + (d.y * 0.005)) * d.driftAmp;
-      if (d.x < -2) d.x = canvas.width + 2;
-      if (d.x > canvas.width + 2) d.x = -2;
+      if (d.x < -2) d.x = viewportWidth + 2;
+      if (d.x > viewportWidth + 2) d.x = -2;
     }
-    d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
-    if (d.y < 0) { d.y = canvas.height; d.x = Math.random() * canvas.width; }
+    if (drawTick % (isMobile ? 3 : 1) === 0) {
+      d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
+    }
+    if (d.y < 0) { d.y = viewportHeight; d.x = Math.random() * viewportWidth; }
   });
 
   // ENERGY LANE
   // Dark groove
-  buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 8;
   ctx.strokeStyle = 'rgba(255,255,255,0.04)';
   ctx.shadowBlur = 0;
@@ -1025,18 +1114,18 @@ function draw() {
   ctx.stroke();
 
   // Glowing line
-  buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+  buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 2;
   ctx.globalAlpha = 0.9;
   ctx.strokeStyle = palette.primary;
-  ctx.shadowBlur = 15;
+  setShadowBlur(15);
   ctx.shadowColor = palette.primary;
   ctx.stroke();
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
   // World 2 corner accents: faint prism glows at each diamond point
-  if (worldNum === 2 && !isBoss) {
+  if (worldNum === 2 && !isBoss && useHeavyEffects) {
     const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
     ctx.save();
     cornerAngles.forEach((corner, idx) => {
@@ -1062,7 +1151,7 @@ function draw() {
       ctx.save();
       ctx.lineCap = 'butt';
       activeBossShields.forEach(t => {
-        buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
         ctx.strokeStyle = 'rgba(4, 8, 16, 0.42)';
         ctx.lineWidth = 3.2;
         ctx.shadowBlur = 0;
@@ -1097,7 +1186,7 @@ function draw() {
       ctx.setLineDash([4, 12]);
       
       // Very faint glow — barely there
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y,
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
         orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ff3366';
       ctx.globalAlpha = 0.12;
@@ -1107,7 +1196,7 @@ function draw() {
       ctx.stroke();
       
       // Thin dashed line only, no fill, no X label
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y,
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
         orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ff3366';
       ctx.globalAlpha = 0.45;
@@ -1128,28 +1217,28 @@ function draw() {
 
       // Glow layer
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffaa00';
       ctx.globalAlpha = (0.28 + approach * 0.18) * lifePulse;
       ctx.lineWidth = 10;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = 40 + (approach * 10);
+      setShadowBlur(40 + (approach * 10));
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
 
       // Core line
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = 0.86 + (approach * 0.12);
       ctx.lineWidth = 4 + (approach * 0.8);
-      ctx.shadowBlur = 20 + (approach * 8);
+      setShadowBlur(20 + (approach * 8));
       ctx.shadowColor = '#ffaa00';
       ctx.stroke();
 
       // Small + symbol at centre of arc
       const midAngle = t.start + t.size / 2;
-      const lifeMidPt = getPointOnShape(midAngle, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius);
+      const lifeMidPt = getPointOnShape(midAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
       const lx = lifeMidPt.x;
       const ly = lifeMidPt.y;
       ctx.globalAlpha = 1.0;
@@ -1173,32 +1262,32 @@ function draw() {
       const coreWidth = Math.max(1.8, bodyWidth * 0.45);
 
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffd54a';
       ctx.globalAlpha = (0.36 + approach * 0.28 + hitFlash * 0.2) * bonusPulse;
       ctx.lineWidth = glowWidth + (approach * 0.6);
       ctx.lineCap = 'round';
-      ctx.shadowBlur = 14 + (approach * 8);
+      setShadowBlur(14 + (approach * 8));
       ctx.shadowColor = '#ffd54a';
       ctx.stroke();
 
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = Math.min(1, 0.86 + approach * 0.12 + hitFlash * 0.25);
       ctx.lineWidth = coreWidth;
-      ctx.shadowBlur = 6 + (approach * 6);
+      setShadowBlur(6 + (approach * 6));
       ctx.shadowColor = '#ffd54a';
       ctx.stroke();
 
-      const cornerPt = getPointOnShape(tCenter, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius);
+      const cornerPt = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
       const diamondSize = Math.max(5, orbitRadius * 0.022);
       ctx.save();
       ctx.translate(cornerPt.x, cornerPt.y);
       ctx.rotate(Math.PI / 4);
       ctx.fillStyle = '#ffd54a';
       ctx.globalAlpha = 0.88 + approach * 0.12;
-      ctx.shadowBlur = 12;
+      setShadowBlur(12);
       ctx.shadowColor = '#ffd54a';
       ctx.fillRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
       ctx.strokeStyle = '#ffffff';
@@ -1215,7 +1304,7 @@ function draw() {
 
     // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
     ctx.beginPath();
-    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
     ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
     ctx.lineWidth = isBossShield ? (housingWidth + 2.6) : housingWidth;
@@ -1226,7 +1315,7 @@ function draw() {
     if (isBossShield) {
       // Inner recess lip to make mounted shield weak-point feel more mechanical.
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = 'rgba(0, 0, 0, 0.52)';
       ctx.globalAlpha = 0.78 + (approach * 0.1);
       ctx.lineWidth = shieldBodyWidth + 2.8;
@@ -1235,7 +1324,7 @@ function draw() {
 
       // Dark separator layer between bright lane and colored shield segment.
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = 'rgba(3, 7, 14, 0.92)';
       ctx.globalAlpha = 0.86 + (approach * 0.08);
       ctx.lineWidth = shieldBodyWidth + 1.6;
@@ -1245,7 +1334,7 @@ function draw() {
 
     // --- ACTIVE TARGET BODY (glow + crisp core for timing window readability) ---
     ctx.beginPath();
-    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = t.color;
     ctx.globalAlpha = isBossShield
       ? ((0.27 + approach * 0.27 + hitFlash * 0.2) * pulse)
@@ -1253,14 +1342,14 @@ function draw() {
     ctx.lineWidth = isBossShield
       ? (shieldBodyWidth + 3.6 + (approach * 1.15) + (hitFlash * 1.05))
       : (glowWidth + (approach * 1.5) + (hitFlash * 1.2));
-    ctx.shadowBlur = isBossShield
+    setShadowBlur(isBossShield
       ? (12 + (approach * 12) + (hitFlash * 10))
-      : (16 + (approach * 18) + (hitFlash * 14));
+      : (16 + (approach * 18) + (hitFlash * 14)));
     ctx.shadowColor = t.color;
     ctx.stroke();
 
     ctx.beginPath();
-    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
     ctx.globalAlpha = isBossShield
       ? Math.min(1, 0.94 + (approach * 0.06) + (hitFlash * 0.18))
@@ -1268,19 +1357,19 @@ function draw() {
     ctx.lineWidth = isBossShield
       ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
       : (bodyWidth + (approach * 0.8) + (hitFlash * 0.9));
-    ctx.shadowBlur = isBossShield
+    setShadowBlur(isBossShield
       ? (7 + (approach * 6) + (hitFlash * 9))
-      : (10 + (approach * 12) + (hitFlash * 16));
+      : (10 + (approach * 12) + (hitFlash * 16)));
     ctx.shadowColor = t.color;
     ctx.stroke();
 
     if (hitFlash > 0.02) {
       ctx.beginPath();
-      buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = Math.min(0.95, hitFlash * 0.85);
       ctx.lineWidth = bodyWidth + 2.8;
-      ctx.shadowBlur = 22;
+      setShadowBlur(22);
       ctx.shadowColor = '#ffffff';
       ctx.stroke();
     }
@@ -1288,12 +1377,12 @@ function draw() {
     // --- MIDPOINT MARKER (ideal precision hit cue) ---
     const markerSpan = Math.min(t.size * 0.25, 0.055);
     ctx.beginPath();
-    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = Math.min(1, 0.82 + (approach * 0.15) + (hitFlash * 0.2));
     ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
     ctx.lineCap = 'round';
-    ctx.shadowBlur = 14;
+    setShadowBlur(14);
     ctx.shadowColor = t.color;
     ctx.stroke();
 
@@ -1321,7 +1410,7 @@ function draw() {
       ctx.stroke();
     };
 
-    if (getWorldShape() === 'circle') {
+    if (worldShape === 'circle') {
       drawBracketTick(t.start);
       drawBracketTick(t.start + t.size);
     }
@@ -1340,7 +1429,7 @@ function draw() {
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = orbColor;
       ctx.globalAlpha = opacity;
-      ctx.shadowBlur = 10 * life;
+      setShadowBlur(10 * life);
       ctx.shadowColor = orbColor;
       ctx.fill();
     }
@@ -1363,7 +1452,7 @@ function draw() {
       ctx.strokeStyle = sw.color;
       ctx.globalAlpha = sw.opacity;
       ctx.lineWidth = sw.width;
-      ctx.shadowBlur = 30;
+      setShadowBlur(30);
       ctx.shadowColor = sw.color;
       ctx.stroke();
     }
@@ -1386,7 +1475,7 @@ function draw() {
     ctx.strokeStyle = ripple.color;
     ctx.globalAlpha = ripple.life * 0.7;
     ctx.lineWidth = 1.5 + ((1 - ripple.life) * 1.8);
-    ctx.shadowBlur = 12;
+    setShadowBlur(12);
     ctx.shadowColor = ripple.color;
     ctx.stroke();
   }
@@ -1394,7 +1483,7 @@ function draw() {
   ctx.shadowBlur = 0;
 
   // PLAYER ORB
-  const orbPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  const orbPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
   const x = orbPt.x;
   const y = orbPt.y;
 
@@ -1417,7 +1506,7 @@ function draw() {
     ctx.arc(x, y, 17 + orbPulse, 0, Math.PI * 2);
     ctx.fillStyle = orbColor;
     ctx.globalAlpha = 0.15;
-    ctx.shadowBlur = 25;
+    setShadowBlur(25);
     ctx.shadowColor = orbColor;
     ctx.fill();
 
@@ -1426,7 +1515,7 @@ function draw() {
     ctx.arc(x, y, 12.5, 0, Math.PI * 2);
     ctx.fillStyle = orbColor;
     ctx.globalAlpha = 0.7;
-    ctx.shadowBlur = 12;
+    setShadowBlur(12);
     ctx.shadowColor = orbColor;
     ctx.fill();
 
@@ -1460,20 +1549,20 @@ function draw() {
 
   // Hit polish pulse (visual only)
   if (ringHitFlash > 0.01) {
-    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
     ctx.strokeStyle = hitFlashColor;
     ctx.globalAlpha = Math.min(0.4, ringHitFlash);
     ctx.lineWidth = 7 + (ringHitFlash * 6);
-    ctx.shadowBlur = 16;
+    setShadowBlur(16);
     ctx.shadowColor = hitFlashColor;
     ctx.stroke();
   }
   if (perfectFlash > 0.01) {
-    buildShapePath(ctx, getWorldShape(), centerObj.x, centerObj.y, orbitRadius + 4, 0, Math.PI * 2);
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius + 4, 0, Math.PI * 2);
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = Math.min(0.32, perfectFlash);
     ctx.lineWidth = 3;
-    ctx.shadowBlur = 8;
+    setShadowBlur(8);
     ctx.shadowColor = '#ffffff';
     ctx.stroke();
   }
@@ -1491,7 +1580,8 @@ function draw() {
     p.y += p.vy;
     p.life -= 0.04;
     if (p.life <= 0) {
-      particles.splice(i, 1);
+      const deadParticle = particles.splice(i, 1)[0];
+      if (deadParticle) releaseParticle(deadParticle);
     } else {
       ctx.beginPath();
       ctx.moveTo(p.x, p.y);
@@ -1499,7 +1589,7 @@ function draw() {
       ctx.strokeStyle = p.color;
       ctx.globalAlpha = p.life;
       ctx.lineWidth = 2;
-      ctx.shadowBlur = 6;
+      setShadowBlur(6);
       ctx.shadowColor = p.color;
       ctx.stroke();
       ctx.shadowBlur = 0;
@@ -1512,7 +1602,8 @@ function draw() {
     pop.y -= 1;
     pop.life -= 0.02;
     if (pop.life <= 0) {
-      popups.splice(i, 1);
+      const deadPopup = popups.splice(i, 1)[0];
+      if (deadPopup) releasePopup(deadPopup);
     } else {
       ctx.fillStyle = pop.color;
       ctx.globalAlpha = pop.life;
@@ -1557,16 +1648,20 @@ function showTempText(text, color, duration) {
 function update() {
   if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
   const frameNow = performance.now();
+  const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
+  lastFrameTime = frameNow;
   const isBossTransitionPaused = frameNow < bossPauseUntil;
+  const worldShape = currentWorldShape;
 
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
   if (isBossTransitionPaused) moveStep = 0;
+  moveStep *= delta;
 
   angle += moveStep;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
-  const tPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  const tPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
   trail.push({ x: tPt.x, y: tPt.y }); if (trail.length > multiplier * 4) trail.shift();
 
   if (angle > Math.PI * 2) angle -= Math.PI * 2;
@@ -1575,64 +1670,65 @@ function update() {
   if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
 
   targets.forEach(t => {
-    if (t.active) {
-      if (t.hitFlash) t.hitFlash *= 0.76;
-      if (t.hitFlash && t.hitFlash < 0.02) t.hitFlash = 0;
-      if (t.hitScalePulse) t.hitScalePulse *= 0.42;
-      if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
+    if (!t.active) return;
 
-      if (t.isHeart && totalStageDistance > t.expireDistance) {
-        t.active = false; const expPt = getPointOnShape(t.start, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
-        createParticles(expPt.x, expPt.y, '#555', 10);
-      }
-      let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
-      if (!inMenu && t.isBossShield && bossPhase === 2 && performance.now() >= (t.nextDirectionSwapAt || 0)) {
-        if (Math.random() < 0.42) t.moveSpeed *= -1;
-        t.nextDirectionSwapAt = performance.now() + 1200 + Math.random() * 1000;
-      }
-      if (isBossTransitionPaused) currentMoveSpeed = 0;
+    if (t.hitFlash) t.hitFlash *= Math.pow(0.76, delta);
+    if (t.hitFlash && t.hitFlash < 0.02) t.hitFlash = 0;
+    if (t.hitScalePulse) t.hitScalePulse *= Math.pow(0.42, delta);
+    if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
 
-      if (currentMoveSpeed !== 0) {
-        t.start += currentMoveSpeed;
-        if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
-        if (t.start < 0) t.start += Math.PI * 2;
-      }
+    if (t.isHeart && totalStageDistance > t.expireDistance) {
+      t.active = false; const expPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, orbitRadius);
+      createParticles(expPt.x, expPt.y, '#555', 10);
+      return;
+    }
+    let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
+    if (!inMenu && t.isBossShield && bossPhase === 2 && frameNow >= (t.nextDirectionSwapAt || 0)) {
+      if (Math.random() < 0.42) t.moveSpeed *= -1;
+      t.nextDirectionSwapAt = frameNow + 1200 + Math.random() * 1000;
+    }
+    if (isBossTransitionPaused) currentMoveSpeed = 0;
 
-      let sizeScale = 1;
-      if (!inMenu && t.shrinkConfig && t.baseSize && t.shrinkConfig.distance > 0) {
-        const waveDistance = Math.max(0, totalStageDistance - (t.spawnDistance || 0));
-        const progress = Math.min(1, waveDistance / t.shrinkConfig.distance);
-        const startScale = t.shrinkConfig.startScale ?? 1;
-        const endScale = t.shrinkConfig.endScale ?? 1;
-        const shrinkScale = startScale + ((endScale - startScale) * progress);
-        sizeScale *= shrinkScale;
-      }
+    if (currentMoveSpeed !== 0) {
+      t.start += currentMoveSpeed * delta;
+      if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
+      if (t.start < 0) t.start += Math.PI * 2;
+    }
 
-      if (!inMenu && t.pulseConfig && t.baseSize) {
-        const pulseAmplitude = Math.max(0, Math.min(0.18, t.pulseConfig.amplitude ?? 0.06));
-        const pulsePeriod = Math.max(1400, t.pulseConfig.period ?? 2600);
-        const phase = ((frameNow + (t.pulsePhaseOffset || 0)) / pulsePeriod) * (Math.PI * 2);
-        const pulseNormalized = (Math.sin(phase) + 1) * 0.5;
-        const pulseScale = 1 + ((pulseNormalized - 0.5) * 2 * pulseAmplitude);
-        const minWindow = Math.max(0.02, Math.min(0.25, t.pulseConfig.minBonusWindow ?? 0.06));
-        t.pulseAtMinimum = pulseNormalized <= minWindow;
-        sizeScale *= pulseScale;
-      } else {
-        t.pulseAtMinimum = false;
-      }
+    let sizeScale = 1;
+    if (!inMenu && t.shrinkConfig && t.baseSize && t.shrinkConfig.distance > 0) {
+      const waveDistance = Math.max(0, totalStageDistance - (t.spawnDistance || 0));
+      const progress = Math.min(1, waveDistance / t.shrinkConfig.distance);
+      const startScale = t.shrinkConfig.startScale ?? 1;
+      const endScale = t.shrinkConfig.endScale ?? 1;
+      const shrinkScale = startScale + ((endScale - startScale) * progress);
+      sizeScale *= shrinkScale;
+    }
 
-      if (t.baseSize) {
-        t.size = t.baseSize * sizeScale;
-      }
+    if (!inMenu && t.pulseConfig && t.baseSize) {
+      const pulseAmplitude = Math.max(0, Math.min(0.18, t.pulseConfig.amplitude ?? 0.06));
+      const pulsePeriod = Math.max(1400, t.pulseConfig.period ?? 2600);
+      const phase = ((frameNow + (t.pulsePhaseOffset || 0)) / pulsePeriod) * (Math.PI * 2);
+      const pulseNormalized = (Math.sin(phase) + 1) * 0.5;
+      const pulseScale = 1 + ((pulseNormalized - 0.5) * 2 * pulseAmplitude);
+      const minWindow = Math.max(0.02, Math.min(0.25, t.pulseConfig.minBonusWindow ?? 0.06));
+      t.pulseAtMinimum = pulseNormalized <= minWindow;
+      sizeScale *= pulseScale;
+    } else {
+      t.pulseAtMinimum = false;
+    }
 
-      if (t.isLifeZone && t.active) {
-        const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-        if (!t._wasMissable && isInsideTarget(normAngle, t)) {
-          t._wasMissable = true;
-        }
-        if (t._wasMissable && !isInsideTarget(normAngle, t)) {
-          t.active = false; // life zone missed — just disappears silently
-        }
+    if (t.baseSize) {
+      t.size = t.baseSize * sizeScale;
+    }
+
+    if (t.isLifeZone && t.active) {
+      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (!t._wasMissable && isInsideTarget(normAngle, t)) {
+        t._wasMissable = true;
+      }
+      if (t._wasMissable && !isInsideTarget(normAngle, t)) {
+        t.active = false; // life zone missed — just disappears silently
       }
     }
   });
