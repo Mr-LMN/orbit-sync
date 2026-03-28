@@ -759,10 +759,16 @@ function triggerBossIntro() {
   bossIntroPlaying = true;
   isPlaying = false;
 
-  const introText = levelData.boss === 'prism'
-    ? "PRISM PROTOCOL ACTIVE"
-    : "AEGIS CORE ONLINE";
-  const introColor = levelData.boss === 'prism' ? '#ff00cc' : '#ff3366';
+  initAudio();
+  startBossDrone();
+
+  const introByBoss = {
+    aegis: { text: "AEGIS CORE ONLINE", color: '#ff3366' },
+    prism: { text: "PRISM PROTOCOL ACTIVE", color: '#ff00cc' }
+  };
+  const introConfig = introByBoss[levelData.boss] || { text: "BOSS PROTOCOL ACTIVE", color: '#ff3366' };
+  const introText = introConfig.text;
+  const introColor = introConfig.color;
   let displayed = "";
   let i = 0;
 
@@ -801,7 +807,6 @@ function loadLevel(idx) {
   if (levelData.boss) {
     setTimeout(() => {
       triggerBossIntro();
-      startBossDrone();
     }, 200);
   } else {
     stopBossDrone();
@@ -1656,7 +1661,7 @@ function tap() {
       return;
     }
 
-    if (levelData.boss && !isBossPhaseTwo) {
+    if (levelData.boss && !isBossPhaseTwo && t.isBossShield) {
       t.hp--;
       triggerScreenShake(5);
       if (t.hp > 0) soundBossShieldHit(t.hp);
