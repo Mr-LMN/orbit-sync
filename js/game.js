@@ -2565,62 +2565,10 @@ function triggerStageClear() {
     let newWorld = currentLevelObj ? parseInt(currentLevelObj.id.split('-')[0]) : maxWorldUnlocked;
     if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
 
-    const previousWorld = parseInt(levelData.id.split('-')[0]);
-    if (newWorld === 2 && previousWorld === 1) {
-      // World 2 intro — brief pause then shape reveal
-      isPlaying = false;
-      ui.overlay.style.display = 'flex';
-      ui.title.innerText = 'WORLD 2';
-      ui.title.style.color = '#ff00cc';
-      ui.subtitle.innerText = 'The Diamond Protocol';
-
-      let reviveBtn = document.getElementById('reviveBtn');
-      if (reviveBtn) reviveBtn.style.display = 'none';
-
-      document.getElementById('newRecordBanner').style.display = 'none';
-      document.getElementById('pbStatsBlock').style.display = 'none';
-      document.getElementById('shareBtn').style.display = 'none';
-      ui.runCoins.innerText = '';
-
-      ui.btn.innerText = 'ENTER WORLD 2';
-      ui.btn.onclick = function() {
-        // Restore pb block for future game overs
-        document.getElementById('pbStatsBlock').style.display = 'flex';
-        document.getElementById('shareBtn').style.display = 'block';
-        ui.overlay.style.display = 'none';
-        ui.topBar.style.display = 'flex';
-        ui.gameUI.style.display = 'block';
-        ui.bigMultiplier.style.display = 'block';
-        runCents = 0;
-        loadLevel(currentLevelIdx);
-        isPlaying = true;
-      };
-      return; // Skip normal world clear flow
-    }
-
     if (wasBoss || !currentLevelObj) {
-      if (wasBoss) stopBossDrone();
-      const newRecords = wasBoss ? checkAndSavePB(score, streak) : { score: false, streak: false, world: false };
-      soundWorldClear();
-      // WORLD CLEARED! (Pause the game and show the Win Screen)
-      isPlaying = false;
-      let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
-      updatePBDisplay(newRecords);
-
-      ui.overlay.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-      ui.title.innerText = "WORLD CLEARED!"; ui.title.style.color = '#00ff88'; ui.subtitle.innerText = `Coins Earned: ${coinsToBank}`;
-      
-      // Hide revive button if it's there
-      let reviveBtn = document.getElementById('reviveBtn');
-      if (reviveBtn) reviveBtn.style.display = 'none';
-      
-      ui.btn.innerText = "Next World";
-      ui.btn.onclick = function () {
-        ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
-        runCents = 0; loadLevel(currentLevelIdx); isPlaying = true;
-      };
-      ui.runCoins.innerText = ""; runCents = 0;
-      
+      // WORLD CLEARED!
+      let coinsToBank = Math.floor(runCents / 10);
+      showWorldClearSequence(newWorld, coinsToBank);
     } else {
       // SEAMLESS TRANSITION! (Keep playing, flash the screen, load next wave)
       soundWaveClear();
@@ -2727,6 +2675,88 @@ function getStartingIndexForWorld(worldNum) {
     if (campaign[i].id.startsWith(worldNum + "-")) return i;
   }
   return 0; // Fallback
+}
+
+function showWorldClearSequence(newWorld, coinsEarned) {
+  isPlaying = false;
+
+  // 1. Duck the music to a quiet hum
+  if (bossGain && audioCtx) {
+    bossGain.gain.linearRampToValueAtTime(0.15, audioCtx.currentTime + 1.5);
+  }
+
+  // 2. Setup the darkened UI
+  ui.overlay.style.display = 'flex';
+  ui.overlay.style.background = 'rgba(5, 5, 10, 0.95)'; // Darker, cleaner focus
+  ui.topBar.style.display = 'none';
+  ui.gameUI.style.display = 'none';
+  ui.bossUI.style.display = 'none';
+  ui.bigMultiplier.style.display = 'none';
+
+  ui.title.innerText = "WORLD CLEARED";
+  ui.title.style.color = '#00ff88';
+  ui.subtitle.innerText = "Decrypting rewards...";
+
+  // Hide buttons during tally
+  ui.btn.style.display = 'none';
+  let reviveBtn = document.getElementById('reviveBtn');
+  if (reviveBtn) reviveBtn.style.display = 'none';
+  let shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) shareBtn.style.display = 'none';
+  let pbBlock = document.getElementById('pbStatsBlock');
+  if (pbBlock) pbBlock.style.display = 'none';
+
+  // 3. The Dopamine Tally Animation
+  let currentDisplayCoins = 0;
+  ui.runCoins.innerText = `0 COINS`;
+
+  // Start tally after 1 second delay for dramatic effect
+  setTimeout(() => {
+    let tallyInterval = setInterval(() => {
+      // Increment by a dynamic amount so it finishes in ~20 ticks
+      let increment = Math.max(1, Math.ceil(coinsEarned / 20));
+      currentDisplayCoins += increment;
+
+      if (currentDisplayCoins >= coinsEarned) {
+        currentDisplayCoins = coinsEarned;
+        clearInterval(tallyInterval);
+
+        // Final Ding & Bank update
+        if (audioCtx) playPop(8, true); // High pitch success ding
+        globalCoins += coinsEarned;
+        saveData();
+        ui.coins.innerText = Math.floor(globalCoins);
+
+        // Flash text & Show Next World button
+        ui.runCoins.innerText = `+${currentDisplayCoins} BANKED`;
+        ui.runCoins.style.textShadow = '0 0 20px #ffaa00';
+        ui.subtitle.innerText = newWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.";
+
+        ui.btn.innerText = `ENTER WORLD ${newWorld}`;
+        ui.btn.style.display = 'block';
+        if (shareBtn) shareBtn.style.display = 'block';
+        if (pbBlock) pbBlock.style.display = 'flex';
+
+        // Wire up the button
+        ui.btn.onclick = function () {
+          ui.overlay.style.display = 'none';
+          ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)'; // Reset bg
+          ui.topBar.style.display = 'flex';
+          ui.gameUI.style.display = 'block';
+          ui.bigMultiplier.style.display = 'block';
+          runCents = 0;
+          loadLevel(currentLevelIdx);
+          isPlaying = true;
+          // Ramp music back up
+          if (baseGain && audioCtx) baseGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 1.0);
+        };
+      } else {
+        // Tick sound for each increment
+        if (audioCtx) playPop(4, false);
+        ui.runCoins.innerText = `+${currentDisplayCoins}`;
+      }
+    }, 40); // Fast 40ms updates
+  }, 1000);
 }
 
 document.addEventListener('touchstart', (e) => { if (e.target.tagName !== 'BUTTON') { e.preventDefault(); tap(); } }, { passive: false });
