@@ -19,7 +19,9 @@ const ui = {
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 // Dynamic Music Engine
-let baseAudioBuffer, bossAudioBuffer;
+let bossAudioBuffer;
+let currentBaseTrack = null;
+let baseAudioBuffers = {};
 let baseSource, bossSource;
 let baseGain, bossGain;
 let isMusicPlaying = false;
@@ -358,44 +360,53 @@ async function loadAudioFile(url) {
   return await audioCtx.decodeAudioData(arrayBuffer);
 }
 
+function getBaseTrackForLevel(levelIdx) {
+  const level = campaign[levelIdx];
+  if (!level) return 'assets/Base.mp3';
+  const worldNum = parseInt(level.id.split('-')[0], 10);
+  return worldNum === 2 ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
+}
+
 // Initialize and start the dynamic music loops
-async function startDynamicMusic() {
-  if (isMusicPlaying || !audioCtx || !musicEnabled) return;
+async function startDynamicMusic(baseTrackPath) {
+  if (!audioCtx || !musicEnabled) return;
+  if (isMusicPlaying && currentBaseTrack === baseTrackPath) return;
+
+  stopDynamicMusic();
 
   try {
-    // Load both tracks (Assumes they are exactly the same BPM and length)
-    if (!baseAudioBuffer) baseAudioBuffer = await loadAudioFile('assets/Base.mp3');
+    if (!baseAudioBuffers[baseTrackPath]) {
+      baseAudioBuffers[baseTrackPath] = await loadAudioFile(baseTrackPath);
+    }
     if (!bossAudioBuffer) bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
 
-    // Create Sources
     baseSource = audioCtx.createBufferSource();
     bossSource = audioCtx.createBufferSource();
-    baseSource.buffer = baseAudioBuffer;
+    baseSource.buffer = baseAudioBuffers[baseTrackPath];
     bossSource.buffer = bossAudioBuffer;
-    baseSource.loop = true; bossSource.loop = true;
+    baseSource.loop = true;
+    bossSource.loop = true;
 
-    // Create Volume Nodes (Gain)
     baseGain = audioCtx.createGain();
     bossGain = audioCtx.createGain();
 
-    // Default State: Boss track is muted. Base track starts at 0 and fades in.
     bossGain.gain.value = 0;
     baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    
-    // Smooth 2.5-second fade-in to the target volume of 0.6
     baseGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 2.5);
 
-    // Connect routing: Source -> Gain -> Destination
-    baseSource.connect(baseGain); baseGain.connect(audioCtx.destination);
-    bossSource.connect(bossGain); bossGain.connect(audioCtx.destination);
+    baseSource.connect(baseGain);
+    baseGain.connect(audioCtx.destination);
+    bossSource.connect(bossGain);
+    bossGain.connect(audioCtx.destination);
 
-    // Start EXACTLY at the same time to ensure perfect phase sync
     const startTime = audioCtx.currentTime + 0.1;
     baseSource.start(startTime);
     bossSource.start(startTime);
+    currentBaseTrack = baseTrackPath;
     isMusicPlaying = true;
+    currentMusicState = { mult: -1, boss: null };
   } catch (e) {
-    console.log('Music loading skipped or failed. Check paths.', e);
+    console.warn('Dynamic music failed', e);
   }
 }
 
@@ -425,10 +436,18 @@ function stopDynamicMusic() {
     baseGain = null;
     bossGain = null;
     isMusicPlaying = false;
+    currentBaseTrack = null;
     currentMusicState = { mult: 1, boss: false };
   } catch (e) {
     console.warn('stopDynamicMusic failed', e);
   }
+}
+
+async function ensureCorrectMusicForLevel() {
+  if (!audioCtx || !musicEnabled) return;
+  const wantedTrack = getBaseTrackForLevel(currentLevelIdx);
+  await startDynamicMusic(wantedTrack);
+  updateMusicState(multiplier, !!(levelData && levelData.boss));
 }
 
 // Dynamically adjust the music based on gameplay state
@@ -510,14 +529,19 @@ function updatePersistentCoinUI() {
   ui.shopCoinCount.innerText = Math.floor(globalCoins);
 }
 
+function getPendingRunCoins() {
+  return Math.floor(runCents / 10);
+}
+
 function bankRunCoins() {
-  const coinsToBank = Math.floor(runCents / 10);
+  const coinsToBank = getPendingRunCoins();
   if (coinsToBank > 0) {
     globalCoins += coinsToBank;
     saveData();
   }
   runCents = 0;
   updatePersistentCoinUI();
+  markScoreCoinDirty(true);
   return coinsToBank;
 }
 
@@ -537,6 +561,7 @@ let runBestStreak = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 let reviveCount = 0;
+let usedLastChance = false;
 let scoreAtCheckpoint = 0;
 let scoreAtLevelStart = 0;
 let lifeZonesSpawnedThisRun = 0;
@@ -702,7 +727,7 @@ function toggleMusicSetting() {
     stopDynamicMusic();
   } else if (isPlaying) {
     initAudio();
-    startDynamicMusic().then(() => updateMusicState(multiplier, !!(levelData && levelData.boss)));
+    ensureCorrectMusicForLevel();
   }
   applySettingsUI();
 }
@@ -779,7 +804,8 @@ function markScoreCoinDirty(force = false) {
 function flushScoreCoinUI() {
   if (!hudScoreCoinDirty) return;
   ui.score.innerText = score;
-  ui.coins.innerText = Math.floor(globalCoins + (runCents / 10));
+  ui.coins.innerText = Math.floor(globalCoins);
+  ui.runCoins.innerText = Math.floor(runCents / 10);
   hudLastFlushAt = performance.now();
   hudScoreCoinDirty = false;
   pendingHudUpdates = 0;
@@ -791,6 +817,8 @@ function setOverlayState(type) {
   const menuBtn = document.getElementById('menuBtn');
   const pbBlock = document.getElementById('pbStatsBlock');
   const clearSummary = document.getElementById('clearSummary');
+  const overlayActionStack = document.getElementById('overlayActionStack');
+  const runCoinsBox = document.getElementById('runCoinsBox');
 
   const hideAll = () => {
     ui.btn.style.display = 'none';
@@ -799,6 +827,8 @@ function setOverlayState(type) {
     if (menuBtn) menuBtn.style.display = 'none';
     if (pbBlock) pbBlock.style.display = 'none';
     if (clearSummary) clearSummary.style.display = 'none';
+    if (overlayActionStack) overlayActionStack.style.display = 'none';
+    if (runCoinsBox) runCoinsBox.style.display = 'none';
   };
 
   hideAll();
@@ -809,11 +839,17 @@ function setOverlayState(type) {
     if (shareBtn) shareBtn.style.display = 'block';
     if (menuBtn) menuBtn.style.display = 'block';
     if (pbBlock) pbBlock.style.display = 'flex';
+    if (overlayActionStack) overlayActionStack.style.display = 'flex';
+    if (runCoinsBox) runCoinsBox.style.display = 'block';
   } else if (type === 'worldClearReady') {
     ui.btn.style.display = 'block';
     if (shareBtn) shareBtn.style.display = 'block';
     if (clearSummary) clearSummary.style.display = 'flex';
-  } else if (type === 'cinematic' || type === 'worldClearTally') {
+    if (overlayActionStack) overlayActionStack.style.display = 'flex';
+    if (runCoinsBox) runCoinsBox.style.display = 'block';
+  } else if (type === 'worldClearTally') {
+    if (runCoinsBox) runCoinsBox.style.display = 'block';
+  } else if (type === 'cinematic') {
     // hideAll already applied.
   }
 }
@@ -837,6 +873,7 @@ function resetRunState() {
   bossPauseUntil = 0;
   currentReviveCost = 50;
   reviveCount = 0;
+  usedLastChance = false;
   scoreAtCheckpoint = 0;
   scoreAtLevelStart = 0;
   lifeZonesSpawnedThisRun = 0;
@@ -1245,6 +1282,9 @@ function triggerBossIntro() {
 
   initAudio();
   startBossDrone();
+  setOverlayState('cinematic');
+  const overlayActionStack = document.getElementById('overlayActionStack');
+  if (overlayActionStack) overlayActionStack.style.display = 'none';
 
   const introByBoss = {
     aegis: { text: "AEGIS CORE ONLINE", color: '#ff3366' },
@@ -1291,13 +1331,21 @@ function playBossCinematic() {
   if (ui.bossUI) ui.bossUI.style.display = 'none'; // Fixes the floating health bar!
 
   setOverlayState('cinematic');
+  const overlayActionStack = document.getElementById('overlayActionStack');
+  if (overlayActionStack) overlayActionStack.style.display = 'none';
+  const runCoinsBox = document.getElementById('runCoinsBox');
+  if (runCoinsBox) runCoinsBox.style.display = 'none';
 
   // 2. Clean overlay for text
   ui.overlay.style.display = 'flex';
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.6)';
   ui.title.style.display = 'block';
+  ui.title.style.maxWidth = '90vw';
+  ui.title.style.textAlign = 'center';
   ui.title.innerText = "";
   ui.subtitle.style.display = 'none';
+  ui.subtitle.style.maxWidth = '90vw';
+  ui.subtitle.style.textAlign = 'center';
 
   // 3. Pre-generate shields, but hold them
   spawnTargets();
@@ -1354,6 +1402,7 @@ function loadLevel(idx) {
   }
   scoreAtLevelStart = score;
   levelData = campaign[idx];
+  ensureCorrectMusicForLevel();
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
@@ -2378,34 +2427,56 @@ function handleFail(reason) {
   if (lives <= 0) {
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-    const coinsToBank = bankRunCoins();
+    const pendingCoins = getPendingRunCoins();
     updatePBDisplay(newRecords);
     glitchCanvas(400, () => {
       ui.overlay.style.display = 'flex';
       ui.title.style.color = '#ff3366';
-      ui.subtitle.innerText = `Failed on ${levelData.title}`;
+      ui.title.innerText = "OUT OF SYNC";
+      ui.subtitle.innerText = pendingCoins > 0
+        ? `Bank ${pendingCoins} coins or take one more try`
+        : 'Take one more try or restart the world';
       scrambleText(ui.title, reason || "OUT OF SYNC", 600);
     });
-    ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`; ui.btn.onclick = restartFromCheckpoint; ui.runCoins.innerText = coinsToBank;
-    setOverlayState('gameOver');
-
-    // --- NEW REVIVE LOGIC ---
-    let reviveBtn = document.getElementById('reviveBtn');
-    reviveBtn.innerText = `Revive (🪙 ${currentReviveCost})`;
-    reviveBtn.onclick = function() {
-      if (globalCoins >= currentReviveCost) {
-        globalCoins -= currentReviveCost; saveData(); updatePersistentCoinUI();
-        currentReviveCost *= 2; // Double the cost for the next time!
-        reviveCount++;
-        score = scoreAtLevelStart; // reset score to what it was when this level started
-        ui.score.innerText = score;
-        lives = 3; ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'none';
-        if (levelData.boss) ui.bossUI.style.display = 'none';
-        loadLevel(currentLevelIdx); isPlaying = true;
-      } else {
-        alert("Not enough coins for a Revive! Restart the World.");
-      }
+    ui.btn.innerText = pendingCoins > 0 ? "BANK COINS & RESTART WORLD" : `RESTART WORLD ${levelData.id.split('-')[0]}`;
+    ui.btn.onclick = function () {
+      bankRunCoins();
+      restartFromCheckpoint();
     };
+    ui.runCoins.innerText = pendingCoins > 0 ? `+${pendingCoins} READY TO BANK` : '0 COINS';
+    setOverlayState('gameOver');
+    let reviveBtn = document.getElementById('reviveBtn');
+    reviveBtn.style.display = 'block';
+    const restoreAfterTry = () => {
+      ui.overlay.style.display = 'none';
+      ui.topBar.style.display = 'flex';
+      ui.gameUI.style.display = 'block';
+      ui.bigMultiplier.style.display = 'none';
+      lives = 1;
+      ui.lives.innerText = lives;
+      isPlaying = true;
+      if (levelData.boss) ui.bossUI.style.display = 'none';
+    };
+
+    if (!usedLastChance) {
+      reviveBtn.innerText = "ONE MORE TRY";
+      reviveBtn.onclick = function () {
+        usedLastChance = true;
+        restoreAfterTry();
+      };
+    } else if (globalCoins >= currentReviveCost) {
+      reviveBtn.innerText = `REVIVE (🪙 ${currentReviveCost})`;
+      reviveBtn.onclick = function () {
+        globalCoins -= currentReviveCost;
+        saveData();
+        updatePersistentCoinUI();
+        currentReviveCost *= 2;
+        reviveCount++;
+        restoreAfterTry();
+      };
+    } else {
+      reviveBtn.style.display = 'none';
+    }
   }
 }
 
@@ -2718,7 +2789,6 @@ function triggerStageClear() {
 
 function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
-  if (musicEnabled) startDynamicMusic();
   toggleSettings(false);
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   ui.text.style.display = 'none';
@@ -2729,7 +2799,7 @@ function startCampaign() {
   markScoreCoinDirty(true);
   setOverlayState('cinematic');
   loadLevel(currentLevelIdx);
-  updateMusicState(multiplier, !!(levelData && levelData.boss));
+  ensureCorrectMusicForLevel();
 }
 
 function restartFromCheckpoint() {
@@ -2746,7 +2816,7 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
-  updateMusicState(multiplier, !!(levelData && levelData.boss));
+  ensureCorrectMusicForLevel();
 }
 
 function returnToMenu() {
@@ -2832,17 +2902,12 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
 
         // Final Ding & Bank update
         if (audioCtx) playPop(8, true); // High pitch success ding
-        if (coinsEarned > 0) {
-          globalCoins += coinsEarned;
-          saveData();
-        }
-        runCents = 0;
-        updatePersistentCoinUI();
+        const coinsBanked = bankRunCoins();
 
         // Flash text & Show Next World button
-        ui.runCoins.innerText = `+${currentDisplayCoins} BANKED`;
+        ui.runCoins.innerText = `+${coinsBanked} BANKED`;
         ui.runCoins.style.textShadow = '0 0 20px #ffaa00';
-        if (clearCoinsDisplay) clearCoinsDisplay.innerText = `+${currentDisplayCoins}`;
+        if (clearCoinsDisplay) clearCoinsDisplay.innerText = `+${coinsBanked}`;
         ui.subtitle.innerText = isCampaignClear
           ? "All worlds synced. Returning to menu."
           : (nextWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.");
@@ -2863,7 +2928,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           currentLevelIdx = nextLevelIdx;
           loadLevel(currentLevelIdx);
           isPlaying = true;
-          updateMusicState(multiplier, !!(levelData && levelData.boss));
+          ensureCorrectMusicForLevel();
         };
       } else {
         // Tick sound for each increment
