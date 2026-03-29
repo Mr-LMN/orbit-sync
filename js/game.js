@@ -669,35 +669,39 @@ function showComboPopup(multiplierLevel) {
   const milestone = comboMilestones[multiplierLevel];
   if (!milestone) return;
 
-  const comboPopup = createPopup(centerObj.x, centerObj.y - 60, milestone.label, milestone.color);
+  const comboPopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 26, milestone.label, milestone.color);
   comboPopup.animType = 'combo';
-  comboPopup.life = 1.6;
+  comboPopup.life = 1.65;
   comboPopup.riseSpeed = 0.75;
-  comboPopup.fadeSpeed = 0.02;
-  comboPopup.shadow = 30;
+  comboPopup.fadeSpeed = 0.027;
+  comboPopup.shadow = 32;
 
   createShockwave(milestone.color, 42);
+  createShockwave('#ffffff', 50);
+  createUpwardBurstParticles(centerObj.x, centerObj.y - 14, milestone.color, 28);
 }
 
 function showNearMissReplay(reason, nearestEdgeDistance) {
   nearMissReplayActive = true;
-  nearMissReplayUntil = performance.now() + 600;
+  nearMissReplayUntil = performance.now() + 680;
   const replayText = nearestEdgeDistance <= (NEAR_MISS_THRESHOLD * 0.5) ? "SO CLOSE!" : "ALMOST!";
-  const replayPopup = createPopup(centerObj.x, centerObj.y - 6, replayText, '#ffaa00');
-  replayPopup.animType = 'combo';
-  replayPopup.life = 1.05;
-  replayPopup.riseSpeed = 0.28;
-  replayPopup.fadeSpeed = 0.016;
-  replayPopup.shadow = 34;
-  replayPopup.fontSize = isMobile ? '3.2rem' : '3.8rem';
+  const replayColor = replayText === "SO CLOSE!" ? '#ffe14f' : '#ffad33';
+  const replayPopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 30, replayText, replayColor);
+  replayPopup.animType = 'nearMiss';
+  replayPopup.life = 1.18;
+  replayPopup.riseSpeed = 0.42;
+  replayPopup.fadeSpeed = 0.017;
+  replayPopup.shadow = 38;
+  replayPopup.fontSize = isMobile ? '3.35rem' : '3.95rem';
   createShockwave('#ffaa00', 54);
   createShockwave('#ffffff', 44);
+  createUpwardBurstParticles(centerObj.x, centerObj.y + 8, replayColor, 34);
   triggerScreenShake(12);
   setTimeout(() => {
     nearMissReplayActive = false;
     nearMissReplayUntil = 0;
     handleFail(reason);
-  }, 600);
+  }, 680);
 }
 
 function createShockwave(color, speed = 40) {
@@ -1774,6 +1778,21 @@ function draw() {
         scale = age < 0.2 ? (1.62 - (age * 1.4)) : (1.34 - ((age - 0.2) * 0.4));
       } else if (pop.animType === 'combo') {
         scale = age < 0.22 ? (1.76 - (age * 1.45)) : (1.4 - ((age - 0.22) * 0.46));
+      } else if (pop.animType === 'nearMiss') {
+        scale = age < 0.24 ? (2.05 - (age * 1.8)) : (1.58 - ((age - 0.24) * 0.52));
+      }
+      let renderX = pop.x;
+      let renderY = pop.y;
+      const dx = renderX - centerObj.x;
+      const dy = renderY - centerObj.y;
+      const dist = Math.hypot(dx, dy);
+      const safeTextRadius = orbitRadius + 18;
+      if (dist < safeTextRadius) {
+        const inv = dist > 0.0001 ? (1 / dist) : 0;
+        const nx = inv > 0 ? dx * inv : 0;
+        const ny = inv > 0 ? dy * inv : -1;
+        renderX = centerObj.x + (nx * safeTextRadius);
+        renderY = centerObj.y + (ny * safeTextRadius);
       }
       ctx.fillStyle = pop.color;
       ctx.globalAlpha = pop.life;
@@ -1790,7 +1809,7 @@ function draw() {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
       ctx.save();
-      ctx.translate(pop.x, pop.y);
+      ctx.translate(renderX, renderY);
       ctx.scale(scale, scale);
       if (pop.shadow > 0) {
         ctx.shadowBlur = pop.shadow;
@@ -2200,18 +2219,23 @@ function tap() {
       multiplier = Math.min(multiplier + 1, 8);
       soundMultiplierUp(multiplier);
       score += (3 * multiplier);
-      const perfectPopup = createPopup(hitX, hitY - 18, "PERFECT!", '#fff36a', 'perfect');
+      const normalX = hitX - centerObj.x;
+      const normalY = hitY - centerObj.y;
+      const normalLen = Math.hypot(normalX, normalY) || 1;
+      const outwardX = normalX / normalLen;
+      const outwardY = normalY / normalLen;
+      const perfectPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "PERFECT!", '#fff36a', 'perfect');
       perfectPopup.animType = 'perfect';
-      perfectPopup.life = 1.4;
-      perfectPopup.riseSpeed = 0.8;
-      perfectPopup.fadeSpeed = 0.02;
-      perfectPopup.shadow = 30;
+      perfectPopup.life = 1.45;
+      perfectPopup.riseSpeed = 0.85;
+      perfectPopup.fadeSpeed = 0.024;
+      perfectPopup.shadow = 28;
       // Punchier but ultra-short flash to keep input feeling instant.
-      canvas.style.filter = 'brightness(2.2)';
-      setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
+      canvas.style.filter = 'brightness(2.3)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 70);
       soundPerfect(multiplier);
-      vibrate([12, 25, 12]);
-      createUpwardBurstParticles(hitX, hitY - 6, '#fff36a', 38);
+      vibrate([12, 28, 12]);
+      createUpwardBurstParticles(hitX, hitY - 10, '#fff36a', 42);
     }
     else if (hitQuality === "good") {
       ringHitFlash = Math.max(ringHitFlash, 0.26);
@@ -2358,29 +2382,28 @@ function triggerStageClear() {
       const worldNum = parseInt(levelData.id.split('-')[0], 10);
       const waveClearColor = worldNum === 2 ? '#ff4fd8' : '#00ff88';
       const waveClearAftershockColor = worldNum === 2 ? '#c68cff' : '#ffffff';
-      const wavePopup = createPopup(centerObj.x, centerObj.y - 56, "WAVE CLEARED!", waveClearColor);
+      const wavePopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 28, "WAVE CLEARED!", waveClearColor);
       wavePopup.animType = 'combo';
-      wavePopup.life = 1.8;
-      wavePopup.riseSpeed = 0.82;
+      wavePopup.life = 1.85;
+      wavePopup.riseSpeed = 0.8;
       wavePopup.fadeSpeed = 0.018;
-      wavePopup.shadow = 26;
+      wavePopup.shadow = 28;
       createParticles(centerObj.x, centerObj.y, waveClearColor, Math.min(54, MAX_PARTICLES));
-      createUpwardBurstParticles(centerObj.x, centerObj.y + 8, waveClearAftershockColor, 42);
+      createUpwardBurstParticles(centerObj.x, centerObj.y + 10, waveClearAftershockColor, 32);
       createUpwardBurstParticles(centerObj.x, centerObj.y + 4, waveClearColor, 34);
       triggerScreenShake(8);
       
       // Triple pulse with a lightweight cap-safe finish.
       createShockwave(waveClearColor, 35); // Main heavy neon wave
       setTimeout(() => createShockwave(waveClearAftershockColor, 45), 100); // Faster aftershock
-      setTimeout(() => createShockwave(waveClearColor, 52), 155); // Extra celebration pop
-      setTimeout(() => createShockwave(waveClearAftershockColor, 58), 230); // Third celebration ring
+      setTimeout(() => createShockwave(waveClearColor, 52), 180); // Extra celebration pop
       if (typeof vibrate === 'function') vibrate([28, 28, 42, 20, 70]); // Stronger double-thump
 
       // Briefly flash the screen to match world identity
       canvas.style.boxShadow = `inset 0 0 50px ${waveClearColor}`; 
       setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
-      stageClearHoldUntil = performance.now() + 800;
+      stageClearHoldUntil = performance.now() + 850;
 
       // Load next level without stopping the 'isPlaying' loop!
       loadLevel(currentLevelIdx);
