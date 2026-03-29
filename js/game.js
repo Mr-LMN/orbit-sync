@@ -685,9 +685,19 @@ function getPointOnShape(t, shape, cx, cy, radius) {
   if (shape === 'circle') {
     return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
   }
-  const sides = shape === 'diamond' ? 4 : shape === 'triangle' ? 3 : 5;
-  // Diamond rotated so corners point up/down/left/right
-  const rotation = shape === 'diamond' ? -Math.PI / 4 : -Math.PI / 2;
+  if (shape === 'diamond') {
+    // True diamond with sharp corners - points at top/bottom/left/right
+    const a = t + Math.PI / 4;
+    const absCos = Math.abs(Math.cos(a));
+    const absSin = Math.abs(Math.sin(a));
+    const scale = radius / Math.max(absCos, absSin);
+    return {
+      x: cx + Math.cos(a) * scale,
+      y: cy + Math.sin(a) * scale
+    };
+  }
+  const sides = shape === 'triangle' ? 3 : 5;
+  const rotation = -Math.PI / 2;
   const corners = [];
   for (let i = 0; i < sides; i++) {
     const a = rotation + (i * Math.PI * 2 / sides);
@@ -708,6 +718,20 @@ function getPointOnShape(t, shape, cx, cy, radius) {
 // Helper to draw a path segment along any shape
 // Used by ring drawing and target drawing
 function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps = 40) {
+  if (shape === 'diamond') {
+    const rawSpan = endAngle - startAngle;
+    let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
+    if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
+    const actualSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
+    ctx.beginPath();
+    for (let i = 0; i <= actualSteps; i++) {
+      const t = startAngle + (span * i / actualSteps);
+      const pt = getPointOnShape(t, 'diamond', cx, cy, radius);
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
+    }
+    return;
+  }
   const rawSpan = endAngle - startAngle;
   let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
   if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
@@ -1884,49 +1908,45 @@ function draw() {
 
   // === WORLD 2 DIAMOND-SPECIFIC ENHANCEMENTS ===
   if (worldShape === 'diamond' && worldNum === 2 && !isBoss) {
-    const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
     ctx.save();
-    cornerAngles.forEach((corner, idx) => {
-      const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
-      const pulse = 0.65 + Math.sin(now / 420 + idx * 1.8) * 0.28;
-
-      // Bright prism glow at each point.
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 48);
-      grad.addColorStop(0, `rgba(255, 80, 240, ${0.42 * pulse})`);
-      grad.addColorStop(0.5, `rgba(200, 60, 255, ${0.18 * pulse})`);
-      grad.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 48, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Extra sharp facet highlight.
-      ctx.strokeStyle = '#ff99ff';
-      ctx.globalAlpha = 0.35 * pulse;
+    const sides = 4;
+    for (let i = 0; i < sides; i++) {
+      const start = (i * Math.PI * 2 / sides) + (Math.PI / 4);
+      const end = start + (Math.PI * 2 / sides);
+      buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, start, end, 8);
+      ctx.strokeStyle = '#ff80ff';
       ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.moveTo(p.x - 18, p.y - 18);
-      ctx.lineTo(p.x + 18, p.y + 18);
+      ctx.globalAlpha = 0.6 + Math.sin(now / 380) * 0.15;
+      setShadowBlur(18);
+      ctx.shadowColor = '#ff99ff';
       ctx.stroke();
-    });
-
-    // Subtle animated prism shimmer on the lane (diamond world only).
-    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius - 7, 0, Math.PI * 2);
-    ctx.lineWidth = 1.4;
-    ctx.globalAlpha = 0.3 + (Math.sin(now / 350) * 0.12);
-    ctx.strokeStyle = '#ff8cff';
-    setShadowBlur(useHeavyEffects ? 12 : 6);
-    ctx.shadowColor = '#ff57e8';
-    ctx.stroke();
-
-    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius + 5, 0, Math.PI * 2);
-    ctx.lineWidth = 1.1;
-    ctx.globalAlpha = 0.16 + (Math.sin(now / 270 + 0.9) * 0.08);
-    ctx.strokeStyle = '#9cfbff';
-    setShadowBlur(useHeavyEffects ? 10 : 5);
-    ctx.shadowColor = '#9cfbff';
-    ctx.stroke();
+    }
     ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+
+    const cornerAngles = [Math.PI / 4, Math.PI * 3 / 4, Math.PI * 5 / 4, Math.PI * 7 / 4];
+    cornerAngles.forEach(corner => {
+      const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius + 6);
+      const pulse = 0.7 + Math.sin(now / 280) * 0.3;
+
+      // Prismatic corner shard (no circular glow halo)
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(corner);
+      ctx.globalAlpha = 0.55 * pulse;
+      ctx.fillStyle = '#ffd9ff';
+      ctx.beginPath();
+      ctx.moveTo(0, -14);
+      ctx.lineTo(10, 0);
+      ctx.lineTo(0, 14);
+      ctx.lineTo(-10, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#ff9cff';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.restore();
+    });
     ctx.restore();
   }
 
@@ -2471,6 +2491,19 @@ function update() {
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
   if (isBossTransitionPaused || isStageClearHoldPaused) moveStep = 0;
   else moveStep *= nearMissSpeedScale;
+
+  if (!inMenu && worldShape === 'diamond' && moveStep !== 0) {
+    const normalized = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const cornerOffset = Math.PI / 4;
+    const sectorSize = Math.PI / 2;
+    const cornerProgress = ((normalized - cornerOffset) % sectorSize + sectorSize) % sectorSize;
+    const distToCorner = Math.min(cornerProgress, sectorSize - cornerProgress);
+    const snapRange = 0.11;
+    if (distToCorner < snapRange) {
+      const snapStrength = 1 + ((snapRange - distToCorner) / snapRange) * 0.22;
+      moveStep *= snapStrength;
+    }
+  }
   moveStep *= delta;
 
   angle += moveStep;
