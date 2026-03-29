@@ -422,28 +422,32 @@ async function startDynamicMusic() {
   }
 }
 
+let currentMusicState = { mult: 1, boss: false };
+
 // Dynamically adjust the music based on gameplay state
 function updateMusicState(currentMultiplier, isBossActive) {
   if (!isMusicPlaying || !audioCtx) return;
 
-  const now = audioCtx.currentTime;
-  if (!musicEnabled) {
-    baseGain.gain.linearRampToValueAtTime(0, now + 0.1);
-    bossGain.gain.linearRampToValueAtTime(0, now + 0.1);
-    return;
-  }
+  // STOP THE SPAM: Only update Web Audio API if the state actually changes!
+  if (currentMusicState.mult === currentMultiplier && currentMusicState.boss === isBossActive) return;
 
-  // 1. Crossfade Logic
+  currentMusicState.mult = currentMultiplier;
+  currentMusicState.boss = isBossActive;
+
+  const now = audioCtx.currentTime;
+
   if (isBossActive) {
-    baseGain.gain.linearRampToValueAtTime(0, now + 2.0); // 2 second fade out
-    bossGain.gain.linearRampToValueAtTime(0.6, now + 2.0); // 2 second fade in
+    baseGain.gain.linearRampToValueAtTime(0, now + 2.0);
+    bossGain.gain.linearRampToValueAtTime(0.6, now + 2.0);
   } else {
     baseGain.gain.linearRampToValueAtTime(0.6, now + 2.0);
     bossGain.gain.linearRampToValueAtTime(0, now + 2.0);
   }
 
-  // 2. Tension Speed/Pitch Logic (Max +15% speed at 8x multiplier)
   const targetSpeed = 1.0 + (currentMultiplier * 0.015);
+  // Cancel previous scheduled values to prevent memory leaks
+  baseSource.playbackRate.cancelScheduledValues(now);
+  bossSource.playbackRate.cancelScheduledValues(now);
   baseSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
   bossSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
 }
