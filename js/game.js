@@ -401,9 +401,12 @@ async function startDynamicMusic() {
     baseGain = audioCtx.createGain();
     bossGain = audioCtx.createGain();
 
-    // Default State: Base track is full volume, Boss track is muted
-    baseGain.gain.value = (musicEnabled && !(levelData && levelData.boss)) ? 0.6 : 0;
-    bossGain.gain.value = (musicEnabled && levelData && levelData.boss) ? 0.6 : 0;
+    // Default State: Boss track is muted. Base track starts at 0 and fades in.
+    bossGain.gain.value = 0;
+    baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    
+    // Smooth 2.5-second fade-in to the target volume of 0.6
+    baseGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 2.5);
 
     // Connect routing: Source -> Gain -> Destination
     baseSource.connect(baseGain); baseGain.connect(audioCtx.destination);
