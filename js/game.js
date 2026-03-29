@@ -1196,6 +1196,29 @@ function playBossCinematic() {
     bossGain.gain.linearRampToValueAtTime(musicEnabled ? 0.6 : 0, now + 3);
   }
 
+  // 3s of tap immunity while intro text is on screen.
+  bossTransitionLock = true;
+
+  // Reset target state and prep staggered shield drops.
+  targets = [];
+  const shieldOffset = Math.random() * Math.PI * 2;
+  const shieldSize = Math.PI / 4;
+
+  const spawnShield = (index) => {
+    targets.push(buildTarget(
+      shieldOffset + (index * (Math.PI * 2 / 3)),
+      shieldSize,
+      { color: '#00e5ff', active: true, hp: 3, isBossShield: true }
+    ));
+    vibrate(20);
+    if (typeof playPop === 'function') playPop();
+    else soundFail();
+  };
+
+  setTimeout(() => spawnShield(0), 1000);
+  setTimeout(() => spawnShield(1), 1500);
+  setTimeout(() => spawnShield(2), 2000);
+
   const cinematicFrame = () => {
     const elapsed = performance.now() - cinematicStart;
     draw();
@@ -1208,13 +1231,13 @@ function playBossCinematic() {
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `700 ${Math.max(26, Math.floor(canvas.height * 0.05))}px Orbitron, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `700 ${Math.max(24, Math.floor(canvas.height * 0.04))}px Orbitron, sans-serif`;
     ctx.fillStyle = cinematicTextColor;
-    ctx.shadowBlur = 24;
+    ctx.shadowBlur = 22;
     ctx.shadowColor = cinematicTextColor;
-    ctx.fillText(cinematicText, canvas.width / 2, canvas.height / 2);
+    ctx.fillText(cinematicText, centerObj.x, centerObj.y - 60);
     ctx.restore();
 
     if (elapsed < cinematicDuration) {
@@ -1222,18 +1245,22 @@ function playBossCinematic() {
       return;
     }
 
+    cinematicText = '';
+    ui.text.innerText = '';
     isCinematicIntro = false;
+    bossTransitionLock = false;
     if (ui.gameUI) ui.gameUI.style.display = 'flex';
-    spawnTargets();
+
     canvas.style.transition = 'filter 120ms ease-out';
-    canvas.style.filter = 'brightness(2.35)';
+    canvas.style.filter = 'brightness(2.35) saturate(0)';
     setTimeout(() => {
       canvas.style.filter = '';
-    }, 130);
+    }, 140);
   };
 
   requestAnimationFrame(cinematicFrame);
 }
+
 
 function loadLevel(idx) {
   scoreAtLevelStart = score;
