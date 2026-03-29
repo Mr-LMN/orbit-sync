@@ -402,8 +402,8 @@ async function startDynamicMusic() {
     bossGain = audioCtx.createGain();
 
     // Default State: Base track is full volume, Boss track is muted
-    baseGain.gain.value = 0.6; // slightly lower master volume so SFX pop
-    bossGain.gain.value = 0;
+    baseGain.gain.value = (musicEnabled && !(levelData && levelData.boss)) ? 0.6 : 0;
+    bossGain.gain.value = (musicEnabled && levelData && levelData.boss) ? 0.6 : 0;
 
     // Connect routing: Source -> Gain -> Destination
     baseSource.connect(baseGain); baseGain.connect(audioCtx.destination);
@@ -424,6 +424,11 @@ function updateMusicState(currentMultiplier, isBossActive) {
   if (!isMusicPlaying || !audioCtx) return;
 
   const now = audioCtx.currentTime;
+  if (!musicEnabled) {
+    baseGain.gain.linearRampToValueAtTime(0, now + 0.1);
+    bossGain.gain.linearRampToValueAtTime(0, now + 0.1);
+    return;
+  }
 
   // 1. Crossfade Logic
   if (isBossActive) {
@@ -661,6 +666,18 @@ function applySettingsUI() {
 
 function toggleMusicSetting() {
   musicEnabled = !musicEnabled;
+  if (baseGain && bossGain && audioCtx) {
+    if (!musicEnabled) {
+      baseGain.gain.value = 0;
+      bossGain.gain.value = 0;
+    } else if (levelData && levelData.boss) {
+      baseGain.gain.value = 0;
+      bossGain.gain.value = 0.6;
+    } else {
+      baseGain.gain.value = 0.6;
+      bossGain.gain.value = 0;
+    }
+  }
   if (musicEnabled && isPlaying) playBackgroundMusic();
   else pauseBackgroundMusic();
   applySettingsUI();
@@ -2260,7 +2277,8 @@ function tap() {
 
     if (levelData.boss && !isBossPhaseTwo && t.isBossShield) {
       t.hp--;
-      triggerScreenShake(5);
+      triggerScreenShake(4);
+      vibrate(15);
       if (t.hp > 0) soundBossShieldHit(t.hp);
       if (t.hp > 1) t.color = '#ffaa00'; // warning
       if (t.hp === 1) t.color = '#ff3366'; // critical
