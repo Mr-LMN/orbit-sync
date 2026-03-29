@@ -1185,85 +1185,73 @@ function triggerBossIntro() {
 }
 
 function playBossCinematic() {
-  const cinematicDuration = 3000;
-  const cinematicStart = performance.now();
-  let cinematicText = "WARNING: ANOMALY DETECTED";
-  let cinematicTextColor = "#ff0000";
+  let step = 0;
 
-  if (audioCtx && baseGain && bossGain) {
-    const now = audioCtx.currentTime;
-    baseGain.gain.cancelScheduledValues(now);
-    bossGain.gain.cancelScheduledValues(now);
-    baseGain.gain.setValueAtTime(baseGain.gain.value, now);
-    bossGain.gain.setValueAtTime(bossGain.gain.value, now);
-    baseGain.gain.linearRampToValueAtTime(0, now + 3);
-    bossGain.gain.linearRampToValueAtTime(musicEnabled ? 0.6 : 0, now + 3);
-  }
+  // 1. Clean overlay for text (prevents layout shifts!)
+  ui.overlay.style.display = 'flex';
+  ui.overlay.style.background = 'rgba(10, 10, 15, 0.4)';
+  ui.title.style.display = 'block';
+  ui.title.innerText = "";
+  ui.subtitle.style.display = 'none';
+  ui.btn.style.display = 'none';
 
-  // 3s of tap immunity while intro text is on screen.
-  bossTransitionLock = true;
+  // Hide unrelated buttons
+  let reviveBtn = document.getElementById('reviveBtn');
+  if (reviveBtn) reviveBtn.style.display = 'none';
+  let shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) shareBtn.style.display = 'none';
+  let pbBlock = document.getElementById('pbStatsBlock');
+  if (pbBlock) pbBlock.style.display = 'none';
 
-  // Reset target state and prep staggered shield drops.
+  // 2. Pre-generate shields, but hide them initially
+  spawnTargets();
+  let pendingShields = [...targets];
   targets = [];
-  const shieldOffset = Math.random() * Math.PI * 2;
-  const shieldSize = Math.PI / 4;
 
-  const spawnShield = (index) => {
-    targets.push(buildTarget(
-      shieldOffset + (index * (Math.PI * 2 / 3)),
-      shieldSize,
-      { color: '#00e5ff', active: true, hp: 3, isBossShield: true }
-    ));
-    vibrate(20);
-    if (typeof playPop === 'function') playPop();
-    else soundFail();
-  };
+  let cinematicInterval = setInterval(() => {
+    step++;
 
-  setTimeout(() => spawnShield(0), 1000);
-  setTimeout(() => spawnShield(1), 1500);
-  setTimeout(() => spawnShield(2), 2000);
-
-  const cinematicFrame = () => {
-    const elapsed = performance.now() - cinematicStart;
-    draw();
-
-    if (elapsed >= 1500) {
-      cinematicText = "TEST YOUR RHYTHM.";
-      cinematicTextColor = "#ffffff";
+    if (step === 1) {
+      ui.title.innerText = "WARNING: ANOMALY DETECTED";
+      ui.title.style.color = '#ff3366';
+    } else if (step === 2) {
+      ui.title.innerText = "TEST YOUR RHYTHM";
+      ui.title.style.color = '#ffffff';
     }
 
-    ctx.save();
-    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `700 ${Math.max(24, Math.floor(canvas.height * 0.04))}px Orbitron, sans-serif`;
-    ctx.fillStyle = cinematicTextColor;
-    ctx.shadowBlur = 22;
-    ctx.shadowColor = cinematicTextColor;
-    ctx.fillText(cinematicText, centerObj.x, centerObj.y - 60);
-    ctx.restore();
-
-    if (elapsed < cinematicDuration) {
-      requestAnimationFrame(cinematicFrame);
-      return;
+    // Pop in shields one by one with heavy haptics/sound
+    if (step <= pendingShields.length) {
+      targets.push(pendingShields[step - 1]);
+      triggerScreenShake(8);
+      if (audioCtx) {
+        playPop(1, false, true);
+        vibrate(20);
+      }
     }
 
-    cinematicText = '';
-    ui.text.innerText = '';
-    isCinematicIntro = false;
-    bossTransitionLock = false;
-    if (ui.gameUI) ui.gameUI.style.display = 'flex';
+    // End Cinematic (Wait until all shields are spawned + 1 tick)
+    if (step > pendingShields.length && step >= 3) {
+      clearInterval(cinematicInterval);
+      isCinematicIntro = false;
 
-    canvas.style.transition = 'filter 120ms ease-out';
-    canvas.style.filter = 'brightness(2.35) saturate(0)';
-    setTimeout(() => {
-      canvas.style.filter = '';
-    }, 140);
-  };
+      // Clear Overlay entirely
+      ui.overlay.style.display = 'none';
+      ui.subtitle.style.display = 'block'; // reset for game over screens
+      ui.btn.style.display = 'block';
 
-  requestAnimationFrame(cinematicFrame);
+      // Restore standard HUD
+      ui.topBar.style.display = 'flex';
+      ui.gameUI.style.display = 'block';
+      ui.bigMultiplier.style.display = 'block';
+      if (ui.bossUI) ui.bossUI.style.display = 'flex';
+
+      // Flash effect to signal fight start
+      canvas.style.boxShadow = `inset 0 0 100px #ffffff`;
+      setTimeout(() => canvas.style.boxShadow = 'none', 200);
+    }
+  }, 800); // 800ms pacing for dramatic, rapid build-up
 }
+
 
 
 function loadLevel(idx) {
