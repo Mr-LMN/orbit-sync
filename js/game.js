@@ -859,9 +859,27 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.fill();
 }
 
-function drawMiniOrb(ctx, x, y, skin, radius = 12) {
+function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
   const savedAlpha = ctx.globalAlpha;
   ctx.save();
+
+  // Base plasma body so previews look like real orb skins, not emoji-only badges.
+  const shellGrad = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.35, 0, x, y, radius * 1.2);
+  shellGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
+  shellGrad.addColorStop(0.35, '#9cf7ff');
+  shellGrad.addColorStop(1, '#00bcd4');
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
+  ctx.fillStyle = shellGrad;
+  ctx.globalAlpha = 0.92;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 0.62, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.globalAlpha = 1;
+  ctx.fill();
+
   ctx.beginPath();
   ctx.arc(x, y, radius + 12, 0, Math.PI * 2);
   const halo = ctx.createRadialGradient(x, y, 1, x, y, radius + 12);
@@ -883,7 +901,15 @@ function drawMiniOrb(ctx, x, y, skin, radius = 12) {
     ctx.fill();
   }
   ctx.globalAlpha = savedAlpha;
-  drawOrbSkin(ctx, x, y, skin, radius, 0.65, '#7bf4ff');
+
+  // Overlay skin glyphs while keeping orb material visible underneath.
+  if (skin === 'skull' || skin === 'fire') {
+    ctx.font = `${Math.round(radius * 2.35)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(skin === 'skull' ? '💀' : '🔥', x, y + 0.5);
+  }
+
   ctx.restore();
 }
 
@@ -901,7 +927,7 @@ function renderShopOrbPreview(previewEl, skinId) {
   }
   const pctx = canvasEl.getContext('2d');
   pctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-  drawMiniOrb(pctx, canvasEl.width / 2, canvasEl.height / 2, skinId, 9.5);
+  drawMiniOrbPreview(pctx, canvasEl.width / 2, canvasEl.height / 2, skinId, 9.5);
 }
 
 const particlePool = [];
@@ -1856,40 +1882,51 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // World 2 corner accents + facet shimmer: stronger prism points to keep the diamond shape distinct.
-  if (worldNum === 2 && !isBoss && useHeavyEffects) {
+  // === WORLD 2 DIAMOND-SPECIFIC ENHANCEMENTS ===
+  if (worldShape === 'diamond' && worldNum === 2 && !isBoss) {
     const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
     ctx.save();
     cornerAngles.forEach((corner, idx) => {
       const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
-      const pulse = 0.6 + (Math.sin(now / 480 + idx) * 0.25);
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 42);
-      grad.addColorStop(0, `rgba(255,100,240,${0.35 * pulse})`);
-      grad.addColorStop(0.6, `rgba(180,80,255,${0.12 * pulse})`);
-      grad.addColorStop(1, 'rgba(195,110,255,0)');
+      const pulse = 0.65 + Math.sin(now / 420 + idx * 1.8) * 0.28;
+
+      // Bright prism glow at each point.
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 48);
+      grad.addColorStop(0, `rgba(255, 80, 240, ${0.42 * pulse})`);
+      grad.addColorStop(0.5, `rgba(200, 60, 255, ${0.18 * pulse})`);
+      grad.addColorStop(1, 'transparent');
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 42, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 48, 0, Math.PI * 2);
       ctx.fill();
 
-      // Facet shimmer pass
-      ctx.strokeStyle = '#ff80ff';
-      ctx.globalAlpha = 0.24 * pulse;
-      ctx.lineWidth = 2.4;
+      // Extra sharp facet highlight.
+      ctx.strokeStyle = '#ff99ff';
+      ctx.globalAlpha = 0.35 * pulse;
+      ctx.lineWidth = 3.5;
       ctx.beginPath();
-      ctx.moveTo(p.x - 12, p.y - 12);
-      ctx.lineTo(p.x + 12, p.y + 12);
+      ctx.moveTo(p.x - 18, p.y - 18);
+      ctx.lineTo(p.x + 18, p.y + 18);
       ctx.stroke();
     });
 
-    // Inner prism lane unique to diamond world.
+    // Subtle animated prism shimmer on the lane (diamond world only).
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius - 7, 0, Math.PI * 2);
     ctx.lineWidth = 1.4;
-    ctx.globalAlpha = 0.32 + (Math.sin(now / 460) * 0.08);
+    ctx.globalAlpha = 0.3 + (Math.sin(now / 350) * 0.12);
     ctx.strokeStyle = '#ff8cff';
-    setShadowBlur(10);
+    setShadowBlur(useHeavyEffects ? 12 : 6);
     ctx.shadowColor = '#ff57e8';
     ctx.stroke();
+
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius + 5, 0, Math.PI * 2);
+    ctx.lineWidth = 1.1;
+    ctx.globalAlpha = 0.16 + (Math.sin(now / 270 + 0.9) * 0.08);
+    ctx.strokeStyle = '#9cfbff';
+    setShadowBlur(useHeavyEffects ? 10 : 5);
+    ctx.shadowColor = '#9cfbff';
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
     ctx.restore();
   }
 
@@ -1959,6 +1996,19 @@ function draw() {
       ctx.lineWidth = isDiamondWorld ? 2.6 : 1.5;
       setShadowBlur(isDiamondWorld ? 10 : 0);
       ctx.stroke();
+
+      // Diamond-only prism interference streak to make phantom traps pop.
+      if (isDiamondWorld) {
+        const phantomMid = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, orbitRadius);
+        const streak = 7 + Math.sin(now / 180 + tCenter * 3) * 2;
+        ctx.strokeStyle = '#ffa0ff';
+        ctx.globalAlpha = 0.32 * phantomPulse;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(phantomMid.x - streak, phantomMid.y + streak);
+        ctx.lineTo(phantomMid.x + streak, phantomMid.y - streak);
+        ctx.stroke();
+      }
       
       ctx.setLineDash([]);
       ctx.restore();
@@ -2013,6 +2063,7 @@ function draw() {
 
     if (t.isCornerBonus) {
       ctx.save();
+      const isDiamondWorld = worldNum === 2 && !isBoss;
       const bonusPulse = 0.92 + (Math.sin(now / 360 + tCenter * 3.1) * 0.1);
       const glowWidth = Math.max(3, bodyWidth * 0.85);
       const coreWidth = Math.max(1.8, bodyWidth * 0.45);
@@ -2020,10 +2071,11 @@ function draw() {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ffd54a';
-      ctx.globalAlpha = (0.36 + approach * 0.28 + hitFlash * 0.2) * bonusPulse;
-      ctx.lineWidth = glowWidth + (approach * 0.6);
+      ctx.globalAlpha = (isDiamondWorld ? 0.48 : 0.36) + (approach * 0.28) + (hitFlash * (isDiamondWorld ? 0.28 : 0.2));
+      ctx.globalAlpha *= bonusPulse;
+      ctx.lineWidth = glowWidth + (approach * (isDiamondWorld ? 1.0 : 0.6));
       ctx.lineCap = 'round';
-      setShadowBlur(useHeavyEffects ? (14 + (approach * 8)) : (4 + (approach * 3)));
+      setShadowBlur(useHeavyEffects ? ((isDiamondWorld ? 20 : 14) + (approach * 8)) : (6 + (approach * 3)));
       ctx.shadowColor = '#ffd54a';
       ctx.stroke();
 
@@ -2043,7 +2095,7 @@ function draw() {
       ctx.rotate(Math.PI / 4);
       ctx.fillStyle = '#ffd54a';
       ctx.globalAlpha = 0.88 + approach * 0.12;
-      setShadowBlur(useHeavyEffects ? 12 : 0);
+      setShadowBlur(useHeavyEffects ? (isDiamondWorld ? 18 : 12) : 0);
       ctx.shadowColor = '#ffd54a';
       ctx.fillRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
       ctx.strokeStyle = '#ffffff';
@@ -2738,13 +2790,18 @@ function tap() {
 
     if (t.isPhantom) {
       // Player hit a phantom — punish without the usual hit flow
+      const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+      const isDiamondWorld = worldNum === 2;
       t.active = false;
-      triggerScreenShake(8);
+      triggerScreenShake(isDiamondWorld ? 11 : 8);
       canvas.style.filter = 'brightness(2)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 100);
-      createShockwave('#ff3366', 30);
+      createShockwave('#ff3366', isDiamondWorld ? 36 : 30);
       createPopup(hitX, hitY - 20, "TRAP!", "#ff3366");
-      createParticles(hitX, hitY, '#ff3366', 20);
+      createParticles(hitX, hitY, '#ff3366', isDiamondWorld ? 28 : 20);
+      if (isDiamondWorld) {
+        createUpwardBurstParticles(hitX, hitY - 8, '#ff96f0', 22);
+      }
       soundFail();
       vibrate([40, 20, 40]);
       handleFail("HIT A PHANTOM");
@@ -2758,7 +2815,11 @@ function tap() {
       runCents += cornerBonusScore;
       markScoreCoinDirty();
       createPopup(hitX, hitY - 24, `CORNER +${cornerBonusScore}`, '#ffd54a');
-      createParticles(hitX, hitY, '#ffd54a', 28);
+      createParticles(hitX, hitY, '#ffd54a', worldNum === 2 ? 34 : 28);
+      if (worldNum === 2) {
+        createUpwardBurstParticles(hitX, hitY, '#ffd54a', 32);
+        soundPerfect(multiplier);
+      }
       createShockwave('#ffd54a', 24);
       soundCornerBonus(worldNum);
       if (worldNum === 2) {
