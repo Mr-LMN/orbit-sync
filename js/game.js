@@ -686,14 +686,23 @@ function getPointOnShape(t, shape, cx, cy, radius) {
     return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
   }
   if (shape === 'diamond') {
-    // True diamond with sharp corners - points at top/bottom/left/right
-    const a = t + Math.PI / 4;
-    const absCos = Math.abs(Math.cos(a));
-    const absSin = Math.abs(Math.sin(a));
-    const scale = radius / Math.max(absCos, absSin);
+    // True sharp diamond (rotated square) with linear interpolation on each side
+    const a = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const side = Math.floor(a / (Math.PI / 2));
+    const progress = (a % (Math.PI / 2)) / (Math.PI / 2);
+    const corners = [
+      { x: 0, y: -1 },  // top
+      { x: 1, y: 0 },   // right
+      { x: 0, y: 1 },   // bottom
+      { x: -1, y: 0 }   // left
+    ];
+    const p1 = corners[side];
+    const p2 = corners[(side + 1) % 4];
+    const x = p1.x + (p2.x - p1.x) * progress;
+    const y = p1.y + (p2.y - p1.y) * progress;
     return {
-      x: cx + Math.cos(a) * scale,
-      y: cy + Math.sin(a) * scale
+      x: cx + x * radius,
+      y: cy + y * radius
     };
   }
   const sides = shape === 'triangle' ? 3 : 5;
@@ -1909,45 +1918,36 @@ function draw() {
   // === WORLD 2 DIAMOND-SPECIFIC ENHANCEMENTS ===
   if (worldShape === 'diamond' && worldNum === 2 && !isBoss) {
     ctx.save();
-    const sides = 4;
-    for (let i = 0; i < sides; i++) {
-      const start = (i * Math.PI * 2 / sides) + (Math.PI / 4);
-      const end = start + (Math.PI * 2 / sides);
-      buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, start, end, 8);
-      ctx.strokeStyle = '#ff80ff';
-      ctx.lineWidth = 3.5;
-      ctx.globalAlpha = 0.6 + Math.sin(now / 380) * 0.15;
-      setShadowBlur(18);
-      ctx.shadowColor = '#ff99ff';
-      ctx.stroke();
-    }
+    ctx.lineJoin = 'bevel'; // Keep corners hard and faceted
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2, 12);
+    ctx.strokeStyle = '#ff80ff';
+    ctx.lineWidth = 4.5;
+    setShadowBlur(22);
+    ctx.shadowColor = '#ff99ff';
+    ctx.stroke();
+
+    // Inner facet pass for stronger straight-side readability
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2, 12);
+    setShadowBlur(12);
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.7;
+    ctx.stroke();
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
-
-    const cornerAngles = [Math.PI / 4, Math.PI * 3 / 4, Math.PI * 5 / 4, Math.PI * 7 / 4];
-    cornerAngles.forEach(corner => {
-      const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius + 6);
-      const pulse = 0.7 + Math.sin(now / 280) * 0.3;
-
-      // Prismatic corner shard (no circular glow halo)
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.rotate(corner);
-      ctx.globalAlpha = 0.55 * pulse;
-      ctx.fillStyle = '#ffd9ff';
-      ctx.beginPath();
-      ctx.moveTo(0, -14);
-      ctx.lineTo(10, 0);
-      ctx.lineTo(0, 14);
-      ctx.lineTo(-10, 0);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#ff9cff';
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
-      ctx.restore();
-    });
     ctx.restore();
+
+    const cornerAngles = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
+    cornerAngles.forEach(corner => {
+      const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
+      const pulse = 0.75 + Math.sin(now / 320) * 0.25;
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 32);
+      grad.addColorStop(0, `rgba(255, 220, 255, ${pulse * 0.9})`);
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 32, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
@@ -2486,23 +2486,25 @@ function update() {
   const isStageClearHoldPaused = frameNow < stageClearHoldUntil;
   const nearMissSpeedScale = frameNow < nearMissReplayUntil ? 0.3 : 1;
   const worldShape = currentWorldShape;
+  const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
 
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
   if (isBossTransitionPaused || isStageClearHoldPaused) moveStep = 0;
   else moveStep *= nearMissSpeedScale;
 
-  if (!inMenu && worldShape === 'diamond' && moveStep !== 0) {
-    const normalized = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    const cornerOffset = Math.PI / 4;
-    const sectorSize = Math.PI / 2;
-    const cornerProgress = ((normalized - cornerOffset) % sectorSize + sectorSize) % sectorSize;
-    const distToCorner = Math.min(cornerProgress, sectorSize - cornerProgress);
-    const snapRange = 0.11;
-    if (distToCorner < snapRange) {
-      const snapStrength = 1 + ((snapRange - distToCorner) / snapRange) * 0.22;
-      moveStep *= snapStrength;
+  if (worldShape === 'diamond' && worldNum === 2 && !inMenu && moveStep !== 0) {
+    // Corner snap burst to make World 2 diamond traversal feel crisp
+    const cornerTolerance = 0.25;
+    let nearCorner = false;
+    const corners = [Math.PI / 4, Math.PI * 3 / 4, Math.PI * 5 / 4, Math.PI * 7 / 4];
+    for (const c of corners) {
+      if (Math.abs(signedAngularDistance(angle, c)) < cornerTolerance) {
+        nearCorner = true;
+        break;
+      }
     }
+    if (nearCorner) moveStep *= 1.18;
   }
   moveStep *= delta;
 
