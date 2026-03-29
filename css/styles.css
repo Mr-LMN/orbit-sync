@@ -18,18 +18,30 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   pointer-events: none; opacity: 1.0;
 }
 
-#bossUI { position: absolute; top: 120px; width: 60%; display: flex; flex-direction: column; align-items: center; z-index: 5; }
-.boss-title { color: #ff3366; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px; font-size: 0.9rem; text-shadow: 0 0 10px rgba(255,51,102,0.8);}
-.boss-bar-container { display: flex; gap: 5px; width: 100%; height: 12px; }
-.boss-segment { flex: 1; background: #333; border-radius: 6px; transition: background 0.3s, box-shadow 0.3s; }
-.active-segment { background: #ff3366; box-shadow: 0 0 10px #ff3366; }
+#bossUI {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(76vw, 420px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  z-index: 6;
+  pointer-events: none;
+}
+.boss-title { font-size: 0.7rem; letter-spacing: 3px; color: #ff5c85; text-shadow: 0 0 10px rgba(255, 92, 133, 0.45); }
+.boss-bar-container { width: 100%; display: flex; gap: 8px; padding: 6px; border-radius: 999px; background: rgba(10, 10, 16, 0.72); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 10px 24px rgba(0,0,0,0.28); }
+.boss-segment { flex: 1; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.08); transition: background 0.25s ease, box-shadow 0.25s ease, opacity 0.25s ease; }
+.active-segment { background: linear-gradient(90deg, #ff3366, #ff7a59); box-shadow: 0 0 14px rgba(255,51,102,0.45); }
 
 /* Nudged higher up the screen */
-#ui { position: absolute; top: 12%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
-#ui h1 { margin: 0; font-size: 2.2rem; color: rgba(255,255,255,0.9); }
-#ui h2 { margin: 0; font-size: 0.65rem; color: rgba(255,255,255,0.25); opacity: 1; letter-spacing: 2px; }
-#ui h3 { margin: 2px 0 0 0; font-size: 0.65rem; letter-spacing: 3px; color: rgba(255,255,255,0.25); text-transform: uppercase; }
-#scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: 4rem; color: #fff; text-shadow: none; }
+#ui { position: absolute; top: 14%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
+#ui h1 { margin: 0; font-size: clamp(2.3rem, 10vw, 4.1rem); color: rgba(255,255,255,0.9); line-height: 0.95; }
+#ui h2 { margin: 0; font-size: clamp(0.58rem, 2.2vw, 0.75rem); color: rgba(255,255,255,0.25); opacity: 1; letter-spacing: 2px; }
+#ui h3 { margin: 2px 0 0 0; font-size: clamp(0.58rem, 2.2vw, 0.75rem); letter-spacing: 2.4px; color: rgba(255,255,255,0.25); text-transform: uppercase; }
+#scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: clamp(3rem, 12vw, 4.4rem); color: #fff; text-shadow: none; }
 #tutorialText { display: none; margin: 5px 0; color: #aaa; font-size: 1rem; }
 
 #mainMenu { position: absolute; text-align: center; z-index: 10; background: rgba(15,15,19,0.85); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
@@ -132,9 +144,13 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 }
 
 #screenOverlay { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 10, 15, 0.85); width: 100%; height: 100%; z-index: 15; backdrop-filter: blur(8px); }
-#screenTitle { font-size: 3.5rem; margin-bottom: 0; text-shadow: 0 0 20px currentColor; }
-#screenSubtitle { font-size: 1.2rem; color: #ccc; margin-top: 5px; margin-bottom: 15px; }
-.run-coins-box { font-size: 1.5rem; color: #ffaa00; font-weight: bold; margin-bottom: 30px; background: rgba(0,0,0,0.5); padding: 10px 25px; border-radius: 20px; border: 1px solid rgba(255, 170, 0, 0.3); }
+#screenTitle { font-size: clamp(2rem, 8vw, 3.5rem); margin-bottom: 0; text-shadow: 0 0 20px currentColor; text-align: center; line-height: 1; padding: 0 16px; }
+#screenSubtitle { font-size: clamp(0.9rem, 3.5vw, 1.2rem); color: #ccc; margin-top: 5px; margin-bottom: 15px; text-align: center; padding: 0 18px; max-width: 90vw; }
+.run-coins-box { font-size: clamp(1rem, 4vw, 1.5rem); color: #ffaa00; font-weight: bold; margin-bottom: 24px; background: rgba(0,0,0,0.5); padding: 10px 18px; border-radius: 20px; border: 1px solid rgba(255, 170, 0, 0.3); text-align: center; }
+.clear-summary { display: flex; gap: 14px; margin-bottom: 20px; justify-content: center; flex-wrap: wrap; }
+.clear-stat { text-align: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 10px 20px; min-width: 92px; }
+.clear-label { font-size: 0.5rem; letter-spacing: 3px; color: rgba(255,255,255,0.45); margin-bottom: 4px; }
+.clear-value { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.5rem, 7vw, 2rem); color: #fff; }
 .pb-stat {
   text-align: center;
   background: rgba(255,255,255,0.05);
@@ -177,3 +193,15 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   justify-content: center;
 }
 .arrow-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.1); }
+
+@media (max-width: 768px) {
+  #ui { top: 16%; }
+  #scoreDisplay { font-size: clamp(2.6rem, 12vw, 4rem); }
+  #ui h2, #ui h3 { font-size: clamp(0.55rem, 2.8vw, 0.75rem); letter-spacing: 1.5px; }
+  .btn { width: min(88vw, 280px); font-size: 1.1rem; padding: 14px 22px; }
+  #bossUI { top: 48px; width: min(84vw, 360px); }
+  .boss-title { font-size: 0.62rem; letter-spacing: 2px; }
+  .boss-segment { height: 8px; }
+  .clear-summary { gap: 10px; }
+  .clear-stat { min-width: 84px; padding: 9px 14px; }
+}
