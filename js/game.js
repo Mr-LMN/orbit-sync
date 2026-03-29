@@ -408,6 +408,9 @@ let bossSpawnTimeout = null;
 let bossPauseUntil = 0;
 let bossTransitionLock = false;
 let brightnessPulseTimeout = null;
+let stageClearHoldUntil = 0;
+let nearMissReplayUntil = 0;
+let nearMissReplayActive = false;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
@@ -571,6 +574,7 @@ function releasePopup(popup) {
   popup.riseSpeed = 1;
   popup.fadeSpeed = 0.02;
   popup.shadow = 0;
+  popup.fontSize = null;
   popup.life = 0;
   popupPool.push(popup);
 }
@@ -667,12 +671,35 @@ function showComboPopup(multiplierLevel) {
 
   const comboPopup = createPopup(centerObj.x, centerObj.y - 60, milestone.label, milestone.color);
   comboPopup.animType = 'combo';
+  comboPopup.life = 1.6;
   comboPopup.riseSpeed = 0.75;
-  comboPopup.fadeSpeed = 0.028;
-  comboPopup.shadow = 24;
+  comboPopup.fadeSpeed = 0.02;
+  comboPopup.shadow = 30;
 
   createShockwave(milestone.color, 42);
 }
+
+function showNearMissReplay(reason, nearestEdgeDistance) {
+  nearMissReplayActive = true;
+  nearMissReplayUntil = performance.now() + 600;
+  const replayText = nearestEdgeDistance <= (NEAR_MISS_THRESHOLD * 0.5) ? "SO CLOSE!" : "ALMOST!";
+  const replayPopup = createPopup(centerObj.x, centerObj.y - 6, replayText, '#ffaa00');
+  replayPopup.animType = 'combo';
+  replayPopup.life = 1.05;
+  replayPopup.riseSpeed = 0.28;
+  replayPopup.fadeSpeed = 0.016;
+  replayPopup.shadow = 34;
+  replayPopup.fontSize = isMobile ? '3.2rem' : '3.8rem';
+  createShockwave('#ffaa00', 54);
+  createShockwave('#ffffff', 44);
+  triggerScreenShake(12);
+  setTimeout(() => {
+    nearMissReplayActive = false;
+    nearMissReplayUntil = 0;
+    handleFail(reason);
+  }, 600);
+}
+
 function createShockwave(color, speed = 40) {
   shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
   if (shockwaves.length > MAX_SHOCKWAVES) shockwaves.splice(0, shockwaves.length - MAX_SHOCKWAVES);
@@ -1743,17 +1770,23 @@ function draw() {
       const age = 1 - pop.life;
       let scale = 1;
       if (pop.animType === 'perfect') {
-        // Quick "YES!" bloom then settle.
-        scale = age < 0.18 ? (1.38 - (age * 1.1)) : (1.18 - ((age - 0.18) * 0.34));
+        // Stronger "YES!" bloom then settle.
+        scale = age < 0.2 ? (1.62 - (age * 1.4)) : (1.34 - ((age - 0.2) * 0.4));
       } else if (pop.animType === 'combo') {
-        scale = age < 0.2 ? (1.55 - (age * 1.2)) : (1.25 - ((age - 0.2) * 0.42));
+        scale = age < 0.22 ? (1.76 - (age * 1.45)) : (1.4 - ((age - 0.22) * 0.46));
       }
       ctx.fillStyle = pop.color;
       ctx.globalAlpha = pop.life;
       const perfectFontSize = isMobile ? '2.2rem' : '1.95rem';
+      const comboFontSize = isMobile ? '2.05rem' : '1.9rem';
+      const popupFont = pop.fontSize
+        ? `900 ${pop.fontSize} Orbitron`
+        : (pop.hitQuality === 'perfect'
+          ? `900 ${perfectFontSize} Orbitron`
+          : (pop.animType === 'combo' ? `900 ${comboFontSize} Orbitron` : 'bold 1rem Orbitron'));
       ctx.font = pop.hitQuality === 'perfect'
         ? `900 ${perfectFontSize} Orbitron`
-        : (pop.animType === 'combo' ? '900 1.75rem Orbitron' : 'bold 1rem Orbitron');
+        : popupFont;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'alphabetic';
       ctx.save();
@@ -1806,11 +1839,14 @@ function update() {
   const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
   lastFrameTime = frameNow;
   const isBossTransitionPaused = frameNow < bossPauseUntil;
+  const isStageClearHoldPaused = frameNow < stageClearHoldUntil;
+  const nearMissSpeedScale = frameNow < nearMissReplayUntil ? 0.3 : 1;
   const worldShape = currentWorldShape;
 
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
-  if (isBossTransitionPaused) moveStep = 0;
+  if (isBossTransitionPaused || isStageClearHoldPaused) moveStep = 0;
+  else moveStep *= nearMissSpeedScale;
   moveStep *= delta;
 
   angle += moveStep;
@@ -1844,7 +1880,7 @@ function update() {
       if (Math.random() < 0.42) t.moveSpeed *= -1;
       t.nextDirectionSwapAt = frameNow + 1200 + Math.random() * 1000;
     }
-    if (isBossTransitionPaused) currentMoveSpeed = 0;
+    if (isBossTransitionPaused || isStageClearHoldPaused) currentMoveSpeed = 0;
 
     if (currentMoveSpeed !== 0) {
       t.start += currentMoveSpeed * delta;
@@ -2020,6 +2056,7 @@ function tap() {
   initAudio(); // Ensures audio wakes up on iOS/Safari
   if (inMenu || ui.overlay.style.display === 'flex') return;
   if (bossTransitionLock) return;
+  if (nearMissReplayActive) return;
   if (!isPlaying) { isPlaying = true; showTempText("Syncing...", "#00e5ff", 1000); return; }
 
   let hitIndex = -1; let hitQuality = "miss";
@@ -2165,9 +2202,10 @@ function tap() {
       score += (3 * multiplier);
       const perfectPopup = createPopup(hitX, hitY - 18, "PERFECT!", '#fff36a', 'perfect');
       perfectPopup.animType = 'perfect';
-      perfectPopup.riseSpeed = 0.95;
-      perfectPopup.fadeSpeed = 0.026;
-      perfectPopup.shadow = 22;
+      perfectPopup.life = 1.4;
+      perfectPopup.riseSpeed = 0.8;
+      perfectPopup.fadeSpeed = 0.02;
+      perfectPopup.shadow = 30;
       // Punchier but ultra-short flash to keep input feeling instant.
       canvas.style.filter = 'brightness(2.2)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
@@ -2236,7 +2274,11 @@ function tap() {
       setTimeout(() => canvas.style.boxShadow = 'none', 100);
       if (navigator.vibrate) vibrate(12);
     } else {
-      handleFail("MISSED");
+      if (lives <= 1 && nearestEdgeDistance <= NEAR_MISS_THRESHOLD) {
+        showNearMissReplay("MISSED", nearestEdgeDistance);
+      } else {
+        handleFail("MISSED");
+      }
     }
   }
 }
@@ -2318,22 +2360,27 @@ function triggerStageClear() {
       const waveClearAftershockColor = worldNum === 2 ? '#c68cff' : '#ffffff';
       const wavePopup = createPopup(centerObj.x, centerObj.y - 56, "WAVE CLEARED!", waveClearColor);
       wavePopup.animType = 'combo';
+      wavePopup.life = 1.8;
       wavePopup.riseSpeed = 0.82;
-      wavePopup.fadeSpeed = 0.023;
+      wavePopup.fadeSpeed = 0.018;
       wavePopup.shadow = 26;
       createParticles(centerObj.x, centerObj.y, waveClearColor, Math.min(54, MAX_PARTICLES));
-      createUpwardBurstParticles(centerObj.x, centerObj.y + 8, waveClearAftershockColor, 28);
+      createUpwardBurstParticles(centerObj.x, centerObj.y + 8, waveClearAftershockColor, 42);
+      createUpwardBurstParticles(centerObj.x, centerObj.y + 4, waveClearColor, 34);
       triggerScreenShake(8);
       
       // Triple pulse with a lightweight cap-safe finish.
       createShockwave(waveClearColor, 35); // Main heavy neon wave
       setTimeout(() => createShockwave(waveClearAftershockColor, 45), 100); // Faster aftershock
       setTimeout(() => createShockwave(waveClearColor, 52), 155); // Extra celebration pop
+      setTimeout(() => createShockwave(waveClearAftershockColor, 58), 230); // Third celebration ring
       if (typeof vibrate === 'function') vibrate([28, 28, 42, 20, 70]); // Stronger double-thump
 
       // Briefly flash the screen to match world identity
       canvas.style.boxShadow = `inset 0 0 50px ${waveClearColor}`; 
       setTimeout(() => canvas.style.boxShadow = 'none', 150);
+
+      stageClearHoldUntil = performance.now() + 800;
 
       // Load next level without stopping the 'isPlaying' loop!
       loadLevel(currentLevelIdx);
