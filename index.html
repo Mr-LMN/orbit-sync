@@ -115,7 +115,7 @@
           <div class="clear-value" id="clearCoinsDisplay">0</div>
         </div>
       </div>
-      <div id="pbStatsBlock" style="display:flex; gap:20px; margin-bottom:20px; justify-content:center; flex-wrap:wrap;">
+      <div id="pbStatsBlock">
         <div class="pb-stat" id="pbScoreBlock">
           <div class="pb-label">BEST SCORE</div>
           <div class="pb-value" id="pbScoreDisplay">0</div>
@@ -130,20 +130,18 @@
         </div>
       </div>
 
-      <div id="newRecordBanner" style="display:none; color:#ffaa00; font-family:'Orbitron',sans-serif; font-size:0.9rem; letter-spacing:4px; margin-bottom:15px;">
+      <div id="newRecordBanner" style="display:none; color:#ffaa00; font-family:'Orbitron',sans-serif;">
         ★ NEW RECORD ★
       </div>
       <div id="overlayActionStack" class="overlay-action-stack">
         <button id="shareBtn" class="btn"
-          style="background:transparent; border:1px solid rgba(255,255,255,0.2);
-          color:rgba(255,255,255,0.6); font-size:0.8rem; padding:10px 25px;
-          width:auto; margin-bottom:5px;"
+          style="background:transparent; border:1px solid rgba(255,255,255,0.2); color:rgba(255,255,255,0.6);"
           onclick="if(audioCtx) soundUIClick(); generateShareCard();">
           SHARE SCORE
         </button>
         <div id="overlayButtonGroup" class="overlay-button-group">
-          <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="background: #ffaa00; color: #0f0f13; box-shadow: 0 0 15px rgba(255,170,0,0.6); display: none;">ONE MORE TRY</button>
-          <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="background: #d18b00; color: #0f0f13; box-shadow: 0 0 12px rgba(255,170,0,0.4); display: none;">REVIVE (🪙 50)</button>
+          <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">ONE MORE TRY</button>
+          <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">REVIVE (🪙 50)</button>
           <button id="actionBtn" class="btn btn-play" onclick="if(audioCtx) soundUIClick();">Restart World</button>
           <button id="menuBtn" class="btn btn-shop" onclick="if(audioCtx) soundUIClick();">Main Menu</button>
         </div>
