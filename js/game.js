@@ -25,6 +25,7 @@ let baseAudioBuffers = {};
 let baseSource, bossSource;
 let baseGain, bossGain;
 let isMusicPlaying = false;
+let musicLoadToken = 0;
 let musicEnabled = true;
 let sfxEnabled = true;
 let hapticsEnabled = true;
@@ -372,7 +373,7 @@ async function startDynamicMusic(baseTrackPath) {
   if (!audioCtx || !musicEnabled) return;
   if (isMusicPlaying && currentBaseTrack === baseTrackPath) return;
 
-  stopDynamicMusic();
+  disposeMusicNodes();
 
   try {
     if (!baseAudioBuffers[baseTrackPath]) {
@@ -412,30 +413,40 @@ async function startDynamicMusic(baseTrackPath) {
 
 let currentMusicState = { mult: 1, boss: false };
 
-function stopDynamicMusic() {
-  if (!audioCtx) return;
+function disposeMusicNodes() {
   try {
-    if (baseGain) baseGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    if (bossGain) bossGain.gain.cancelScheduledValues(audioCtx.currentTime);
-    if (baseGain) baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    if (bossGain) bossGain.gain.setValueAtTime(0, audioCtx.currentTime);
-
     if (baseSource) {
       try { baseSource.stop(); } catch (e) {}
       baseSource.disconnect();
-      baseSource = null;
     }
+  } catch (e) {}
+  try {
     if (bossSource) {
       try { bossSource.stop(); } catch (e) {}
       bossSource.disconnect();
-      bossSource = null;
     }
+  } catch (e) {}
+  try { if (baseGain) baseGain.disconnect(); } catch (e) {}
+  try { if (bossGain) bossGain.disconnect(); } catch (e) {}
+  baseSource = null;
+  bossSource = null;
+  baseGain = null;
+  bossGain = null;
+  isMusicPlaying = false;
+}
 
-    if (baseGain) baseGain.disconnect();
-    if (bossGain) bossGain.disconnect();
-    baseGain = null;
-    bossGain = null;
-    isMusicPlaying = false;
+function stopDynamicMusic() {
+  if (!audioCtx) return;
+  try {
+    if (baseGain) {
+      baseGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    }
+    if (bossGain) {
+      bossGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      bossGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    }
+    disposeMusicNodes();
     currentBaseTrack = null;
     currentMusicState = { mult: 1, boss: false };
   } catch (e) {
@@ -443,10 +454,16 @@ function stopDynamicMusic() {
   }
 }
 
+function baseVolumeForMultiplier(currentMultiplier) {
+  return Math.min(0.8, 0.56 + (Math.max(1, currentMultiplier) - 1) * 0.02);
+}
+
 async function ensureCorrectMusicForLevel() {
   if (!audioCtx || !musicEnabled) return;
+  const token = ++musicLoadToken;
   const wantedTrack = getBaseTrackForLevel(currentLevelIdx);
   await startDynamicMusic(wantedTrack);
+  if (token !== musicLoadToken) return;
   updateMusicState(multiplier, !!(levelData && levelData.boss));
 }
 
@@ -463,11 +480,15 @@ function updateMusicState(currentMultiplier, isBossActive) {
   const now = audioCtx.currentTime;
 
   if (isBossActive) {
-    baseGain.gain.linearRampToValueAtTime(0, now + 2.0);
-    bossGain.gain.linearRampToValueAtTime(0.6, now + 2.0);
+    baseGain.gain.cancelScheduledValues(now);
+    bossGain.gain.cancelScheduledValues(now);
+    baseGain.gain.linearRampToValueAtTime(0.03, now + 0.5);
+    bossGain.gain.linearRampToValueAtTime(0.85, now + 0.5);
   } else {
-    baseGain.gain.linearRampToValueAtTime(0.6, now + 2.0);
-    bossGain.gain.linearRampToValueAtTime(0, now + 2.0);
+    baseGain.gain.cancelScheduledValues(now);
+    bossGain.gain.cancelScheduledValues(now);
+    bossGain.gain.linearRampToValueAtTime(0, now + 0.5);
+    baseGain.gain.linearRampToValueAtTime(baseVolumeForMultiplier(currentMultiplier), now + 0.5);
   }
 
   const targetSpeed = 1.0 + (currentMultiplier * 0.015);
@@ -813,16 +834,19 @@ function flushScoreCoinUI() {
 
 function setOverlayState(type) {
   const reviveBtn = document.getElementById('reviveBtn');
+  const coinReviveBtn = document.getElementById('coinReviveBtn');
   const shareBtn = document.getElementById('shareBtn');
   const menuBtn = document.getElementById('menuBtn');
   const pbBlock = document.getElementById('pbStatsBlock');
   const clearSummary = document.getElementById('clearSummary');
   const overlayActionStack = document.getElementById('overlayActionStack');
   const runCoinsBox = document.getElementById('runCoinsBox');
+  const overlayMetaStack = document.getElementById('overlayMetaStack');
 
   const hideAll = () => {
     ui.btn.style.display = 'none';
     if (reviveBtn) reviveBtn.style.display = 'none';
+    if (coinReviveBtn) coinReviveBtn.style.display = 'none';
     if (shareBtn) shareBtn.style.display = 'none';
     if (menuBtn) menuBtn.style.display = 'none';
     if (pbBlock) pbBlock.style.display = 'none';
@@ -834,6 +858,7 @@ function setOverlayState(type) {
   hideAll();
 
   if (type === 'gameOver') {
+    if (overlayMetaStack) overlayMetaStack.style.display = '';
     ui.btn.style.display = 'block';
     if (reviveBtn) reviveBtn.style.display = 'block';
     if (shareBtn) shareBtn.style.display = 'block';
@@ -842,16 +867,47 @@ function setOverlayState(type) {
     if (overlayActionStack) overlayActionStack.style.display = 'flex';
     if (runCoinsBox) runCoinsBox.style.display = 'block';
   } else if (type === 'worldClearReady') {
+    if (overlayMetaStack) overlayMetaStack.style.display = '';
     ui.btn.style.display = 'block';
     if (shareBtn) shareBtn.style.display = 'block';
     if (clearSummary) clearSummary.style.display = 'flex';
     if (overlayActionStack) overlayActionStack.style.display = 'flex';
     if (runCoinsBox) runCoinsBox.style.display = 'block';
   } else if (type === 'worldClearTally') {
+    if (overlayMetaStack) overlayMetaStack.style.display = '';
     if (runCoinsBox) runCoinsBox.style.display = 'block';
   } else if (type === 'cinematic') {
-    // hideAll already applied.
+    setCinematicOverlayMode();
+    forceHideOverlayExtras();
   }
+}
+
+function forceHideOverlayExtras() {
+  const overlayActionStack = document.getElementById('overlayActionStack');
+  const runCoinsBox = document.getElementById('runCoinsBox');
+  const pbBlock = document.getElementById('pbStatsBlock');
+  const clearSummary = document.getElementById('clearSummary');
+  const newRecordBanner = document.getElementById('newRecordBanner');
+  const coinReviveBtn = document.getElementById('coinReviveBtn');
+
+  if (overlayActionStack) overlayActionStack.style.display = 'none';
+  if (runCoinsBox) runCoinsBox.style.display = 'none';
+  if (pbBlock) pbBlock.style.display = 'none';
+  if (clearSummary) clearSummary.style.display = 'none';
+  if (newRecordBanner) newRecordBanner.style.display = 'none';
+  if (coinReviveBtn) coinReviveBtn.style.display = 'none';
+  if (ui.btn) ui.btn.style.display = 'none';
+}
+
+function setCinematicOverlayMode() {
+  const meta = document.getElementById('overlayMetaStack');
+  if (meta) meta.style.display = 'none';
+  forceHideOverlayExtras();
+}
+
+function clearCinematicOverlayMode() {
+  const meta = document.getElementById('overlayMetaStack');
+  if (meta) meta.style.display = '';
 }
 
 function resetRunState() {
@@ -1283,6 +1339,8 @@ function triggerBossIntro() {
   initAudio();
   startBossDrone();
   setOverlayState('cinematic');
+  setCinematicOverlayMode();
+  forceHideOverlayExtras();
   const overlayActionStack = document.getElementById('overlayActionStack');
   if (overlayActionStack) overlayActionStack.style.display = 'none';
 
@@ -1300,6 +1358,8 @@ function triggerBossIntro() {
   setTimeout(() => canvas.style.boxShadow = "none", 200);
 
   const typeInterval = setInterval(() => {
+    setCinematicOverlayMode();
+    forceHideOverlayExtras();
     displayed += introText[i];
     ui.text.innerText = displayed;
     ui.text.style.color = introColor;
@@ -1331,6 +1391,8 @@ function playBossCinematic() {
   if (ui.bossUI) ui.bossUI.style.display = 'none'; // Fixes the floating health bar!
 
   setOverlayState('cinematic');
+  setCinematicOverlayMode();
+  forceHideOverlayExtras();
   const overlayActionStack = document.getElementById('overlayActionStack');
   if (overlayActionStack) overlayActionStack.style.display = 'none';
   const runCoinsBox = document.getElementById('runCoinsBox');
@@ -1379,6 +1441,7 @@ function playBossCinematic() {
       // Clear Overlay
       ui.overlay.style.display = 'none';
       ui.subtitle.style.display = 'block';
+      clearCinematicOverlayMode();
 
       // RESTORE ALL HUD ELEMENTS
       ui.topBar.style.display = 'flex';
@@ -2446,38 +2509,60 @@ function handleFail(reason) {
     ui.runCoins.innerText = pendingCoins > 0 ? `+${pendingCoins} READY TO BANK` : '0 COINS';
     setOverlayState('gameOver');
     let reviveBtn = document.getElementById('reviveBtn');
+    let coinReviveBtn = document.getElementById('coinReviveBtn');
     reviveBtn.style.display = 'block';
-    const restoreAfterTry = () => {
-      ui.overlay.style.display = 'none';
-      ui.topBar.style.display = 'flex';
-      ui.gameUI.style.display = 'block';
-      ui.bigMultiplier.style.display = 'none';
-      lives = 1;
-      ui.lives.innerText = lives;
-      isPlaying = true;
-      if (levelData.boss) ui.bossUI.style.display = 'none';
-    };
+    if (coinReviveBtn) coinReviveBtn.style.display = 'none';
 
     if (!usedLastChance) {
       reviveBtn.innerText = "ONE MORE TRY";
       reviveBtn.onclick = function () {
         usedLastChance = true;
-        restoreAfterTry();
+        restartCurrentStageAfterRevive();
       };
-    } else if (globalCoins >= currentReviveCost) {
-      reviveBtn.innerText = `REVIVE (🪙 ${currentReviveCost})`;
-      reviveBtn.onclick = function () {
+    } else {
+      reviveBtn.style.display = 'none';
+    }
+
+    if (coinReviveBtn && globalCoins >= currentReviveCost) {
+      coinReviveBtn.style.display = 'block';
+      coinReviveBtn.innerText = `REVIVE (🪙 ${currentReviveCost})`;
+      coinReviveBtn.onclick = function () {
         globalCoins -= currentReviveCost;
         saveData();
         updatePersistentCoinUI();
         currentReviveCost *= 2;
         reviveCount++;
-        restoreAfterTry();
+        restartCurrentStageAfterRevive();
       };
-    } else {
-      reviveBtn.style.display = 'none';
     }
   }
+}
+
+function restartCurrentStageAfterRevive() {
+  const pending = runCents;
+  const banked = globalCoins;
+  const usedChance = usedLastChance;
+  const reviveCost = currentReviveCost;
+  const reviveTotal = reviveCount;
+
+  loadLevel(currentLevelIdx);
+
+  runCents = pending;
+  globalCoins = banked;
+  usedLastChance = usedChance;
+  currentReviveCost = reviveCost;
+  reviveCount = reviveTotal;
+  lives = 1;
+  ui.lives.innerText = lives;
+  isPlaying = true;
+  ui.overlay.style.display = 'none';
+  ui.topBar.style.display = 'flex';
+  ui.gameUI.style.display = 'block';
+  ui.bigMultiplier.style.display = 'none';
+  if (ui.bossUI) ui.bossUI.style.display = 'none';
+  clearCinematicOverlayMode();
+  updatePersistentCoinUI();
+  markScoreCoinDirty(true);
 }
 
 function tap() {
@@ -2799,7 +2884,6 @@ function startCampaign() {
   markScoreCoinDirty(true);
   setOverlayState('cinematic');
   loadLevel(currentLevelIdx);
-  ensureCorrectMusicForLevel();
 }
 
 function restartFromCheckpoint() {
@@ -2816,7 +2900,6 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
-  ensureCorrectMusicForLevel();
 }
 
 function returnToMenu() {
@@ -2928,7 +3011,6 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           currentLevelIdx = nextLevelIdx;
           loadLevel(currentLevelIdx);
           isPlaying = true;
-          ensureCorrectMusicForLevel();
         };
       } else {
         // Tick sound for each increment
