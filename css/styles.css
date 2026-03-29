@@ -143,32 +143,39 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   color: #ddd;
 }
 
-#screenOverlay { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; background: rgba(10, 10, 15, 0.85); width: 100%; height: 100%; z-index: 15; backdrop-filter: blur(8px); padding: 18px 0; }
-#overlayMetaStack { display: flex; flex-direction: column; align-items: center; width: min(92vw, 420px); margin: 0 auto; padding: 14px 16px 12px; border-radius: 26px; background: linear-gradient(160deg, rgba(16, 19, 30, 0.86), rgba(11, 13, 20, 0.9)); border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.08); }
-#screenTitle { font-size: clamp(1.9rem, 7.4vw, 3.15rem); margin: 0 0 8px; text-shadow: 0 0 18px currentColor; text-align: center; line-height: 0.95; padding: 0 16px; }
-#screenSubtitle { font-size: clamp(0.86rem, 3.1vw, 1.08rem); color: #d0d4dc; margin: 0 0 10px; text-align: center; padding: 0 12px; max-width: 90vw; opacity: 0.9; line-height: 1.3; }
-.run-coins-box { display: inline-flex; align-items: center; justify-content: center; width: auto; max-width: 100%; margin: 8px auto 12px; padding: 10px 16px; border-radius: 18px; font-size: clamp(1rem, 2.2vw, 1.3rem); letter-spacing: 1px; color: #ffbf3c; font-weight: 700; background: rgba(255, 180, 0, 0.08); border: 1px solid rgba(255, 180, 0, 0.5); text-align: center; box-shadow: 0 0 16px rgba(255, 180, 0, 0.16); }
-.overlay-action-stack { margin-top: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-.overlay-button-group { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-#pbStatsBlock, #clearSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 10px 0 12px; width: 100%; }
-.clear-stat, .pb-stat { text-align: center; min-height: 84px; padding: 10px 10px 12px; border-radius: 18px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(10px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.06); display: flex; flex-direction: column; justify-content: center; }
-.clear-label, .pb-label { font-family: 'Orbitron', sans-serif; font-size: 0.62rem; letter-spacing: 2px; color: rgba(255,255,255,0.75); margin-bottom: 8px; line-height: 1.2; }
-.clear-value, .pb-value { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.5rem, 3.6vw, 2.1rem); line-height: 1; color: #fff; transition: color 0.3s; }
+#screenOverlay { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(18, 22, 36, 0.46) 0%, rgba(5, 6, 12, 0.9) 74%); width: 100%; height: 100%; z-index: 15; backdrop-filter: blur(9px); padding: 18px 0; }
+#overlayMetaStack { display: flex; flex-direction: column; align-items: center; width: min(92vw, 420px); margin: 0 auto; padding: 13px 16px 14px; border-radius: 24px; background: linear-gradient(160deg, rgba(12, 16, 28, 0.72), rgba(8, 10, 18, 0.78)); border: none; box-shadow: 0 22px 56px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.04); }
+#screenTitle { font-size: clamp(1.85rem, 7.2vw, 3rem); margin: 0 0 7px; text-shadow: 0 0 16px currentColor; text-align: center; line-height: 0.94; padding: 0 16px; }
+#screenSubtitle { font-size: clamp(0.82rem, 2.9vw, 1.03rem); color: rgba(219, 224, 235, 0.85); margin: 0 0 12px; text-align: center; padding: 0 12px; max-width: 90vw; line-height: 1.28; letter-spacing: 0.2px; }
+.run-coins-box { display: inline-flex; align-items: center; justify-content: center; width: auto; max-width: 100%; margin: 8px auto 14px; padding: 10px 18px; border: none; outline: none; border-radius: 999px; font-size: clamp(1rem, 2.2vw, 1.28rem); letter-spacing: 1px; color: #ffc65d; font-weight: 700; background: rgba(255, 190, 60, 0.08); text-align: center; text-shadow: 0 0 12px rgba(255, 198, 93, 0.24); box-shadow: 0 0 18px rgba(255, 190, 60, 0.18), inset 0 0 20px rgba(255, 190, 60, 0.05); animation: coin-chip-pulse 3.2s ease-in-out infinite; }
+.overlay-action-stack { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 9px; width: 100%; }
+.overlay-button-group { width: 100%; display: flex; flex-direction: column; gap: 9px; }
+#pbStatsBlock, #clearSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 14px; width: 100%; }
+.clear-stat, .pb-stat { text-align: center; min-height: 76px; padding: 8px 8px 10px; border-radius: 16px; background: rgba(255,255,255,0.03); border: none; backdrop-filter: blur(6px); box-shadow: none; display: flex; flex-direction: column; justify-content: center; position: relative; }
+.clear-stat:not(:last-child)::after, .pb-stat:not(:last-child)::after { content: ""; position: absolute; right: -4px; top: 20%; width: 1px; height: 60%; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent); }
+.clear-label, .pb-label { font-family: 'Orbitron', sans-serif; font-size: 0.58rem; letter-spacing: 2px; color: rgba(255,255,255,0.62); margin-bottom: 7px; line-height: 1.2; }
+.clear-value, .pb-value { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.45rem, 3.5vw, 2rem); line-height: 1; color: #fff; transition: color 0.3s; }
 .pb-value.new-record {
   color: #ffaa00;
   text-shadow: 0 0 15px rgba(255,170,0,0.6);
 }
 #newRecordBanner { margin: 8px 0 10px; font-size: clamp(0.95rem, 2.3vw, 1.2rem); letter-spacing: 3px; text-align: center; }
-#overlayActionStack .btn, #overlayButtonGroup .btn { width: 100%; min-height: 54px; padding: 12px 18px; border-radius: 20px; font-size: clamp(0.98rem, 2vw, 1.18rem); line-height: 1.1; letter-spacing: 0.3px; }
-#shareBtn { width: auto !important; min-height: 40px !important; padding: 10px 18px !important; border-radius: 999px !important; font-size: 0.9rem !important; opacity: 0.95; margin-bottom: 2px !important; color: rgba(255,255,255,0.72) !important; border-color: rgba(255,255,255,0.24) !important; background: rgba(255,255,255,0.04) !important; box-shadow: none !important; }
-#actionBtn { background: linear-gradient(135deg, #00ff93 0%, #00d87f 100%); color: #07110d; border: 1px solid rgba(173, 255, 214, 0.7); box-shadow: 0 0 16px rgba(0,255,136,0.42), 0 10px 20px rgba(0, 0, 0, 0.26); }
-#reviveBtn { background: linear-gradient(135deg, #ffc145 0%, #ff9f1c 100%) !important; color: #2a1a03 !important; border: 1px solid rgba(255, 215, 142, 0.62); box-shadow: 0 6px 16px rgba(255,166,46,0.22) !important; }
-#coinReviveBtn { background: rgba(255, 138, 0, 0.16) !important; color: #ffcb7c !important; border: 1px solid rgba(255, 179, 85, 0.4); box-shadow: 0 6px 14px rgba(255, 157, 40, 0.14) !important; }
-#menuBtn { background: transparent; color: rgba(0, 229, 255, 0.92); border: 1px solid rgba(0, 229, 255, 0.56); box-shadow: 0 0 10px rgba(0,229,255,0.16); }
+#overlayActionStack .btn, #overlayButtonGroup .btn { width: 100%; min-height: 50px; padding: 11px 18px; border-radius: 18px; border: none; font-size: clamp(0.98rem, 2vw, 1.12rem); line-height: 1.05; letter-spacing: 0.3px; box-shadow: 0 8px 18px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.06); transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.2s ease; }
+#shareBtn { width: auto !important; min-height: 38px !important; padding: 9px 16px !important; border-radius: 999px !important; font-size: 0.84rem !important; opacity: 0.9; margin-bottom: 4px !important; color: rgba(215,224,237,0.76) !important; background: rgba(255,255,255,0.03) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 10px rgba(0,0,0,0.18) !important; }
+#actionBtn { background: linear-gradient(135deg, #19ffa3 0%, #00d786 100%); color: #07130f; box-shadow: 0 0 16px rgba(0,255,151,0.3), 0 8px 18px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(223,255,239,0.34); }
+#reviveBtn { background: linear-gradient(135deg, #ffc24e 0%, #ffab2f 100%) !important; color: #2a1b04 !important; box-shadow: 0 6px 15px rgba(255,166,46,0.2), inset 0 1px 0 rgba(255,236,200,0.34) !important; }
+#coinReviveBtn { background: rgba(255, 146, 23, 0.12) !important; color: #ffd294 !important; box-shadow: 0 6px 14px rgba(255, 157, 40, 0.12), inset 0 1px 0 rgba(255,215,164,0.18) !important; }
+#menuBtn { background: rgba(0, 229, 255, 0.06); color: rgba(158, 246, 255, 0.88); box-shadow: inset 0 1px 0 rgba(185, 249, 255, 0.12), 0 6px 14px rgba(0,229,255,0.12); }
+
+@keyframes coin-chip-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 190, 60, 0.14), inset 0 0 18px rgba(255, 190, 60, 0.04); }
+  50% { box-shadow: 0 0 22px rgba(255, 190, 60, 0.24), inset 0 0 22px rgba(255, 190, 60, 0.08); }
+}
 
 @media (min-width: 900px) {
   #overlayMetaStack { width: min(86vw, 400px); padding: 12px 14px 10px; }
   #screenTitle { font-size: clamp(1.8rem, 3.8vw, 2.65rem); }
+  #overlayActionStack .btn, #overlayButtonGroup .btn { min-height: 48px; }
 }
 
 /* World Selector Main Menu */
@@ -198,13 +205,13 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   .boss-segment { height: 8px; }
   .clear-summary { gap: 8px; }
   .clear-stat { min-height: 80px; padding: 9px 10px 11px; }
-  #overlayMetaStack { width: min(94vw, 420px); padding: 14px 12px 12px; }
-  #overlayActionStack .btn, #overlayButtonGroup .btn { min-height: 56px; font-size: 1.05rem; }
-  .run-coins-box { font-size: 1rem; padding: 10px 14px; margin-bottom: 10px; }
-  #pbStatsBlock, #clearSummary { gap: 8px; margin: 8px 0 10px; }
+  #overlayMetaStack { width: min(94vw, 420px); padding: 14px 12px 13px; }
+  #overlayActionStack .btn, #overlayButtonGroup .btn { min-height: 52px; font-size: 1.03rem; }
+  .run-coins-box { font-size: 1rem; padding: 10px 16px; margin-bottom: 12px; }
+  #pbStatsBlock, #clearSummary { gap: 7px; margin: 8px 0 12px; }
 }
 
 @media (hover: hover) and (pointer: fine) {
-  #overlayButtonGroup .btn:hover { transform: translateY(-2px); }
-  #shareBtn:hover { background: rgba(255,255,255,0.08) !important; }
+  #overlayButtonGroup .btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
+  #shareBtn:hover { background: rgba(255,255,255,0.07) !important; }
 }
