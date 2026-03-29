@@ -9,6 +9,7 @@ const ui = {
   btn: document.getElementById('actionBtn'), runCoins: document.getElementById('runCoinsDisplay'),
   topBar: document.getElementById('topBar'), gameUI: document.getElementById('ui'),
   mainMenu: document.getElementById('mainMenu'), shopModal: document.getElementById('shopModal'),
+  settingsModal: document.getElementById('settingsModal'),
   shopCoinCount: document.getElementById('shopCoinCount'), streak: document.getElementById('streakCount'),
   wave: document.getElementById('waveDisplay'), bossUI: document.getElementById('bossUI'),
   bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2')
@@ -17,6 +18,10 @@ const ui = {
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
+let bgMusic = null;
+let musicEnabled = true;
+let sfxEnabled = true;
+let hapticsEnabled = true;
 let bossDrone = null;
 let bossDroneGain = null;
 let lastSoundTime = 0;
@@ -25,6 +30,28 @@ let audioThrottleBypassUntil = 0;
 function initAudio() {
   if (!audioCtx) { audioCtx = new AudioContext(); }
   if (audioCtx.state === 'suspended') { audioCtx.resume(); }
+}
+
+function initBackgroundMusic() {
+  if (bgMusic) return;
+  bgMusic = new Audio('audio/background-loop.mp3'); // replace with your neon synth file
+  bgMusic.loop = true;
+  bgMusic.volume = 0.28;
+  if (!musicEnabled) bgMusic.pause();
+}
+
+function playBackgroundMusic() {
+  if (!musicEnabled) return;
+  initBackgroundMusic();
+  const playPromise = bgMusic.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch(() => {});
+  }
+}
+
+function pauseBackgroundMusic() {
+  if (!bgMusic) return;
+  bgMusic.pause();
 }
 
 // Master utility — creates a gain node connected to destination
@@ -51,6 +78,7 @@ function shouldThrottleAudio(allowBypassWindow = false) {
 
 // Utility — plays a single oscillator burst
 function playTone(freq, type, vol, attack, decay, startTime) {
+  if (!sfxEnabled) return;
   if (shouldThrottleAudio(true)) return;
   const osc = audioCtx.createOscillator();
   const gain = makeGain(0.001);
@@ -65,6 +93,7 @@ function playTone(freq, type, vol, attack, decay, startTime) {
 
 // Utility — short filtered noise burst for impact textures
 function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) {
+  if (!sfxEnabled) return;
   if (!audioCtx) return;
   if (shouldThrottleAudio(true)) return;
   const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * decay));
@@ -90,6 +119,7 @@ function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFr
 }
 
 function startBossDrone() {
+  if (!sfxEnabled) return;
   if (!audioCtx || bossDrone) return;
 
   // Low pulsing drone — two detuned oscillators for thickness
@@ -185,6 +215,7 @@ function soundMultiplierUp(multiplier) {
 
 // Miss/fail — descending crunch
 function soundFail() {
+  if (!sfxEnabled) return;
   if (!audioCtx) return;
   if (shouldThrottleAudio()) return;
   const t = audioCtx.currentTime;
@@ -320,6 +351,7 @@ function soundLifeGained() {
 
 // UI button click — subtle tick
 function soundUIClick() {
+  if (!sfxEnabled) return;
   if (!audioCtx) return;
   if (shouldThrottleAudio()) return;
   playTone(800, 'sine', 0.08, 0.002, 0.04, audioCtx.currentTime);
@@ -338,6 +370,7 @@ function playPop(multiplier, isPerfect, isFail = false) {
 }
 
 function vibrate(pattern) {
+  if (!hapticsEnabled) return;
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
@@ -538,6 +571,41 @@ for (let i = 0; i < 50; i++) {
 document.getElementById('menuBtn').onclick = returnToMenu;
 
 function toggleShop(show) { ui.shopModal.style.bottom = show ? '0' : '-100%'; updateShopUI(); }
+function toggleSettings(show) {
+  ui.settingsModal.style.bottom = show ? '0' : '-100%';
+  if (show) applySettingsUI();
+}
+
+function applySettingsUI() {
+  const musicBtn = document.getElementById('musicToggleBtn');
+  const sfxBtn = document.getElementById('sfxToggleBtn');
+  const hapticsBtn = document.getElementById('hapticsToggleBtn');
+  musicBtn.innerText = musicEnabled ? 'On' : 'Off';
+  sfxBtn.innerText = sfxEnabled ? 'On' : 'Off';
+  hapticsBtn.innerText = hapticsEnabled ? 'On' : 'Off';
+  musicBtn.classList.toggle('off', !musicEnabled);
+  sfxBtn.classList.toggle('off', !sfxEnabled);
+  hapticsBtn.classList.toggle('off', !hapticsEnabled);
+}
+
+function toggleMusicSetting() {
+  musicEnabled = !musicEnabled;
+  if (musicEnabled && isPlaying) playBackgroundMusic();
+  else pauseBackgroundMusic();
+  applySettingsUI();
+}
+
+function toggleSfxSetting() {
+  sfxEnabled = !sfxEnabled;
+  if (!sfxEnabled) stopBossDrone();
+  applySettingsUI();
+}
+
+function toggleHapticsSetting() {
+  hapticsEnabled = !hapticsEnabled;
+  applySettingsUI();
+}
+
 function updateShopUI() {
   ui.shopCoinCount.innerText = Math.floor(globalCoins);
   const items = ['classic', 'skull', 'fire'];
@@ -2415,6 +2483,9 @@ function triggerStageClear() {
 
 function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
+  initBackgroundMusic();
+  playBackgroundMusic();
+  toggleSettings(false);
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   ui.text.style.display = 'none';
   inMenu = false; isPlaying = true; currentLevelIdx = getStartingIndexForWorld(menuSelectedWorld); score = 0; streak = 0; runCents = 0; ui.score.innerText = '0';
@@ -2451,6 +2522,8 @@ function restartFromCheckpoint() {
 
 function returnToMenu() {
   stopBossDrone();
+  pauseBackgroundMusic();
+  toggleSettings(false);
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
