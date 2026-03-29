@@ -571,6 +571,7 @@ updatePersistentCoinUI();
 // --- GAME VARIABLES ---
 let currentLevelIdx = 0; let levelData;
 let score = 0; let stageHits = 0; let runCents = 0;
+const maxLives = 3;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
 const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
 const NEAR_MISS_COOLDOWN_MS = 700;
@@ -578,6 +579,7 @@ let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
 let isCinematicIntro = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
+let perfectLifeStreak = 0;
 let runBestStreak = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
@@ -585,7 +587,6 @@ let reviveCount = 0;
 let usedLastChance = false;
 let scoreAtCheckpoint = 0;
 let scoreAtLevelStart = 0;
-let lifeZonesSpawnedThisRun = 0;
 let ringHitFlash = 0;
 let perfectFlash = 0;
 let hitFlashColor = '#00ff88';
@@ -911,11 +912,14 @@ function clearCinematicOverlayMode() {
 }
 
 function resetRunState() {
+  // Lives are run-persistent across waves/stages.
+  // Only explicit fresh runs/restarts should fully reset lives.
   score = 0;
   streak = 0;
+  perfectLifeStreak = 0;
   runBestStreak = 0;
   multiplier = 1;
-  lives = 3;
+  lives = maxLives;
   runCents = 0;
   distanceTraveled = 0;
   direction = 1;
@@ -932,7 +936,6 @@ function resetRunState() {
   usedLastChance = false;
   scoreAtCheckpoint = 0;
   scoreAtLevelStart = 0;
-  lifeZonesSpawnedThisRun = 0;
   stageClearHoldUntil = 0;
   nearMissReplayUntil = 0;
   nearMissReplayActive = false;
@@ -942,6 +945,30 @@ function resetRunState() {
   popups = [];
   shockwaves = [];
   targetHitRipples = [];
+}
+
+function loseLife(reason) {
+  // Every real miss must spend exactly one life through this function.
+  if (lives <= 0) return 0;
+  lives = Math.max(0, lives - 1);
+  ui.lives.innerText = lives;
+  perfectLifeStreak = 0;
+  return lives;
+}
+
+function gainLifeFromPerfectStreak() {
+  // The only active life recovery rule:
+  // +1 life after 6 perfect hits in a row, capped at max lives.
+  if (lives >= maxLives) {
+    perfectLifeStreak = 0;
+    return false;
+  }
+  lives = Math.min(maxLives, lives + 1);
+  ui.lives.innerText = lives;
+  perfectLifeStreak = 0;
+  createPopup(centerObj.x, centerObj.y - orbitRadius - 18, "+1 LIFE", "#ffcc66");
+  soundLifeGained();
+  return true;
 }
 
 function createParticles(x, y, color, count = 20) {
@@ -1626,27 +1653,6 @@ function spawnTargets() {
       hp: 1
     }));
   }
-  if (levelData.hasHeart && !inMenu && !levelData.boss) {
-    // No life zones during boss fights at all
-    // Diminishing returns: each spawn reduces future probability
-    const baseProbability = lives === 1 ? 0.85 : lives === 2 ? 0.4 : 0.15;
-    const diminishingFactor = Math.pow(0.5, lifeZonesSpawnedThisRun);
-    const finalChance = baseProbability * diminishingFactor;
-
-    // Hard cap at 4 life zones per run
-    if (lifeZonesSpawnedThisRun < 4 && Math.random() < finalChance) {
-      lifeZonesSpawnedThisRun++;
-      targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 10, {
-        color: '#ffaa00',
-        active: true,
-        isHeart: true,
-        expireDistance: Math.PI * 5,
-        isLifeZone: true
-      }));
-      setTimeout(() => soundLifeZone(), 100);
-    }
-  }
-
   if (levelData.hasPhantom && !inMenu && !levelData.boss) {
     // Spawn 1 phantom zone offset from real targets
     const realTargetAngle = targets.length > 0
@@ -2475,7 +2481,8 @@ function updatePBDisplay(newRecords) {
 
 function handleFail(reason) {
   const streakBeforeFail = streak;
-  lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
+  loseLife(reason);
+  distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
   triggerScreenShake(10);
   if (lives > 0) {
@@ -2601,16 +2608,6 @@ function tap() {
     hitFlashColor = t.color || '#00ff88';
     ringHitFlash = Math.max(ringHitFlash, 0.26);
 
-    if (t.isHeart) {
-      t.active = false; lives = Math.min(lives + 1, 3); ui.lives.innerText = lives;
-      perfectFlash = Math.max(perfectFlash, 0.12);
-      createPopup(hitX, hitY - 40, "+1 LIFE!", "#ff3366"); createParticles(hitX, hitY, '#ff3366', 30);
-      soundLifeGained();
-      vibrate([20, 10, 40]);
-      if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active)) { triggerStageClear(); }
-      return;
-    }
-
     if (levelData.boss && !isBossPhaseTwo && t.isBossShield) {
       t.hp--;
       triggerScreenShake(4);
@@ -2717,8 +2714,11 @@ function tap() {
       vibrate(12);
     }
 
-    if (hitQuality === "perfect" && currentLevelIdx >= 2) {
-      perfectFlash = Math.max(perfectFlash, 0.34);
+    if (hitQuality === "perfect") {
+      perfectLifeStreak++;
+      if (currentLevelIdx >= 2) {
+        perfectFlash = Math.max(perfectFlash, 0.34);
+      }
       ringHitFlash = Math.max(ringHitFlash, 0.34);
       multiplier = Math.min(multiplier + 1, 8);
       soundMultiplierUp(multiplier);
@@ -2740,8 +2740,12 @@ function tap() {
       soundPerfect(multiplier);
       vibrate([12, 28, 12]);
       createUpwardBurstParticles(hitX, hitY - 10, '#fff36a', 42);
+      if (perfectLifeStreak >= 6) {
+        gainLifeFromPerfectStreak();
+      }
     }
     else if (hitQuality === "good") {
+      perfectLifeStreak = 0;
       ringHitFlash = Math.max(ringHitFlash, 0.26);
       score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
       canvas.style.filter = 'brightness(1.4)';
@@ -2750,6 +2754,7 @@ function tap() {
       vibrate(20);
     }
     else {
+      perfectLifeStreak = 0;
       ringHitFlash = Math.max(ringHitFlash, 0.2);
       multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa");
       soundOk();
@@ -2792,6 +2797,7 @@ function tap() {
 
     if (isNearMiss) {
       lastNearMissAt = now;
+      perfectLifeStreak = 0;
       multiplier = 1;
       streak = 0;
       ui.streak.innerText = streak;
@@ -2803,7 +2809,9 @@ function tap() {
       canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
       setTimeout(() => canvas.style.boxShadow = 'none', 100);
       if (navigator.vibrate) vibrate(12);
+      handleFail("MISSED");
     } else {
+      perfectLifeStreak = 0;
       if (lives <= 1 && nearestEdgeDistance <= NEAR_MISS_THRESHOLD) {
         showNearMissReplay("MISSED", nearestEdgeDistance);
       } else {
