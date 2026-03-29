@@ -387,7 +387,7 @@ async function startDynamicMusic() {
 
   try {
     // Load both tracks (Assumes they are exactly the same BPM and length)
-    if (!baseAudioBuffer) baseAudioBuffer = await loadAudioFile('assets/base.mp3');
+    if (!baseAudioBuffer) baseAudioBuffer = await loadAudioFile('assets/Base.mp3');
     if (!bossAudioBuffer) bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
 
     // Create Sources
