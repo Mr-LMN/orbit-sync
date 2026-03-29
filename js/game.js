@@ -1919,52 +1919,41 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // === WORLD 2 DIAMOND-SPECIFIC ENHANCEMENTS ===
-  if (worldShape === 'diamond' && worldNum === 2 && !isBoss) {
+  // === DIAMOND SHAPE LANE ENHANCEMENTS ===
+  if (worldShape === 'diamond') {
     ctx.save();
-    ctx.lineJoin = 'bevel'; // Keep corners hard and faceted
-    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2, 12);
+    ctx.lineJoin = 'miter'; // sharp corners
+
+    // Clean straight energy lane
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2, 8); // low steps = perfectly straight sides
+
     ctx.strokeStyle = '#ff80ff';
-    ctx.lineWidth = 4.5;
-    setShadowBlur(22);
+    ctx.lineWidth = 5;
+    ctx.shadowBlur = 24;
     ctx.shadowColor = '#ff99ff';
     ctx.stroke();
 
-    // Inner facet pass for stronger straight-side readability
-    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2, 12);
-    setShadowBlur(12);
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.7;
-    ctx.stroke();
-    ctx.globalAlpha = 1.0;
+    // Subtle inner facet line (no extra glows)
     ctx.shadowBlur = 0;
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.65;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
+
     ctx.restore();
 
-    // Corner accents: crisp angular ticks only (no circular glow blobs).
+    // Strong corner highlights only (no circular blobs)
     const cornerAngles = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
     cornerAngles.forEach(corner => {
       const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
-      const pulse = 0.78 + Math.sin(now / 360) * 0.22;
-      const tickLen = Math.max(7, orbitRadius * 0.028);
+      const pulse = 0.8 + Math.sin(now / 380) * 0.2;
 
-      // Tangent-aligned bright corner edge.
+      // Small bright prism at exact corner
+      ctx.fillStyle = `rgba(255, 200, 255, ${pulse * 0.9})`;
       ctx.beginPath();
-      ctx.moveTo(p.x - (Math.cos(corner) * tickLen * 0.5), p.y - (Math.sin(corner) * tickLen * 0.5));
-      ctx.lineTo(p.x + (Math.cos(corner) * tickLen * 0.5), p.y + (Math.sin(corner) * tickLen * 0.5));
-      ctx.strokeStyle = '#ffe8ff';
-      ctx.globalAlpha = 0.82 * pulse;
-      ctx.lineWidth = 2.4;
-      ctx.shadowBlur = 0;
-      ctx.stroke();
-
-      // Tiny hard highlight at the exact corner point.
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 1.35, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = 0.92 * pulse;
+      ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
       ctx.fill();
     });
-    ctx.globalAlpha = 1.0;
   }
 
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
@@ -2010,6 +1999,15 @@ function draw() {
     const isDiamondWorldTarget = worldNum === 2 && worldShape === 'diamond' && !isBoss && !isBossShield;
     const targetGlowColor = isDiamondWorldTarget ? '#ffd8ff' : t.color;
     const targetCoreColor = isDiamondWorldTarget ? '#6f1a6f' : (isBossShield ? t.color : '#ffffff');
+
+    // Stronger target contrast on diamond (especially during streaks)
+    let targetAlpha = isBossShield ? (0.27 + approach * 0.27 + hitFlash * 0.2) : (0.45 + approach * 0.25 + hitFlash * 0.3);
+    let targetCoreAlpha = isBossShield ? 0.94 : 0.92;
+
+    if (worldShape === 'diamond') {
+      targetAlpha = Math.min(1.0, targetAlpha * 1.35);     // bolder
+      targetCoreAlpha = Math.min(1.0, targetCoreAlpha * 1.2);
+    }
 
     if (t.isPhantom) {
       ctx.save();
@@ -2187,9 +2185,7 @@ function draw() {
     buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     // World 2 diamond targets get brighter outer edge + stronger presence for readability.
     ctx.strokeStyle = targetGlowColor;
-    ctx.globalAlpha = isBossShield
-      ? ((0.27 + approach * 0.27 + hitFlash * 0.2) * pulse)
-      : ((isDiamondWorldTarget ? 0.34 : 0.22) + approach * (isDiamondWorldTarget ? 0.34 : 0.32) + hitFlash * (isDiamondWorldTarget ? 0.26 : 0.22)) * pulse;
+    ctx.globalAlpha = Math.min(1, targetAlpha * pulse);
     ctx.lineWidth = isBossShield
       ? (shieldBodyWidth + 3.6 + (approach * 1.15) + (hitFlash * 1.05))
       : (glowWidth + (isDiamondWorldTarget ? 1.9 : 1.5) + (approach * (isDiamondWorldTarget ? 1.9 : 1.5)) + (hitFlash * (isDiamondWorldTarget ? 1.4 : 1.2)));
@@ -2204,9 +2200,7 @@ function draw() {
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       // High-contrast core (darker in World 2 diamond) to stand out during streaks.
       ctx.strokeStyle = targetCoreColor;
-      ctx.globalAlpha = isBossShield
-        ? Math.min(1, 0.94 + (approach * 0.06) + (hitFlash * 0.18))
-        : Math.min(1, (isDiamondWorldTarget ? 0.96 : 0.84) + (approach * (isDiamondWorldTarget ? 0.08 : 0.14)) + (hitFlash * (isDiamondWorldTarget ? 0.18 : 0.3)));
+      ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = isBossShield
         ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
         : ((isDiamondWorldTarget ? Math.max(2.4, bodyWidth * 0.86) : bodyWidth) + (approach * 0.8) + (hitFlash * 0.9));
@@ -2219,7 +2213,7 @@ function draw() {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = isDiamondWorldTarget ? targetCoreColor : t.color;
-      ctx.globalAlpha = Math.min(1, (isDiamondWorldTarget ? 0.94 : 0.78) + (approach * 0.16) + (hitFlash * 0.24));
+      ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = bodyWidth + 1 + (approach * 0.8) + (hitFlash * 0.9);
       setShadowBlur((isDiamondWorldTarget ? 3 : 6) + (approach * 6) + (hitFlash * 8));
       ctx.shadowColor = isDiamondWorldTarget ? '#ffedff' : t.color;
