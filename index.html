@@ -15,6 +15,7 @@
     <div class="top-stat">COINS <span id="coinCount">0</span></div>
     <div class="top-stat">LIVES <span id="livesCount">3</span></div>
     <div class="top-stat" id="streakBox">STREAK <span id="streakCount">0</span></div>
+    <button id="topSettingsBtn" class="settings-btn" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙</button>
   </div>
 
   <div id="bigMultiplier" style="display: none;">x<span id="multiplierCount">1</span></div>
@@ -35,6 +36,7 @@
   </div>
 
   <div id="mainMenu">
+    <button id="menuSettingsBtn" class="settings-btn menu-settings-btn" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙</button>
     <h1 class="title">ORBIT</h1>
     <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
 
@@ -46,6 +48,27 @@
 
     <button class="btn btn-play" onclick="startCampaign()">Play</button><br>
     <button class="btn btn-shop" onclick="if(audioCtx) soundUIClick(); toggleShop(true);">Shop</button>
+  </div>
+
+  <div id="settingsModal">
+    <div class="settings-header">
+      <h2>Settings</h2>
+      <button class="close-btn" onclick="toggleSettings(false)">×</button>
+    </div>
+    <div class="settings-content">
+      <div class="settings-row">
+        <span>Music</span>
+        <button id="musicToggleBtn" class="settings-toggle" onclick="toggleMusicSetting()"></button>
+      </div>
+      <div class="settings-row">
+        <span>Sound Effects</span>
+        <button id="sfxToggleBtn" class="settings-toggle" onclick="toggleSfxSetting()"></button>
+      </div>
+      <div class="settings-row">
+        <span>Haptics</span>
+        <button id="hapticsToggleBtn" class="settings-toggle" onclick="toggleHapticsSetting()"></button>
+      </div>
+    </div>
   </div>
 
   <div id="shopModal">
