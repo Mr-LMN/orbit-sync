@@ -1184,18 +1184,20 @@ function triggerBossIntro() {
   }, 60);
 }
 
+let currentCinematicInterval = null;
+
 function playBossCinematic() {
   let step = 0;
 
-  // 1. Clean overlay for text (prevents layout shifts!)
-  ui.overlay.style.display = 'flex';
-  ui.overlay.style.background = 'rgba(10, 10, 15, 0.4)';
-  ui.title.style.display = 'block';
-  ui.title.innerText = "";
-  ui.subtitle.style.display = 'none';
-  ui.btn.style.display = 'none';
+  // Clear any existing intervals to prevent lag/memory leaks
+  if (currentCinematicInterval) clearInterval(currentCinematicInterval);
 
-  // Hide unrelated buttons
+  // 1. Hide ALL distracting game UI (Score, Multiplier, Boss HP)
+  ui.topBar.style.display = 'none';
+  ui.gameUI.style.display = 'none';
+  ui.bigMultiplier.style.display = 'none';
+  if (ui.bossUI) ui.bossUI.style.display = 'none'; // Fixes the floating health bar!
+
   let reviveBtn = document.getElementById('reviveBtn');
   if (reviveBtn) reviveBtn.style.display = 'none';
   let shareBtn = document.getElementById('shareBtn');
@@ -1203,12 +1205,20 @@ function playBossCinematic() {
   let pbBlock = document.getElementById('pbStatsBlock');
   if (pbBlock) pbBlock.style.display = 'none';
 
-  // 2. Pre-generate shields, but hide them initially
+  // 2. Clean overlay for text
+  ui.overlay.style.display = 'flex';
+  ui.overlay.style.background = 'rgba(10, 10, 15, 0.6)';
+  ui.title.style.display = 'block';
+  ui.title.innerText = "";
+  ui.subtitle.style.display = 'none';
+  ui.btn.style.display = 'none';
+
+  // 3. Pre-generate shields, but hold them
   spawnTargets();
   let pendingShields = [...targets];
   targets = [];
 
-  let cinematicInterval = setInterval(() => {
+  currentCinematicInterval = setInterval(() => {
     step++;
 
     if (step === 1) {
@@ -1219,37 +1229,34 @@ function playBossCinematic() {
       ui.title.style.color = '#ffffff';
     }
 
-    // Pop in shields one by one with heavy haptics/sound
+    // Pop in shields one by one
     if (step <= pendingShields.length) {
       targets.push(pendingShields[step - 1]);
       triggerScreenShake(8);
-      if (audioCtx) {
-        playPop(1, false, true);
-        vibrate(20);
-      }
+      if (typeof audioCtx !== 'undefined' && audioCtx) { playPop(1, false, true); vibrate(20); }
     }
 
-    // End Cinematic (Wait until all shields are spawned + 1 tick)
+    // End Cinematic
     if (step > pendingShields.length && step >= 3) {
-      clearInterval(cinematicInterval);
+      clearInterval(currentCinematicInterval);
+      currentCinematicInterval = null;
       isCinematicIntro = false;
 
-      // Clear Overlay entirely
+      // Clear Overlay
       ui.overlay.style.display = 'none';
-      ui.subtitle.style.display = 'block'; // reset for game over screens
-      ui.btn.style.display = 'block';
+      ui.subtitle.style.display = 'block';
 
-      // Restore standard HUD
+      // RESTORE ALL HUD ELEMENTS
       ui.topBar.style.display = 'flex';
       ui.gameUI.style.display = 'block';
       ui.bigMultiplier.style.display = 'block';
-      if (ui.bossUI) ui.bossUI.style.display = 'flex';
+      if (ui.bossUI) ui.bossUI.style.display = 'flex'; // Show Boss HP now!
 
       // Flash effect to signal fight start
       canvas.style.boxShadow = `inset 0 0 100px #ffffff`;
       setTimeout(() => canvas.style.boxShadow = 'none', 200);
     }
-  }, 800); // 800ms pacing for dramatic, rapid build-up
+  }, 800);
 }
 
 
@@ -2309,11 +2316,10 @@ function handleFail(reason) {
 
 function tap() {
   initAudio(); // Ensures audio wakes up on iOS/Safari
-  if (inMenu || ui.overlay.style.display === 'flex') return;
+  if (inMenu || !isPlaying || (typeof isCinematicIntro !== 'undefined' && isCinematicIntro)) return;
+  if (ui.overlay.style.display === 'flex') return;
   if (bossTransitionLock) return;
   if (nearMissReplayActive) return;
-  if (!isPlaying) { isPlaying = true; showTempText("Syncing...", "#00e5ff", 1000); return; }
-
   let hitIndex = -1; let hitQuality = "miss";
 
   for (let i = 0; i < targets.length; i++) {
