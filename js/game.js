@@ -501,6 +501,7 @@ const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
 const NEAR_MISS_COOLDOWN_MS = 700;
 let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
+let isCinematicIntro = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
@@ -1176,6 +1177,61 @@ function triggerBossIntro() {
   }, 60);
 }
 
+function playBossCinematic() {
+  const cinematicDuration = 3000;
+  const cinematicStart = performance.now();
+  let cinematicText = "WARNING: ANOMALY DETECTED";
+  let cinematicTextColor = "#ff0000";
+
+  if (audioCtx && baseGain && bossGain) {
+    const now = audioCtx.currentTime;
+    baseGain.gain.cancelScheduledValues(now);
+    bossGain.gain.cancelScheduledValues(now);
+    baseGain.gain.setValueAtTime(baseGain.gain.value, now);
+    bossGain.gain.setValueAtTime(bossGain.gain.value, now);
+    baseGain.gain.linearRampToValueAtTime(0, now + 3);
+    bossGain.gain.linearRampToValueAtTime(musicEnabled ? 0.6 : 0, now + 3);
+  }
+
+  const cinematicFrame = () => {
+    const elapsed = performance.now() - cinematicStart;
+    draw();
+
+    if (elapsed >= 1500) {
+      cinematicText = "TEST YOUR RHYTHM.";
+      cinematicTextColor = "#ffffff";
+    }
+
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${Math.max(26, Math.floor(canvas.height * 0.05))}px Orbitron, sans-serif`;
+    ctx.fillStyle = cinematicTextColor;
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = cinematicTextColor;
+    ctx.fillText(cinematicText, canvas.width / 2, canvas.height / 2);
+    ctx.restore();
+
+    if (elapsed < cinematicDuration) {
+      requestAnimationFrame(cinematicFrame);
+      return;
+    }
+
+    isCinematicIntro = false;
+    if (ui.gameUI) ui.gameUI.style.display = 'flex';
+    spawnTargets();
+    canvas.style.transition = 'filter 120ms ease-out';
+    canvas.style.filter = 'brightness(2.35)';
+    setTimeout(() => {
+      canvas.style.filter = '';
+    }, 130);
+  };
+
+  requestAnimationFrame(cinematicFrame);
+}
+
 function loadLevel(idx) {
   scoreAtLevelStart = score;
   levelData = campaign[idx] || campaign[campaign.length - 1];
@@ -1188,14 +1244,14 @@ function loadLevel(idx) {
   ui.lives.innerText = lives; ui.streak.innerText = streak;
   updateMultiplierUI();
   updateWaveUI();
-  spawnTargets();
 
   if (levelData.boss) {
-    setTimeout(() => {
-      triggerBossIntro();
-    }, 200);
+    isCinematicIntro = true;
+    if (ui.gameUI) ui.gameUI.style.display = 'none';
+    playBossCinematic();
   } else {
     stopBossDrone();
+    spawnTargets();
   }
 }
 
@@ -2009,6 +2065,7 @@ function showTempText(text, color, duration) {
 }
 
 function update() {
+  if (isCinematicIntro) { requestAnimationFrame(update); return; }
   if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
   const frameNow = performance.now();
   const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
