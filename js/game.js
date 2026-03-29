@@ -1336,7 +1336,7 @@ function playBossCinematic() {
       ui.topBar.style.display = 'flex';
       ui.gameUI.style.display = 'block';
       ui.bigMultiplier.style.display = multiplier > 1 ? 'block' : 'none';
-      if (ui.bossUI) ui.bossUI.style.display = 'flex'; // Show Boss HP now!
+      if (ui.bossUI) ui.bossUI.style.display = 'none'; // Boss HP bar sidelined for now.
 
       // Flash effect to signal fight start
       canvas.style.boxShadow = `inset 0 0 100px #ffffff`;
@@ -1357,6 +1357,9 @@ function loadLevel(idx) {
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
+  popups = [];
+  shockwaves = [];
+  targetHitRipples = [];
   isBossPhaseTwo = false; bossPhase = 1;
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
@@ -2397,7 +2400,7 @@ function handleFail(reason) {
         score = scoreAtLevelStart; // reset score to what it was when this level started
         ui.score.innerText = score;
         lives = 3; ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'none';
-        if (levelData.boss) ui.bossUI.style.display = 'flex';
+        if (levelData.boss) ui.bossUI.style.display = 'none';
         loadLevel(currentLevelIdx); isPlaying = true;
       } else {
         alert("Not enough coins for a Revive! Restart the World.");
@@ -2524,9 +2527,19 @@ function tap() {
           triggerScreenShake(24); scheduleBossSpawn(700); return;
         } else {
           ui.bossPhase2.className = "boss-segment";
-          createParticles(centerObj.x, centerObj.y, '#ffffff', 50); createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
+          createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
+          createShockwave('#00ff88', 55);
+          createShockwave('#ffffff', 70);
+          createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
           soundBossDefeated();
-          triggerScreenShake(20); stageHits = 999;
+          stopBossDrone();
+          triggerScreenShake(20);
+          stageHits = 999;
+          isPlaying = false;
+          setTimeout(() => {
+            triggerStageClear();
+          }, 2200);
+          return;
         }
       } else {
         multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
