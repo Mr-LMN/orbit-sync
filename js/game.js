@@ -23,7 +23,6 @@ let baseAudioBuffer, bossAudioBuffer;
 let baseSource, bossSource;
 let baseGain, bossGain;
 let isMusicPlaying = false;
-let bgMusic = null;
 let musicEnabled = true;
 let sfxEnabled = true;
 let hapticsEnabled = true;
@@ -35,28 +34,6 @@ let audioThrottleBypassUntil = 0;
 function initAudio() {
   if (!audioCtx) { audioCtx = new AudioContext(); }
   if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-}
-
-function initBackgroundMusic() {
-  if (bgMusic) return;
-  bgMusic = new Audio('audio/background-loop.mp3'); // replace with your neon synth file
-  bgMusic.loop = true;
-  bgMusic.volume = 0.28;
-  if (!musicEnabled) bgMusic.pause();
-}
-
-function playBackgroundMusic() {
-  if (!musicEnabled) return;
-  initBackgroundMusic();
-  const playPromise = bgMusic.play();
-  if (playPromise && typeof playPromise.catch === 'function') {
-    playPromise.catch(() => {});
-  }
-}
-
-function pauseBackgroundMusic() {
-  if (!bgMusic) return;
-  bgMusic.pause();
 }
 
 // Master utility — creates a gain node connected to destination
@@ -383,7 +360,7 @@ async function loadAudioFile(url) {
 
 // Initialize and start the dynamic music loops
 async function startDynamicMusic() {
-  if (isMusicPlaying || !audioCtx) return;
+  if (isMusicPlaying || !audioCtx || !musicEnabled) return;
 
   try {
     // Load both tracks (Assumes they are exactly the same BPM and length)
@@ -424,9 +401,39 @@ async function startDynamicMusic() {
 
 let currentMusicState = { mult: 1, boss: false };
 
+function stopDynamicMusic() {
+  if (!audioCtx) return;
+  try {
+    if (baseGain) baseGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    if (bossGain) bossGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    if (baseGain) baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
+    if (bossGain) bossGain.gain.setValueAtTime(0, audioCtx.currentTime);
+
+    if (baseSource) {
+      try { baseSource.stop(); } catch (e) {}
+      baseSource.disconnect();
+      baseSource = null;
+    }
+    if (bossSource) {
+      try { bossSource.stop(); } catch (e) {}
+      bossSource.disconnect();
+      bossSource = null;
+    }
+
+    if (baseGain) baseGain.disconnect();
+    if (bossGain) bossGain.disconnect();
+    baseGain = null;
+    bossGain = null;
+    isMusicPlaying = false;
+    currentMusicState = { mult: 1, boss: false };
+  } catch (e) {
+    console.warn('stopDynamicMusic failed', e);
+  }
+}
+
 // Dynamically adjust the music based on gameplay state
 function updateMusicState(currentMultiplier, isBossActive) {
-  if (!isMusicPlaying || !audioCtx) return;
+  if (!isMusicPlaying || !audioCtx || !baseGain || !bossGain || !baseSource || !bossSource) return;
 
   // STOP THE SPAM: Only update Web Audio API if the state actually changes!
   if (currentMusicState.mult === currentMultiplier && currentMusicState.boss === isBossActive) return;
@@ -498,7 +505,23 @@ function checkAndSavePB(currentScore, currentStreak) {
   return newRecords;
 }
 
-ui.coins.innerText = Math.floor(globalCoins); ui.shopCoinCount.innerText = Math.floor(globalCoins);
+function updatePersistentCoinUI() {
+  ui.coins.innerText = Math.floor(globalCoins);
+  ui.shopCoinCount.innerText = Math.floor(globalCoins);
+}
+
+function bankRunCoins() {
+  const coinsToBank = Math.floor(runCents / 10);
+  if (coinsToBank > 0) {
+    globalCoins += coinsToBank;
+    saveData();
+  }
+  runCents = 0;
+  updatePersistentCoinUI();
+  return coinsToBank;
+}
+
+updatePersistentCoinUI();
 
 // --- GAME VARIABLES ---
 let currentLevelIdx = 0; let levelData;
@@ -510,6 +533,7 @@ let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
 let isCinematicIntro = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
+let runBestStreak = 0;
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 let reviveCount = 0;
@@ -674,20 +698,12 @@ function applySettingsUI() {
 
 function toggleMusicSetting() {
   musicEnabled = !musicEnabled;
-  if (baseGain && bossGain && audioCtx) {
-    if (!musicEnabled) {
-      baseGain.gain.value = 0;
-      bossGain.gain.value = 0;
-    } else if (levelData && levelData.boss) {
-      baseGain.gain.value = 0;
-      bossGain.gain.value = 0.6;
-    } else {
-      baseGain.gain.value = 0.6;
-      bossGain.gain.value = 0;
-    }
+  if (!musicEnabled) {
+    stopDynamicMusic();
+  } else if (isPlaying) {
+    initAudio();
+    startDynamicMusic().then(() => updateMusicState(multiplier, !!(levelData && levelData.boss)));
   }
-  if (musicEnabled && isPlaying) playBackgroundMusic();
-  else pauseBackgroundMusic();
   applySettingsUI();
 }
 
@@ -703,7 +719,7 @@ function toggleHapticsSetting() {
 }
 
 function updateShopUI() {
-  ui.shopCoinCount.innerText = Math.floor(globalCoins);
+  updatePersistentCoinUI();
   const items = ['classic', 'skull', 'fire'];
   items.forEach(id => {
     let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
@@ -712,7 +728,17 @@ function updateShopUI() {
     else { card.classList.remove('equipped'); }
   });
 }
-function buyItem(id, cost) { if (globalCoins >= cost) { globalCoins -= cost; unlockedSkins.push(id); saveData(); equipSkin(id); } else { alert("Not enough coins! Play the campaign to earn more."); } }
+function buyItem(id, cost) {
+  if (globalCoins >= cost) {
+    globalCoins -= cost;
+    unlockedSkins.push(id);
+    saveData();
+    updatePersistentCoinUI();
+    equipSkin(id);
+  } else {
+    alert("Not enough coins! Play the campaign to earn more.");
+  }
+}
 function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
 
 const particlePool = [];
@@ -757,6 +783,72 @@ function flushScoreCoinUI() {
   hudLastFlushAt = performance.now();
   hudScoreCoinDirty = false;
   pendingHudUpdates = 0;
+}
+
+function setOverlayState(type) {
+  const reviveBtn = document.getElementById('reviveBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const menuBtn = document.getElementById('menuBtn');
+  const pbBlock = document.getElementById('pbStatsBlock');
+  const clearSummary = document.getElementById('clearSummary');
+
+  const hideAll = () => {
+    ui.btn.style.display = 'none';
+    if (reviveBtn) reviveBtn.style.display = 'none';
+    if (shareBtn) shareBtn.style.display = 'none';
+    if (menuBtn) menuBtn.style.display = 'none';
+    if (pbBlock) pbBlock.style.display = 'none';
+    if (clearSummary) clearSummary.style.display = 'none';
+  };
+
+  hideAll();
+
+  if (type === 'gameOver') {
+    ui.btn.style.display = 'block';
+    if (reviveBtn) reviveBtn.style.display = 'block';
+    if (shareBtn) shareBtn.style.display = 'block';
+    if (menuBtn) menuBtn.style.display = 'block';
+    if (pbBlock) pbBlock.style.display = 'flex';
+  } else if (type === 'worldClearReady') {
+    ui.btn.style.display = 'block';
+    if (shareBtn) shareBtn.style.display = 'block';
+    if (clearSummary) clearSummary.style.display = 'flex';
+  } else if (type === 'cinematic' || type === 'worldClearTally') {
+    // hideAll already applied.
+  }
+}
+
+function resetRunState() {
+  score = 0;
+  streak = 0;
+  runBestStreak = 0;
+  multiplier = 1;
+  lives = 3;
+  runCents = 0;
+  distanceTraveled = 0;
+  direction = 1;
+  angle = 0;
+  trail = [];
+  stageHits = 0;
+  isBossPhaseTwo = false;
+  bossPhase = 1;
+  bossIntroPlaying = false;
+  bossTransitionLock = false;
+  bossPauseUntil = 0;
+  currentReviveCost = 50;
+  reviveCount = 0;
+  scoreAtCheckpoint = 0;
+  scoreAtLevelStart = 0;
+  lifeZonesSpawnedThisRun = 0;
+  stageClearHoldUntil = 0;
+  nearMissReplayUntil = 0;
+  nearMissReplayActive = false;
+  isCinematicIntro = false;
+  targets = [];
+  particles = [];
+  popups = [];
+  shockwaves = [];
+  targetHitRipples = [];
 }
 
 function createParticles(x, y, color, count = 20) {
@@ -1171,7 +1263,7 @@ function triggerBossIntro() {
     displayed += introText[i];
     ui.text.innerText = displayed;
     ui.text.style.color = introColor;
-    ui.text.style.letterSpacing = "6px";
+    ui.text.style.letterSpacing = isMobile ? "2px" : "6px";
     i++;
     if (i >= introText.length) {
       clearInterval(typeInterval);
@@ -1198,12 +1290,7 @@ function playBossCinematic() {
   ui.bigMultiplier.style.display = 'none';
   if (ui.bossUI) ui.bossUI.style.display = 'none'; // Fixes the floating health bar!
 
-  let reviveBtn = document.getElementById('reviveBtn');
-  if (reviveBtn) reviveBtn.style.display = 'none';
-  let shareBtn = document.getElementById('shareBtn');
-  if (shareBtn) shareBtn.style.display = 'none';
-  let pbBlock = document.getElementById('pbStatsBlock');
-  if (pbBlock) pbBlock.style.display = 'none';
+  setOverlayState('cinematic');
 
   // 2. Clean overlay for text
   ui.overlay.style.display = 'flex';
@@ -1211,7 +1298,6 @@ function playBossCinematic() {
   ui.title.style.display = 'block';
   ui.title.innerText = "";
   ui.subtitle.style.display = 'none';
-  ui.btn.style.display = 'none';
 
   // 3. Pre-generate shields, but hold them
   spawnTargets();
@@ -1249,7 +1335,7 @@ function playBossCinematic() {
       // RESTORE ALL HUD ELEMENTS
       ui.topBar.style.display = 'flex';
       ui.gameUI.style.display = 'block';
-      ui.bigMultiplier.style.display = 'block';
+      ui.bigMultiplier.style.display = multiplier > 1 ? 'block' : 'none';
       if (ui.bossUI) ui.bossUI.style.display = 'flex'; // Show Boss HP now!
 
       // Flash effect to signal fight start
@@ -1262,8 +1348,12 @@ function playBossCinematic() {
 
 
 function loadLevel(idx) {
+  if (idx < 0 || idx >= campaign.length) {
+    console.warn('loadLevel ignored invalid index:', idx);
+    return false;
+  }
   scoreAtLevelStart = score;
-  levelData = campaign[idx] || campaign[campaign.length - 1];
+  levelData = campaign[idx];
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
@@ -1282,6 +1372,7 @@ function loadLevel(idx) {
     stopBossDrone();
     spawnTargets();
   }
+  return true;
 }
 
 function buildTarget(start, size, config = {}) {
@@ -2268,6 +2359,7 @@ function updatePBDisplay(newRecords) {
 }
 
 function handleFail(reason) {
+  const streakBeforeFail = streak;
   lives--; ui.lives.innerText = lives; distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
   triggerScreenShake(10);
@@ -2281,9 +2373,9 @@ function handleFail(reason) {
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
-    const newRecords = checkAndSavePB(score, streak);
+    const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-    let coinsToBank = Math.floor(runCents / 10); globalCoins += coinsToBank; saveData(); ui.coins.innerText = Math.floor(globalCoins);
+    const coinsToBank = bankRunCoins();
     updatePBDisplay(newRecords);
     glitchCanvas(400, () => {
       ui.overlay.style.display = 'flex';
@@ -2292,21 +2384,21 @@ function handleFail(reason) {
       scrambleText(ui.title, reason || "OUT OF SYNC", 600);
     });
     ui.btn.innerText = `Restart World ${levelData.id.split('-')[0]}`; ui.btn.onclick = restartFromCheckpoint; ui.runCoins.innerText = coinsToBank;
+    setOverlayState('gameOver');
 
     // --- NEW REVIVE LOGIC ---
     let reviveBtn = document.getElementById('reviveBtn');
-    reviveBtn.style.display = 'block';
     reviveBtn.innerText = `Revive (🪙 ${currentReviveCost})`;
     reviveBtn.onclick = function() {
       if (globalCoins >= currentReviveCost) {
-        globalCoins -= currentReviveCost; saveData(); ui.coins.innerText = Math.floor(globalCoins);
+        globalCoins -= currentReviveCost; saveData(); updatePersistentCoinUI();
         currentReviveCost *= 2; // Double the cost for the next time!
         reviveCount++;
         score = scoreAtLevelStart; // reset score to what it was when this level started
         ui.score.innerText = score;
-        lives = 3; ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
+        lives = 3; ui.overlay.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'none';
         if (levelData.boss) ui.bossUI.style.display = 'flex';
-        runCents = 0; loadLevel(currentLevelIdx); isPlaying = true;
+        loadLevel(currentLevelIdx); isPlaying = true;
       } else {
         alert("Not enough coins for a Revive! Restart the World.");
       }
@@ -2495,7 +2587,9 @@ function tap() {
       vibrate(15);
     }
 
-    streak++; ui.streak.innerText = streak;
+    streak++;
+    runBestStreak = Math.max(runBestStreak, streak);
+    ui.streak.innerText = streak;
 
     let centsEarned = (hitQuality === "perfect" ? 3 : hitQuality === "good" ? 2 : 1) * multiplier;
     runCents += centsEarned;
@@ -2555,18 +2649,23 @@ function triggerStageClear() {
   updateWaveUI(); 
   
   if (stageHits >= levelData.hitsNeeded) {
-    // Check if the level we JUST beat was a Boss
-    let wasBoss = levelData.boss ? true : false;
-    
-    currentLevelIdx++;
-    let currentLevelObj = campaign[currentLevelIdx];
-    let newWorld = currentLevelObj ? parseInt(currentLevelObj.id.split('-')[0]) : maxWorldUnlocked;
-    if (newWorld > maxWorldUnlocked) { maxWorldUnlocked = newWorld; saveData(); }
+    const wasBoss = !!levelData.boss;
+    const nextLevelIdx = currentLevelIdx + 1;
+    const nextLevelObj = campaign[nextLevelIdx] || null;
+    const currentWorld = parseInt(levelData.id.split('-')[0], 10);
+    const nextWorld = nextLevelObj ? parseInt(nextLevelObj.id.split('-')[0], 10) : null;
+    const worldAdvanced = !!nextLevelObj && nextWorld > currentWorld;
+    const campaignComplete = !nextLevelObj;
 
-    if (wasBoss || !currentLevelObj) {
-      // WORLD CLEARED!
-      let coinsToBank = Math.floor(runCents / 10);
-      showWorldClearSequence(newWorld, coinsToBank);
+    if (nextWorld && nextWorld > maxWorldUnlocked) { maxWorldUnlocked = nextWorld; saveData(); }
+
+    if (wasBoss || worldAdvanced || campaignComplete) {
+      showWorldClearSequence({
+        nextLevelIdx: nextLevelObj ? nextLevelIdx : null,
+        nextWorld: nextWorld || currentWorld,
+        coinsEarned: Math.floor(runCents / 10),
+        isCampaignClear: campaignComplete
+      });
     } else {
       // SEAMLESS TRANSITION! (Keep playing, flash the screen, load next wave)
       soundWaveClear();
@@ -2596,7 +2695,7 @@ function triggerStageClear() {
 
       stageClearHoldUntil = performance.now() + 850;
 
-      // Load next level without stopping the 'isPlaying' loop!
+      currentLevelIdx = nextLevelIdx;
       loadLevel(currentLevelIdx);
     }
   } else { 
@@ -2606,48 +2705,43 @@ function triggerStageClear() {
 
 function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
-  startDynamicMusic();
-  initBackgroundMusic();
-  playBackgroundMusic();
+  if (musicEnabled) startDynamicMusic();
   toggleSettings(false);
   ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
   ui.text.style.display = 'none';
-  inMenu = false; isPlaying = true; currentLevelIdx = getStartingIndexForWorld(menuSelectedWorld); score = 0; streak = 0; runCents = 0; ui.score.innerText = '0';
-  lives = 3; currentReviveCost = 50;
-  reviveCount = 0;
-  scoreAtCheckpoint = 0;
-  lifeZonesSpawnedThisRun = 0;
+  inMenu = false; isPlaying = true; currentLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
+  resetRunState();
+  ui.score.innerText = '0';
+  ui.streak.innerText = '0';
+  markScoreCoinDirty(true);
+  setOverlayState('cinematic');
   loadLevel(currentLevelIdx);
+  updateMusicState(multiplier, !!(levelData && levelData.boss));
 }
 
 function restartFromCheckpoint() {
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
   ui.gameUI.style.display = 'block';
-  ui.bigMultiplier.style.display = 'block';
-  
-  currentReviveCost = 50;
-  reviveCount = 0;
-  score = 0;
-  scoreAtCheckpoint = 0;
-  runCents = 0;
-  lives = 3;
-  streak = 0;
-  multiplier = 1;
-  
+  ui.bigMultiplier.style.display = 'none';
+
+  resetRunState();
   ui.score.innerText = 0;
   ui.streak.innerText = 0;
   updateMultiplierUI();
-  
+  markScoreCoinDirty(true);
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
+  updateMusicState(multiplier, !!(levelData && levelData.boss));
 }
 
 function returnToMenu() {
   stopBossDrone();
-  pauseBackgroundMusic();
+  stopDynamicMusic();
   toggleSettings(false);
+  setOverlayState('cinematic');
+  ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
@@ -2675,7 +2769,7 @@ function getStartingIndexForWorld(worldNum) {
   return 0; // Fallback
 }
 
-function showWorldClearSequence(newWorld, coinsEarned) {
+function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampaignClear }) {
   isPlaying = false;
 
   // 1. Duck the music to a quiet hum
@@ -2692,17 +2786,21 @@ function showWorldClearSequence(newWorld, coinsEarned) {
   ui.bigMultiplier.style.display = 'none';
 
   ui.title.innerText = "WORLD CLEARED";
+  if (isCampaignClear) ui.title.innerText = "CAMPAIGN CLEARED";
   ui.title.style.color = '#00ff88';
   ui.subtitle.innerText = "Decrypting rewards...";
 
   // Hide buttons during tally
-  ui.btn.style.display = 'none';
-  let reviveBtn = document.getElementById('reviveBtn');
-  if (reviveBtn) reviveBtn.style.display = 'none';
-  let shareBtn = document.getElementById('shareBtn');
-  if (shareBtn) shareBtn.style.display = 'none';
-  let pbBlock = document.getElementById('pbStatsBlock');
-  if (pbBlock) pbBlock.style.display = 'none';
+  setOverlayState('worldClearTally');
+
+  const clearSummary = document.getElementById('clearSummary');
+  const clearScoreDisplay = document.getElementById('clearScoreDisplay');
+  const clearCoinsDisplay = document.getElementById('clearCoinsDisplay');
+  const clearStreakDisplay = document.getElementById('clearStreakDisplay');
+  if (clearSummary) clearSummary.style.display = 'flex';
+  if (clearScoreDisplay) clearScoreDisplay.innerText = score;
+  if (clearStreakDisplay) clearStreakDisplay.innerText = runBestStreak;
+  if (clearCoinsDisplay) clearCoinsDisplay.innerText = '0';
 
   // 3. The Dopamine Tally Animation
   let currentDisplayCoins = 0;
@@ -2721,37 +2819,44 @@ function showWorldClearSequence(newWorld, coinsEarned) {
 
         // Final Ding & Bank update
         if (audioCtx) playPop(8, true); // High pitch success ding
-        globalCoins += coinsEarned;
-        saveData();
-        ui.coins.innerText = Math.floor(globalCoins);
+        if (coinsEarned > 0) {
+          globalCoins += coinsEarned;
+          saveData();
+        }
+        runCents = 0;
+        updatePersistentCoinUI();
 
         // Flash text & Show Next World button
         ui.runCoins.innerText = `+${currentDisplayCoins} BANKED`;
         ui.runCoins.style.textShadow = '0 0 20px #ffaa00';
-        ui.subtitle.innerText = newWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.";
-
-        ui.btn.innerText = `ENTER WORLD ${newWorld}`;
-        ui.btn.style.display = 'block';
-        if (shareBtn) shareBtn.style.display = 'block';
-        if (pbBlock) pbBlock.style.display = 'flex';
+        if (clearCoinsDisplay) clearCoinsDisplay.innerText = `+${currentDisplayCoins}`;
+        ui.subtitle.innerText = isCampaignClear
+          ? "All worlds synced. Returning to menu."
+          : (nextWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.");
+        ui.btn.innerText = isCampaignClear ? "RETURN TO MENU" : `ENTER WORLD ${nextWorld}`;
+        setOverlayState('worldClearReady');
 
         // Wire up the button
         ui.btn.onclick = function () {
           ui.overlay.style.display = 'none';
           ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)'; // Reset bg
+          if (isCampaignClear || nextLevelIdx === null) {
+            returnToMenu();
+            return;
+          }
           ui.topBar.style.display = 'flex';
           ui.gameUI.style.display = 'block';
-          ui.bigMultiplier.style.display = 'block';
-          runCents = 0;
+          ui.bigMultiplier.style.display = 'none';
+          currentLevelIdx = nextLevelIdx;
           loadLevel(currentLevelIdx);
           isPlaying = true;
-          // Ramp music back up
-          if (baseGain && audioCtx) baseGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 1.0);
+          updateMusicState(multiplier, !!(levelData && levelData.boss));
         };
       } else {
         // Tick sound for each increment
         if (audioCtx) playPop(4, false);
         ui.runCoins.innerText = `+${currentDisplayCoins}`;
+        if (clearCoinsDisplay) clearCoinsDisplay.innerText = `+${currentDisplayCoins}`;
       }
     }, 40); // Fast 40ms updates
   }, 1000);
