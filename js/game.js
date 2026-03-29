@@ -864,19 +864,19 @@ function setOverlayState(type) {
     if (reviveBtn) reviveBtn.style.display = 'block';
     if (shareBtn) shareBtn.style.display = 'block';
     if (menuBtn) menuBtn.style.display = 'block';
-    if (pbBlock) pbBlock.style.display = 'flex';
+    if (pbBlock) pbBlock.style.display = 'grid';
     if (overlayActionStack) overlayActionStack.style.display = 'flex';
-    if (runCoinsBox) runCoinsBox.style.display = 'block';
+    if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
   } else if (type === 'worldClearReady') {
     if (overlayMetaStack) overlayMetaStack.style.display = '';
     ui.btn.style.display = 'block';
     if (shareBtn) shareBtn.style.display = 'block';
-    if (clearSummary) clearSummary.style.display = 'flex';
+    if (clearSummary) clearSummary.style.display = 'grid';
     if (overlayActionStack) overlayActionStack.style.display = 'flex';
-    if (runCoinsBox) runCoinsBox.style.display = 'block';
+    if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
   } else if (type === 'worldClearTally') {
     if (overlayMetaStack) overlayMetaStack.style.display = '';
-    if (runCoinsBox) runCoinsBox.style.display = 'block';
+    if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
   } else if (type === 'cinematic') {
     setCinematicOverlayMode();
     forceHideOverlayExtras();
@@ -2971,7 +2971,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   const clearScoreDisplay = document.getElementById('clearScoreDisplay');
   const clearCoinsDisplay = document.getElementById('clearCoinsDisplay');
   const clearStreakDisplay = document.getElementById('clearStreakDisplay');
-  if (clearSummary) clearSummary.style.display = 'flex';
+  if (clearSummary) clearSummary.style.display = 'grid';
   if (clearScoreDisplay) clearScoreDisplay.innerText = score;
   if (clearStreakDisplay) clearStreakDisplay.innerText = runBestStreak;
   if (clearCoinsDisplay) clearCoinsDisplay.innerText = '0';
