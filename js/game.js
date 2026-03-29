@@ -18,6 +18,11 @@ const ui = {
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
+// Dynamic Music Engine
+let baseAudioBuffer, bossAudioBuffer;
+let baseSource, bossSource;
+let baseGain, bossGain;
+let isMusicPlaying = false;
 let bgMusic = null;
 let musicEnabled = true;
 let sfxEnabled = true;
@@ -367,6 +372,72 @@ function playPop(multiplier, isPerfect, isFail = false) {
     return;
   }
   soundGood(multiplier);
+}
+
+// Load an audio file into a buffer
+async function loadAudioFile(url) {
+  const response = await fetch(url);
+  const arrayBuffer = await response.arrayBuffer();
+  return await audioCtx.decodeAudioData(arrayBuffer);
+}
+
+// Initialize and start the dynamic music loops
+async function startDynamicMusic() {
+  if (isMusicPlaying || !audioCtx) return;
+
+  try {
+    // Load both tracks (Assumes they are exactly the same BPM and length)
+    if (!baseAudioBuffer) baseAudioBuffer = await loadAudioFile('assets/base.mp3');
+    if (!bossAudioBuffer) bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
+
+    // Create Sources
+    baseSource = audioCtx.createBufferSource();
+    bossSource = audioCtx.createBufferSource();
+    baseSource.buffer = baseAudioBuffer;
+    bossSource.buffer = bossAudioBuffer;
+    baseSource.loop = true; bossSource.loop = true;
+
+    // Create Volume Nodes (Gain)
+    baseGain = audioCtx.createGain();
+    bossGain = audioCtx.createGain();
+
+    // Default State: Base track is full volume, Boss track is muted
+    baseGain.gain.value = 0.6; // slightly lower master volume so SFX pop
+    bossGain.gain.value = 0;
+
+    // Connect routing: Source -> Gain -> Destination
+    baseSource.connect(baseGain); baseGain.connect(audioCtx.destination);
+    bossSource.connect(bossGain); bossGain.connect(audioCtx.destination);
+
+    // Start EXACTLY at the same time to ensure perfect phase sync
+    const startTime = audioCtx.currentTime + 0.1;
+    baseSource.start(startTime);
+    bossSource.start(startTime);
+    isMusicPlaying = true;
+  } catch (e) {
+    console.log('Music loading skipped or failed. Check paths.', e);
+  }
+}
+
+// Dynamically adjust the music based on gameplay state
+function updateMusicState(currentMultiplier, isBossActive) {
+  if (!isMusicPlaying || !audioCtx) return;
+
+  const now = audioCtx.currentTime;
+
+  // 1. Crossfade Logic
+  if (isBossActive) {
+    baseGain.gain.linearRampToValueAtTime(0, now + 2.0); // 2 second fade out
+    bossGain.gain.linearRampToValueAtTime(0.6, now + 2.0); // 2 second fade in
+  } else {
+    baseGain.gain.linearRampToValueAtTime(0.6, now + 2.0);
+    bossGain.gain.linearRampToValueAtTime(0, now + 2.0);
+  }
+
+  // 2. Tension Speed/Pitch Logic (Max +15% speed at 8x multiplier)
+  const targetSpeed = 1.0 + (currentMultiplier * 0.015);
+  baseSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
+  bossSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
 }
 
 function vibrate(pattern) {
@@ -2029,6 +2100,7 @@ function update() {
     flushScoreCoinUI();
   }
 
+  updateMusicState(multiplier, (levelData && levelData.boss));
   draw(); requestAnimationFrame(update);
 }
 
@@ -2483,6 +2555,7 @@ function triggerStageClear() {
 
 function startCampaign() {
   initAudio(); // Initialize sound engine on first interaction
+  startDynamicMusic();
   initBackgroundMusic();
   playBackgroundMusic();
   toggleSettings(false);
