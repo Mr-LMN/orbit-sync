@@ -186,6 +186,17 @@ function soundPerfect(multiplier) {
   playTone(baseFreq * 3, 'sine', 0.06, 0.005, 0.35, t);
 }
 
+// Corner bonus sting — brighter/pitched up for world 2 diamond moments
+function soundCornerBonus(worldNum = 1) {
+  if (!audioCtx) return;
+  if (shouldThrottleAudio()) return;
+  const t = audioCtx.currentTime;
+  const pitchBoost = worldNum === 2 ? 1.12 : 1;
+  playNoiseBurst(worldNum === 2 ? 0.16 : 0.12, 0.08, t, 'bandpass', 1450 * pitchBoost, 1.8);
+  playTone(740 * pitchBoost, 'triangle', 0.2, 0.003, 0.09, t);
+  playTone(980 * pitchBoost, 'sine', 0.12, 0.002, 0.13, t + 0.03);
+}
+
 // Multiplier milestone sounds (x2 through x8)
 // Each level plays a rising musical note
 const multiNotes = [0, 0, 262, 294, 330, 370, 415, 466, 523];
@@ -770,6 +781,11 @@ function updateShopUI() {
   const items = ['classic', 'skull', 'fire'];
   items.forEach(id => {
     let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
+    let preview = card ? card.querySelector('.item-preview') : null;
+    if (preview) {
+      if (!preview.dataset.skin) preview.dataset.skin = id;
+      renderShopOrbPreview(preview, preview.dataset.skin);
+    }
     if (activeSkin === id) { btn.className = 'buy-btn btn-equipped'; btn.innerText = 'Equipped'; card.classList.add('equipped'); }
     else if (unlockedSkins.includes(id)) { btn.className = 'buy-btn btn-owned'; btn.innerText = 'Equip'; card.classList.remove('equipped'); btn.onclick = () => equipSkin(id); }
     else { card.classList.remove('equipped'); }
@@ -787,6 +803,106 @@ function buyItem(id, cost) {
   }
 }
 function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
+
+function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
+  const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+  if (skin === 'skull') {
+    ctx.font = `${Math.round(radius * 3.75)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('💀', x, y);
+    return;
+  }
+  if (skin === 'fire') {
+    ctx.font = `${Math.round(radius * 3.75)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔥', x, y);
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.arc(x, y, (radius * 2) + pulse, 0, Math.PI * 2);
+  ctx.fillStyle = orbColor;
+  ctx.globalAlpha = 0.15;
+  ctx.shadowBlur = 25;
+  ctx.shadowColor = orbColor;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius * 1.47, 0, Math.PI * 2);
+  ctx.fillStyle = orbColor;
+  ctx.globalAlpha = 0.7;
+  ctx.shadowBlur = 12;
+  ctx.shadowColor = orbColor;
+  ctx.fill();
+
+  let coreGrad = ctx.createRadialGradient(x - (radius * 0.24), y - (radius * 0.24), 0, x, y, radius * 0.94);
+  coreGrad.addColorStop(0, '#ffffff');
+  coreGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
+  coreGrad.addColorStop(1, orbColor);
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = coreGrad;
+  ctx.globalAlpha = 1.0;
+  ctx.shadowBlur = 0;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.ellipse(x - (radius * 0.41), y - (radius * 0.53), radius * 0.53, radius * 0.29, Math.PI / 5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x + (radius * 0.47), y + (radius * 0.47), Math.max(0.9, radius * 0.14), 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.fill();
+}
+
+function drawMiniOrb(ctx, x, y, skin, radius = 12) {
+  const savedAlpha = ctx.globalAlpha;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 12, 0, Math.PI * 2);
+  const halo = ctx.createRadialGradient(x, y, 1, x, y, radius + 12);
+  halo.addColorStop(0, 'rgba(255,255,255,0.10)');
+  halo.addColorStop(0.6, 'rgba(120,200,255,0.07)');
+  halo.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = halo;
+  ctx.fill();
+
+  const orbitCount = 3;
+  for (let i = 0; i < orbitCount; i++) {
+    const a = (Math.PI * 2 * i / orbitCount) - (Math.PI / 2);
+    const ox = x + Math.cos(a) * (radius + 4);
+    const oy = y + Math.sin(a) * (radius + 4);
+    ctx.beginPath();
+    ctx.arc(ox, oy, Math.max(1.6, radius * 0.2), 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.globalAlpha = 0.7;
+    ctx.fill();
+  }
+  ctx.globalAlpha = savedAlpha;
+  drawOrbSkin(ctx, x, y, skin, radius, 0.65, '#7bf4ff');
+  ctx.restore();
+}
+
+function renderShopOrbPreview(previewEl, skinId) {
+  if (!previewEl) return;
+  let canvasEl = previewEl.querySelector('canvas');
+  if (!canvasEl) {
+    previewEl.innerHTML = '';
+    canvasEl = document.createElement('canvas');
+    canvasEl.width = 60;
+    canvasEl.height = 60;
+    canvasEl.style.width = '60px';
+    canvasEl.style.height = '60px';
+    previewEl.appendChild(canvasEl);
+  }
+  const pctx = canvasEl.getContext('2d');
+  pctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  drawMiniOrb(pctx, canvasEl.width / 2, canvasEl.height / 2, skinId, 9.5);
+}
 
 const particlePool = [];
 const popupPool = [];
@@ -1571,6 +1687,7 @@ function spawnWorld2CornerBonusTargets() {
 function spawnTargets() {
   targets = [];
   const palette = getWorldPalette();
+  const worldNum = parseInt(levelData.id.split('-')[0], 10);
   if (levelData.boss === 'aegis') {
     if (!isBossPhaseTwo) {
       ui.text.innerText = bossPhase === 1 ? "BOSS: Break the shields!" : "BOSS ENRAGED: Faster & Sharper!";
@@ -1658,12 +1775,28 @@ function spawnTargets() {
     const realTargetAngle = targets.length > 0
       ? targets[0].start + targets[0].size + (Math.PI * 0.4)
       : Math.random() * Math.PI * 2;
-    targets.push(buildTarget(((realTargetAngle) % (Math.PI * 2)), Math.PI / 9, {
+    targets.push(buildTarget(((realTargetAngle) % (Math.PI * 2)), worldNum === 2 ? (Math.PI / 8.6) : (Math.PI / 9), {
       color: '#ff3366',
       active: true,
       isPhantom: true,
       hp: 1
     }));
+  }
+
+  if (worldNum === 2 && !levelData.boss) {
+    targets.forEach(t => {
+      if (t.isPhantom || t.isCornerBonus || t.isLifeZone || t.isBossShield) return;
+      if (!t.pulseConfig) {
+        t.pulseConfig = {
+          amplitude: 0.09,
+          period: 2100,
+          minBonusWindow: 0.08,
+          minHitBonus: 2
+        };
+      }
+      t.pulsePhaseOffset = (t.start % (Math.PI * 2)) * 320;
+      t.pulseAtMinimum = false;
+    });
   }
 
   spawnWorld2CornerBonusTargets();
@@ -1723,22 +1856,40 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // World 2 corner accents: faint prism glows at each diamond point
+  // World 2 corner accents + facet shimmer: stronger prism points to keep the diamond shape distinct.
   if (worldNum === 2 && !isBoss && useHeavyEffects) {
     const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
     ctx.save();
     cornerAngles.forEach((corner, idx) => {
       const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
-      const pulse = 0.55 + (Math.sin(now / 620 + idx * 1.35) * 0.2);
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 34);
-      grad.addColorStop(0, `rgba(255,120,245,${0.20 * pulse})`);
-      grad.addColorStop(0.55, `rgba(195,110,255,${0.11 * pulse})`);
+      const pulse = 0.6 + (Math.sin(now / 480 + idx) * 0.25);
+      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 42);
+      grad.addColorStop(0, `rgba(255,100,240,${0.35 * pulse})`);
+      grad.addColorStop(0.6, `rgba(180,80,255,${0.12 * pulse})`);
       grad.addColorStop(1, 'rgba(195,110,255,0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 34, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, 42, 0, Math.PI * 2);
       ctx.fill();
+
+      // Facet shimmer pass
+      ctx.strokeStyle = '#ff80ff';
+      ctx.globalAlpha = 0.24 * pulse;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(p.x - 12, p.y - 12);
+      ctx.lineTo(p.x + 12, p.y + 12);
+      ctx.stroke();
     });
+
+    // Inner prism lane unique to diamond world.
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius - 7, 0, Math.PI * 2);
+    ctx.lineWidth = 1.4;
+    ctx.globalAlpha = 0.32 + (Math.sin(now / 460) * 0.08);
+    ctx.strokeStyle = '#ff8cff';
+    setShadowBlur(10);
+    ctx.shadowColor = '#ff57e8';
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -1785,25 +1936,28 @@ function draw() {
 
     if (t.isPhantom) {
       ctx.save();
-      ctx.setLineDash([4, 12]);
+      const phantomPulse = 0.68 + Math.abs(Math.sin(now / 290 + (tCenter * 1.1))) * 0.4;
+      const isDiamondWorld = worldNum === 2 && !isBoss;
+      ctx.setLineDash(isDiamondWorld ? [7, 8] : [4, 12]);
       
       // Very faint glow — barely there
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
         orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ff3366';
-      ctx.globalAlpha = 0.12;
-      ctx.lineWidth = 8;
+      ctx.globalAlpha = isDiamondWorld ? (0.2 * phantomPulse) : 0.12;
+      ctx.lineWidth = isDiamondWorld ? 10 : 8;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = 0;
+      setShadowBlur(isDiamondWorld ? 16 : 0);
+      ctx.shadowColor = '#ff3366';
       ctx.stroke();
       
       // Thin dashed line only, no fill, no X label
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
         orbitRadius, t.start, t.start + t.size);
       ctx.strokeStyle = '#ff3366';
-      ctx.globalAlpha = 0.45;
-      ctx.lineWidth = 1.5;
-      ctx.shadowBlur = 0;
+      ctx.globalAlpha = isDiamondWorld ? (0.75 * phantomPulse) : 0.45;
+      ctx.lineWidth = isDiamondWorld ? 2.6 : 1.5;
+      setShadowBlur(isDiamondWorld ? 10 : 0);
       ctx.stroke();
       
       ctx.setLineDash([]);
@@ -2104,63 +2258,8 @@ function draw() {
   const x = orbPt.x;
   const y = orbPt.y;
 
-  if (activeSkin === 'skull') {
-    ctx.font = '32px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('💀', x, y);
-  } else if (activeSkin === 'fire') {
-    ctx.font = '32px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🔥', x, y);
-  } else {
-    // Calculate a dynamic pulse for the plasma aura
-    let orbPulse = Math.abs(Math.sin(Date.now() / 200)) * 2.5;
-
-    // 1. Outer Plasma Aura (Breathing)
-    ctx.beginPath();
-    ctx.arc(x, y, 17 + orbPulse, 0, Math.PI * 2);
-    ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 0.15;
-    setShadowBlur(25);
-    ctx.shadowColor = orbColor;
-    ctx.fill();
-
-    // 2. Mid Energy Layer
-    ctx.beginPath();
-    ctx.arc(x, y, 12.5, 0, Math.PI * 2);
-    ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 0.7;
-    setShadowBlur(12);
-    ctx.shadowColor = orbColor;
-    ctx.fill();
-
-    // 3. Inner Hot Core (Radial Gradient for 3D depth)
-    let coreGrad = ctx.createRadialGradient(x - 2, y - 2, 0, x, y, 8);
-    coreGrad.addColorStop(0, '#ffffff'); // Pure white hot center
-    coreGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
-    coreGrad.addColorStop(1, orbColor); // Fades into multiplier color
-
-    ctx.beginPath();
-    ctx.arc(x, y, 8.5, 0, Math.PI * 2);
-    ctx.fillStyle = coreGrad;
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-    ctx.fill();
-
-    // 4. Curved Specular Highlight (Makes it look like a shiny glass orb)
-    ctx.beginPath();
-    ctx.ellipse(x - 3.5, y - 4.5, 4.5, 2.5, Math.PI / 5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fill();
-
-    // 5. Tiny Energy Sparkle reflection
-    ctx.beginPath();
-    ctx.arc(x + 4, y + 4, 1.2, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.fill();
-  }
+  const orbPulse = Math.abs(Math.sin(Date.now() / 200)) * 2.5;
+  drawOrbSkin(ctx, x, y, activeSkin, 8.5, orbPulse, orbColor);
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
@@ -2653,6 +2752,7 @@ function tap() {
     }
 
     if (t.isCornerBonus) {
+      const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
       const cornerBonusScore = 5;
       score += cornerBonusScore;
       runCents += cornerBonusScore;
@@ -2660,7 +2760,10 @@ function tap() {
       createPopup(hitX, hitY - 24, `CORNER +${cornerBonusScore}`, '#ffd54a');
       createParticles(hitX, hitY, '#ffd54a', 28);
       createShockwave('#ffd54a', 24);
-      soundPerfect(Math.max(1, multiplier - 1));
+      soundCornerBonus(worldNum);
+      if (worldNum === 2) {
+        pulseBrightness(1.28, 90);
+      }
       vibrate([8, 20, 8]);
       flushScoreCoinUI();
       return;
