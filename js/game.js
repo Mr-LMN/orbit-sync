@@ -2851,6 +2851,10 @@ function update() {
       if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
       if (t.start < 0) t.start += Math.PI * 2;
     }
+    // Keep dual target center angle in sync with movement
+    if (t.isDual && typeof t.targetHalfWidth === 'number') {
+      t.angle = normalizeAngle(t.start + t.targetHalfWidth);
+    }
 
     let sizeScale = 1;
     if (!inMenu && t.shrinkConfig && t.baseSize && t.shrinkConfig.distance > 0) {
@@ -2879,17 +2883,25 @@ function update() {
       t.size = t.baseSize * sizeScale;
     }
 
-    if (!inMenu && t.mechanic === 'dual' && t.active && Array.isArray(t.dualHits)) {
-      const allSegmentsCleared = t.dualHits.every(Boolean);
-      const insideNow = isInsideTarget(angle, t);
-      const hasStartedDualChain = t.dualHits.some(Boolean);
-
-      if (!allSegmentsCleared && hasStartedDualChain) {
-        if (insideNow) {
-          t.dualInsideWindow = true;
-        } else if (t.dualInsideWindow && !deferredFailReason) {
-          t.dualInsideWindow = false;
-          deferredFailReason = 'DUAL TARGET DROPPED';
+    if (!inMenu && t.mechanic === 'dual' && t.active
+        && t.dualState !== 'full' && t.dualState !== 'cleared') {
+      // Player partially cleared a dual — track if remaining
+      // half has been passed through without being hit
+      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const insideNow = isInsideTarget(normAngle, t);
+      if (!t._dualPassStarted && insideNow) {
+        t._dualPassStarted = true;
+      }
+      if (t._dualPassStarted && !insideNow && t.dualState !== 'cleared') {
+        // Orb passed through remaining half without hitting —
+        // reset to full, player gets another chance but loses streak
+        t._dualPassStarted = false;
+        if (multiplier > 1) {
+          multiplier = 1;
+          streak = 0;
+          ui.streak.innerText = streak;
+          updateMultiplierUI();
+          showTempText('DROPPED!', '#ff9900', 900);
         }
       }
     }
@@ -2901,6 +2913,17 @@ function update() {
       }
       if (t._wasMissable && !isInsideTarget(normAngle, t)) {
         t.active = false; // life zone missed — just disappears silently
+      }
+    }
+
+    if (t.mechanic === 'splitChild' && t.active && !t.spawnDistance) {
+      t.spawnDistance = totalStageDistance;
+    }
+    if (t.mechanic === 'splitChild' && t.active && t.spawnDistance) {
+      const traveled = totalStageDistance - t.spawnDistance;
+      if (traveled > Math.PI * 6) {
+        // Child has circled 3 times without being hit — despawn silently
+        t.active = false;
       }
     }
   });
