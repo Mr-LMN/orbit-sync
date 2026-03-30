@@ -1844,9 +1844,9 @@ function spawnWorld2MechanicTargets() {
   if (id === '2-1') {
     const cornerIdx = stageHits % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], {
-      backWindow: 0.028,
-      overshootWindow: 0.055,
-      perfectWindow: 0.012,
+      backWindow: 0.018,
+      overshootWindow: 0.1,
+      perfectWindow: 0.015,
       color: '#90fcff'
     }));
     return;
@@ -2733,6 +2733,7 @@ function showTempText(text, color, duration) {
 function update() {
   if (isCinematicIntro) { requestAnimationFrame(update); return; }
   if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
+  if (!isPlaying && !inMenu) { draw(); requestAnimationFrame(update); return; }
   const frameNow = performance.now();
   const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
   lastFrameTime = frameNow;
@@ -3039,7 +3040,7 @@ function tap() {
         const cornerDiff = signedAngularDistance(angle, t.cornerAnchor);
         if (Math.abs(cornerDiff) <= (t.perfectWindow || 0.018)) hitQuality = "perfect";
         else if (cornerDiff > 0 && cornerDiff <= (t.cornerOvershootWindow || 0.08)) hitQuality = "ok";
-        else if (cornerDiff > -(t.cornerBackWindow || 0.04)) hitQuality = "good";
+        else if (cornerDiff > -(t.cornerBackWindow || 0.04)) hitQuality = "ok";
         else continue;
       } else if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
         const localAngle = normalizeAngle(angle - t.start);
@@ -3436,7 +3437,8 @@ function returnToMenu() {
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   ui.text.style.display = 'block';
-  inMenu = true; isPlaying = false; levelData = campaign[0]; spawnTargets();
+  inMenu = true; isPlaying = false;
+  refreshMenuWorldPreview();
 }
 
 function changeWorld(dir) {
@@ -3444,6 +3446,7 @@ function changeWorld(dir) {
   if (menuSelectedWorld < 1) menuSelectedWorld = 1;
   if (menuSelectedWorld > maxWorldUnlocked) menuSelectedWorld = maxWorldUnlocked;
   updateWorldSelectorUI();
+  refreshMenuWorldPreview();
 }
 
 function updateWorldSelectorUI() {
@@ -3459,6 +3462,16 @@ function getStartingIndexForWorld(worldNum) {
     if (campaign[i].id.startsWith(worldNum + "-")) return i;
   }
   return 0; // Fallback
+}
+
+function refreshMenuWorldPreview() {
+  if (!inMenu) return;
+  const worldStartIdx = getStartingIndexForWorld(menuSelectedWorld);
+  levelData = campaign[worldStartIdx] || campaign[0];
+  currentWorldPalette = computeWorldPalette(levelData);
+  currentWorldShape = computeWorldShape(levelData);
+  currentWorldVisualTheme = getWorldVisualTheme(levelData);
+  spawnTargets();
 }
 
 function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampaignClear }) {
@@ -3551,4 +3564,4 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
 document.addEventListener('touchstart', (e) => { if (e.target.tagName !== 'BUTTON') { e.preventDefault(); tap(); } }, { passive: false });
 document.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') tap(); });
 
-levelData = campaign[0]; spawnTargets(); updateShopUI(); menuSelectedWorld = maxWorldUnlocked; updateWorldSelectorUI(); requestAnimationFrame(update);
+levelData = campaign[0]; spawnTargets(); updateShopUI(); menuSelectedWorld = maxWorldUnlocked; updateWorldSelectorUI(); refreshMenuWorldPreview(); requestAnimationFrame(update);
