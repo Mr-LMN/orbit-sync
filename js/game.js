@@ -2332,18 +2332,24 @@ function draw() {
     if (t.isDual && t.dualState !== 'cleared') {
       const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
       const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
-      const leftArcEnd = centerAngle;
-      const rightArcStart = centerAngle;
+      const leftStart = centerAngle - targetHalfWidth;
+      const rightEnd = centerAngle + targetHalfWidth;
+      const step = 0.02;
 
       ctx.save();
       ctx.lineCap = 'round';
+      ctx.globalAlpha = 0.96;
 
       // Draw Left Half (Cyan)
       if (t.dualState === 'full' || t.dualState === 'left') {
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, centerAngle - targetHalfWidth, leftArcEnd);
+        ctx.beginPath();
+        for (let a = leftStart; a <= centerAngle + 0.01; a += step) {
+          const pt = getPointOnShape(a, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+          if (a === leftStart) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        }
         ctx.strokeStyle = '#00e5ff';
-        ctx.globalAlpha = 0.96;
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 14;
         ctx.shadowBlur = 14;
         ctx.shadowColor = '#00e5ff';
         ctx.stroke();
@@ -2351,18 +2357,26 @@ function draw() {
 
       // Draw Right Half (Pink)
       if (t.dualState === 'full' || t.dualState === 'right') {
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, rightArcStart, centerAngle + targetHalfWidth);
+        ctx.beginPath();
+        for (let a = centerAngle; a <= rightEnd + 0.01; a += step) {
+          const pt = getPointOnShape(a, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+          if (a === centerAngle) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        }
         ctx.strokeStyle = '#ff00cc';
-        ctx.globalAlpha = 0.96;
-        ctx.lineWidth = 12;
+        ctx.lineWidth = 14;
         ctx.shadowBlur = 14;
         ctx.shadowColor = '#ff00cc';
         ctx.stroke();
       }
 
-      // Draw "Perfect" Center Indicator if full.
+      // Draw White Perfect Center Indicator
       if (t.dualState === 'full') {
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, centerAngle - 0.02, centerAngle + 0.02);
+        const ptCenter1 = getPointOnShape(centerAngle - 0.02, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        const ptCenter2 = getPointOnShape(centerAngle + 0.02, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        ctx.beginPath();
+        ctx.moveTo(ptCenter1.x, ptCenter1.y);
+        ctx.lineTo(ptCenter2.x, ptCenter2.y);
         ctx.strokeStyle = '#ffffff';
         ctx.globalAlpha = 0.98;
         ctx.lineWidth = 18;
@@ -3134,7 +3148,7 @@ function tap() {
         }
       } else if (t.isDual && t.dualState !== 'cleared') {
         const diff = diffFromCenter;
-        const perfectThreshold = targetHalfWidth * 0.35;
+        const perfectThreshold = targetHalfWidth * 0.45;
         if (Math.abs(diff) <= perfectThreshold) hitQuality = "perfect";
         else if (Math.abs(diff) <= targetHalfWidth * 0.68) hitQuality = "good";
         else hitQuality = "ok";
@@ -3193,7 +3207,7 @@ function tap() {
       const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
       const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
       const diff = signedAngularDistance(angle, centerAngle);
-      const perfectThreshold = targetHalfWidth * 0.35;
+      const perfectThreshold = targetHalfWidth * 0.45;
 
       if (Math.abs(diff) <= targetHalfWidth) {
         if (t.dualState === 'full') {
