@@ -1743,6 +1743,7 @@ function loadLevel(idx) {
 }
 
 function buildTarget(start, size, config = {}) {
+  const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
   const target = {
     start,
     size,
@@ -1753,7 +1754,7 @@ function buildTarget(start, size, config = {}) {
   if (!target.shrinkConfig && levelData && levelData.shrink && !target.isHeart && !target.isBossShield) {
     target.shrinkConfig = levelData.shrink;
   }
-  if (!target.pulseConfig && levelData && levelData.pulse && !target.isHeart && !target.isBossShield && !target.isPhantom && !target.isCornerBonus) {
+  if (!target.pulseConfig && levelData && levelData.pulse && worldNum !== 2 && !target.isHeart && !target.isBossShield && !target.isPhantom && !target.isCornerBonus) {
     target.pulseConfig = levelData.pulse;
     target.pulsePhaseOffset = (target.start % (Math.PI * 2)) * 420;
     target.pulseAtMinimum = false;
@@ -1791,6 +1792,89 @@ function spawnWorld2CornerBonusTargets() {
       isCornerBonus: true
     }));
   });
+}
+
+function buildCornerPrecisionTarget(anchorAngle, options = {}) {
+  const backWindow = options.backWindow ?? 0.045;
+  const overshootWindow = options.overshootWindow ?? 0.09;
+  return buildTarget(anchorAngle - backWindow, backWindow + overshootWindow, {
+    color: options.color || '#5cf6ff',
+    active: true,
+    hp: 1,
+    mechanic: 'cornerPrecision',
+    cornerAnchor: anchorAngle,
+    cornerBackWindow: backWindow,
+    cornerOvershootWindow: overshootWindow,
+    perfectWindow: options.perfectWindow ?? 0.018
+  });
+}
+
+function buildDualTarget(startAngle, options = {}) {
+  const segSize = options.segmentSize ?? 0.072;
+  const gap = options.gap ?? 0.018;
+  const totalSize = (segSize * 2) + gap;
+  return buildTarget(startAngle, totalSize, {
+    color: '#73f8ff',
+    active: true,
+    hp: 1,
+    mechanic: 'dual',
+    dualHits: [false, false],
+    dualSegments: [
+      { offset: 0, size: segSize, color: '#5cf6ff' },
+      { offset: segSize + gap, size: segSize, color: '#ff5ec8' }
+    ]
+  });
+}
+
+function buildSplitTarget(startAngle, size, options = {}) {
+  return buildTarget(startAngle, size, {
+    color: options.color || '#b06bff',
+    active: true,
+    hp: 1,
+    mechanic: 'split',
+    splitOnHit: true
+  });
+}
+
+function spawnWorld2MechanicTargets() {
+  const corners = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+  const id = levelData.id;
+
+  if (id === '2-1') {
+    const cornerIdx = stageHits % 4;
+    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.085 }));
+    return;
+  }
+
+  if (id === '2-2') {
+    const base = (Math.random() * Math.PI * 2);
+    targets.push(buildDualTarget(base, { segmentSize: 0.07, gap: 0.02 }));
+    return;
+  }
+
+  if (id === '2-3') {
+    const base = (Math.random() * Math.PI * 2);
+    targets.push(buildSplitTarget(base, Math.PI / 9, { color: '#b08bff' }));
+    return;
+  }
+
+  if (id === '2-4') {
+    const cornerIdx = stageHits % 4;
+    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.075, perfectWindow: 0.016, color: '#74f9ff' }));
+    if (stageHits % 2 === 0) {
+      targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), { segmentSize: 0.064, gap: 0.016 }));
+    } else {
+      targets.push(buildSplitTarget((corners[(cornerIdx + 2) % 4] + 0.15) % (Math.PI * 2), Math.PI / 10, { color: '#c389ff' }));
+    }
+    return;
+  }
+
+  if (id === '2-5') {
+    const cornerIdx = (stageHits + 1) % 4;
+    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { backWindow: 0.03, overshootWindow: 0.06, perfectWindow: 0.012, color: '#90fcff' }));
+    targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), { segmentSize: 0.05, gap: 0.014 }));
+    targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#d97cff' }));
+  }
 }
 
 function spawnTargets() {
@@ -1857,6 +1941,11 @@ function spawnTargets() {
     return;
   }
 
+  if (worldNum === 2 && !levelData.boss && Array.isArray(levelData.mechanics) && levelData.mechanics.length > 0) {
+    spawnWorld2MechanicTargets();
+    return;
+  }
+
   let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
   const isFixedThreeTargetTutorialStage = levelData.id === '1-5' || levelData.fixedTargetCount === true;
   if (tCount === 3 && !isFixedThreeTargetTutorialStage) {
@@ -1892,23 +1981,6 @@ function spawnTargets() {
     }));
   }
 
-  if (worldNum === 2 && !levelData.boss) {
-    targets.forEach(t => {
-      if (t.isPhantom || t.isCornerBonus || t.isLifeZone || t.isBossShield) return;
-      if (!t.pulseConfig) {
-        t.pulseConfig = {
-          amplitude: 0.09,
-          period: 2100,
-          minBonusWindow: 0.08,
-          minHitBonus: 2
-        };
-      }
-      t.pulsePhaseOffset = (t.start % (Math.PI * 2)) * 320;
-      t.pulseAtMinimum = false;
-    });
-  }
-
-  spawnWorld2CornerBonusTargets();
 }
 
 function draw() {
@@ -2196,6 +2268,83 @@ function draw() {
       ctx.strokeRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
       ctx.restore();
 
+      ctx.restore();
+      return;
+    }
+
+    if (t.mechanic === 'cornerPrecision') {
+      ctx.save();
+      const markerPt = getPointOnShape(t.cornerAnchor, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#78f8ff';
+      ctx.globalAlpha = 0.92;
+      ctx.lineWidth = 3.4;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#78f8ff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(markerPt.x, markerPt.y, 3.2 + (approach * 1.2), 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.95;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#9afcff';
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
+      ctx.save();
+      t.dualSegments.forEach((seg, idx) => {
+        const segStart = t.start + seg.offset;
+        const cleared = t.dualHits && t.dualHits[idx];
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, segStart, segStart + seg.size);
+        ctx.strokeStyle = cleared ? '#2d3848' : seg.color;
+        ctx.globalAlpha = cleared ? 0.7 : 0.95;
+        ctx.lineWidth = 4.2;
+        ctx.shadowBlur = cleared ? 0 : 12;
+        ctx.shadowColor = seg.color;
+        ctx.stroke();
+      });
+
+      const dividerAngle = t.start + (t.size / 2);
+      const dividerPt = getPointOnShape(dividerAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      ctx.beginPath();
+      ctx.arc(dividerPt.x, dividerPt.y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.92;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#ffffff';
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
+    if (t.mechanic === 'split' || t.mechanic === 'splitChild') {
+      ctx.save();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = t.color || '#d594ff';
+      ctx.globalAlpha = t.mechanic === 'split' ? 0.92 : 0.98;
+      ctx.lineWidth = t.mechanic === 'split' ? 3.8 : 2.8;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = t.color || '#d594ff';
+      ctx.stroke();
+
+      if (t.mechanic === 'split') {
+        const crackAngle = t.start + (t.size / 2);
+        const crackPt = getPointOnShape(crackAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        ctx.beginPath();
+        ctx.moveTo(crackPt.x - 4, crackPt.y - 4);
+        ctx.lineTo(crackPt.x + 4, crackPt.y + 4);
+        ctx.moveTo(crackPt.x - 4, crackPt.y + 4);
+        ctx.lineTo(crackPt.x + 4, crackPt.y - 4);
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = 1.4;
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+      }
       ctx.restore();
       return;
     }
@@ -2577,19 +2726,6 @@ function update() {
   if (isBossTransitionPaused || isStageClearHoldPaused) moveStep = 0;
   else moveStep *= nearMissSpeedScale;
 
-  if (worldShape === 'diamond' && worldNum === 2 && !inMenu && moveStep !== 0) {
-    // Corner snap burst to make World 2 diamond traversal feel crisp
-    const cornerTolerance = 0.25;
-    let nearCorner = false;
-    const corners = [Math.PI / 4, Math.PI * 3 / 4, Math.PI * 5 / 4, Math.PI * 7 / 4];
-    for (const c of corners) {
-      if (Math.abs(signedAngularDistance(angle, c)) < cornerTolerance) {
-        nearCorner = true;
-        break;
-      }
-    }
-    if (nearCorner) moveStep *= 1.18;
-  }
   moveStep *= delta;
 
   angle += moveStep;
@@ -2605,6 +2741,7 @@ function update() {
 
   if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
 
+  let deferredFailReason = null;
   targets.forEach(t => {
     if (!t.active) return;
 
@@ -2658,6 +2795,17 @@ function update() {
       t.size = t.baseSize * sizeScale;
     }
 
+    if (!inMenu && t.mechanic === 'dual' && t.active && Array.isArray(t.dualHits)) {
+      const allSegmentsCleared = t.dualHits.every(Boolean);
+      const insideNow = isInsideTarget(angle, t);
+      if (!allSegmentsCleared) {
+        if (insideNow) t.dualInsideWindow = true;
+        if (t.dualInsideWindow && !insideNow && !deferredFailReason) {
+          deferredFailReason = 'DUAL TARGET DROPPED';
+        }
+      }
+    }
+
     if (t.isLifeZone && t.active) {
       const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       if (!t._wasMissable && isInsideTarget(normAngle, t)) {
@@ -2668,6 +2816,13 @@ function update() {
       }
     }
   });
+
+  if (deferredFailReason) {
+    handleFail(deferredFailReason);
+    draw();
+    requestAnimationFrame(update);
+    return;
+  }
 
   for (let i = particles.length - 1; i >= 0; i--) {
     if (particles[i].life <= 0) {
@@ -2848,7 +3003,7 @@ function tap() {
   if (ui.overlay.style.display === 'flex') return;
   if (bossTransitionLock) return;
   if (nearMissReplayActive) return;
-  let hitIndex = -1; let hitQuality = "miss";
+  let hitIndex = -1; let hitQuality = "miss"; let hitSegmentIndex = -1;
 
   for (let i = 0; i < targets.length; i++) {
     if (!targets[i].active) continue;
@@ -2856,10 +3011,31 @@ function tap() {
     let isHit = (endAngle > Math.PI * 2) ? (angle >= targets[i].start || angle <= (endAngle - Math.PI * 2)) : (angle >= targets[i].start && angle <= endAngle);
 
     if (isHit) {
-      hitIndex = i; let dist = Math.abs(angle - tCenter);
-      if (dist < targets[i].size / 6) hitQuality = "perfect";
-      else if (dist < targets[i].size / 3) hitQuality = "good";
-      else hitQuality = "ok"; break;
+      const t = targets[i];
+      hitIndex = i;
+      let dist = Math.abs(signedAngularDistance(angle, tCenter));
+      if (t.mechanic === 'cornerPrecision') {
+        const cornerDiff = signedAngularDistance(angle, t.cornerAnchor);
+        if (Math.abs(cornerDiff) <= (t.perfectWindow || 0.018)) hitQuality = "perfect";
+        else if (cornerDiff > 0 && cornerDiff <= (t.cornerOvershootWindow || 0.08)) hitQuality = "ok";
+        else if (cornerDiff > -(t.cornerBackWindow || 0.04)) hitQuality = "good";
+        else continue;
+      } else if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
+        const localAngle = normalizeAngle(angle - t.start);
+        hitSegmentIndex = t.dualSegments.findIndex((seg, idx) => !t.dualHits[idx] && localAngle >= seg.offset && localAngle <= (seg.offset + seg.size));
+        if (hitSegmentIndex === -1) continue;
+        const seg = t.dualSegments[hitSegmentIndex];
+        const segCenter = seg.offset + (seg.size / 2);
+        const segDist = Math.abs(localAngle - segCenter);
+        if (segDist < seg.size / 5) hitQuality = "perfect";
+        else if (segDist < seg.size / 2.4) hitQuality = "good";
+        else hitQuality = "ok";
+      } else {
+        if (dist < targets[i].size / 6) hitQuality = "perfect";
+        else if (dist < targets[i].size / 3) hitQuality = "good";
+        else hitQuality = "ok";
+      }
+      break;
     }
   }
 
@@ -2905,7 +3081,38 @@ function tap() {
       } return;
     }
 
-    t.active = false;
+    if (t.mechanic === 'dual' && hitSegmentIndex !== -1) {
+      t.dualHits[hitSegmentIndex] = true;
+      t.dualInsideWindow = true;
+      createPopup(hitX, hitY - 36, `LINK ${t.dualHits.filter(Boolean).length}/2`, t.dualSegments[hitSegmentIndex].color);
+      createParticles(hitX, hitY, t.dualSegments[hitSegmentIndex].color, 16);
+      if (!t.dualHits.every(Boolean)) {
+        t.color = '#ffffff';
+      } else {
+        t.active = false;
+      }
+    } else if (t.mechanic === 'split' && t.splitOnHit) {
+      t.active = false;
+      const splitGap = 0.06;
+      const childSize = Math.max(Math.PI / 22, t.size * 0.46);
+      targets.push(buildTarget(normalizeAngle(t.start - splitGap), childSize, {
+        color: '#d594ff',
+        active: true,
+        hp: 1,
+        mechanic: 'splitChild'
+      }));
+      targets.push(buildTarget(normalizeAngle(t.start + t.size - childSize + splitGap), childSize, {
+        color: '#8df8ff',
+        active: true,
+        hp: 1,
+        mechanic: 'splitChild'
+      }));
+      createPopup(hitX, hitY - 32, "SPLIT!", "#d594ff");
+      createShockwave('#d594ff', 26);
+      createShockwave('#8df8ff', 20);
+    } else {
+      t.active = false;
+    }
 
     if (t.isPhantom) {
       // Player hit a phantom — punish without the usual hit flow
