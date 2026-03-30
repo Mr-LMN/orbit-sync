@@ -1053,28 +1053,88 @@ function draw() {
 
     if (t.mechanic === 'split' || t.mechanic === 'splitChild') {
       ctx.save();
+
+      const depth = t.splitDepth || 0;
+      const isRootSplit = t.mechanic === 'split';
+
+      const palette = depth === 0
+        ? { glow: '#7cf7ff', body: '#23d7ff', core: '#ffffff', accent: '#b8ffff' }
+        : depth === 1
+          ? { glow: '#ff4fd8', body: '#ff9b54', core: '#ffffff', accent: '#ffd2a6' }
+          : { glow: '#ffd54a', body: '#fff1a8', core: '#ffffff', accent: '#7cf7ff' };
+
+      const pulse = 1 + Math.sin((performance.now() * 0.015) + (t.start * 6.5)) * 0.045;
+      const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
+      const outerWidth = (isRootSplit ? 15 : depth === 1 ? 12 : 10) * pulse;
+      const midWidth = (isRootSplit ? 7 : depth === 1 ? 5.2 : 4.4) * pulse;
+      const coreWidth = (isRootSplit ? 2.8 : 2.2) * pulse;
+
+      // Big readable outer glow
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = t.color || '#d594ff';
-      ctx.globalAlpha = t.mechanic === 'split' ? 0.92 : 0.98;
-      ctx.lineWidth = t.mechanic === 'split' ? 3.8 : 2.8;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = t.color || '#d594ff';
+      ctx.strokeStyle = palette.glow;
+      ctx.globalAlpha = 0.18 + (launchMix * 0.12);
+      ctx.lineWidth = outerWidth;
+      ctx.lineCap = 'butt';
+      ctx.shadowBlur = 26;
+      ctx.shadowColor = palette.glow;
       ctx.stroke();
 
-      if (t.mechanic === 'split') {
-        const crackAngle = t.start + (t.size / 2);
-        const crackPt = getPointOnShape(crackAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-        ctx.beginPath();
-        ctx.moveTo(crackPt.x - 4, crackPt.y - 4);
-        ctx.lineTo(crackPt.x + 4, crackPt.y + 4);
-        ctx.moveTo(crackPt.x - 4, crackPt.y + 4);
-        ctx.lineTo(crackPt.x + 4, crackPt.y - 4);
-        ctx.strokeStyle = '#ffffff';
-        ctx.globalAlpha = 0.9;
-        ctx.lineWidth = 1.4;
-        ctx.shadowBlur = 0;
-        ctx.stroke();
-      }
+      // Main body
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = palette.body;
+      ctx.globalAlpha = 0.92;
+      ctx.lineWidth = midWidth;
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = palette.glow;
+      ctx.stroke();
+
+      // Bright core
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = palette.core;
+      ctx.globalAlpha = 0.96;
+      ctx.lineWidth = coreWidth;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = palette.core;
+      ctx.stroke();
+
+      // End caps so the arc reads properly at speed
+      const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      const capRadius = isRootSplit ? 4.8 : 3.8;
+
+      ctx.beginPath();
+      ctx.arc(startPt.x, startPt.y, capRadius, 0, Math.PI * 2);
+      ctx.arc(endPt.x, endPt.y, capRadius, 0, Math.PI * 2);
+      ctx.fillStyle = palette.accent;
+      ctx.globalAlpha = 0.75;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = palette.glow;
+      ctx.fill();
+
+      // Visible crack / split marker in the middle
+      const crackAngle = t.start + (t.size / 2);
+      const crackPt = getPointOnShape(crackAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+
+      ctx.beginPath();
+      ctx.arc(crackPt.x, crackPt.y, isRootSplit ? 7 : 5.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = isRootSplit ? 0.16 : 0.12;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#ffffff';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(crackPt.x - 6, crackPt.y - 6);
+      ctx.lineTo(crackPt.x + 6, crackPt.y + 6);
+      ctx.moveTo(crackPt.x - 6, crackPt.y + 6);
+      ctx.lineTo(crackPt.x + 6, crackPt.y - 6);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.95;
+      ctx.lineWidth = isRootSplit ? 2 : 1.5;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#ffffff';
+      ctx.stroke();
+
       ctx.restore();
       return;
     }
@@ -1548,10 +1608,28 @@ function update() {
       }
     }
 
-    if (t.mechanic === 'splitChild' && t.active && !t.spawnDistance) {
-      t.spawnDistance = totalStageDistance;
-    }
-    if (t.mechanic === 'splitChild' && t.active && t.spawnDistance) {
+    if (t.mechanic === 'splitChild' && t.active) {
+      if (!t.spawnDistance) {
+        t.spawnDistance = totalStageDistance;
+      }
+
+      // Launch children outward around the ring before they settle into play.
+      if (typeof t.splitLaunchT === 'number' && t.splitLaunchT < 1) {
+        t.splitLaunchT = Math.min(1, t.splitLaunchT + (0.09 * delta));
+
+        const eased = 1 - Math.pow(1 - t.splitLaunchT, 3);
+        const travel = signedAngularDistance(t.splitLaunchTarget, t.splitLaunchFrom);
+        t.start = normalizeAngle(t.splitLaunchFrom + (travel * eased));
+
+        // Freeze movement during the burst so it feels intentional, not sloppy.
+        t.moveSpeed = 0;
+
+        if (t.splitLaunchT >= 1) {
+          t.start = normalizeAngle(t.splitLaunchTarget);
+          t.moveSpeed = levelData.moveSpeed || 0;
+        }
+      }
+
       const traveled = totalStageDistance - t.spawnDistance;
       if (traveled > Math.PI * 6) {
         // Child has circled 3 times without being hit — despawn silently
@@ -1934,29 +2012,73 @@ function tap() {
       }
     } else if ((t.mechanic === 'split' || t.mechanic === 'splitChild') && t.splitOnHit) {
       t.active = false;
+
       const nextDepth = (t.splitDepth || 0) + 1;
       if (nextDepth <= 2) {
-        const splitGap = nextDepth === 1 ? 0.05 : 0.03;
-        const childSize = Math.max(Math.PI / 34, t.size * 0.48);
-        targets.push(buildTarget(normalizeAngle(t.start - splitGap), childSize, {
-          color: '#ffaa00',
+        const parentCenter = normalizeAngle(t.start + (t.size / 2));
+        const childSize = Math.max(Math.PI / 40, t.size * 0.8);
+
+        // Fire the new pieces outward into fresh random positions around the ring.
+        const launchBase = nextDepth === 1 ? 0.95 : 1.2;
+        const leftOffset = launchBase + (Math.random() * 0.42);
+        const rightOffset = launchBase + (Math.random() * 0.42);
+
+        const leftTargetStart = normalizeAngle(parentCenter - leftOffset - (childSize / 2));
+        const rightTargetStart = normalizeAngle(parentCenter + rightOffset - (childSize / 2));
+        const spawnStart = normalizeAngle(parentCenter - (childSize / 2));
+
+        const leftColor = nextDepth === 1 ? '#ff9b54' : '#ffd54a';
+        const rightColor = nextDepth === 1 ? '#ff4fd8' : '#7cf7ff';
+
+        const leftChild = buildTarget(spawnStart, childSize, {
+          color: leftColor,
           active: true,
           hp: 1,
           mechanic: 'splitChild',
           splitOnHit: nextDepth < 2,
           splitDepth: nextDepth
-        }));
-        targets.push(buildTarget(normalizeAngle(t.start + t.size - childSize + splitGap), childSize, {
-          color: '#ffffff',
+        });
+        leftChild.moveSpeed = 0;
+        leftChild.splitLaunchT = 0;
+        leftChild.splitLaunchFrom = spawnStart;
+        leftChild.splitLaunchTarget = leftTargetStart;
+        leftChild.hitScalePulse = 1.1;
+        leftChild.hitFlash = 1;
+
+        const rightChild = buildTarget(spawnStart, childSize, {
+          color: rightColor,
           active: true,
           hp: 1,
           mechanic: 'splitChild',
           splitOnHit: nextDepth < 2,
           splitDepth: nextDepth
-        }));
-        createPopup(hitX, hitY - 32, nextDepth === 1 ? "SPLIT!" : "SHATTER!", "#d594ff");
-        createShockwave('#d594ff', 26);
-        createShockwave('#8df8ff', 20);
+        });
+        rightChild.moveSpeed = 0;
+        rightChild.splitLaunchT = 0;
+        rightChild.splitLaunchFrom = spawnStart;
+        rightChild.splitLaunchTarget = rightTargetStart;
+        rightChild.hitScalePulse = 1.1;
+        rightChild.hitFlash = 1;
+
+        targets.push(leftChild, rightChild);
+
+        createParticles(hitX, hitY, nextDepth === 1 ? '#7cf7ff' : '#ffd54a', nextDepth === 1 ? 26 : 18);
+        createParticles(hitX, hitY, nextDepth === 1 ? '#ff4fd8' : '#ffffff', nextDepth === 1 ? 18 : 12);
+        createShockwave('#ffffff', nextDepth === 1 ? 32 : 24);
+        createShockwave(nextDepth === 1 ? '#7cf7ff' : '#ffd54a', nextDepth === 1 ? 26 : 20);
+        pulseBrightness(nextDepth === 1 ? 1.75 : 1.45, nextDepth === 1 ? 120 : 90);
+        triggerScreenShake(nextDepth === 1 ? 7 : 5);
+
+        if (audioCtx) {
+          playPop(nextDepth === 1 ? 3 : 4, false, nextDepth === 2);
+        }
+
+        createPopup(
+          hitX,
+          hitY - 32,
+          nextDepth === 1 ? "SPLIT BURST!" : "SHATTER BURST!",
+          nextDepth === 1 ? '#7cf7ff' : '#ffd54a'
+        );
       }
     } else {
       t.active = false;
