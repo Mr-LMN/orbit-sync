@@ -6,7 +6,7 @@ const ui = {
   bigMultiplier: document.getElementById('bigMultiplier'), multiplierCount: document.getElementById('multiplierCount'),
   coins: document.getElementById('coinCount'), overlay: document.getElementById('screenOverlay'),
   title: document.getElementById('screenTitle'), subtitle: document.getElementById('screenSubtitle'),
-  btn: document.getElementById('actionBtn'), runCoins: document.getElementById('runCoinsDisplay'),
+  btn: document.getElementById('actionBtn'), menuBtn: document.getElementById('menuBtn'), runCoins: document.getElementById('runCoinsDisplay'),
   topBar: document.getElementById('topBar'), gameUI: document.getElementById('ui'),
   mainMenu: document.getElementById('mainMenu'), shopModal: document.getElementById('shopModal'),
   settingsModal: document.getElementById('settingsModal'),
@@ -460,7 +460,7 @@ function markScoreCoinDirty(force = false) {
 function flushScoreCoinUI() {
   if (!hudScoreCoinDirty) return;
   ui.score.innerText = score;
-  ui.coins.innerText = Math.floor(globalCoins + getPendingRunCoins());
+  ui.coins.innerText = Math.floor(globalCoins);
   hudScoreCoinDirty = false;
   pendingHudUpdates = 0;
   hudLastFlushAt = performance.now();
@@ -476,6 +476,7 @@ function forceHideOverlayExtras() {
   const reviveBtn = document.getElementById('reviveBtn');
   const coinReviveBtn = document.getElementById('coinReviveBtn');
   const runCoinsBox = document.getElementById('runCoinsBox');
+  const menuBtn = ui.menuBtn || document.getElementById('menuBtn');
   const clearSummary = document.getElementById('clearSummary');
   const shareBtn = document.getElementById('shareBtn');
   const pbStatsBlock = document.getElementById('pbStatsBlock');
@@ -483,6 +484,7 @@ function forceHideOverlayExtras() {
   if (reviveBtn) reviveBtn.style.display = 'none';
   if (coinReviveBtn) coinReviveBtn.style.display = 'none';
   if (runCoinsBox) runCoinsBox.style.display = 'none';
+  if (menuBtn) menuBtn.style.display = 'none';
   if (clearSummary) clearSummary.style.display = 'none';
   if (shareBtn) shareBtn.style.display = 'none';
   if (pbStatsBlock) pbStatsBlock.style.display = 'none';
@@ -495,6 +497,7 @@ function setCinematicOverlayMode() {
 }
 function clearCinematicOverlayMode() {
   ui.btn.style.display = 'inline-block';
+  if (ui.menuBtn) ui.menuBtn.style.display = 'inline-block';
 }
 function resetRunState() {
   score = 0; stageHits = 0; lives = maxLives; multiplier = 1; streak = 0;
@@ -612,7 +615,7 @@ function loadLevel(idx) {
 
   if (levelData.boss) {
     isCinematicIntro = true;
-    if (ui.gameUI) ui.gameUI.style.display = 'none';
+    if (ui.gameUI) ui.gameUI.style.display = 'block';
     playBossCinematic();
   } else {
     stopBossDrone();
@@ -2081,7 +2084,7 @@ function tap() {
       if (t.hp > 0) createPopup(hitX, hitY - 18, `${t.hp} HIT${t.hp > 1 ? 'S' : ''}`, t.color);
       const shieldsLeft = targets.filter(tgt => tgt.isBossShield && tgt.active).length;
       createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, "#ffffff");
-      if (targets.every(tgt => !tgt.active)) {
+      if (shieldsLeft === 0 && !isBossPhaseTwo) {
         isBossPhaseTwo = true;
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";
         else ui.bossPhase2.className = "boss-segment";

@@ -30,22 +30,22 @@
     isPlaying = false;
 
     setOverlayState('cinematic');
-    ui.overlay.style.display = 'flex';
+    setCinematicOverlayMode();
     ui.title.innerText = levelData.id === '1-6' ? 'THE AEGIS CORE' : 'THE PRISM';
     ui.title.style.color = '#ff3366';
     ui.subtitle.innerText = levelData.id === '1-6' ? 'BREAK THE SHIELDS' : 'BREAK EACH CORNER';
-    ui.btn.style.display = 'none';
-    forceHideOverlayExtras();
 
     soundShieldBreak();
     vibrate([80, 40, 80]);
 
     setTimeout(() => {
       ui.overlay.style.display = 'none';
+      ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
       clearCinematicOverlayMode();
       isCinematicIntro = false;
       isPlaying = true;
       bossIntroPlaying = false;
+      if (ui.gameUI) ui.gameUI.style.display = 'block';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
       ui.bossPhase2.className = 'boss-segment active-segment';
@@ -60,7 +60,7 @@
     setOverlayState('cinematic');
     isCinematicIntro = true;
     isPlaying = false;
-    ui.overlay.style.display = 'flex';
+    setCinematicOverlayMode();
 
     const bossName = levelData.boss === 'aegis' ? 'THE AEGIS CORE' : 'THE PRISM';
     const bossTagline = levelData.boss === 'aegis'
@@ -70,8 +70,6 @@
     ui.title.innerText = bossName;
     ui.title.style.color = '#ff3366';
     ui.subtitle.innerText = bossTagline;
-    ui.btn.style.display = 'none';
-    forceHideOverlayExtras();
 
     triggerScreenShake(16);
     pulseBrightness(1.8, 180);
@@ -81,9 +79,11 @@
 
     setTimeout(() => {
       ui.overlay.style.display = 'none';
+      ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
       clearCinematicOverlayMode();
       isCinematicIntro = false;
       isPlaying = true;
+      if (ui.gameUI) ui.gameUI.style.display = 'block';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
       ui.bossPhase2.className = 'boss-segment active-segment';
