@@ -106,9 +106,29 @@
     const mechanics = levelData.mechanics || [];
     const count = levelData.targets || 1;
     const spacing = (Math.PI * 2) / count;
+    const id = levelData?.id || '';
+
+    // Restore the original bespoke intro logic for 2-1.
+    // This stage works best as a deterministic corner tutorial:
+    // true corners only, predictable cycling, no random anchor drift.
+    if (id === '2-1') {
+      const corners = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+      const cornerIdx = stageHits % 4;
+
+      targets.push(buildCornerPrecisionTarget(corners[cornerIdx], {
+        backWindow: 0.135,
+        overshootWindow: 0.135,
+        perfectWindow: 0.015,
+        hitboxExpand: 0.028,
+        color: '#90fcff',
+        move: levelData.moveSpeed || 0
+      }));
+      return;
+    }
 
     for (let i = 0; i < count; i++) {
       const base = normalizeAngle((Math.random() * Math.PI * 2) + (i * spacing * 0.35));
+
       if (mechanics.includes('corner') && (mechanics.length === 1 || Math.random() < 0.45)) {
         targets.push(buildCornerPrecisionTarget(base + (Math.random() * 0.3 - 0.15), {
           color: '#ffd54a',
@@ -125,7 +145,9 @@
           color: '#d594ff'
         }));
       } else {
-        targets.push(buildTarget(base, Math.PI / 4.5, { move: levelData.moveSpeed || 0 }));
+        targets.push(buildTarget(base, Math.PI / 4.5, {
+          move: levelData.moveSpeed || 0
+        }));
       }
     }
   }
