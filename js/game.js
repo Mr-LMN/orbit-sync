@@ -3187,7 +3187,7 @@ function tap() {
       const perfectThreshold = targetHalfWidth * 0.5;
 
       if (Math.abs(diff) <= targetHalfWidth) {
-        if (t.dualState === 'full') {
+        if (t.isDual && t.dualState === 'full') {
           if (Math.abs(diff) <= perfectThreshold) {
             // PERFECT CENTER HIT
             t.dualState = 'cleared';
@@ -3210,14 +3210,21 @@ function tap() {
             createPopup(hitX, hitY - 30, "HALF CLEARED", "#ffffff");
             return; // Do not clear the target! Let it loop around.
           }
-        } else {
+        } else if (t.isDual && t.dualState !== 'cleared') {
           // FINISHING OFF THE REMAINING HALF
-          const wasLeft = t.dualState === 'left';
+          const remainingState = t.dualState;
           t.dualState = 'cleared';
           t.active = false;
-          createParticles(hitX, hitY, wasLeft ? '#00e5ff' : '#ff00cc', 18);
+          const pColor = remainingState === 'left' ? '#00e5ff' : '#ff00cc';
+          createParticles(hitX, hitY, pColor, 18);
           if (audioCtx) playPop(1, false, true);
           createPopup(hitX, hitY - 22, "LINKED", "#00ff88");
+        } else {
+          // STANDARD TARGET
+          t.dualState = 'cleared';
+          t.active = false;
+          createParticles(hitX, hitY, '#00ff88', 20);
+          if (audioCtx) playPop(1, false, true);
         }
       }
     } else if ((t.mechanic === 'split' || t.mechanic === 'splitChild') && t.splitOnHit) {
