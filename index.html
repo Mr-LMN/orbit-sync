@@ -139,7 +139,7 @@
         </button>
         <div id="overlayButtonGroup" class="overlay-button-group">
           <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">ONE MORE TRY</button>
-          <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">REVIVE (🪙 50)</button>
+          <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">REVIVE (🪙 50)</button>
           <button id="actionBtn" class="btn btn-play" onclick="if(audioCtx) soundUIClick();">Restart World</button>
           <button id="menuBtn" class="btn btn-shop" onclick="if(audioCtx) soundUIClick();">Main Menu</button>
         </div>
