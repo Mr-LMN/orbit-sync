@@ -3014,16 +3014,12 @@ function handleFail(reason) {
       reviveBtn.style.display = 'none';
     }
 
-    if (coinReviveBtn && globalCoins >= currentReviveCost) {
+    if (coinReviveBtn && globalCoins >= 50) {
       coinReviveBtn.style.display = 'block';
-      coinReviveBtn.innerText = `REVIVE (🪙 ${currentReviveCost})`;
+      coinReviveBtn.innerText = 'REVIVE (🪙 50)';
       coinReviveBtn.onclick = function () {
-        globalCoins -= currentReviveCost;
-        saveData();
-        updatePersistentCoinUI();
-        currentReviveCost *= 2;
-        reviveCount++;
-        restartCurrentStageAfterRevive();
+        if (audioCtx) soundUIClick();
+        attemptCoinRevive();
       };
     }
   }
@@ -3054,6 +3050,34 @@ function restartCurrentStageAfterRevive() {
   clearCinematicOverlayMode();
   updatePersistentCoinUI();
   markScoreCoinDirty(true);
+}
+
+function revive() {
+  reviveCount++;
+  restartCurrentStageAfterRevive();
+}
+
+function attemptCoinRevive() {
+  if (globalCoins >= 50) {
+    globalCoins -= 50;
+    saveData(); // Save the new balance
+    ui.coins.innerText = Math.floor(globalCoins);
+
+    // Flash the screen gold for a premium purchase feel
+    canvas.style.boxShadow = 'inset 0 0 100px #ffaa00';
+    setTimeout(() => canvas.style.boxShadow = 'none', 300);
+    if (audioCtx) playPop(8, true); // Success ding
+
+    // Trigger standard revive logic
+    revive();
+  } else {
+    // Not enough coins! Shake the button and play error sound
+    let btn = document.getElementById('coinReviveBtn');
+    btn.style.transform = 'translateX(-10px)';
+    setTimeout(() => btn.style.transform = 'translateX(10px)', 50);
+    setTimeout(() => btn.style.transform = 'translateX(0)', 100);
+    if (audioCtx) soundFail();
+  }
 }
 
 function tap() {
