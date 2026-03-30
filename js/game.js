@@ -2330,38 +2330,76 @@ function draw() {
     }
 
     if (t.isDual && t.dualState !== 'cleared') {
-      const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
-      const pt = getPointOnShape(centerAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-
       ctx.save();
-      ctx.translate(pt.x, pt.y);
-      ctx.rotate(centerAngle + Math.PI / 2);
-      ctx.globalAlpha = 0.98;
+      const halfSize = t.targetHalfWidth || (t.size / 2);
+      const leftStart = t.start;
+      const leftEnd = t.start + halfSize;
+      const rightStart = t.start + halfSize;
+      const rightEnd = t.start + t.size;
 
-      // Left Half (Cyan)
+      // Left half (cyan) — drawn as arc segment along the track
       if (t.dualState === 'full' || t.dualState === 'left') {
-        ctx.fillStyle = '#00e5ff';
+        // Glow
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
+          dynamicRadius, leftStart, leftEnd);
+        ctx.strokeStyle = '#00e5ff';
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = glowWidth;
+        ctx.lineCap = 'butt';
+        setShadowBlur(20);
         ctx.shadowColor = '#00e5ff';
-        ctx.shadowBlur = 15;
-        ctx.fillRect(-16, -8, 16, 16);
+        ctx.stroke();
+        // Core
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
+          dynamicRadius, leftStart, leftEnd);
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = 0.95;
+        ctx.lineWidth = bodyWidth;
+        setShadowBlur(10);
+        ctx.shadowColor = '#00e5ff';
+        ctx.stroke();
       }
 
-      // Right Half (Pink)
+      // Right half (magenta) — drawn as arc segment along the track
       if (t.dualState === 'full' || t.dualState === 'right') {
-        ctx.fillStyle = '#ff00cc';
+        // Glow
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
+          dynamicRadius, rightStart, rightEnd);
+        ctx.strokeStyle = '#ff00cc';
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = glowWidth;
+        ctx.lineCap = 'butt';
+        setShadowBlur(20);
         ctx.shadowColor = '#ff00cc';
-        ctx.shadowBlur = 15;
-        ctx.fillRect(0, -8, 16, 16);
+        ctx.stroke();
+        // Core
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
+          dynamicRadius, rightStart, rightEnd);
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = 0.95;
+        ctx.lineWidth = bodyWidth;
+        setShadowBlur(10);
+        ctx.shadowColor = '#ff00cc';
+        ctx.stroke();
       }
 
-      // Pure White Perfect Center Stripe
+      // Perfect center divider — bright white dot at the split point
       if (t.dualState === 'full') {
+        const splitPt = getPointOnShape(
+          t.start + halfSize, worldShape,
+          centerObj.x, centerObj.y, dynamicRadius
+        );
+        ctx.beginPath();
+        ctx.arc(splitPt.x, splitPt.y, 3.5, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 1.0;
+        ctx.shadowBlur = 14;
         ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur = 20;
-        ctx.fillRect(-2, -12, 4, 24);
+        ctx.fill();
       }
 
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
       ctx.restore();
       return;
     }
