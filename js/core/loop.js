@@ -2295,7 +2295,9 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   }, 1000);
 }
 
-document.addEventListener('touchstart', (e) => { if (e.target.tagName !== 'BUTTON') { e.preventDefault(); tap(); } }, { passive: false });
-document.addEventListener('mousedown', (e) => { if (e.target.tagName !== 'BUTTON') tap(); });
 
-levelData = campaign[0]; spawnTargets(); updateShopUI(); menuSelectedWorld = maxWorldUnlocked; updateWorldSelectorUI(); refreshMenuWorldPreview(); requestAnimationFrame(update);
+
+OrbitGame.core = OrbitGame.core || {};
+OrbitGame.core.loop = OrbitGame.core.loop || {};
+OrbitGame.core.loop.update = update;
+OrbitGame.core.loop.draw = draw;
