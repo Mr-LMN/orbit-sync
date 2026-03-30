@@ -1919,42 +1919,6 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // === DIAMOND SHAPE LANE ENHANCEMENTS ===
-  if (worldShape === 'diamond') {
-    ctx.save();
-    ctx.lineJoin = 'miter'; // sharp corners
-
-    // Clean straight energy lane
-    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2, 8); // low steps = perfectly straight sides
-
-    ctx.strokeStyle = '#ff80ff';
-    ctx.lineWidth = 5;
-    ctx.shadowBlur = 24;
-    ctx.shadowColor = '#ff99ff';
-    ctx.stroke();
-
-    // Subtle inner facet line (no extra glows)
-    ctx.shadowBlur = 0;
-    ctx.lineWidth = 2.5;
-    ctx.globalAlpha = 0.65;
-    ctx.strokeStyle = '#ffffff';
-    ctx.stroke();
-
-    ctx.restore();
-
-    // Strong corner highlights only (no circular blobs)
-    const cornerAngles = [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4];
-    cornerAngles.forEach(corner => {
-      const p = getPointOnShape(corner, 'diamond', centerObj.x, centerObj.y, orbitRadius);
-      const pulse = 0.8 + Math.sin(now / 380) * 0.2;
-
-      // Small bright prism at exact corner
-      ctx.fillStyle = `rgba(255, 200, 255, ${pulse * 0.9})`;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
 
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
   // so shield segments remain readable against the bright lane, especially on small screens.
@@ -1996,18 +1960,9 @@ function draw() {
     const glowWidth = bodyWidth + 4;
     const housingWidth = glowWidth + 4;
     const isLiteTargetRender = !useHeavyEffects && !isBossShield;
-    const isDiamondWorldTarget = worldNum === 2 && worldShape === 'diamond' && !isBoss && !isBossShield;
-    const targetGlowColor = isDiamondWorldTarget ? '#ffd8ff' : t.color;
-    const targetCoreColor = isDiamondWorldTarget ? '#6f1a6f' : (isBossShield ? t.color : '#ffffff');
-
     // Stronger target contrast on diamond (especially during streaks)
     let targetAlpha = isBossShield ? (0.27 + approach * 0.27 + hitFlash * 0.2) : (0.45 + approach * 0.25 + hitFlash * 0.3);
     let targetCoreAlpha = isBossShield ? 0.94 : 0.92;
-
-    if (worldShape === 'diamond') {
-      targetAlpha = Math.min(1.0, targetAlpha * 1.35);     // bolder
-      targetCoreAlpha = Math.min(1.0, targetCoreAlpha * 1.2);
-    }
 
     if (t.isPhantom) {
       ctx.save();
@@ -2184,39 +2139,39 @@ function draw() {
     ctx.beginPath();
     buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     // World 2 diamond targets get brighter outer edge + stronger presence for readability.
-    ctx.strokeStyle = targetGlowColor;
+    ctx.strokeStyle = t.color;
     ctx.globalAlpha = Math.min(1, targetAlpha * pulse);
     ctx.lineWidth = isBossShield
       ? (shieldBodyWidth + 3.6 + (approach * 1.15) + (hitFlash * 1.05))
-      : (glowWidth + (isDiamondWorldTarget ? 1.9 : 1.5) + (approach * (isDiamondWorldTarget ? 1.9 : 1.5)) + (hitFlash * (isDiamondWorldTarget ? 1.4 : 1.2)));
+      : (glowWidth + 1.5 + (approach * 1.5) + (hitFlash * 1.2));
     setShadowBlur(isBossShield
       ? (12 + (approach * 12) + (hitFlash * 10))
-      : ((isDiamondWorldTarget ? 20 : 16) + (approach * (isDiamondWorldTarget ? 20 : 18)) + (hitFlash * (isDiamondWorldTarget ? 16 : 14))));
-    ctx.shadowColor = targetGlowColor;
+      : (16 + (approach * 18) + (hitFlash * 14)));
+    ctx.shadowColor = t.color;
     ctx.stroke();
 
     if (!isLiteTargetRender) {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       // High-contrast core (darker in World 2 diamond) to stand out during streaks.
-      ctx.strokeStyle = targetCoreColor;
+      ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
       ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = isBossShield
         ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
-        : ((isDiamondWorldTarget ? Math.max(2.4, bodyWidth * 0.86) : bodyWidth) + (approach * 0.8) + (hitFlash * 0.9));
+        : (bodyWidth + (approach * 0.8) + (hitFlash * 0.9));
       setShadowBlur(isBossShield
         ? (7 + (approach * 6) + (hitFlash * 9))
-        : ((isDiamondWorldTarget ? 4 : 10) + (approach * (isDiamondWorldTarget ? 4 : 12)) + (hitFlash * (isDiamondWorldTarget ? 6 : 16))));
-      ctx.shadowColor = isDiamondWorldTarget ? '#ffedff' : t.color;
+        : (10 + (approach * 12) + (hitFlash * 16)));
+      ctx.shadowColor = t.color;
       ctx.stroke();
     } else {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = isDiamondWorldTarget ? targetCoreColor : t.color;
+      ctx.strokeStyle = t.color;
       ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = bodyWidth + 1 + (approach * 0.8) + (hitFlash * 0.9);
-      setShadowBlur((isDiamondWorldTarget ? 3 : 6) + (approach * 6) + (hitFlash * 8));
-      ctx.shadowColor = isDiamondWorldTarget ? '#ffedff' : t.color;
+      setShadowBlur(6 + (approach * 6) + (hitFlash * 8));
+      ctx.shadowColor = t.color;
       ctx.stroke();
     }
 
