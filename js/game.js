@@ -1795,7 +1795,7 @@ function spawnWorld2CornerBonusTargets() {
 }
 
 function buildCornerPrecisionTarget(anchorAngle, options = {}) {
-  const backWindow = options.backWindow ?? 0.045;
+  const backWindow = options.backWindow ?? 0.09;
   const overshootWindow = options.overshootWindow ?? 0.09;
   return buildTarget(anchorAngle - backWindow, backWindow + overshootWindow, {
     color: options.color || '#5cf6ff',
@@ -1844,8 +1844,8 @@ function spawnWorld2MechanicTargets() {
   if (id === '2-1') {
     const cornerIdx = stageHits % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], {
-      backWindow: 0.018,
-      overshootWindow: 0.1,
+      backWindow: 0.09,
+      overshootWindow: 0.09,
       perfectWindow: 0.015,
       color: '#90fcff'
     }));
@@ -2820,9 +2820,9 @@ function update() {
     if (!inMenu && t.mechanic === 'dual' && t.active && Array.isArray(t.dualHits)) {
       const allSegmentsCleared = t.dualHits.every(Boolean);
       const insideNow = isInsideTarget(angle, t);
+      const hasStartedDualChain = t.dualHits.some(Boolean);
       if (!allSegmentsCleared) {
-        if (insideNow) t.dualInsideWindow = true;
-        if (t.dualInsideWindow && !insideNow && !deferredFailReason) {
+        if (hasStartedDualChain && t.dualInsideWindow && !insideNow && !deferredFailReason) {
           deferredFailReason = 'DUAL TARGET DROPPED';
         }
       }
