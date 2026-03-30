@@ -2000,8 +2000,8 @@ function draw() {
     const isBossShield = !!t.isBossShield;
     const bodyWidth = baseBodyWidth;
     const shieldBodyWidth = bodyWidth + 1.4;
-    const glowWidth = bodyWidth + 4;
-    const housingWidth = glowWidth + 4;
+    const glowWidth = worldShape === 'diamond' ? bodyWidth + 1.5 : bodyWidth + 4;
+    const housingWidth = worldShape === 'diamond' ? glowWidth + 2 : glowWidth + 4;
     const isLiteTargetRender = !useHeavyEffects && !isBossShield;
     // Stronger target contrast on diamond (especially during streaks)
     let targetAlpha = isBossShield ? (0.27 + approach * 0.27 + hitFlash * 0.2) : (0.45 + approach * 0.25 + hitFlash * 0.3);
@@ -2152,7 +2152,9 @@ function draw() {
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
       ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
-      ctx.lineWidth = isBossShield ? (housingWidth + 2.6) : housingWidth;
+      ctx.lineWidth = isBossShield
+        ? (housingWidth + 2.6)
+        : (worldShape === 'diamond' ? housingWidth - 2 : housingWidth);
       ctx.lineCap = 'butt';
       ctx.shadowBlur = 0;
       ctx.stroke();
@@ -2184,9 +2186,10 @@ function draw() {
     // World 2 diamond targets get brighter outer edge + stronger presence for readability.
     ctx.strokeStyle = t.color;
     ctx.globalAlpha = Math.min(1, targetAlpha * pulse);
+    const glowMult = worldShape === 'diamond' ? 0.6 : 1.0;
     ctx.lineWidth = isBossShield
       ? (shieldBodyWidth + 3.6 + (approach * 1.15) + (hitFlash * 1.05))
-      : (glowWidth + 1.5 + (approach * 1.5) + (hitFlash * 1.2));
+      : (glowWidth + (approach * 1.5 * glowMult) + (hitFlash * 1.2 * glowMult));
     setShadowBlur(isBossShield
       ? (12 + (approach * 12) + (hitFlash * 10))
       : (16 + (approach * 18) + (hitFlash * 14)));
