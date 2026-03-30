@@ -1875,7 +1875,7 @@ function spawnWorld2MechanicTargets() {
 
   if (id === '2-3') {
     const base = (Math.random() * Math.PI * 2);
-    targets.push(buildSplitTarget(base, Math.PI / 9, { color: '#b08bff' }));
+    targets.push(buildSplitTarget(base, Math.PI / 9, { color: '#ffaa00' }));
     return;
   }
 
@@ -1888,7 +1888,7 @@ function spawnWorld2MechanicTargets() {
         perfectWindow: 0.016
       }));
     } else {
-      targets.push(buildSplitTarget((corners[(cornerIdx + 2) % 4] + 0.15) % (Math.PI * 2), Math.PI / 10, { color: '#c389ff' }));
+      targets.push(buildSplitTarget((corners[(cornerIdx + 2) % 4] + 0.15) % (Math.PI * 2), Math.PI / 10, { color: '#ffcc00' }));
     }
     return;
   }
@@ -1900,7 +1900,7 @@ function spawnWorld2MechanicTargets() {
       halfSize: 0.10,
       perfectWindow: 0.014
     }));
-    targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#d97cff' }));
+    targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#ff8c00' }));
   }
 }
 
@@ -3182,9 +3182,27 @@ function tap() {
     const diffFromCenter = signedAngularDistance(angle, centerAngle);
     let isHit = (endAngle > Math.PI * 2) ? (angle >= targets[i].start || angle <= (endAngle - Math.PI * 2)) : (angle >= targets[i].start && angle <= endAngle);
     if (t.isDual && t.dualState !== 'cleared') {
-      if (t.dualState === 'left') isHit = diffFromCenter >= -targetHalfWidth && diffFromCenter <= 0;
-      else if (t.dualState === 'right') isHit = diffFromCenter >= 0 && diffFromCenter <= targetHalfWidth;
-      else isHit = Math.abs(diffFromCenter) <= targetHalfWidth;
+      const splitAngle = normalizeAngle(t.start + (t.targetHalfWidth || t.size / 2));
+      const fullEnd = normalizeAngle(t.start + t.size);
+      const normPlayer = normalizeAngle(angle);
+      const normStart = normalizeAngle(t.start);
+
+      // Arc-based check — no signed distance confusion
+      function inArc(a, start, end) {
+        const s = normalizeAngle(start);
+        const e = normalizeAngle(end);
+        return e >= s
+          ? (a >= s && a <= e)
+          : (a >= s || a <= e);
+      }
+
+      if (t.dualState === 'left') {
+        isHit = inArc(normPlayer, normStart, splitAngle);
+      } else if (t.dualState === 'right') {
+        isHit = inArc(normPlayer, splitAngle, fullEnd);
+      } else {
+        isHit = inArc(normPlayer, normStart, fullEnd);
+      }
     }
 
     if (isHit) {
@@ -3218,11 +3236,24 @@ function tap() {
           continue;
         }
       } else if (t.isDual && t.dualState !== 'cleared') {
-        const diff = diffFromCenter;
-        const perfectThreshold = targetHalfWidth * 0.5;
-        if (Math.abs(diff) <= perfectThreshold) hitQuality = "perfect";
-        else if (Math.abs(diff) <= targetHalfWidth * 0.68) hitQuality = "good";
-        else hitQuality = "ok";
+        const splitAngle = normalizeAngle(t.start + (t.targetHalfWidth || t.size / 2));
+        const distToSplit = Math.abs(signedAngularDistance(angle, splitAngle));
+        const halfSize = t.targetHalfWidth || t.size / 2;
+        if (t.dualState === 'full') {
+          // Perfect = near the split point, good = within inner half, ok = outer edge
+          if (distToSplit <= halfSize * 0.22) hitQuality = "perfect";
+          else if (distToSplit <= halfSize * 0.55) hitQuality = "good";
+          else hitQuality = "ok";
+        } else {
+          // Remaining half — any hit counts, quality based on distance to its center
+          const remainCenter = t.dualState === 'left'
+            ? normalizeAngle(t.start + halfSize / 2)
+            : normalizeAngle(t.start + halfSize + halfSize / 2);
+          const distToCenter = Math.abs(signedAngularDistance(angle, remainCenter));
+          if (distToCenter <= halfSize * 0.3) hitQuality = "perfect";
+          else if (distToCenter <= halfSize * 0.6) hitQuality = "good";
+          else hitQuality = "ok";
+        }
       } else {
         if (dist < targets[i].size / 6) hitQuality = "perfect";
         else if (dist < targets[i].size / 3) hitQuality = "good";
@@ -3328,7 +3359,7 @@ function tap() {
         const splitGap = nextDepth === 1 ? 0.05 : 0.03;
         const childSize = Math.max(Math.PI / 34, t.size * 0.48);
         targets.push(buildTarget(normalizeAngle(t.start - splitGap), childSize, {
-          color: '#d594ff',
+          color: '#ffaa00',
           active: true,
           hp: 1,
           mechanic: 'splitChild',
@@ -3336,7 +3367,7 @@ function tap() {
           splitDepth: nextDepth
         }));
         targets.push(buildTarget(normalizeAngle(t.start + t.size - childSize + splitGap), childSize, {
-          color: '#8df8ff',
+          color: '#ffffff',
           active: true,
           hp: 1,
           mechanic: 'splitChild',
