@@ -1795,23 +1795,26 @@ function spawnWorld2CornerBonusTargets() {
 }
 
 function buildCornerPrecisionTarget(anchorAngle, options = {}) {
-  const backWindow = options.backWindow ?? 0.09;
-  const overshootWindow = options.overshootWindow ?? 0.09;
-  return buildTarget(anchorAngle - backWindow, backWindow + overshootWindow, {
-    color: options.color || '#5cf6ff',
+  const backWindow = options.backWindow ?? 0.135;
+  const overshootWindow = options.overshootWindow ?? 0.135;
+  const perfectWindow = options.perfectWindow ?? 0.015;
+
+  return buildTarget(normalizeAngle(anchorAngle - backWindow), backWindow + overshootWindow, {
+    color: options.color || '#90fcff',
     active: true,
     hp: 1,
-    mechanic: 'cornerPrecision',
+    mechanic: 'corner',
     cornerAnchor: anchorAngle,
     cornerBackWindow: backWindow,
     cornerOvershootWindow: overshootWindow,
-    perfectWindow: options.perfectWindow ?? 0.018
+    cornerPerfectWindow: perfectWindow,
+    cornerHitboxExpand: options.hitboxExpand ?? 0.028
   });
 }
 
 function buildDualTarget(startAngle, options = {}) {
-  const halfSize = options.halfSize ?? 0.045;
-  const perfectWindow = options.perfectWindow ?? 0.014;
+  const halfSize = options.halfSize ?? 0.068;
+  const perfectWindow = options.perfectWindow ?? 0.018;
   const totalSize = halfSize * 2;
 
   return buildTarget(startAngle, totalSize, {
@@ -1849,6 +1852,7 @@ function spawnWorld2MechanicTargets() {
       backWindow: 0.135,
       overshootWindow: 0.135,
       perfectWindow: 0.015,
+      hitboxExpand: 0.028,
       color: '#90fcff'
     }));
     return;
@@ -1856,7 +1860,10 @@ function spawnWorld2MechanicTargets() {
 
   if (id === '2-2') {
     const base = (Math.random() * Math.PI * 2);
-    targets.push(buildDualTarget(base, { halfSize: 0.045, perfectWindow: 0.014 }));
+    targets.push(buildDualTarget(base, {
+      halfSize: 0.068,
+      perfectWindow: 0.018
+    }));
     return;
   }
 
@@ -1870,7 +1877,10 @@ function spawnWorld2MechanicTargets() {
     const cornerIdx = stageHits % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.075, perfectWindow: 0.016, color: '#74f9ff' }));
     if (stageHits % 2 === 0) {
-      targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), { halfSize: 0.04, perfectWindow: 0.013 }));
+      targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), {
+        halfSize: 0.056,
+        perfectWindow: 0.016
+      }));
     } else {
       targets.push(buildSplitTarget((corners[(cornerIdx + 2) % 4] + 0.15) % (Math.PI * 2), Math.PI / 10, { color: '#c389ff' }));
     }
@@ -1880,7 +1890,10 @@ function spawnWorld2MechanicTargets() {
   if (id === '2-5') {
     const cornerIdx = (stageHits + 1) % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { backWindow: 0.03, overshootWindow: 0.06, perfectWindow: 0.012, color: '#90fcff' }));
-    targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), { halfSize: 0.038, perfectWindow: 0.012 }));
+    targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), {
+      halfSize: 0.05,
+      perfectWindow: 0.014
+    }));
     targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#d97cff' }));
   }
 }
@@ -2280,7 +2293,7 @@ function draw() {
       return;
     }
 
-    if (t.mechanic === 'cornerPrecision') {
+    if (t.mechanic === 'corner') {
       ctx.save();
       const markerPt = getPointOnShape(t.cornerAnchor, worldShape, centerObj.x, centerObj.y, dynamicRadius);
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
@@ -2305,10 +2318,11 @@ function draw() {
     if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
       ctx.save();
 
+      // faint full-lane silhouette so it still reads as one target
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-      ctx.globalAlpha = 0.9;
-      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+      ctx.globalAlpha = 0.95;
+      ctx.lineWidth = 7.5;
       ctx.lineCap = 'round';
       ctx.shadowBlur = 10;
       ctx.shadowColor = '#ffffff';
@@ -2320,30 +2334,33 @@ function draw() {
         const segEnd = segStart + seg.size;
 
         if (!cleared) {
+          // coloured outer glow
           buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, segStart, segEnd);
           ctx.strokeStyle = seg.color;
-          ctx.globalAlpha = 0.92;
-          ctx.lineWidth = 6.2;
+          ctx.globalAlpha = 0.96;
+          ctx.lineWidth = 7.2;
           ctx.lineCap = 'round';
-          ctx.shadowBlur = 14;
+          ctx.shadowBlur = 16;
           ctx.shadowColor = seg.color;
           ctx.stroke();
 
+          // hot inner core
           buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, segStart, segEnd);
           ctx.strokeStyle = '#ffffff';
-          ctx.globalAlpha = 0.95;
-          ctx.lineWidth = 2.8;
-          ctx.shadowBlur = 6;
+          ctx.globalAlpha = 0.9;
+          ctx.lineWidth = 3.2;
+          ctx.shadowBlur = 8;
           ctx.shadowColor = seg.color;
           ctx.stroke();
         }
       });
 
+      // subtle center pip to teach "perfect centre clears both"
       const centerPt = getPointOnShape(t.start + t.size / 2, worldShape, centerObj.x, centerObj.y, dynamicRadius);
       ctx.beginPath();
-      ctx.arc(centerPt.x, centerPt.y, 2.4, 0, Math.PI * 2);
+      ctx.arc(centerPt.x, centerPt.y, 2.8, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = 0.75;
+      ctx.globalAlpha = 0.7;
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#ffffff';
       ctx.fill();
@@ -3050,12 +3067,33 @@ function tap() {
       const t = targets[i];
       hitIndex = i;
       let dist = Math.abs(signedAngularDistance(angle, tCenter));
-      if (t.mechanic === 'cornerPrecision') {
-        const cornerDiff = signedAngularDistance(angle, t.cornerAnchor);
-        if (Math.abs(cornerDiff) <= (t.perfectWindow || 0.018)) hitQuality = "perfect";
-        else if (cornerDiff > 0 && cornerDiff <= (t.cornerOvershootWindow || 0.08)) hitQuality = "ok";
-        else if (cornerDiff > -(t.cornerBackWindow || 0.04)) hitQuality = "ok";
-        else continue;
+      if (t.mechanic === 'corner') {
+        const localAngle = normalizeAngle(angle - t.start);
+
+        const visiblePerfectWindow = t.cornerPerfectWindow || 0.015;
+        const visibleBackWindow = t.cornerBackWindow || 0.135;
+        const visibleOvershootWindow = t.cornerOvershootWindow || 0.135;
+
+        // hidden forgiveness margins so the target feels fair
+        const hitboxExpand = t.cornerHitboxExpand || 0.028;
+
+        const backWindow = visibleBackWindow + hitboxExpand;
+        const overshootWindow = visibleOvershootWindow + hitboxExpand;
+
+        const perfectStart = visibleBackWindow - visiblePerfectWindow;
+        const perfectEnd = visibleBackWindow + visiblePerfectWindow;
+
+        if (localAngle >= 0 && localAngle <= (backWindow + overshootWindow)) {
+          if (localAngle >= (perfectStart - hitboxExpand * 0.25) && localAngle <= (perfectEnd + hitboxExpand * 0.25)) {
+            hitQuality = "perfect";
+          } else if (Math.abs(localAngle - visibleBackWindow) < (backWindow * 0.72)) {
+            hitQuality = "good";
+          } else {
+            hitQuality = "ok";
+          }
+        } else {
+          continue;
+        }
       } else if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
         const localAngle = normalizeAngle(angle - t.start);
         const totalCenter = t.size / 2;
