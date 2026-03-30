@@ -5,6 +5,9 @@
 
   function spawnTargets() {
     targets = [];
+    if (OrbitGame.systems && OrbitGame.systems.splitControl) {
+      OrbitGame.systems.splitControl.resetSplitFamilyState();
+    }
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
     if (levelData.boss === 'aegis') {
