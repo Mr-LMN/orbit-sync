@@ -9,6 +9,6 @@ const campaign = [
   { id: "2-2", title: "Dual Hit Circuit", hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ["dual"], text: "Each target has 2 coloured halves. Hit one side or land dead-centre to clear both." },
   { id: "2-3", title: "Split Reaction", hitsNeeded: 5, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ["split"], text: "Hit once to split. Hit again to shatter the fragments." },
   { id: "2-4", title: "Mixed Mechanics", hitsNeeded: 6, speed: 0.035, lives: 3, targets: 2, moveSpeed: 0.003, reverse: false, mechanics: ["corner", "dual", "split"], text: "Corners return with layered targets. Read fast and commit cleanly." },
-  { id: "2-5", title: "Pressure Wave", hitsNeeded: 8, speed: 0.038, lives: 3, targets: 2, moveSpeed: 0.0045, reverse: false, mechanics: ["corner", "dual", "split"], pressure: true, text: "Fast reads, mixed mechanics, cleaner pressure before the boss." },
+  { id: "2-5", title: "Pressure Wave", hitsNeeded: 8, speed: 0.038, lives: 3, targets: 2, moveSpeed: 0.0045, reverse: false, mechanics: ["corner", "dual", "split"], text: "Fast reads, mixed mechanics, cleaner pressure before the boss." },
   { id: "2-6", title: "The Prism", hitsNeeded: 99, speed: 0.048, lives: 3, boss: 'prism', moveSpeed: 0.025, reverse: true, text: "BOSS: The Prism defends each corner. Break them all." }
 ];
