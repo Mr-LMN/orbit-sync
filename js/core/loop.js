@@ -151,6 +151,8 @@ let brightnessPulseTimeout = null;
 let stageClearHoldUntil = 0;
 let nearMissReplayUntil = 0;
 let nearMissReplayActive = false;
+let activeSplitFamilyId = null;
+let nextSplitFamilyId = 1;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
@@ -601,6 +603,7 @@ function loadLevel(idx) {
   shockwaves = [];
   targetHitRipples = [];
   isBossPhaseTwo = false; bossPhase = 1;
+  resetSplitFamilyState();
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
   ui.lives.innerText = lives; ui.streak.innerText = streak;
@@ -631,6 +634,84 @@ function buildSplitTarget(startAngle, size, options = {}) { return OrbitGame.ent
 function spawnWorld2MechanicTargets() { return OrbitGame.entities.target.spawnWorld2MechanicTargets(); }
 
 function spawnTargets() { return OrbitGame.systems.spawning.spawnTargets(); }
+
+function resetSplitFamilyState() {
+  activeSplitFamilyId = null;
+  nextSplitFamilyId = 1;
+}
+
+function isSplitStageMode(stage = levelData) {
+  return !!(
+    stage &&
+    !stage.boss &&
+    Array.isArray(stage.mechanics) &&
+    stage.mechanics.includes('split')
+  );
+}
+
+function getNextSplitFamilyId() {
+  const id = nextSplitFamilyId;
+  nextSplitFamilyId += 1;
+  return id;
+}
+
+function isSplitEntity(t) {
+  return !!(t && (t.mechanic === 'split' || t.mechanic === 'splitChild'));
+}
+
+function getActiveSplitFamilyMembers(familyId) {
+  return targets.filter((t) => t.active && isSplitEntity(t) && (familyId == null || t.splitFamilyId === familyId));
+}
+
+function hasActiveSplitFamily() {
+  return getActiveSplitFamilyMembers().length > 0;
+}
+
+function spawnControlledSplitRoot(options = {}) {
+  if (!isSplitStageMode()) return null;
+  const familyId = getNextSplitFamilyId();
+  const size = options.size || Math.PI / 4.2;
+  const baseStart = typeof options.startAngle === 'number'
+    ? normalizeAngle(options.startAngle)
+    : normalizeAngle((Math.random() * Math.PI * 2) - (size / 2));
+  const splitRoot = buildSplitTarget(baseStart, size, {
+    move: options.move ?? (levelData.moveSpeed || 0),
+    color: options.color || '#2ff6ff',
+    splitFamilyId: familyId,
+    splitGeneration: 0,
+    splitDepth: 0,
+    splitOnHit: true
+  });
+  splitRoot.splitFamilyId = familyId;
+  splitRoot.splitGeneration = 0;
+  splitRoot.splitDepth = 0;
+  splitRoot.splitOnHit = true;
+  splitRoot.hp = 1;
+  splitRoot.active = true;
+  activeSplitFamilyId = familyId;
+  targets.push(splitRoot);
+  return splitRoot;
+}
+
+function maybeRespawnSplitRootForStage(clearedFamilyId) {
+  if (!isSplitStageMode() || !clearedFamilyId) return false;
+  if (stageHits >= levelData.hitsNeeded || !isPlaying) return false;
+  if (getActiveSplitFamilyMembers(clearedFamilyId).length > 0) return false;
+  if (hasActiveSplitFamily()) return false;
+  spawnControlledSplitRoot();
+  return true;
+}
+
+OrbitGame.systems = OrbitGame.systems || {};
+OrbitGame.systems.splitControl = {
+  resetSplitFamilyState,
+  isSplitStageMode,
+  getActiveSplitFamilyMembers,
+  hasActiveSplitFamily,
+  spawnControlledSplitRoot,
+  maybeRespawnSplitRootForStage,
+  get activeSplitFamilyId() { return activeSplitFamilyId; }
+};
 
 function draw() {
   const palette = currentWorldPalette;
@@ -1054,8 +1135,8 @@ function draw() {
     if (t.mechanic === 'split' || t.mechanic === 'splitChild') {
       ctx.save();
 
-      const depth = t.splitDepth || 0;
-      const isRootSplit = t.mechanic === 'split';
+      const depth = Number.isFinite(t.splitGeneration) ? t.splitGeneration : (t.splitDepth || 0);
+      const isRootSplit = depth === 0;
 
       const palette = depth === 0
         ? { glow: '#7cf7ff', body: '#23d7ff', core: '#ffffff', accent: '#b8ffff' }
@@ -1065,9 +1146,9 @@ function draw() {
 
       const pulse = 1 + Math.sin((performance.now() * 0.015) + (t.start * 6.5)) * 0.045;
       const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
-      const outerWidth = (isRootSplit ? 15 : depth === 1 ? 12 : 10) * pulse;
-      const midWidth = (isRootSplit ? 7 : depth === 1 ? 5.2 : 4.4) * pulse;
-      const coreWidth = (isRootSplit ? 2.8 : 2.2) * pulse;
+      const outerWidth = (depth === 0 ? 15 : depth === 1 ? 10.8 : 7.8) * pulse;
+      const midWidth = (depth === 0 ? 7 : depth === 1 ? 4.8 : 3.4) * pulse;
+      const coreWidth = (depth === 0 ? 2.8 : depth === 1 ? 2.1 : 1.6) * pulse;
 
       // Big readable outer glow
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
@@ -1100,7 +1181,7 @@ function draw() {
       // End caps so the arc reads properly at speed
       const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
       const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-      const capRadius = isRootSplit ? 4.8 : 3.8;
+      const capRadius = depth === 0 ? 4.8 : depth === 1 ? 3.7 : 2.9;
 
       ctx.beginPath();
       ctx.arc(startPt.x, startPt.y, capRadius, 0, Math.PI * 2);
@@ -1116,7 +1197,7 @@ function draw() {
       const crackPt = getPointOnShape(crackAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
       ctx.beginPath();
-      ctx.arc(crackPt.x, crackPt.y, isRootSplit ? 7 : 5.2, 0, Math.PI * 2);
+      ctx.arc(crackPt.x, crackPt.y, depth === 0 ? 7 : depth === 1 ? 5.1 : 3.9, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
       ctx.globalAlpha = isRootSplit ? 0.16 : 0.12;
       ctx.shadowBlur = 18;
@@ -1124,13 +1205,14 @@ function draw() {
       ctx.fill();
 
       ctx.beginPath();
-      ctx.moveTo(crackPt.x - 6, crackPt.y - 6);
-      ctx.lineTo(crackPt.x + 6, crackPt.y + 6);
-      ctx.moveTo(crackPt.x - 6, crackPt.y + 6);
-      ctx.lineTo(crackPt.x + 6, crackPt.y - 6);
+      const crackSize = depth === 0 ? 6 : depth === 1 ? 4.8 : 3.8;
+      ctx.moveTo(crackPt.x - crackSize, crackPt.y - crackSize);
+      ctx.lineTo(crackPt.x + crackSize, crackPt.y + crackSize);
+      ctx.moveTo(crackPt.x - crackSize, crackPt.y + crackSize);
+      ctx.lineTo(crackPt.x + crackSize, crackPt.y - crackSize);
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = 0.95;
-      ctx.lineWidth = isRootSplit ? 2 : 1.5;
+      ctx.lineWidth = depth === 0 ? 2 : depth === 1 ? 1.5 : 1.2;
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#ffffff';
       ctx.stroke();
@@ -2010,11 +2092,13 @@ function tap() {
           if (audioCtx) playPop(1, false, true);
         }
       }
-    } else if ((t.mechanic === 'split' || t.mechanic === 'splitChild') && t.splitOnHit) {
+    } else if (t.mechanic === 'split' || t.mechanic === 'splitChild') {
+      const splitFamilyId = t.splitFamilyId;
+      const splitGeneration = Number.isFinite(t.splitGeneration) ? t.splitGeneration : (t.splitDepth || 0);
       t.active = false;
 
       const nextDepth = (t.splitDepth || 0) + 1;
-      if (nextDepth <= 2) {
+      if (t.splitOnHit && splitGeneration < 2 && nextDepth <= 2) {
         const parentCenter = normalizeAngle(t.start + (t.size / 2));
         const childSize = Math.max(Math.PI / 40, t.size * 0.8);
 
@@ -2036,12 +2120,16 @@ function tap() {
           hp: 1,
           mechanic: 'splitChild',
           splitOnHit: nextDepth < 2,
-          splitDepth: nextDepth
+          splitDepth: nextDepth,
+          splitFamilyId,
+          splitGeneration: nextDepth
         });
         leftChild.moveSpeed = 0;
         leftChild.splitLaunchT = 0;
         leftChild.splitLaunchFrom = spawnStart;
         leftChild.splitLaunchTarget = leftTargetStart;
+        leftChild.splitFamilyId = splitFamilyId;
+        leftChild.splitGeneration = nextDepth;
         leftChild.hitScalePulse = 1.1;
         leftChild.hitFlash = 1;
 
@@ -2051,12 +2139,16 @@ function tap() {
           hp: 1,
           mechanic: 'splitChild',
           splitOnHit: nextDepth < 2,
-          splitDepth: nextDepth
+          splitDepth: nextDepth,
+          splitFamilyId,
+          splitGeneration: nextDepth
         });
         rightChild.moveSpeed = 0;
         rightChild.splitLaunchT = 0;
         rightChild.splitLaunchFrom = spawnStart;
         rightChild.splitLaunchTarget = rightTargetStart;
+        rightChild.splitFamilyId = splitFamilyId;
+        rightChild.splitGeneration = nextDepth;
         rightChild.hitScalePulse = 1.1;
         rightChild.hitFlash = 1;
 
@@ -2080,6 +2172,7 @@ function tap() {
           nextDepth === 1 ? '#7cf7ff' : '#ffd54a'
         );
       }
+      maybeRespawnSplitRootForStage(splitFamilyId);
     } else {
       t.active = false;
     }

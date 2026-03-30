@@ -23,6 +23,8 @@
       targetHalfWidth: config.targetHalfWidth || null,
       splitOnHit: !!config.splitOnHit,
       splitDepth: config.splitDepth || 0,
+      splitFamilyId: config.splitFamilyId ?? null,
+      splitGeneration: config.splitGeneration || 0,
       hp: config.hp || 1
     };
   }
@@ -58,19 +60,21 @@
       hp: options.hp || 1
     });
     t.targetHalfWidth = size / 2;
-    t.leftColor = options.leftColor || '#00e5ff';
-    t.rightColor = options.rightColor || '#ff00cc';
+    t.leftColor = options.leftColor || '#2ff6ff';
+    t.rightColor = options.rightColor || '#ff4fd8';
     t.coreColor = options.coreColor || '#ffffff';
     return t;
   }
 
   function buildSplitTarget(startAngle, size, options = {}) {
     return buildTarget(normalizeAngle(startAngle), size, {
-      color: options.color || '#d594ff',
+      color: options.color || '#2ff6ff',
       move: options.move || 0,
       mechanic: options.mechanic || 'split',
       splitOnHit: true,
       splitDepth: options.splitDepth || 0,
+      splitFamilyId: options.splitFamilyId ?? null,
+      splitGeneration: options.splitGeneration || 0,
       hp: options.hp || 1
     });
   }
@@ -103,6 +107,7 @@
   }
 
   function spawnWorld2MechanicTargets() {
+    const splitControl = OG.systems && OG.systems.splitControl;
     const mechanics = levelData.mechanics || [];
     const count = levelData.targets || 1;
     const spacing = (Math.PI * 2) / count;
@@ -126,6 +131,16 @@
       return;
     }
 
+    if (id === '2-4' && splitControl && splitControl.isSplitStageMode(levelData)) {
+      splitControl.spawnControlledSplitRoot({
+        size: Math.PI / 4.2,
+        move: levelData.moveSpeed || 0
+      });
+      return;
+    }
+
+    let splitSpawned = false;
+
     for (let i = 0; i < count; i++) {
       const base = normalizeAngle((Math.random() * Math.PI * 2) + (i * spacing * 0.35));
 
@@ -139,11 +154,14 @@
           size: Math.PI / 3.1,
           move: levelData.moveSpeed || 0
         }));
-      } else if (mechanics.includes('split')) {
-        targets.push(buildSplitTarget(base, Math.PI / 4.2, {
+      } else if (mechanics.includes('split') && splitControl && !splitSpawned && !splitControl.hasActiveSplitFamily()) {
+        const splitTarget = splitControl.spawnControlledSplitRoot({
+          startAngle: base - (Math.PI / 8.4),
+          size: Math.PI / 4.2,
           move: levelData.moveSpeed || 0,
-          color: '#d594ff'
-        }));
+          color: '#2ff6ff'
+        });
+        splitSpawned = !!splitTarget;
       } else {
         targets.push(buildTarget(base, Math.PI / 4.5, {
           move: levelData.moveSpeed || 0
