@@ -1810,8 +1810,8 @@ function buildCornerPrecisionTarget(anchorAngle, options = {}) {
 }
 
 function buildDualTarget(startAngle, options = {}) {
-  const segSize = options.segmentSize ?? 0.072;
-  const gap = options.gap ?? 0.018;
+  const segSize = options.segmentSize ?? 0.028;
+  const gap = options.gap ?? 0.02;
   const totalSize = (segSize * 2) + gap;
   return buildTarget(startAngle, totalSize, {
     color: '#73f8ff',
@@ -1832,7 +1832,8 @@ function buildSplitTarget(startAngle, size, options = {}) {
     active: true,
     hp: 1,
     mechanic: 'split',
-    splitOnHit: true
+    splitOnHit: true,
+    splitDepth: options.splitDepth ?? 0
   });
 }
 
@@ -1842,13 +1843,18 @@ function spawnWorld2MechanicTargets() {
 
   if (id === '2-1') {
     const cornerIdx = stageHits % 4;
-    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.085 }));
+    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], {
+      backWindow: 0.028,
+      overshootWindow: 0.055,
+      perfectWindow: 0.012,
+      color: '#90fcff'
+    }));
     return;
   }
 
   if (id === '2-2') {
     const base = (Math.random() * Math.PI * 2);
-    targets.push(buildDualTarget(base, { segmentSize: 0.07, gap: 0.02 }));
+    targets.push(buildDualTarget(base, { segmentSize: 0.028, gap: 0.02 }));
     return;
   }
 
@@ -2058,7 +2064,7 @@ function draw() {
       orbitRadius, 0, Math.PI * 2, 8);
     ctx.strokeStyle = theme.railColor || palette.primary;
     ctx.lineWidth = 5;
-    ctx.globalAlpha = (0.14 + Math.abs(Math.sin(now / 1400)) * 0.05) * railGlowScale;
+    ctx.globalAlpha = (0.12 + Math.abs(Math.sin(now / 1600)) * 0.025) * railGlowScale;
     ctx.shadowBlur = 14 * railGlowScale;
     ctx.shadowColor = theme.railColor || palette.primary;
     ctx.stroke();
@@ -2072,7 +2078,7 @@ function draw() {
         orbitRadius, cornerAngle - span, cornerAngle + span, 6);
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2.5;
-      ctx.globalAlpha = 0.35 + Math.abs(Math.sin(now / 900 + idx)) * 0.15;
+      ctx.globalAlpha = 0.24 + Math.abs(Math.sin(now / 1100 + idx)) * 0.08;
       ctx.shadowBlur = 12;
       ctx.shadowColor = theme.railColor || palette.primary;
       ctx.stroke();
@@ -2297,26 +2303,41 @@ function draw() {
     if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
       ctx.save();
       t.dualSegments.forEach((seg, idx) => {
-        const segStart = t.start + seg.offset;
         const cleared = t.dualHits && t.dualHits[idx];
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, segStart, segStart + seg.size);
-        ctx.strokeStyle = cleared ? '#2d3848' : seg.color;
-        ctx.globalAlpha = cleared ? 0.7 : 0.95;
-        ctx.lineWidth = 4.2;
-        ctx.shadowBlur = cleared ? 0 : 12;
-        ctx.shadowColor = seg.color;
-        ctx.stroke();
-      });
+        const segCenter = t.start + seg.offset + (seg.size / 2);
+        const pt = getPointOnShape(segCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
-      const dividerAngle = t.start + (t.size / 2);
-      const dividerPt = getPointOnShape(dividerAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-      ctx.beginPath();
-      ctx.arc(dividerPt.x, dividerPt.y, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = 0.92;
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = '#ffffff';
-      ctx.fill();
+        if (idx === 0) {
+          const nextSeg = t.dualSegments[1];
+          const nextCenter = t.start + nextSeg.offset + (nextSeg.size / 2);
+          const nextPt = getPointOnShape(nextCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+          ctx.beginPath();
+          ctx.moveTo(pt.x, pt.y);
+          ctx.lineTo(nextPt.x, nextPt.y);
+          ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+          ctx.lineWidth = 2;
+          ctx.shadowBlur = 0;
+          ctx.stroke();
+        }
+
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, cleared ? 6 : 8, 0, Math.PI * 2);
+        ctx.fillStyle = cleared ? 'rgba(45,56,72,0.8)' : seg.color;
+        ctx.globalAlpha = cleared ? 0.5 : 0.95;
+        ctx.shadowBlur = cleared ? 0 : 14;
+        ctx.shadowColor = seg.color;
+        ctx.fill();
+
+        if (!cleared) {
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.globalAlpha = 0.95;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = '#ffffff';
+          ctx.fill();
+        }
+      });
       ctx.restore();
       return;
     }
@@ -3091,25 +3112,32 @@ function tap() {
       } else {
         t.active = false;
       }
-    } else if (t.mechanic === 'split' && t.splitOnHit) {
+    } else if ((t.mechanic === 'split' || t.mechanic === 'splitChild') && t.splitOnHit) {
       t.active = false;
-      const splitGap = 0.06;
-      const childSize = Math.max(Math.PI / 22, t.size * 0.46);
-      targets.push(buildTarget(normalizeAngle(t.start - splitGap), childSize, {
-        color: '#d594ff',
-        active: true,
-        hp: 1,
-        mechanic: 'splitChild'
-      }));
-      targets.push(buildTarget(normalizeAngle(t.start + t.size - childSize + splitGap), childSize, {
-        color: '#8df8ff',
-        active: true,
-        hp: 1,
-        mechanic: 'splitChild'
-      }));
-      createPopup(hitX, hitY - 32, "SPLIT!", "#d594ff");
-      createShockwave('#d594ff', 26);
-      createShockwave('#8df8ff', 20);
+      const nextDepth = (t.splitDepth || 0) + 1;
+      if (nextDepth <= 2) {
+        const splitGap = nextDepth === 1 ? 0.05 : 0.03;
+        const childSize = Math.max(Math.PI / 34, t.size * 0.48);
+        targets.push(buildTarget(normalizeAngle(t.start - splitGap), childSize, {
+          color: '#d594ff',
+          active: true,
+          hp: 1,
+          mechanic: 'splitChild',
+          splitOnHit: nextDepth < 2,
+          splitDepth: nextDepth
+        }));
+        targets.push(buildTarget(normalizeAngle(t.start + t.size - childSize + splitGap), childSize, {
+          color: '#8df8ff',
+          active: true,
+          hp: 1,
+          mechanic: 'splitChild',
+          splitOnHit: nextDepth < 2,
+          splitDepth: nextDepth
+        }));
+        createPopup(hitX, hitY - 32, nextDepth === 1 ? "SPLIT!" : "SHATTER!", "#d594ff");
+        createShockwave('#d594ff', 26);
+        createShockwave('#8df8ff', 20);
+      }
     } else {
       t.active = false;
     }
