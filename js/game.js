@@ -2330,59 +2330,36 @@ function draw() {
     }
 
     if (t.isDual && t.dualState !== 'cleared') {
-      const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
       const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
-      const leftStart = centerAngle - targetHalfWidth;
-      const rightEnd = centerAngle + targetHalfWidth;
-      const step = 0.02;
+      const pt = getPointOnShape(centerAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
       ctx.save();
-      ctx.lineCap = 'round';
-      ctx.globalAlpha = 0.96;
+      ctx.translate(pt.x, pt.y);
+      ctx.rotate(centerAngle + Math.PI / 2);
+      ctx.globalAlpha = 0.98;
 
-      // Draw Left Half (Cyan)
+      // Left Half (Cyan)
       if (t.dualState === 'full' || t.dualState === 'left') {
-        ctx.beginPath();
-        for (let a = leftStart; a <= centerAngle + 0.01; a += step) {
-          const pt = getPointOnShape(a, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-          if (a === leftStart) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
-        }
-        ctx.strokeStyle = '#00e5ff';
-        ctx.lineWidth = 14;
-        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#00e5ff';
         ctx.shadowColor = '#00e5ff';
-        ctx.stroke();
+        ctx.shadowBlur = 15;
+        ctx.fillRect(-16, -8, 16, 16);
       }
 
-      // Draw Right Half (Pink)
+      // Right Half (Pink)
       if (t.dualState === 'full' || t.dualState === 'right') {
-        ctx.beginPath();
-        for (let a = centerAngle; a <= rightEnd + 0.01; a += step) {
-          const pt = getPointOnShape(a, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-          if (a === centerAngle) ctx.moveTo(pt.x, pt.y);
-          else ctx.lineTo(pt.x, pt.y);
-        }
-        ctx.strokeStyle = '#ff00cc';
-        ctx.lineWidth = 14;
-        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#ff00cc';
         ctx.shadowColor = '#ff00cc';
-        ctx.stroke();
+        ctx.shadowBlur = 15;
+        ctx.fillRect(0, -8, 16, 16);
       }
 
-      // Draw White Perfect Center Indicator
+      // Pure White Perfect Center Stripe
       if (t.dualState === 'full') {
-        const ptCenter1 = getPointOnShape(centerAngle - 0.02, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-        const ptCenter2 = getPointOnShape(centerAngle + 0.02, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-        ctx.beginPath();
-        ctx.moveTo(ptCenter1.x, ptCenter1.y);
-        ctx.lineTo(ptCenter2.x, ptCenter2.y);
-        ctx.strokeStyle = '#ffffff';
-        ctx.globalAlpha = 0.98;
-        ctx.lineWidth = 18;
-        ctx.shadowBlur = 16;
+        ctx.fillStyle = '#ffffff';
         ctx.shadowColor = '#ffffff';
-        ctx.stroke();
+        ctx.shadowBlur = 20;
+        ctx.fillRect(-2, -12, 4, 24);
       }
 
       ctx.restore();
@@ -3148,7 +3125,7 @@ function tap() {
         }
       } else if (t.isDual && t.dualState !== 'cleared') {
         const diff = diffFromCenter;
-        const perfectThreshold = targetHalfWidth * 0.45;
+        const perfectThreshold = targetHalfWidth * 0.5;
         if (Math.abs(diff) <= perfectThreshold) hitQuality = "perfect";
         else if (Math.abs(diff) <= targetHalfWidth * 0.68) hitQuality = "good";
         else hitQuality = "ok";
@@ -3207,12 +3184,12 @@ function tap() {
       const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
       const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
       const diff = signedAngularDistance(angle, centerAngle);
-      const perfectThreshold = targetHalfWidth * 0.45;
+      const perfectThreshold = targetHalfWidth * 0.5;
 
       if (Math.abs(diff) <= targetHalfWidth) {
         if (t.dualState === 'full') {
           if (Math.abs(diff) <= perfectThreshold) {
-            // PERFECT HIT: Destroy both halves.
+            // PERFECT CENTER HIT
             t.dualState = 'cleared';
             t.active = false;
             createParticles(hitX, hitY, '#ffffff', 24);
@@ -3220,26 +3197,25 @@ function tap() {
             if (audioCtx) playPop(1, false, true);
             createPopup(hitX, hitY - 36, "PERFECT LINK", "#ffffff");
           } else {
-            // PARTIAL HIT: only one side remains.
+            // PARTIAL HIT (Hit the edge)
             if (diff < 0) {
-              t.dualState = 'right';
-              const rightPt = getPointOnShape(centerAngle + (targetHalfWidth / 2), getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
-              createParticles(rightPt.x, rightPt.y, '#00e5ff', 16);
+              t.dualState = 'right'; // Left side destroyed
+              createParticles(hitX, hitY, '#00e5ff', 16);
             } else {
-              t.dualState = 'left';
-              const leftPt = getPointOnShape(centerAngle - (targetHalfWidth / 2), getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
-              createParticles(leftPt.x, leftPt.y, '#ff00cc', 16);
+              t.dualState = 'left'; // Right side destroyed
+              createParticles(hitX, hitY, '#ff00cc', 16);
             }
             if (audioCtx) playPop(4, false);
-            triggerScreenShake(2);
+            triggerScreenShake(3);
             createPopup(hitX, hitY - 30, "HALF CLEARED", "#ffffff");
-            return;
+            return; // Do not clear the target! Let it loop around.
           }
         } else {
-          // Finishing off a remaining half of a dual target.
+          // FINISHING OFF THE REMAINING HALF
+          const wasLeft = t.dualState === 'left';
           t.dualState = 'cleared';
           t.active = false;
-          createParticles(hitX, hitY, '#00ff88', 18);
+          createParticles(hitX, hitY, wasLeft ? '#00e5ff' : '#ff00cc', 18);
           if (audioCtx) playPop(1, false, true);
           createPopup(hitX, hitY - 22, "LINKED", "#00ff88");
         }
