@@ -1919,6 +1919,49 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
+  if (worldShape === 'diamond' && !isBoss) {
+    ctx.save();
+
+    // Outer soft aura — wide, very faint, gives the shape presence
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
+      orbitRadius, 0, Math.PI * 2, 8);
+    ctx.strokeStyle = palette.primary;
+    ctx.lineWidth = 18;
+    ctx.globalAlpha = 0.08 + Math.abs(Math.sin(now / 1800)) * 0.04;
+    ctx.shadowBlur = 35;
+    ctx.shadowColor = palette.primary;
+    ctx.stroke();
+
+    // Mid glow — tighter, slightly brighter
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
+      orbitRadius, 0, Math.PI * 2, 8);
+    ctx.strokeStyle = palette.primary;
+    ctx.lineWidth = 6;
+    ctx.globalAlpha = 0.18 + Math.abs(Math.sin(now / 1400)) * 0.06;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = palette.primary;
+    ctx.stroke();
+
+    // Corner hot spots — tiny bright dots at each diamond point,
+    // no circles, just a slightly brighter section of the line
+    const cornerPoints = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+    cornerPoints.forEach((cornerAngle, idx) => {
+      const span = Math.PI / 14;
+      buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
+        orbitRadius, cornerAngle - span, cornerAngle + span, 6);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.5;
+      ctx.globalAlpha = 0.35 + Math.abs(Math.sin(now / 900 + idx)) * 0.15;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = palette.primary;
+      ctx.stroke();
+    });
+
+    ctx.restore();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
+
 
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
   // so shield segments remain readable against the bright lane, especially on small screens.
