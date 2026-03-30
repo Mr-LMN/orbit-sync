@@ -504,7 +504,11 @@ function resetRunState() {
   isBossPhaseTwo = false; bossPhase = 1;
   lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
 }
-function loseLife(reason) { lives--; ui.lives.innerText = lives; perfectLifeStreak = 0; if (lives <= 0) { handleFail(reason); } else { soundLifeLost(); } }
+function loseLife(reason) {
+  lives--;
+  ui.lives.innerText = lives;
+  perfectLifeStreak = 0;
+}
 function gainLifeFromPerfectStreak() {
   if (lives < maxLives) {
     lives++;
