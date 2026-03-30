@@ -16,504 +16,45 @@ const ui = {
 };
 
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-// Dynamic Music Engine
-let bossAudioBuffer;
-let currentBaseTrack = null;
-let baseAudioBuffers = {};
-let baseSource, bossSource;
-let baseGain, bossGain;
-let isMusicPlaying = false;
-let musicLoadToken = 0;
-let musicEnabled = true;
-let sfxEnabled = true;
-let hapticsEnabled = true;
-let bossDrone = null;
-let bossDroneGain = null;
-let lastSoundTime = 0;
-let audioThrottleBypassUntil = 0;
+// Step 2 extraction: canonical implementations now live in js/audio/* modules.
+function initAudio() { return OrbitGame.audio.initAudio(); }
+function makeGain(vol) { return OrbitGame.audio.makeGain(vol); }
+function getMinSoundIntervalMs() { return OrbitGame.audio.getMinSoundIntervalMs(); }
+function shouldThrottleAudio(allowBypassWindow = false) { return OrbitGame.audio.shouldThrottleAudio(allowBypassWindow); }
 
-function initAudio() {
-  if (!audioCtx) { audioCtx = new AudioContext(); }
-  if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-}
+function playTone(freq, type, vol, attack, decay, startTime) { return OrbitGame.audio.playTone(freq, type, vol, attack, decay, startTime); }
+function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) { return OrbitGame.audio.playNoiseBurst(vol, decay, startTime, filterType, filterFreq, q); }
+function startBossDrone() { return OrbitGame.audio.startBossDrone(); }
+function stopBossDrone() { return OrbitGame.audio.stopBossDrone(); }
+function escalateBossDrone() { return OrbitGame.audio.escalateBossDrone(); }
+function soundOk() { return OrbitGame.audio.soundOk(); }
+function soundGood(multiplier) { return OrbitGame.audio.soundGood(multiplier); }
+function soundPerfect(multiplier) { return OrbitGame.audio.soundPerfect(multiplier); }
+function soundCornerBonus(worldNum = 1) { return OrbitGame.audio.soundCornerBonus(worldNum); }
+function soundMultiplierUp(multiplier) { return OrbitGame.audio.soundMultiplierUp(multiplier); }
+function soundFail() { return OrbitGame.audio.soundFail(); }
+function soundLifeLost() { return OrbitGame.audio.soundLifeLost(); }
+function soundWaveClear() { return OrbitGame.audio.soundWaveClear(); }
+function soundWorldClear() { return OrbitGame.audio.soundWorldClear(); }
+function soundShieldBreak() { return OrbitGame.audio.soundShieldBreak(); }
+function soundBossShieldHit(hp) { return OrbitGame.audio.soundBossShieldHit(hp); }
+function soundCoreExposed() { return OrbitGame.audio.soundCoreExposed(); }
+function soundCoreDamage() { return OrbitGame.audio.soundCoreDamage(); }
+function soundBossDefeated() { return OrbitGame.audio.soundBossDefeated(); }
+function soundLifeZone() { return OrbitGame.audio.soundLifeZone(); }
+function soundLifeGained() { return OrbitGame.audio.soundLifeGained(); }
+function soundUIClick() { return OrbitGame.audio.soundUIClick(); }
+function playPop(multiplier, isPerfect, isFail = false) { return OrbitGame.audio.playPop(multiplier, isPerfect, isFail); }
 
-// Master utility — creates a gain node connected to destination
-function makeGain(vol) {
-  const g = audioCtx.createGain();
-  g.gain.setValueAtTime(vol, audioCtx.currentTime);
-  g.connect(audioCtx.destination);
-  return g;
-}
-
-function getMinSoundIntervalMs() {
-  return isMobile ? 40 : 16;
-}
-
-function shouldThrottleAudio(allowBypassWindow = false) {
-  if (!audioCtx || !isMobile) return false;
-  const nowMs = audioCtx.currentTime * 1000;
-  if (allowBypassWindow && nowMs <= audioThrottleBypassUntil) return false;
-  if ((nowMs - lastSoundTime) < getMinSoundIntervalMs()) return true;
-  lastSoundTime = nowMs;
-  audioThrottleBypassUntil = nowMs + Math.max(40, getMinSoundIntervalMs());
-  return false;
-}
-
-// Utility — plays a single oscillator burst
-function playTone(freq, type, vol, attack, decay, startTime) {
-  if (!sfxEnabled) return;
-  if (shouldThrottleAudio(true)) return;
-  const osc = audioCtx.createOscillator();
-  const gain = makeGain(0.001);
-  osc.connect(gain);
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, startTime);
-  gain.gain.linearRampToValueAtTime(vol, startTime + attack);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + attack + decay);
-  osc.start(startTime);
-  osc.stop(startTime + attack + decay + 0.05);
-}
-
-// Utility — short filtered noise burst for impact textures
-function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) {
-  if (!sfxEnabled) return;
-  if (!audioCtx) return;
-  if (shouldThrottleAudio(true)) return;
-  const bufferSize = Math.max(1, Math.floor(audioCtx.sampleRate * decay));
-  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - (i / bufferSize));
-
-  const noise = audioCtx.createBufferSource();
-  noise.buffer = buffer;
-
-  const filter = audioCtx.createBiquadFilter();
-  filter.type = filterType;
-  filter.frequency.setValueAtTime(filterFreq, startTime);
-  filter.Q.setValueAtTime(q, startTime);
-
-  const noiseGain = makeGain(0.001);
-  noise.connect(filter);
-  filter.connect(noiseGain);
-  noiseGain.gain.linearRampToValueAtTime(vol, startTime + 0.005);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + decay);
-  noise.start(startTime);
-  noise.stop(startTime + decay + 0.04);
-}
-
-function startBossDrone() {
-  if (!sfxEnabled) return;
-  if (!audioCtx || bossDrone) return;
-
-  // Low pulsing drone — two detuned oscillators for thickness
-  bossDrone = audioCtx.createOscillator();
-  const osc2 = audioCtx.createOscillator();
-  bossDroneGain = makeGain(0);
-
-  bossDrone.connect(bossDroneGain);
-  osc2.connect(bossDroneGain);
-
-  bossDrone.type = 'sine';
-  bossDrone.frequency.setValueAtTime(55, audioCtx.currentTime);
-
-  osc2.type = 'sine';
-  osc2.frequency.setValueAtTime(57.5, audioCtx.currentTime); // slight detune
-
-  // Fade in
-  bossDroneGain.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 1.5);
-
-  bossDrone.start();
-  osc2.start();
-
-  // Store osc2 reference for stopping
-  bossDrone._osc2 = osc2;
-}
-
-function stopBossDrone() {
-  if (!bossDrone) return;
-  bossDroneGain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
-  setTimeout(() => {
-    try {
-      bossDrone.stop();
-      bossDrone._osc2.stop();
-    } catch (e) {}
-    bossDrone = null;
-    bossDroneGain = null;
-  }, 900);
-}
-
-// Drone pitch rises when entering phase 2 — increases tension
-function escalateBossDrone() {
-  if (!bossDrone || !audioCtx) return;
-  bossDrone.frequency.linearRampToValueAtTime(80, audioCtx.currentTime + 0.5);
-  bossDrone._osc2.frequency.linearRampToValueAtTime(83, audioCtx.currentTime + 0.5);
-  bossDroneGain.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.5);
-}
-
-// OK hit — dull thud, low confidence
-function soundOk() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  playTone(180, 'triangle', 0.18, 0.005, 0.12, t);
-  playTone(90, 'sine', 0.1, 0.005, 0.15, t);
-}
-
-// GOOD hit — clean mid punch
-function soundGood(multiplier) {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const baseFreq = 300 + (multiplier * 30);
-  playTone(baseFreq, 'triangle', 0.22, 0.004, 0.1, t);
-  playTone(baseFreq * 1.5, 'sine', 0.1, 0.004, 0.14, t);
-}
-
-// PERFECT hit — bright ting with reverb tail
-function soundPerfect(multiplier) {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const baseFreq = 520 + (multiplier * 40);
-
-  // Main ting
-  playTone(baseFreq, 'sine', 0.25, 0.002, 0.08, t);
-  // Harmonic overtone
-  playTone(baseFreq * 2, 'sine', 0.12, 0.002, 0.18, t);
-  // Shimmer tail
-  playTone(baseFreq * 3, 'sine', 0.06, 0.005, 0.35, t);
-}
-
-// Corner bonus sting — brighter/pitched up for world 2 diamond moments
-function soundCornerBonus(worldNum = 1) {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const pitchBoost = worldNum === 2 ? 1.12 : 1;
-  playNoiseBurst(worldNum === 2 ? 0.16 : 0.12, 0.08, t, 'bandpass', 1450 * pitchBoost, 1.8);
-  playTone(740 * pitchBoost, 'triangle', 0.2, 0.003, 0.09, t);
-  playTone(980 * pitchBoost, 'sine', 0.12, 0.002, 0.13, t + 0.03);
-}
-
-// Multiplier milestone sounds (x2 through x8)
-// Each level plays a rising musical note
-const multiNotes = [0, 0, 262, 294, 330, 370, 415, 466, 523];
-function soundMultiplierUp(multiplier) {
-  if (!audioCtx || multiplier < 2) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const freq = multiNotes[Math.min(multiplier, 8)];
-  playTone(freq, 'sine', 0.2, 0.005, 0.2, t);
-  playTone(freq * 1.5, 'sine', 0.08, 0.005, 0.25, t);
-}
-
-// Miss/fail — descending crunch
-function soundFail() {
-  if (!sfxEnabled) return;
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const osc = audioCtx.createOscillator();
-  const gain = makeGain(0.001);
-  osc.connect(gain);
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(200, t);
-  osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);
-  gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-  osc.start(t);
-  osc.stop(t + 0.35);
-}
-
-// Life lost (not game over) — shorter warning sting
-function soundLifeLost() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  playTone(160, 'sawtooth', 0.2, 0.005, 0.15, t);
-  playTone(120, 'sawtooth', 0.15, 0.01, 0.2, t + 0.1);
-}
-
-// Stage/wave clear — 3 note ascending arpeggio
-function soundWaveClear() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  [330, 415, 523].forEach((freq, i) => {
-    playTone(freq, 'sine', 0.2, 0.005, 0.15, t + i * 0.1);
-    playTone(freq * 2, 'sine', 0.06, 0.005, 0.2, t + i * 0.1);
-  });
-}
-
-// World clear — full 5 note fanfare
-function soundWorldClear() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const melody = [262, 330, 392, 330, 523];
-  melody.forEach((freq, i) => {
-    playTone(freq, 'sine', 0.25, 0.01, 0.2, t + i * 0.13);
-    playTone(freq * 1.5, 'sine', 0.08, 0.01, 0.25, t + i * 0.13);
-  });
-  // Bass hit underneath
-  playTone(65, 'sine', 0.3, 0.01, 0.5, t);
-}
-
-// Boss shield break — heavy metallic crash
-function soundShieldBreak() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  playNoiseBurst(0.26, 0.24, t, 'bandpass', 950, 1.4);
-  // Metallic tone underneath
-  playTone(150, 'square', 0.18, 0.004, 0.18, t);
-  playTone(112, 'sawtooth', 0.2, 0.005, 0.22, t + 0.01);
-  playTone(74, 'sine', 0.22, 0.004, 0.32, t);
-}
-
-// Boss shield hit — short synthetic impact cue
-function soundBossShieldHit(hp) {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  const danger = Math.max(0, 3 - Math.max(0, hp));
-  const base = 260 + (danger * 24);
-  playNoiseBurst(0.12 + (danger * 0.02), 0.085, t, 'bandpass', 1300 + (danger * 120), 2.2);
-  playTone(base, 'square', 0.13, 0.002, 0.065, t);
-  playTone(base * 0.72, 'triangle', 0.09, 0.002, 0.09, t + 0.004);
-}
-
-// Boss core exposed — dramatic payoff cue
-function soundCoreExposed() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  playNoiseBurst(0.16, 0.12, t, 'highpass', 700, 0.7);
-  playTone(220, 'sawtooth', 0.14, 0.006, 0.09, t);
-  playTone(330, 'triangle', 0.18, 0.006, 0.12, t + 0.045);
-  playTone(495, 'sine', 0.2, 0.004, 0.16, t + 0.095);
-}
-
-// Boss core damage — strongest hit cue before final defeat
-function soundCoreDamage() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  playNoiseBurst(0.2, 0.11, t, 'bandpass', 980, 1.8);
-  playTone(180, 'square', 0.2, 0.003, 0.08, t);
-  playTone(240, 'sawtooth', 0.18, 0.003, 0.1, t + 0.018);
-  playTone(360, 'triangle', 0.16, 0.003, 0.14, t + 0.05);
-}
-
-// Boss defeated — dramatic descending + resolution
-function soundBossDefeated() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  // Descend
-  [523, 466, 392, 330, 262].forEach((freq, i) => {
-    playTone(freq, 'sine', 0.2, 0.01, 0.18, t + i * 0.1);
-  });
-  // Resolution chord at end
-  setTimeout(() => {
-    const t2 = audioCtx.currentTime;
-    [262, 330, 392, 523].forEach((freq, j) => {
-      playTone(freq, 'sine', 0.18, 0.02, 0.5, t2 + j * 0.04);
-    });
-  }, 650);
-}
-
-// Life zone appear — gentle ascending chime
-function soundLifeZone() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  [523, 659, 784].forEach((freq, i) => {
-    playTone(freq, 'sine', 0.12, 0.005, 0.2, t + i * 0.08);
-  });
-}
-
-// Life gained — warm positive sting
-function soundLifeGained() {
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  const t = audioCtx.currentTime;
-  playTone(523, 'sine', 0.2, 0.005, 0.1, t);
-  playTone(659, 'sine', 0.2, 0.005, 0.1, t + 0.1);
-  playTone(784, 'sine', 0.22, 0.005, 0.25, t + 0.2);
-}
-
-// UI button click — subtle tick
-function soundUIClick() {
-  if (!sfxEnabled) return;
-  if (!audioCtx) return;
-  if (shouldThrottleAudio()) return;
-  playTone(800, 'sine', 0.08, 0.002, 0.04, audioCtx.currentTime);
-}
-
-function playPop(multiplier, isPerfect, isFail = false) {
-  if (isFail) {
-    soundFail();
-    return;
-  }
-  if (isPerfect) {
-    soundPerfect(multiplier);
-    return;
-  }
-  soundGood(multiplier);
-}
-
-// Load an audio file into a buffer
-async function loadAudioFile(url) {
-  const response = await fetch(url);
-  const arrayBuffer = await response.arrayBuffer();
-  return await audioCtx.decodeAudioData(arrayBuffer);
-}
-
-function getBaseTrackForLevel(levelIdx) {
-  const level = campaign[levelIdx];
-  if (!level) return 'assets/Base.mp3';
-  const worldNum = parseInt(level.id.split('-')[0], 10);
-  return worldNum === 2 ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
-}
-
-// Initialize and start the dynamic music loops
-async function startDynamicMusic(baseTrackPath) {
-  if (!audioCtx || !musicEnabled) return;
-  if (isMusicPlaying && currentBaseTrack === baseTrackPath) return;
-
-  disposeMusicNodes();
-
-  try {
-    if (!baseAudioBuffers[baseTrackPath]) {
-      baseAudioBuffers[baseTrackPath] = await loadAudioFile(baseTrackPath);
-    }
-    if (!bossAudioBuffer) bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
-
-    baseSource = audioCtx.createBufferSource();
-    bossSource = audioCtx.createBufferSource();
-    baseSource.buffer = baseAudioBuffers[baseTrackPath];
-    bossSource.buffer = bossAudioBuffer;
-    baseSource.loop = true;
-    bossSource.loop = true;
-
-    baseGain = audioCtx.createGain();
-    bossGain = audioCtx.createGain();
-
-    bossGain.gain.value = 0;
-    baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    baseGain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 2.5);
-
-    baseSource.connect(baseGain);
-    baseGain.connect(audioCtx.destination);
-    bossSource.connect(bossGain);
-    bossGain.connect(audioCtx.destination);
-
-    const startTime = audioCtx.currentTime + 0.1;
-    baseSource.start(startTime);
-    bossSource.start(startTime);
-    currentBaseTrack = baseTrackPath;
-    isMusicPlaying = true;
-    currentMusicState = { mult: -1, boss: null };
-  } catch (e) {
-    console.warn('Dynamic music failed', e);
-  }
-}
-
-let currentMusicState = { mult: 1, boss: false };
-
-function disposeMusicNodes() {
-  try {
-    if (baseSource) {
-      try { baseSource.stop(); } catch (e) {}
-      baseSource.disconnect();
-    }
-  } catch (e) {}
-  try {
-    if (bossSource) {
-      try { bossSource.stop(); } catch (e) {}
-      bossSource.disconnect();
-    }
-  } catch (e) {}
-  try { if (baseGain) baseGain.disconnect(); } catch (e) {}
-  try { if (bossGain) bossGain.disconnect(); } catch (e) {}
-  baseSource = null;
-  bossSource = null;
-  baseGain = null;
-  bossGain = null;
-  isMusicPlaying = false;
-}
-
-function stopDynamicMusic() {
-  if (!audioCtx) return;
-  try {
-    if (baseGain) {
-      baseGain.gain.cancelScheduledValues(audioCtx.currentTime);
-      baseGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    }
-    if (bossGain) {
-      bossGain.gain.cancelScheduledValues(audioCtx.currentTime);
-      bossGain.gain.setValueAtTime(0, audioCtx.currentTime);
-    }
-    disposeMusicNodes();
-    currentBaseTrack = null;
-    currentMusicState = { mult: 1, boss: false };
-  } catch (e) {
-    console.warn('stopDynamicMusic failed', e);
-  }
-}
-
-function baseVolumeForMultiplier(currentMultiplier) {
-  return Math.min(0.8, 0.56 + (Math.max(1, currentMultiplier) - 1) * 0.02);
-}
-
-async function ensureCorrectMusicForLevel() {
-  if (!audioCtx || !musicEnabled) return;
-  const token = ++musicLoadToken;
-  const wantedTrack = getBaseTrackForLevel(currentLevelIdx);
-  await startDynamicMusic(wantedTrack);
-  if (token !== musicLoadToken) return;
-  updateMusicState(multiplier, !!(levelData && levelData.boss));
-}
-
-// Dynamically adjust the music based on gameplay state
-function updateMusicState(currentMultiplier, isBossActive) {
-  if (!isMusicPlaying || !audioCtx || !baseGain || !bossGain || !baseSource || !bossSource) return;
-
-  // STOP THE SPAM: Only update Web Audio API if the state actually changes!
-  if (currentMusicState.mult === currentMultiplier && currentMusicState.boss === isBossActive) return;
-
-  currentMusicState.mult = currentMultiplier;
-  currentMusicState.boss = isBossActive;
-
-  const now = audioCtx.currentTime;
-
-  if (isBossActive) {
-    baseGain.gain.cancelScheduledValues(now);
-    bossGain.gain.cancelScheduledValues(now);
-    baseGain.gain.linearRampToValueAtTime(0.03, now + 0.5);
-    bossGain.gain.linearRampToValueAtTime(0.85, now + 0.5);
-  } else {
-    baseGain.gain.cancelScheduledValues(now);
-    bossGain.gain.cancelScheduledValues(now);
-    bossGain.gain.linearRampToValueAtTime(0, now + 0.5);
-    baseGain.gain.linearRampToValueAtTime(baseVolumeForMultiplier(currentMultiplier), now + 0.5);
-  }
-
-  const targetSpeed = 1.0 + (currentMultiplier * 0.015);
-  // Cancel previous scheduled values to prevent memory leaks
-  baseSource.playbackRate.cancelScheduledValues(now);
-  bossSource.playbackRate.cancelScheduledValues(now);
-  baseSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
-  bossSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
-}
-
-function vibrate(pattern) {
-  if (!hapticsEnabled) return;
-  if (navigator.vibrate) navigator.vibrate(pattern);
-}
+function loadAudioFile(url) { return OrbitGame.audio.loadAudioFile(url); }
+function getBaseTrackForLevel(levelIdx) { return OrbitGame.audio.getBaseTrackForLevel(levelIdx); }
+function startDynamicMusic(baseTrackPath) { return OrbitGame.audio.startDynamicMusic(baseTrackPath); }
+function disposeMusicNodes() { return OrbitGame.audio.disposeMusicNodes(); }
+function stopDynamicMusic() { return OrbitGame.audio.stopDynamicMusic(); }
+function baseVolumeForMultiplier(currentMultiplier) { return OrbitGame.audio.baseVolumeForMultiplier(currentMultiplier); }
+function ensureCorrectMusicForLevel() { return OrbitGame.audio.ensureCorrectMusicForLevel(); }
+function updateMusicState(currentMultiplier, isBossActive) { return OrbitGame.audio.updateMusicState(currentMultiplier, isBossActive); }
+function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 
 // --- SAVE SYSTEM ---
 let globalCoins = parseInt(localStorage.getItem('orbitSync_coins')) || 0;
@@ -818,73 +359,15 @@ for (let i = 0; i < 50; i++) {
 
 document.getElementById('menuBtn').onclick = returnToMenu;
 
-function toggleShop(show) { ui.shopModal.style.bottom = show ? '0' : '-100%'; updateShopUI(); }
-function toggleSettings(show) {
-  ui.settingsModal.style.bottom = show ? '0' : '-100%';
-  if (show) applySettingsUI();
-}
-
-function applySettingsUI() {
-  const musicBtn = document.getElementById('musicToggleBtn');
-  const sfxBtn = document.getElementById('sfxToggleBtn');
-  const hapticsBtn = document.getElementById('hapticsToggleBtn');
-  musicBtn.innerText = musicEnabled ? 'On' : 'Off';
-  sfxBtn.innerText = sfxEnabled ? 'On' : 'Off';
-  hapticsBtn.innerText = hapticsEnabled ? 'On' : 'Off';
-  musicBtn.classList.toggle('off', !musicEnabled);
-  sfxBtn.classList.toggle('off', !sfxEnabled);
-  hapticsBtn.classList.toggle('off', !hapticsEnabled);
-}
-
-function toggleMusicSetting() {
-  musicEnabled = !musicEnabled;
-  if (!musicEnabled) {
-    stopDynamicMusic();
-  } else if (isPlaying) {
-    initAudio();
-    ensureCorrectMusicForLevel();
-  }
-  applySettingsUI();
-}
-
-function toggleSfxSetting() {
-  sfxEnabled = !sfxEnabled;
-  if (!sfxEnabled) stopBossDrone();
-  applySettingsUI();
-}
-
-function toggleHapticsSetting() {
-  hapticsEnabled = !hapticsEnabled;
-  applySettingsUI();
-}
-
-function updateShopUI() {
-  updatePersistentCoinUI();
-  const items = ['classic', 'skull', 'fire'];
-  items.forEach(id => {
-    let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
-    let preview = card ? card.querySelector('.item-preview') : null;
-    if (preview) {
-      if (!preview.dataset.skin) preview.dataset.skin = id;
-      renderShopOrbPreview(preview, preview.dataset.skin);
-    }
-    if (activeSkin === id) { btn.className = 'buy-btn btn-equipped'; btn.innerText = 'Equipped'; card.classList.add('equipped'); }
-    else if (unlockedSkins.includes(id)) { btn.className = 'buy-btn btn-owned'; btn.innerText = 'Equip'; card.classList.remove('equipped'); btn.onclick = () => equipSkin(id); }
-    else { card.classList.remove('equipped'); }
-  });
-}
-function buyItem(id, cost) {
-  if (globalCoins >= cost) {
-    globalCoins -= cost;
-    unlockedSkins.push(id);
-    saveData();
-    updatePersistentCoinUI();
-    equipSkin(id);
-  } else {
-    alert("Not enough coins! Play the campaign to earn more.");
-  }
-}
-function equipSkin(id) { activeSkin = id; saveData(); updateShopUI(); }
+function toggleShop(show) { return OrbitGame.ui.shop.toggleShop(show); }
+function toggleSettings(show) { return OrbitGame.ui.settings.toggleSettings(show); }
+function applySettingsUI() { return OrbitGame.ui.settings.applySettingsUI(); }
+function toggleMusicSetting() { return OrbitGame.ui.settings.toggleMusicSetting(); }
+function toggleSfxSetting() { return OrbitGame.ui.settings.toggleSfxSetting(); }
+function toggleHapticsSetting() { return OrbitGame.ui.settings.toggleHapticsSetting(); }
+function updateShopUI() { return OrbitGame.ui.shop.updateShopUI(); }
+function buyItem(id, cost) { return OrbitGame.ui.shop.buyItem(id, cost); }
+function equipSkin(id) { return OrbitGame.ui.shop.equipSkin(id); }
 
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
@@ -1417,126 +900,8 @@ function generateTitle(score, world, streak, revives) {
   return "SYNC ROOKIE";
 }
 
-function generateShareCard() {
-  // Create an offscreen canvas for the share card
-  const card = document.createElement('canvas');
-  card.width = 800;
-  card.height = 450;
-  const c = card.getContext('2d');
-  const palette = getWorldPalette();
-
-  // Background
-  c.fillStyle = '#07070a';
-  c.fillRect(0, 0, 800, 450);
-
-  // Accent border
-  c.strokeStyle = palette.primary;
-  c.lineWidth = 3;
-  c.shadowBlur = 20;
-  c.shadowColor = palette.primary;
-  c.strokeRect(12, 12, 776, 426);
-  c.shadowBlur = 0;
-
-  // Game title
-  c.fillStyle = 'rgba(255,255,255,0.2)';
-  c.font = '600 14px Orbitron, sans-serif';
-  c.letterSpacing = '6px';
-  c.textAlign = 'left';
-  c.fillText('ORBIT SYNC', 40, 50);
-
-  // Player title
-  const title = generateTitle(score, personalBest.world, personalBest.streak, reviveCount);
-  c.fillStyle = palette.primary;
-  c.font = '900 52px Orbitron, sans-serif';
-  c.letterSpacing = '2px';
-  c.textAlign = 'left';
-  c.shadowBlur = 25;
-  c.shadowColor = palette.primary;
-  c.fillText(title, 40, 130);
-  c.shadowBlur = 0;
-
-  // Divider line
-  c.strokeStyle = 'rgba(255,255,255,0.08)';
-  c.lineWidth = 1;
-  c.beginPath();
-  c.moveTo(40, 155);
-  c.lineTo(760, 155);
-  c.stroke();
-
-  // Stats
-  const stats = [
-    { label: 'SCORE', value: score },
-    { label: 'BEST STREAK', value: personalBest.streak },
-    { label: 'WORLD', value: personalBest.world },
-    { label: 'REVIVES USED', value: reviveCount }
-  ];
-
-  stats.forEach((stat, i) => {
-    const x = 40 + (i * 180);
-    c.fillStyle = 'rgba(255,255,255,0.3)';
-    c.font = '400 11px Orbitron, sans-serif';
-    c.letterSpacing = '3px';
-    c.textAlign = 'left';
-    c.fillText(stat.label, x, 195);
-
-    c.fillStyle = '#ffffff';
-    c.font = '400 72px Bebas Neue, sans-serif';
-    c.letterSpacing = '2px';
-    c.fillText(stat.value, x, 280);
-  });
-
-  if (reviveCount === 0) {
-    c.fillStyle = 'rgba(0, 229, 255, 0.12)';
-    c.beginPath();
-    c.roundRect(40, 300, 160, 32, 6);
-    c.fill();
-    c.strokeStyle = 'rgba(0, 229, 255, 0.4)';
-    c.lineWidth = 1;
-    c.stroke();
-    c.fillStyle = '#00e5ff';
-    c.font = '400 11px Orbitron, sans-serif';
-    c.letterSpacing = '3px';
-    c.textAlign = 'left';
-    c.fillText('✦ CLEAN RUN', 55, 321);
-  }
-
-  // World colour strip at bottom
-  c.fillStyle = palette.primary;
-  c.globalAlpha = 0.15;
-  c.fillRect(0, 370, 800, 80);
-  c.globalAlpha = 1.0;
-
-  // CTA
-  c.fillStyle = 'rgba(255,255,255,0.2)';
-  c.font = '400 12px Orbitron, sans-serif';
-  c.letterSpacing = '4px';
-  c.textAlign = 'right';
-  c.fillText('CAN YOU BEAT THIS?', 760, 415);
-
-  // Try to share natively, fall back to download
-  card.toBlob(blob => {
-    const file = new File([blob], 'orbitsync.png', { type: 'image/png' });
-    if (navigator.share && navigator.canShare({ files: [file] })) {
-      const reviveText = reviveCount === 0
-        ? 'No revives used — clean run!'
-        : `Used ${reviveCount} revive${reviveCount > 1 ? 's' : ''}.`;
-      navigator.share({
-        title: 'Orbit Sync',
-        text: `I got "${title}" with a score of ${score}. ${reviveText} Can you beat it?`,
-        files: [file]
-      }).catch(() => downloadCard(card));
-    } else {
-      downloadCard(card);
-    }
-  });
-}
-
-function downloadCard(card) {
-  const link = document.createElement('a');
-  link.download = 'orbitsync-score.png';
-  link.href = card.toDataURL();
-  link.click();
-}
+function generateShareCard() { return OrbitGame.ui.share.generateShareCard(); }
+function downloadCard(card) { return OrbitGame.ui.share.downloadCard(card); }
 
 function updateMultiplierUI() {
   const prevMultiplier = lastMultiplierDisplay;
@@ -3143,26 +2508,7 @@ function revive() {
 }
 
 function attemptCoinRevive() {
-  if (globalCoins >= 50) {
-    globalCoins -= 50;
-    saveData(); // Save the new balance
-    ui.coins.innerText = Math.floor(globalCoins);
-
-    // Flash the screen gold for a premium purchase feel
-    canvas.style.boxShadow = 'inset 0 0 100px #ffaa00';
-    setTimeout(() => canvas.style.boxShadow = 'none', 300);
-    if (audioCtx) playPop(8, true); // Success ding
-
-    // Trigger standard revive logic
-    revive();
-  } else {
-    // Not enough coins! Shake the button and play error sound
-    let btn = document.getElementById('coinReviveBtn');
-    btn.style.transform = 'translateX(-10px)';
-    setTimeout(() => btn.style.transform = 'translateX(10px)', 50);
-    setTimeout(() => btn.style.transform = 'translateX(0)', 100);
-    if (audioCtx) soundFail();
-  }
+  return OrbitGame.ui.overlay.attemptCoinRevive();
 }
 
 function tap() {
@@ -3638,19 +2984,7 @@ function triggerStageClear() {
   }
 }
 
-function startCampaign() {
-  initAudio(); // Initialize sound engine on first interaction
-  toggleSettings(false);
-  ui.mainMenu.style.display = 'none'; ui.topBar.style.display = 'flex'; ui.gameUI.style.display = 'block'; ui.bigMultiplier.style.display = 'block';
-  ui.text.style.display = 'none';
-  inMenu = false; isPlaying = true; currentLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
-  resetRunState();
-  ui.score.innerText = '0';
-  ui.streak.innerText = '0';
-  markScoreCoinDirty(true);
-  setOverlayState('cinematic');
-  loadLevel(currentLevelIdx);
-}
+function startCampaign() { return OrbitGame.ui.menus.startCampaign(); }
 
 function restartFromCheckpoint() {
   ui.overlay.style.display = 'none';
@@ -3680,21 +3014,9 @@ function returnToMenu() {
   refreshMenuWorldPreview();
 }
 
-function changeWorld(dir) {
-  menuSelectedWorld += dir;
-  if (menuSelectedWorld < 1) menuSelectedWorld = 1;
-  if (menuSelectedWorld > maxWorldUnlocked) menuSelectedWorld = maxWorldUnlocked;
-  updateWorldSelectorUI();
-  refreshMenuWorldPreview();
-}
+function changeWorld(dir) { return OrbitGame.ui.menus.changeWorld(dir); }
 
-function updateWorldSelectorUI() {
-  let label = document.getElementById('menuWorldLabel');
-  if (label) {
-    label.innerText = "WORLD " + menuSelectedWorld;
-    label.style.color = (menuSelectedWorld === 2) ? '#ff00cc' : '#00ff88'; // Matches world themes!
-  }
-}
+function updateWorldSelectorUI() { return OrbitGame.ui.menus.updateWorldSelectorUI(); }
 
 function getStartingIndexForWorld(worldNum) {
   for (let i = 0; i < campaign.length; i++) {
