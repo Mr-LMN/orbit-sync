@@ -622,6 +622,13 @@ let orbitRadius = Math.min(viewportWidth, viewportHeight) * 0.28;
 let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || viewportWidth < 768;
 let currentWorldPalette = { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
 let currentWorldShape = 'circle';
+let currentWorldVisualTheme = {
+  railColor: '#00e5ff',
+  targetColor: '#ff3366',
+  targetGlowColor: '#ff7aa8',
+  targetCoreColor: '#ffffff',
+  railGlowScale: 1
+};
 let drawTick = 0;
 let lastFrameTime = performance.now();
 let hudScoreCoinDirty = false;
@@ -661,6 +668,44 @@ function computeWorldShape(level) {
     case 3: return 'triangle';
     default: return 'circle';
   }
+}
+
+function getWorldVisualTheme(level) {
+  const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
+  if (level && level.boss) {
+    return {
+      railColor: '#ffffff',
+      targetColor: '#ff3366',
+      targetGlowColor: '#ff6699',
+      targetCoreColor: '#ffffff',
+      railGlowScale: 1
+    };
+  }
+  if (worldNum === 2) {
+    return {
+      railColor: '#ff00cc',
+      targetColor: '#2ff6ff',
+      targetGlowColor: '#0fdcff',
+      targetCoreColor: '#f8ffff',
+      railGlowScale: 0.82
+    };
+  }
+  if (worldNum === 3) {
+    return {
+      railColor: '#ffaa00',
+      targetColor: '#ff5e42',
+      targetGlowColor: '#ff9a6b',
+      targetCoreColor: '#fff3de',
+      railGlowScale: 0.95
+    };
+  }
+  return {
+    railColor: '#00e5ff',
+    targetColor: '#ff3366',
+    targetGlowColor: '#ff7aa8',
+    targetCoreColor: '#ffffff',
+    railGlowScale: 1
+  };
 }
 
 function updateCanvasSize() {
@@ -1674,6 +1719,7 @@ function loadLevel(idx) {
   ensureCorrectMusicForLevel();
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
+  currentWorldVisualTheme = getWorldVisualTheme(levelData);
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
   popups = [];
   shockwaves = [];
@@ -1828,7 +1874,7 @@ function spawnTargets() {
 
   for (let i = 0; i < tCount; i++) {
     targets.push(buildTarget(offset + (i * (Math.PI * 2 / tCount)), baseSize, {
-      color: tCount > 1 ? '#ff3366' : palette.primary,
+      color: worldNum === 2 ? currentWorldVisualTheme.targetColor : (tCount > 1 ? '#ff3366' : palette.primary),
       active: true,
       hp: 1
     }));
@@ -1867,8 +1913,10 @@ function spawnTargets() {
 
 function draw() {
   const palette = currentWorldPalette;
+  const theme = currentWorldVisualTheme;
   const worldShape = currentWorldShape;
   const worldNum = parseInt(levelData ? levelData.id.split('-')[0] : '1', 10);
+  const railGlowScale = theme.railGlowScale || 1;
   const now = performance.now();
   const useHeavyEffects = !isMobile || multiplier > 2;
   const shadowBlurCap = useHeavyEffects ? 999 : 8;
@@ -1912,9 +1960,10 @@ function draw() {
   buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 2;
   ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = palette.primary;
-  setShadowBlur(15);
-  ctx.shadowColor = palette.primary;
+  ctx.strokeStyle = theme.railColor || palette.primary;
+  ctx.globalAlpha = 0.9 * railGlowScale;
+  setShadowBlur((worldNum === 2 && !isBoss) ? (12 * railGlowScale) : (15 * railGlowScale));
+  ctx.shadowColor = theme.railColor || palette.primary;
   ctx.stroke();
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
@@ -1925,21 +1974,21 @@ function draw() {
     // Outer soft aura — wide, very faint, gives the shape presence
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
-    ctx.strokeStyle = palette.primary;
-    ctx.lineWidth = 18;
-    ctx.globalAlpha = 0.08 + Math.abs(Math.sin(now / 1800)) * 0.04;
-    ctx.shadowBlur = 35;
-    ctx.shadowColor = palette.primary;
+    ctx.strokeStyle = theme.railColor || palette.primary;
+    ctx.lineWidth = 16;
+    ctx.globalAlpha = (0.055 + Math.abs(Math.sin(now / 1800)) * 0.03) * railGlowScale;
+    ctx.shadowBlur = 26 * railGlowScale;
+    ctx.shadowColor = theme.railColor || palette.primary;
     ctx.stroke();
 
     // Mid glow — tighter, slightly brighter
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
-    ctx.strokeStyle = palette.primary;
-    ctx.lineWidth = 6;
-    ctx.globalAlpha = 0.18 + Math.abs(Math.sin(now / 1400)) * 0.06;
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = palette.primary;
+    ctx.strokeStyle = theme.railColor || palette.primary;
+    ctx.lineWidth = 5;
+    ctx.globalAlpha = (0.14 + Math.abs(Math.sin(now / 1400)) * 0.05) * railGlowScale;
+    ctx.shadowBlur = 14 * railGlowScale;
+    ctx.shadowColor = theme.railColor || palette.primary;
     ctx.stroke();
 
     // Corner hot spots — tiny bright dots at each diamond point,
@@ -1953,7 +2002,7 @@ function draw() {
       ctx.lineWidth = 2.5;
       ctx.globalAlpha = 0.35 + Math.abs(Math.sin(now / 900 + idx)) * 0.15;
       ctx.shadowBlur = 12;
-      ctx.shadowColor = palette.primary;
+      ctx.shadowColor = theme.railColor || palette.primary;
       ctx.stroke();
     });
 
@@ -2006,6 +2055,13 @@ function draw() {
     // Stronger target contrast on diamond (especially during streaks)
     let targetAlpha = isBossShield ? (0.27 + approach * 0.27 + hitFlash * 0.2) : (0.45 + approach * 0.25 + hitFlash * 0.3);
     let targetCoreAlpha = isBossShield ? 0.94 : 0.92;
+    const isWorld2PrimaryTarget = worldNum === 2 && !isBoss && !t.isPhantom && !t.isCornerBonus && !t.isLifeZone && !isBossShield;
+    const targetGlowColor = isWorld2PrimaryTarget ? theme.targetGlowColor : t.color;
+    const targetCoreColor = isWorld2PrimaryTarget ? theme.targetCoreColor : (isBossShield ? t.color : '#ffffff');
+    if (isWorld2PrimaryTarget) {
+      targetAlpha += 0.08;
+      targetCoreAlpha = Math.min(1, targetCoreAlpha + 0.05);
+    }
 
     if (t.isPhantom) {
       ctx.save();
@@ -2184,7 +2240,7 @@ function draw() {
     ctx.beginPath();
     buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
     // World 2 diamond targets get brighter outer edge + stronger presence for readability.
-    ctx.strokeStyle = t.color;
+    ctx.strokeStyle = targetGlowColor;
     ctx.globalAlpha = Math.min(1, targetAlpha * pulse);
     const glowMult = worldShape === 'diamond' ? 0.6 : 1.0;
     ctx.lineWidth = isBossShield
@@ -2193,14 +2249,14 @@ function draw() {
     setShadowBlur(isBossShield
       ? (12 + (approach * 12) + (hitFlash * 10))
       : (16 + (approach * 18) + (hitFlash * 14)));
-    ctx.shadowColor = t.color;
+    ctx.shadowColor = targetGlowColor;
     ctx.stroke();
 
     if (!isLiteTargetRender) {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       // High-contrast core (darker in World 2 diamond) to stand out during streaks.
-      ctx.strokeStyle = isBossShield ? t.color : '#ffffff';
+      ctx.strokeStyle = targetCoreColor;
       ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = isBossShield
         ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
@@ -2208,16 +2264,27 @@ function draw() {
       setShadowBlur(isBossShield
         ? (7 + (approach * 6) + (hitFlash * 9))
         : (10 + (approach * 12) + (hitFlash * 16)));
-      ctx.shadowColor = t.color;
+      ctx.shadowColor = targetGlowColor;
       ctx.stroke();
     } else {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = t.color;
+      ctx.strokeStyle = targetCoreColor;
       ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = bodyWidth + 1 + (approach * 0.8) + (hitFlash * 0.9);
       setShadowBlur(6 + (approach * 6) + (hitFlash * 8));
-      ctx.shadowColor = t.color;
+      ctx.shadowColor = targetGlowColor;
+      ctx.stroke();
+    }
+
+    if (isWorld2PrimaryTarget && !isLiteTargetRender) {
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#dffcff';
+      ctx.globalAlpha = 0.52 + (approach * 0.22);
+      ctx.lineWidth = Math.max(1.2, bodyWidth * 0.42);
+      setShadowBlur(8 + (approach * 6));
+      ctx.shadowColor = targetGlowColor;
       ctx.stroke();
     }
 
@@ -2242,7 +2309,7 @@ function draw() {
       ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
       ctx.lineCap = 'round';
       setShadowBlur(14);
-      ctx.shadowColor = t.color;
+      ctx.shadowColor = targetGlowColor;
       ctx.stroke();
     }
 
@@ -2266,7 +2333,7 @@ function draw() {
       ctx.lineWidth = Math.max(1.5, bodyWidth * 0.42);
       ctx.lineCap = 'round';
       ctx.shadowBlur = 8 + (approach * 6);
-      ctx.shadowColor = t.color;
+      ctx.shadowColor = targetGlowColor;
       ctx.stroke();
     };
 
