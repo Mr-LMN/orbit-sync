@@ -181,6 +181,26 @@ const MAX_SHOCKWAVES = 10;
 const MAX_HIT_RIPPLES = 20;
 const multiColors = ['#ffffff', '#00e5ff', '#00ff88', '#ffea00', '#ffaa00', '#ff3366', '#b300ff', '#ff00ff'];
 
+const stateBridge = OrbitGame.state.legacy = OrbitGame.state.legacy || {};
+Object.defineProperties(stateBridge, {
+  targets: { get: () => targets, set: (v) => { targets = v; } },
+  particles: { get: () => particles, set: (v) => { particles = v; } },
+  effects: { get: () => ({ popups, shockwaves, targetHitRipples }) },
+  bosses: { get: () => targets.filter(t => t.isBossShield || (levelData && levelData.boss)) },
+  score: { get: () => score, set: (v) => { score = v; } },
+  streak: { get: () => streak, set: (v) => { streak = v; } },
+  multiplier: { get: () => multiplier, set: (v) => { multiplier = v; } },
+  lives: { get: () => lives, set: (v) => { lives = v; } },
+  globalCoins: { get: () => globalCoins, set: (v) => { globalCoins = v; } },
+  currentWorld: { get: () => parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : menuSelectedWorld || 1), 10) },
+  currentStage: { get: () => (levelData && levelData.id) ? levelData.id : null },
+  waveCounter: { get: () => stageHits, set: (v) => { stageHits = v; } },
+  bossFight: { get: () => ({ isBossPhaseTwo, bossPhase, bossIntroPlaying, bossTransitionLock }) },
+  revive: { get: () => ({ currentReviveCost, reviveCount, usedLastChance }) },
+  world2: { get: () => ({ nearMissReplayUntil, nearMissReplayActive }) }
+});
+
+
 function getWorldPalette() {
   return currentWorldPalette;
 }
@@ -267,81 +287,10 @@ function updateCanvasSize() {
 updateCanvasSize();
 window.addEventListener('resize', updateCanvasSize);
 
-function getPointOnShape(t, shape, cx, cy, radius) {
-  if (shape === 'circle') {
-    return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
-  }
-  if (shape === 'diamond') {
-    // Clean sharp diamond with true linear segments between the 4 corners.
-    const a = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    const side = Math.min(3, Math.floor(a / (Math.PI / 2)));
-    const progress = (a % (Math.PI / 2)) / (Math.PI / 2);
+function getPointOnShape(t, shape, cx, cy, radius) { return OrbitGame.systems.rendering.getPointOnShape(t, shape, cx, cy, radius); }
 
-    const corners = [
-      { x: 0, y: -1 },  // top
-      { x: 1, y: 0 },   // right
-      { x: 0, y: 1 },   // bottom
-      { x: -1, y: 0 }   // left
-    ];
-
-    const p1 = corners[side];
-    const p2 = corners[(side + 1) % 4];
-
-    const x = p1.x + (p2.x - p1.x) * progress;
-    const y = p1.y + (p2.y - p1.y) * progress;
-
-    return {
-      x: cx + x * radius,
-      y: cy + y * radius
-    };
-  }
-  const sides = shape === 'triangle' ? 3 : 5;
-  const rotation = -Math.PI / 2;
-  const corners = [];
-  for (let i = 0; i < sides; i++) {
-    const a = rotation + (i * Math.PI * 2 / sides);
-    corners.push({ x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius });
-  }
-  const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-  const sectorSize = Math.PI * 2 / sides;
-  const sectorIdx = Math.floor(normalized / sectorSize) % sides;
-  const progress = (normalized - sectorIdx * sectorSize) / sectorSize;
-  const p1 = corners[sectorIdx];
-  const p2 = corners[(sectorIdx + 1) % sides];
-  return {
-    x: p1.x + (p2.x - p1.x) * progress,
-    y: p1.y + (p2.y - p1.y) * progress
-  };
-}
-
-// Helper to draw a path segment along any shape
-// Used by ring drawing and target drawing
 function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps = 40) {
-  if (shape === 'diamond') {
-    const rawSpan = endAngle - startAngle;
-    let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
-    if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
-    const actualSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
-    ctx.beginPath();
-    for (let i = 0; i <= actualSteps; i++) {
-      const t = startAngle + (span * i / actualSteps);
-      const pt = getPointOnShape(t, 'diamond', cx, cy, radius);
-      if (i === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    }
-    return;
-  }
-  const rawSpan = endAngle - startAngle;
-  let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
-  if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
-  const actualSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
-  ctx.beginPath();
-  for (let i = 0; i <= actualSteps; i++) {
-    const t = startAngle + (span * i / actualSteps);
-    const pt = getPointOnShape(t, shape, cx, cy, radius);
-    if (i === 0) ctx.moveTo(pt.x, pt.y);
-    else ctx.lineTo(pt.x, pt.y);
-  }
+  return OrbitGame.systems.rendering.buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps);
 }
 
 // Generate subtle background dust for depth
@@ -498,354 +447,87 @@ function renderShopOrbPreview(previewEl, skinId) {
 const particlePool = [];
 const popupPool = [];
 
-function getParticle() {
-  return particlePool.length ? particlePool.pop() : { x: 0, y: 0, vx: 0, vy: 0, angle: 0, length: 0, life: 0, color: '#fff' };
-}
-
-function releaseParticle(particle) {
-  particle.life = 0;
-  particlePool.push(particle);
-}
-
-function getPopup() {
-  return popupPool.length
-    ? popupPool.pop()
-    : { x: 0, y: 0, text: '', color: '#fff', life: 0, hitQuality: null, animType: 'default', riseSpeed: 1, fadeSpeed: 0.02, shadow: 0 };
-}
-
-function releasePopup(popup) {
-  popup.animType = 'default';
-  popup.riseSpeed = 1;
-  popup.fadeSpeed = 0.02;
-  popup.shadow = 0;
-  popup.fontSize = null;
-  popup.life = 0;
-  popupPool.push(popup);
-}
-
+function getParticle() { return OrbitGame.entities.particles.getParticle(); }
+function releaseParticle(particle) { return OrbitGame.entities.particles.releaseParticle(particle); }
+function getPopup() { return OrbitGame.entities.effects.getPopup(); }
+function releasePopup(popup) { return OrbitGame.entities.effects.releasePopup(popup); }
 function markScoreCoinDirty(force = false) {
-  hudScoreCoinDirty = true;
-  pendingHudUpdates++;
-  const batchSize = isMobile ? 3 : 1;
-  if (force || pendingHudUpdates >= batchSize) flushScoreCoinUI();
+  if (force) hudScoreCoinDirty = true;
+  else if (!hudScoreCoinDirty) hudScoreCoinDirty = true;
 }
-
 function flushScoreCoinUI() {
   if (!hudScoreCoinDirty) return;
   ui.score.innerText = score;
-  ui.coins.innerText = Math.floor(globalCoins);
-  ui.runCoins.innerText = Math.floor(runCents / 10);
-  hudLastFlushAt = performance.now();
+  ui.coins.innerText = Math.floor(globalCoins + getPendingRunCoins());
   hudScoreCoinDirty = false;
   pendingHudUpdates = 0;
+  hudLastFlushAt = performance.now();
 }
-
 function setOverlayState(type) {
-  const reviveBtn = document.getElementById('reviveBtn');
-  const coinReviveBtn = document.getElementById('coinReviveBtn');
-  const shareBtn = document.getElementById('shareBtn');
-  const menuBtn = document.getElementById('menuBtn');
-  const pbBlock = document.getElementById('pbStatsBlock');
-  const clearSummary = document.getElementById('clearSummary');
-  const overlayActionStack = document.getElementById('overlayActionStack');
-  const runCoinsBox = document.getElementById('runCoinsBox');
-  const overlayMetaStack = document.getElementById('overlayMetaStack');
-
-  const hideAll = () => {
-    ui.btn.style.display = 'none';
-    if (reviveBtn) reviveBtn.style.display = 'none';
-    if (coinReviveBtn) coinReviveBtn.style.display = 'none';
-    if (shareBtn) shareBtn.style.display = 'none';
-    if (menuBtn) menuBtn.style.display = 'none';
-    if (pbBlock) pbBlock.style.display = 'none';
-    if (clearSummary) clearSummary.style.display = 'none';
-    if (overlayActionStack) overlayActionStack.style.display = 'none';
-    if (runCoinsBox) runCoinsBox.style.display = 'none';
-  };
-
-  hideAll();
-
-  if (type === 'gameOver') {
-    if (overlayMetaStack) overlayMetaStack.style.display = '';
-    ui.btn.style.display = 'block';
-    if (reviveBtn) reviveBtn.style.display = 'block';
-    if (shareBtn) shareBtn.style.display = 'block';
-    if (menuBtn) menuBtn.style.display = 'block';
-    if (pbBlock) pbBlock.style.display = 'grid';
-    if (overlayActionStack) overlayActionStack.style.display = 'flex';
-    if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
-  } else if (type === 'worldClearReady') {
-    if (overlayMetaStack) overlayMetaStack.style.display = '';
-    ui.btn.style.display = 'block';
-    if (shareBtn) shareBtn.style.display = 'block';
-    if (clearSummary) clearSummary.style.display = 'grid';
-    if (overlayActionStack) overlayActionStack.style.display = 'flex';
-    if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
-  } else if (type === 'worldClearTally') {
-    if (overlayMetaStack) overlayMetaStack.style.display = '';
-    if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
-  } else if (type === 'cinematic') {
-    setCinematicOverlayMode();
+  overlayState = type;
+  if (type === 'fail') {
+    ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
     forceHideOverlayExtras();
   }
 }
-
 function forceHideOverlayExtras() {
-  const overlayActionStack = document.getElementById('overlayActionStack');
-  const runCoinsBox = document.getElementById('runCoinsBox');
-  const pbBlock = document.getElementById('pbStatsBlock');
-  const clearSummary = document.getElementById('clearSummary');
-  const newRecordBanner = document.getElementById('newRecordBanner');
+  const reviveBtn = document.getElementById('reviveBtn');
   const coinReviveBtn = document.getElementById('coinReviveBtn');
-
-  if (overlayActionStack) overlayActionStack.style.display = 'none';
-  if (runCoinsBox) runCoinsBox.style.display = 'none';
-  if (pbBlock) pbBlock.style.display = 'none';
-  if (clearSummary) clearSummary.style.display = 'none';
-  if (newRecordBanner) newRecordBanner.style.display = 'none';
+  const runCoinsBox = document.getElementById('runCoinsBox');
+  const clearSummary = document.getElementById('clearSummary');
+  const shareBtn = document.getElementById('shareBtn');
+  const pbStatsBlock = document.getElementById('pbStatsBlock');
+  const newRecordBanner = document.getElementById('newRecordBanner');
+  if (reviveBtn) reviveBtn.style.display = 'none';
   if (coinReviveBtn) coinReviveBtn.style.display = 'none';
-  if (ui.btn) ui.btn.style.display = 'none';
+  if (runCoinsBox) runCoinsBox.style.display = 'none';
+  if (clearSummary) clearSummary.style.display = 'none';
+  if (shareBtn) shareBtn.style.display = 'none';
+  if (pbStatsBlock) pbStatsBlock.style.display = 'none';
+  if (newRecordBanner) newRecordBanner.style.display = 'none';
 }
-
 function setCinematicOverlayMode() {
-  const meta = document.getElementById('overlayMetaStack');
-  if (meta) meta.style.display = 'none';
+  ui.overlay.style.display = 'flex';
+  ui.btn.style.display = 'none';
   forceHideOverlayExtras();
 }
-
 function clearCinematicOverlayMode() {
-  const meta = document.getElementById('overlayMetaStack');
-  if (meta) meta.style.display = '';
+  ui.btn.style.display = 'inline-block';
 }
-
 function resetRunState() {
-  // Lives are run-persistent across waves/stages.
-  // Only explicit fresh runs/restarts should fully reset lives.
-  score = 0;
-  streak = 0;
-  perfectLifeStreak = 0;
-  runBestStreak = 0;
-  multiplier = 1;
-  lives = maxLives;
-  runCents = 0;
-  distanceTraveled = 0;
-  direction = 1;
-  angle = 0;
-  trail = [];
-  stageHits = 0;
-  isBossPhaseTwo = false;
-  bossPhase = 1;
-  bossIntroPlaying = false;
-  bossTransitionLock = false;
-  bossPauseUntil = 0;
-  currentReviveCost = 50;
-  reviveCount = 0;
-  usedLastChance = false;
-  scoreAtCheckpoint = 0;
-  scoreAtLevelStart = 0;
-  stageClearHoldUntil = 0;
-  nearMissReplayUntil = 0;
-  nearMissReplayActive = false;
-  isCinematicIntro = false;
-  targets = [];
-  particles = [];
-  popups = [];
-  shockwaves = [];
-  targetHitRipples = [];
+  score = 0; stageHits = 0; lives = maxLives; multiplier = 1; streak = 0;
+  distanceTraveled = 0; runCents = 0;
+  angle = 0; direction = 1;
+  perfectLifeStreak = 0; runBestStreak = 0;
+  currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
+  scoreAtCheckpoint = 0; scoreAtLevelStart = 0;
+  isBossPhaseTwo = false; bossPhase = 1;
+  lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
 }
-
-function loseLife(reason) {
-  // Every real miss must spend exactly one life through this function.
-  if (lives <= 0) return 0;
-  lives = Math.max(0, lives - 1);
-  ui.lives.innerText = lives;
-  perfectLifeStreak = 0;
-  return lives;
-}
-
+function loseLife(reason) { lives--; ui.lives.innerText = lives; perfectLifeStreak = 0; if (lives <= 0) { handleFail(reason); } else { soundLifeLost(); } }
 function gainLifeFromPerfectStreak() {
-  // The only active life recovery rule:
-  // +1 life after 6 perfect hits in a row, capped at max lives.
-  if (lives >= maxLives) {
+  if (lives < maxLives) {
+    lives++;
+    ui.lives.innerText = lives;
     perfectLifeStreak = 0;
-    return false;
-  }
-  lives = Math.min(maxLives, lives + 1);
-  ui.lives.innerText = lives;
-  perfectLifeStreak = 0;
-  createPopup(centerObj.x, centerObj.y - orbitRadius - 18, "+1 LIFE", "#ffcc66");
-  soundLifeGained();
-  return true;
-}
-
-function createParticles(x, y, color, count = 20) {
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 6 + 2;
-    const length = Math.random() * 10 + 5;
-    const particle = getParticle();
-    particle.x = x;
-    particle.y = y;
-    particle.vx = Math.cos(angle) * speed;
-    particle.vy = Math.sin(angle) * speed;
-    particle.angle = angle;
-    particle.length = length;
-    particle.life = 1.0;
-    particle.color = color;
-    particles.push(particle);
-  }
-  if (particles.length > MAX_PARTICLES) {
-    const overflow = particles.length - MAX_PARTICLES;
-    for (let i = 0; i < overflow; i++) releaseParticle(particles[i]);
-    particles.splice(0, overflow);
+    showTempText('+1 LIFE!', '#7dfffb', 1100);
+    soundLifeGained();
+    vibrate([18, 24, 18]);
+    createShockwave('#7dfffb', 30);
   }
 }
-
-function createUpwardBurstParticles(x, y, color, count = 36) {
-  const burstCount = Math.min(count, 40);
-  for (let i = 0; i < burstCount; i++) {
-    const angle = (-Math.PI / 2) + ((Math.random() - 0.5) * 1.25); // mostly upward fan
-    const speed = Math.random() * 5 + 3.5;
-    const particle = getParticle();
-    particle.x = x;
-    particle.y = y;
-    particle.vx = Math.cos(angle) * speed * 0.85;
-    particle.vy = Math.sin(angle) * speed;
-    particle.angle = angle;
-    particle.length = Math.random() * 11 + 6;
-    particle.life = 1.0;
-    particle.color = color;
-    particles.push(particle);
-  }
-  if (particles.length > MAX_PARTICLES) {
-    const overflow = particles.length - MAX_PARTICLES;
-    for (let i = 0; i < overflow; i++) releaseParticle(particles[i]);
-    particles.splice(0, overflow);
-  }
-}
-function createPopup(x, y, text, color, hitQuality = null) {
-  const popup = getPopup();
-  popup.x = x;
-  popup.y = y;
-  popup.text = text;
-  popup.color = color;
-  popup.life = 1.0;
-  popup.hitQuality = hitQuality;
-  popup.animType = 'default';
-  popup.riseSpeed = 1;
-  popup.fadeSpeed = 0.02;
-  popup.shadow = 0;
-  popups.push(popup);
-  if (popups.length > MAX_POPUPS) {
-    const oldest = popups.shift();
-    if (oldest) releasePopup(oldest);
-  }
-  return popup;
-}
-
-function showComboPopup(multiplierLevel) {
-  const comboMilestones = {
-    4: { label: 'x4 COMBO!', color: '#00f7ff' },
-    6: { label: 'x6 RAMPAGE!', color: '#ff67f3' },
-    8: { label: 'x8 GOD MODE!', color: '#ffd84d' }
-  };
-  const milestone = comboMilestones[multiplierLevel];
-  if (!milestone) return;
-
-  const comboPopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 26, milestone.label, milestone.color);
-  comboPopup.animType = 'combo';
-  comboPopup.life = 1.65;
-  comboPopup.riseSpeed = 0.75;
-  comboPopup.fadeSpeed = 0.027;
-  comboPopup.shadow = 32;
-
-  createShockwave(milestone.color, 42);
-  createShockwave('#ffffff', 50);
-  createUpwardBurstParticles(centerObj.x, centerObj.y - 14, milestone.color, 28);
-}
-
-function showNearMissReplay(reason, nearestEdgeDistance) {
-  nearMissReplayActive = true;
-  nearMissReplayUntil = performance.now() + 680;
-  const replayText = nearestEdgeDistance <= (NEAR_MISS_THRESHOLD * 0.5) ? "SO CLOSE!" : "ALMOST!";
-  const replayColor = replayText === "SO CLOSE!" ? '#ffe14f' : '#ffad33';
-  const replayPopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 30, replayText, replayColor);
-  replayPopup.animType = 'nearMiss';
-  replayPopup.life = 1.18;
-  replayPopup.riseSpeed = 0.42;
-  replayPopup.fadeSpeed = 0.017;
-  replayPopup.shadow = 38;
-  replayPopup.fontSize = isMobile ? '3.35rem' : '3.95rem';
-  createShockwave('#ffaa00', 54);
-  createShockwave('#ffffff', 44);
-  createUpwardBurstParticles(centerObj.x, centerObj.y + 8, replayColor, 34);
-  triggerScreenShake(12);
-  setTimeout(() => {
-    nearMissReplayActive = false;
-    nearMissReplayUntil = 0;
-    handleFail(reason);
-  }, 680);
-}
-
-function createShockwave(color, speed = 40) {
-  shockwaves.push({ radius: orbitRadius * 0.15, opacity: 1.0, color: color, width: 5, speed: speed });
-  if (shockwaves.length > MAX_SHOCKWAVES) shockwaves.splice(0, shockwaves.length - MAX_SHOCKWAVES);
-}
-function createTargetHitRipple(x, y, color = '#ffffff') {
-  targetHitRipples.push({
-    x,
-    y,
-    radius: 3,
-    speed: 2.6,
-    life: 1.0,
-    color: color === '#ffffff' ? 'rgba(255,255,255,0.95)' : rgbaFromHex(color, 0.95)
-  });
-  if (targetHitRipples.length > MAX_HIT_RIPPLES) {
-    targetHitRipples.splice(0, targetHitRipples.length - MAX_HIT_RIPPLES);
-  }
-}
-
-function triggerTargetHitFeedback(target, x, y) {
-  target.hitFlash = 1.0;
-  target.hitScalePulse = 1.0;
-  createTargetHitRipple(x, y, target.color || '#ffffff');
-}
-
-function triggerScreenShake(intensity = 5) {
-  canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`;
-  setTimeout(() => canvas.style.transform = `translate(${Math.random() * intensity - intensity / 2}px, ${Math.random() * intensity - intensity / 2}px)`, 50);
-  setTimeout(() => canvas.style.transform = `translate(0px, 0px)`, 100);
-}
-
-function pulseBrightness(amount = 1.6, duration = 120) {
-  if (brightnessPulseTimeout) clearTimeout(brightnessPulseTimeout);
-  canvas.style.filter = `brightness(${amount})`;
-  brightnessPulseTimeout = setTimeout(() => {
-    canvas.style.filter = 'brightness(1)';
-    brightnessPulseTimeout = null;
-  }, duration);
-}
-
-function scheduleBossSpawn(delay = 700) {
-  if (bossSpawnTimeout) clearTimeout(bossSpawnTimeout);
-  bossSpawnTimeout = setTimeout(() => {
-    spawnTargets();
-    bossSpawnTimeout = null;
-  }, delay);
-}
-
-function pauseGameplayBriefly(duration = 750) {
-  const now = performance.now();
-  bossPauseUntil = Math.max(bossPauseUntil, now + duration);
-  bossTransitionLock = true;
-  isPlaying = false;
-  setTimeout(() => {
-    if (performance.now() >= bossPauseUntil) {
-      bossTransitionLock = false;
-      isPlaying = true;
-    }
-  }, duration + 20);
-}
+function createParticles(x, y, color, count = 20) { return OrbitGame.entities.particles.createParticles(x, y, color, count); }
+function createUpwardBurstParticles(x, y, color, count = 36) { return OrbitGame.entities.particles.createUpwardBurstParticles(x, y, color, count); }
+function createPopup(x, y, text, color, hitQuality = null) { return OrbitGame.entities.effects.createPopup(x, y, text, color, hitQuality); }
+function showComboPopup(multiplierLevel) { return OrbitGame.entities.effects.showComboPopup(multiplierLevel); }
+function showNearMissReplay(reason, nearestEdgeDistance) { return OrbitGame.entities.effects.showNearMissReplay(reason, nearestEdgeDistance); }
+function createShockwave(color, speed = 40) { return OrbitGame.entities.effects.createShockwave(color, speed); }
+function createTargetHitRipple(x, y, color = '#ffffff') { return OrbitGame.entities.effects.createTargetHitRipple(x, y, color); }
+function triggerTargetHitFeedback(target, x, y) { return OrbitGame.entities.effects.triggerTargetHitFeedback(target, x, y); }
+function triggerScreenShake(intensity = 5) { return OrbitGame.entities.effects.triggerScreenShake(intensity); }
+function pulseBrightness(amount = 1.6, duration = 120) { return OrbitGame.entities.effects.pulseBrightness(amount, duration); }
+function scheduleBossSpawn(delay = 700) { return OrbitGame.entities.boss.scheduleBossSpawn(delay); }
+function pauseGameplayBriefly(duration = 750) { return OrbitGame.entities.boss.pauseGameplayBriefly(duration); }
 
 function hexToRgb(hex) {
   const cleanHex = hex.replace('#', '');
@@ -864,26 +546,12 @@ function rgbaFromHex(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function normalizeAngle(a) {
-  return ((a % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
-}
+function normalizeAngle(a) { return OrbitGame.systems.collision.normalizeAngle(a); }
 
-function signedAngularDistance(from, to) {
-  let diff = normalizeAngle(to) - normalizeAngle(from);
-  if (diff > Math.PI) diff -= Math.PI * 2;
-  if (diff < -Math.PI) diff += Math.PI * 2;
-  return diff;
-}
+function signedAngularDistance(from, to) { return OrbitGame.systems.collision.signedAngularDistance(from, to); }
 
 function getTargetApproachIntensity(target, playerAngle, playerDirection) {
-  const targetCenter = target.start + (target.size / 2);
-  const signedDiff = signedAngularDistance(playerAngle, targetCenter);
-  const forwardDiff = signedDiff * playerDirection;
-  if (forwardDiff <= 0) return 0;
-
-  const threshold = Math.max(target.size * 1.8, 0.34);
-  if (forwardDiff >= threshold) return 0;
-  return 1 - (forwardDiff / threshold);
+  return OrbitGame.systems.collision.getTargetApproachIntensity(target, playerAngle, playerDirection);
 }
 
 function generateTitle(score, world, streak, revives) {
@@ -903,176 +571,15 @@ function generateTitle(score, world, streak, revives) {
 function generateShareCard() { return OrbitGame.ui.share.generateShareCard(); }
 function downloadCard(card) { return OrbitGame.ui.share.downloadCard(card); }
 
-function updateMultiplierUI() {
-  const prevMultiplier = lastMultiplierDisplay;
-  const didChange = multiplier !== prevMultiplier;
-  ui.multiplierCount.innerText = multiplier;
+function updateMultiplierUI() { return OrbitGame.systems.scoring.updateMultiplierUI(); }
 
-  if (multiplier <= 1) {
-    ui.bigMultiplier.style.display = 'none';
-    lastMultiplierDisplay = multiplier;
-    return;
-  } else {
-    ui.bigMultiplier.style.display = 'block';
-  }
+function getCheckpointIndex() { return OrbitGame.systems.progression.getCheckpointIndex(); }
 
-  let mColor = multiColors[Math.min(multiplier - 1, 7)];
-  ui.bigMultiplier.style.color = mColor;
-  ui.bigMultiplier.style.textShadow = `0 0 20px ${mColor}`;
-  // Heavier right-side pop, still snappy.
-  ui.bigMultiplier.style.transform = "translateY(-50%) scale(1.6)";
-  setTimeout(() => ui.bigMultiplier.style.transform = "translateY(-50%) scale(1)", 120);
+function updateWaveUI() { return OrbitGame.systems.progression.updateWaveUI(); }
 
-  if (didChange && (multiplier === 4 || multiplier === 6 || multiplier === 8)) {
-    showComboPopup(multiplier);
-  }
+function triggerBossIntro() { return OrbitGame.entities.boss.triggerBossIntro(); }
 
-  lastMultiplierDisplay = multiplier;
-}
-
-function getCheckpointIndex() {
-  let currentWorld = levelData.id.split('-')[0];
-  for (let i = 0; i < campaign.length; i++) { if (campaign[i].id.startsWith(currentWorld + "-")) return i; }
-  return 0;
-}
-
-function updateWaveUI() {
-  if (levelData.boss) {
-    ui.wave.style.display = 'none';
-    if (ui.bossUI) ui.bossUI.style.display = 'none'; // Hide the old HTML bar
-  } else {
-    if (ui.bossUI) ui.bossUI.style.display = 'none';
-    ui.wave.style.display = 'block';
-    ui.wave.innerText = `WAVE ${Math.min(stageHits + 1, levelData.hitsNeeded)} / ${levelData.hitsNeeded}`;
-  }
-}
-
-
-function triggerBossIntro() {
-  bossIntroPlaying = true;
-  isPlaying = false;
-
-  initAudio();
-  startBossDrone();
-  setOverlayState('cinematic');
-  setCinematicOverlayMode();
-  forceHideOverlayExtras();
-  const overlayActionStack = document.getElementById('overlayActionStack');
-  if (overlayActionStack) overlayActionStack.style.display = 'none';
-
-  const introByBoss = {
-    aegis: { text: "AEGIS CORE ONLINE", color: '#ff3366' },
-    prism: { text: "PRISM PROTOCOL ACTIVE", color: '#ff00cc' }
-  };
-  const introConfig = introByBoss[levelData.boss] || { text: "BOSS PROTOCOL ACTIVE", color: '#ff3366' };
-  const introText = introConfig.text;
-  const introColor = introConfig.color;
-  let displayed = "";
-  let i = 0;
-
-  canvas.style.boxShadow = `inset 0 0 80px ${introColor}`;
-  setTimeout(() => canvas.style.boxShadow = "none", 200);
-
-  const typeInterval = setInterval(() => {
-    setCinematicOverlayMode();
-    forceHideOverlayExtras();
-    displayed += introText[i];
-    ui.text.innerText = displayed;
-    ui.text.style.color = introColor;
-    ui.text.style.letterSpacing = isMobile ? "2px" : "6px";
-    i++;
-    if (i >= introText.length) {
-      clearInterval(typeInterval);
-      setTimeout(() => {
-        bossIntroPlaying = false;
-        isPlaying = true;
-        ui.text.style.letterSpacing = "";
-      }, 600);
-    }
-  }, 60);
-}
-
-let currentCinematicInterval = null;
-
-function playBossCinematic() {
-  let step = 0;
-
-  // Clear any existing intervals to prevent lag/memory leaks
-  if (currentCinematicInterval) clearInterval(currentCinematicInterval);
-
-  // 1. Hide ALL distracting game UI (Score, Multiplier, Boss HP)
-  ui.topBar.style.display = 'none';
-  ui.gameUI.style.display = 'none';
-  ui.bigMultiplier.style.display = 'none';
-  if (ui.bossUI) ui.bossUI.style.display = 'none'; // Fixes the floating health bar!
-
-  setOverlayState('cinematic');
-  setCinematicOverlayMode();
-  forceHideOverlayExtras();
-  const overlayActionStack = document.getElementById('overlayActionStack');
-  if (overlayActionStack) overlayActionStack.style.display = 'none';
-  const runCoinsBox = document.getElementById('runCoinsBox');
-  if (runCoinsBox) runCoinsBox.style.display = 'none';
-
-  // 2. Clean overlay for text
-  ui.overlay.style.display = 'flex';
-  ui.overlay.style.background = 'rgba(10, 10, 15, 0.6)';
-  ui.title.style.display = 'block';
-  ui.title.style.maxWidth = '90vw';
-  ui.title.style.textAlign = 'center';
-  ui.title.innerText = "";
-  ui.subtitle.style.display = 'none';
-  ui.subtitle.style.maxWidth = '90vw';
-  ui.subtitle.style.textAlign = 'center';
-
-  // 3. Pre-generate shields, but hold them
-  spawnTargets();
-  let pendingShields = [...targets];
-  targets = [];
-
-  currentCinematicInterval = setInterval(() => {
-    step++;
-
-    if (step === 1) {
-      ui.title.innerText = "WARNING: ANOMALY DETECTED";
-      ui.title.style.color = '#ff3366';
-    } else if (step === 2) {
-      ui.title.innerText = "TEST YOUR RHYTHM";
-      ui.title.style.color = '#ffffff';
-    }
-
-    // Pop in shields one by one
-    if (step <= pendingShields.length) {
-      targets.push(pendingShields[step - 1]);
-      triggerScreenShake(8);
-      if (typeof audioCtx !== 'undefined' && audioCtx) { playPop(1, false, true); vibrate(20); }
-    }
-
-    // End Cinematic
-    if (step > pendingShields.length && step >= 3) {
-      clearInterval(currentCinematicInterval);
-      currentCinematicInterval = null;
-      isCinematicIntro = false;
-
-      // Clear Overlay
-      ui.overlay.style.display = 'none';
-      ui.subtitle.style.display = 'block';
-      clearCinematicOverlayMode();
-
-      // RESTORE ALL HUD ELEMENTS
-      ui.topBar.style.display = 'flex';
-      ui.gameUI.style.display = 'block';
-      ui.bigMultiplier.style.display = multiplier > 1 ? 'block' : 'none';
-      if (ui.bossUI) ui.bossUI.style.display = 'none'; // Boss HP bar sidelined for now.
-
-      // Flash effect to signal fight start
-      canvas.style.boxShadow = `inset 0 0 100px #ffffff`;
-      setTimeout(() => canvas.style.boxShadow = 'none', 200);
-    }
-  }, 800);
-}
-
-
+function playBossCinematic() { return OrbitGame.entities.boss.playBossCinematic(); }
 
 function loadLevel(idx) {
   if (idx < 0 || idx >= campaign.length) {
@@ -1107,281 +614,19 @@ function loadLevel(idx) {
   return true;
 }
 
-function buildTarget(start, size, config = {}) {
-  const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
-  const target = {
-    start,
-    size,
-    baseSize: size,
-    spawnDistance: totalStageDistance,
-    ...config
-  };
-  if (!target.shrinkConfig && levelData && levelData.shrink && !target.isHeart && !target.isBossShield) {
-    target.shrinkConfig = levelData.shrink;
-  }
-  if (!target.pulseConfig && levelData && levelData.pulse && worldNum !== 2 && !target.isHeart && !target.isBossShield && !target.isPhantom && !target.isCornerBonus) {
-    target.pulseConfig = levelData.pulse;
-    target.pulsePhaseOffset = (target.start % (Math.PI * 2)) * 420;
-    target.pulseAtMinimum = false;
-  }
-  return target;
-}
+function buildTarget(start, size, config = {}) { return OrbitGame.entities.target.buildTarget(start, size, config); }
 
-function spawnWorld2CornerBonusTargets() {
-  const worldNum = parseInt(levelData.id.split('-')[0], 10);
-  if (worldNum !== 2 || levelData.boss || inMenu) return;
+function spawnWorld2CornerBonusTargets() { return OrbitGame.entities.target.spawnWorld2CornerBonusTargets(); }
 
-  const spawnChance = levelData.cornerBonusChance ?? 0.38;
-  if (Math.random() > spawnChance) return;
+function buildCornerPrecisionTarget(anchorAngle, options = {}) { return OrbitGame.entities.target.buildCornerPrecisionTarget(anchorAngle, options); }
 
-  const maxCorners = levelData.cornerBonusMax ?? 1;
-  const bonusCount = (maxCorners > 1 && Math.random() < 0.22) ? 2 : 1;
-  const cornerAngles = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
-  const jitterRange = levelData.cornerBonusJitter ?? 0.045;
-  const cornerSize = levelData.cornerBonusSize ?? (Math.PI / 20);
-  const bonusColor = '#ffd54a';
-  const chosen = [];
+function buildDualTarget(startAngle, options = {}) { return OrbitGame.entities.target.buildDualTarget(startAngle, options); }
 
-  while (chosen.length < bonusCount && chosen.length < cornerAngles.length) {
-    const idx = Math.floor(Math.random() * cornerAngles.length);
-    if (!chosen.includes(idx)) chosen.push(idx);
-  }
+function buildSplitTarget(startAngle, size, options = {}) { return OrbitGame.entities.target.buildSplitTarget(startAngle, size, options); }
 
-  chosen.forEach(idx => {
-    const jitter = (Math.random() * 2 - 1) * jitterRange;
-    targets.push(buildTarget(cornerAngles[idx] + jitter, cornerSize, {
-      color: bonusColor,
-      active: true,
-      hp: 1,
-      moveSpeed: 0,
-      isCornerBonus: true
-    }));
-  });
-}
+function spawnWorld2MechanicTargets() { return OrbitGame.entities.target.spawnWorld2MechanicTargets(); }
 
-function buildCornerPrecisionTarget(anchorAngle, options = {}) {
-  const backWindow = options.backWindow ?? 0.135;
-  const overshootWindow = options.overshootWindow ?? 0.135;
-  const perfectWindow = options.perfectWindow ?? 0.015;
-
-  return buildTarget(normalizeAngle(anchorAngle - backWindow), backWindow + overshootWindow, {
-    color: options.color || '#90fcff',
-    active: true,
-    hp: 1,
-    mechanic: 'corner',
-    cornerAnchor: anchorAngle,
-    cornerBackWindow: backWindow,
-    cornerOvershootWindow: overshootWindow,
-    cornerPerfectWindow: perfectWindow,
-    cornerHitboxExpand: options.hitboxExpand ?? 0.028
-  });
-}
-
-function buildDualTarget(startAngle, options = {}) {
-  const halfSize = options.halfSize ?? 0.068;
-  const perfectWindow = options.perfectWindow ?? 0.018;
-  const totalSize = halfSize * 2;
-  const centerAngle = normalizeAngle(startAngle + halfSize);
-
-  return buildTarget(startAngle, totalSize, {
-    color: '#ffffff',
-    active: true,
-    hp: 1,
-    mechanic: 'dual',
-    isDual: true,
-    angle: centerAngle,
-    baseAngle: centerAngle,
-    targetHalfWidth: halfSize,
-    dualState: 'full',
-    dualHits: [false, false],
-    dualPerfectWindow: perfectWindow,
-    dualSegments: [
-      { offset: 0, size: halfSize, color: '#5cf6ff' },
-      { offset: halfSize, size: halfSize, color: '#ff5ec8' }
-    ]
-  });
-}
-
-function buildSplitTarget(startAngle, size, options = {}) {
-  return buildTarget(startAngle, size, {
-    color: options.color || '#b06bff',
-    active: true,
-    hp: 1,
-    mechanic: 'split',
-    splitOnHit: true,
-    splitDepth: options.splitDepth ?? 0
-  });
-}
-
-function spawnWorld2MechanicTargets() {
-  const corners = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
-  const id = levelData.id;
-
-  if (id === '2-1') {
-    const cornerIdx = stageHits % 4;
-    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], {
-      backWindow: 0.135,
-      overshootWindow: 0.135,
-      perfectWindow: 0.015,
-      hitboxExpand: 0.028,
-      color: '#90fcff'
-    }));
-    return;
-  }
-
-  if (id === '2-2') {
-    const base = (Math.random() * Math.PI * 2);
-    targets.push(buildDualTarget(base, {
-      halfSize: 0.14,
-      perfectWindow: 0.032
-    }));
-    return;
-  }
-
-  if (id === '2-3') {
-    const base = (Math.random() * Math.PI * 2);
-    targets.push(buildSplitTarget(base, Math.PI / 9, { color: '#ffaa00' }));
-    return;
-  }
-
-  if (id === '2-4') {
-    const cornerIdx = stageHits % 4;
-    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.075, perfectWindow: 0.016, color: '#74f9ff' }));
-    if (stageHits % 2 === 0) {
-      targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), {
-        halfSize: 0.12,
-        perfectWindow: 0.016
-      }));
-    } else {
-      targets.push(buildSplitTarget((corners[(cornerIdx + 2) % 4] + 0.15) % (Math.PI * 2), Math.PI / 10, { color: '#ffcc00' }));
-    }
-    return;
-  }
-
-  if (id === '2-5') {
-    const cornerIdx = (stageHits + 1) % 4;
-    targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { backWindow: 0.03, overshootWindow: 0.06, perfectWindow: 0.012, color: '#90fcff' }));
-    targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), {
-      halfSize: 0.10,
-      perfectWindow: 0.014
-    }));
-    targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#ff8c00' }));
-  }
-}
-
-function spawnTargets() {
-  targets = [];
-  const palette = getWorldPalette();
-  const worldNum = parseInt(levelData.id.split('-')[0], 10);
-  if (levelData.boss === 'aegis') {
-    if (!isBossPhaseTwo) {
-      ui.text.innerText = bossPhase === 1 ? "BOSS: Break the shields!" : "BOSS ENRAGED: Faster & Sharper!";
-      ui.text.style.color = bossPhase === 1 ? "#00e5ff" : "#ff3366";
-      let offset = Math.random() * Math.PI * 2;
-      const shieldCount = bossPhase === 1 ? 3 : 2;
-      for (let i = 0; i < shieldCount; i++) {
-        targets.push(buildTarget(
-          offset + (i * (Math.PI * 2 / shieldCount)),
-          bossPhase === 1 ? Math.PI / 4 : Math.PI / 6,
-          {
-            color: bossPhase === 1 ? '#00e5ff' : '#ff3366', active: true, hp: 3, isBossShield: true,
-            moveSpeed: bossPhase === 1 ? undefined : 0.038 * (i % 2 === 0 ? 1 : -1),
-            nextDirectionSwapAt: bossPhase === 1 ? 0 : (performance.now() + 1100 + Math.random() * 900)
-          }
-        ));
-      }
-    } else {
-      ui.text.innerText = "CORE EXPOSED! Need PERFECT hit!"; ui.text.style.color = "#ffffff";
-      targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 10, { color: '#ffffff', active: true, hp: 1 }));
-    }
-    return;
-  }
-
-  if (levelData.boss === 'prism') {
-    if (!isBossPhaseTwo) {
-      ui.text.innerText = bossPhase === 1
-        ? "BOSS: Destroy all 4 corner shields!"
-        : "PRISM ENRAGED: Faster corners!";
-      ui.text.style.color = bossPhase === 1 ? '#ff00cc' : '#ff3366';
-      // 4 shields, one per corner of diamond
-      for (let i = 0; i < 4; i++) {
-        targets.push(buildTarget(
-          (i * Math.PI / 2) + 0.1,
-          Math.PI / 6,
-          {
-            color: bossPhase === 1 ? '#ff00cc' : '#ff3366',
-            active: true,
-            hp: bossPhase === 1 ? 2 : 1,
-            isBossShield: true,
-            moveSpeed: bossPhase === 1 ? 0 : 0.035 * (i % 2 === 0 ? 1 : -1)
-          }
-        ));
-      }
-    } else {
-      ui.text.innerText = "PRISM CORE OPEN — HIT IT!";
-      ui.text.style.color = '#ffffff';
-      targets.push(buildTarget(
-        Math.random() * Math.PI * 2,
-        Math.PI / 10,
-        {
-          color: '#ff00cc',
-          active: true,
-          hp: 1
-        }
-      ));
-    }
-    return;
-  }
-
-  if (worldNum === 2 && !levelData.boss && Array.isArray(levelData.mechanics) && levelData.mechanics.length > 0) {
-    spawnWorld2MechanicTargets();
-    return;
-  }
-
-  let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
-  const isFixedThreeTargetTutorialStage = levelData.id === '1-5' || levelData.fixedTargetCount === true;
-  if (tCount === 3 && !isFixedThreeTargetTutorialStage) {
-    const patterns = [3, 2, 4];
-    tCount = patterns[stageHits % patterns.length];
-  }
-
-  let sizeModifier = 1.0;
-  if (tCount === 2) sizeModifier = 0.6;
-  if (tCount === 3) sizeModifier = 0.5;
-  if (tCount === 4) sizeModifier = 0.35;
-
-  let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
-  let offset = Math.random() * Math.PI * 2;
-  const isDual = levelData.mechanics && levelData.mechanics.includes('dual');
-
-  for (let i = 0; i < tCount; i++) {
-    const angle = normalizeAngle(offset + (i * (Math.PI * 2 / tCount)) + (baseSize / 2));
-    const target = buildTarget(offset + (i * (Math.PI * 2 / tCount)), baseSize, {
-      color: worldNum === 2 ? currentWorldVisualTheme.targetColor : (tCount > 1 ? '#ff3366' : palette.primary),
-      active: true,
-      hp: 1
-    });
-    target.angle = angle;
-    target.baseAngle = angle;
-    target.isDual = isDual;
-    target.targetHalfWidth = baseSize / 2;
-    target.dualState = isDual ? 'full' : 'normal'; // 'full', 'left', 'right', 'normal'
-    targets.push(target);
-  }
-  if (levelData.hasPhantom && !inMenu && !levelData.boss) {
-    // Spawn 1 phantom zone offset from real targets
-    const realTargetAngle = targets.length > 0
-      ? targets[0].start + targets[0].size + (Math.PI * 0.4)
-      : Math.random() * Math.PI * 2;
-    targets.push(buildTarget(((realTargetAngle) % (Math.PI * 2)), worldNum === 2 ? (Math.PI / 8.6) : (Math.PI / 9), {
-      color: '#ff3366',
-      active: true,
-      isPhantom: true,
-      hp: 1
-    }));
-  }
-
-}
+function spawnTargets() { return OrbitGame.systems.spawning.spawnTargets(); }
 
 function draw() {
   const palette = currentWorldPalette;
@@ -2171,24 +1416,9 @@ function draw() {
   ctx.textBaseline = 'alphabetic';
 }
 
-function isInsideTarget(playerAngle, t) {
-  const end = t.start + t.size;
-  if (end > Math.PI * 2) {
-    return playerAngle >= t.start || playerAngle <= (end - Math.PI * 2);
-  }
-  return playerAngle >= t.start && playerAngle <= end;
-}
+function isInsideTarget(playerAngle, t) { return OrbitGame.entities.target.isInsideTarget(playerAngle, t); }
 
-function showTempText(text, color, duration) {
-  ui.text.style.display = 'block';
-  ui.text.innerText = text;
-  ui.text.style.color = color;
-  if (tempTextTimeout) clearTimeout(tempTextTimeout);
-  tempTextTimeout = setTimeout(() => {
-    ui.text.style.display = 'none';
-    ui.text.style.color = '';
-  }, duration);
-}
+function showTempText(text, color, duration) { return OrbitGame.entities.effects.showTempText(text, color, duration); }
 
 function update() {
   if (isCinematicIntro) { requestAnimationFrame(update); return; }
@@ -2925,64 +2155,7 @@ function tap() {
   }
 }
 
-function triggerStageClear() {
-  stageHits++;
-  updateWaveUI(); 
-  
-  if (stageHits >= levelData.hitsNeeded) {
-    const wasBoss = !!levelData.boss;
-    const nextLevelIdx = currentLevelIdx + 1;
-    const nextLevelObj = campaign[nextLevelIdx] || null;
-    const currentWorld = parseInt(levelData.id.split('-')[0], 10);
-    const nextWorld = nextLevelObj ? parseInt(nextLevelObj.id.split('-')[0], 10) : null;
-    const worldAdvanced = !!nextLevelObj && nextWorld > currentWorld;
-    const campaignComplete = !nextLevelObj;
-
-    if (nextWorld && nextWorld > maxWorldUnlocked) { maxWorldUnlocked = nextWorld; saveData(); }
-
-    if (wasBoss || worldAdvanced || campaignComplete) {
-      showWorldClearSequence({
-        nextLevelIdx: nextLevelObj ? nextLevelIdx : null,
-        nextWorld: nextWorld || currentWorld,
-        coinsEarned: Math.floor(runCents / 10),
-        isCampaignClear: campaignComplete
-      });
-    } else {
-      // SEAMLESS TRANSITION! (Keep playing, flash the screen, load next wave)
-      soundWaveClear();
-      const worldNum = parseInt(levelData.id.split('-')[0], 10);
-      const waveClearColor = worldNum === 2 ? '#ff4fd8' : '#00ff88';
-      const waveClearAftershockColor = worldNum === 2 ? '#c68cff' : '#ffffff';
-      const wavePopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 28, "WAVE CLEARED!", waveClearColor);
-      wavePopup.animType = 'combo';
-      wavePopup.life = 1.85;
-      wavePopup.riseSpeed = 0.8;
-      wavePopup.fadeSpeed = 0.018;
-      wavePopup.shadow = 28;
-      createParticles(centerObj.x, centerObj.y, waveClearColor, Math.min(54, MAX_PARTICLES));
-      createUpwardBurstParticles(centerObj.x, centerObj.y + 10, waveClearAftershockColor, 32);
-      createUpwardBurstParticles(centerObj.x, centerObj.y + 4, waveClearColor, 34);
-      triggerScreenShake(8);
-      
-      // Triple pulse with a lightweight cap-safe finish.
-      createShockwave(waveClearColor, 35); // Main heavy neon wave
-      setTimeout(() => createShockwave(waveClearAftershockColor, 45), 100); // Faster aftershock
-      setTimeout(() => createShockwave(waveClearColor, 52), 180); // Extra celebration pop
-      if (typeof vibrate === 'function') vibrate([28, 28, 42, 20, 70]); // Stronger double-thump
-
-      // Briefly flash the screen to match world identity
-      canvas.style.boxShadow = `inset 0 0 50px ${waveClearColor}`; 
-      setTimeout(() => canvas.style.boxShadow = 'none', 150);
-
-      stageClearHoldUntil = performance.now() + 850;
-
-      currentLevelIdx = nextLevelIdx;
-      loadLevel(currentLevelIdx);
-    }
-  } else { 
-    spawnTargets(); 
-  }
-}
+function triggerStageClear() { return OrbitGame.systems.progression.triggerStageClear(); }
 
 function startCampaign() { return OrbitGame.ui.menus.startCampaign(); }
 
