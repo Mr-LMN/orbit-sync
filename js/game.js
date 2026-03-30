@@ -1867,8 +1867,8 @@ function spawnWorld2MechanicTargets() {
   if (id === '2-2') {
     const base = (Math.random() * Math.PI * 2);
     targets.push(buildDualTarget(base, {
-      halfSize: 0.068,
-      perfectWindow: 0.018
+      halfSize: 0.14,
+      perfectWindow: 0.032
     }));
     return;
   }
@@ -1884,7 +1884,7 @@ function spawnWorld2MechanicTargets() {
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.075, perfectWindow: 0.016, color: '#74f9ff' }));
     if (stageHits % 2 === 0) {
       targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), {
-        halfSize: 0.056,
+        halfSize: 0.12,
         perfectWindow: 0.016
       }));
     } else {
@@ -1897,7 +1897,7 @@ function spawnWorld2MechanicTargets() {
     const cornerIdx = (stageHits + 1) % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { backWindow: 0.03, overshootWindow: 0.06, perfectWindow: 0.012, color: '#90fcff' }));
     targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), {
-      halfSize: 0.05,
+      halfSize: 0.10,
       perfectWindow: 0.014
     }));
     targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#d97cff' }));
@@ -2337,60 +2337,93 @@ function draw() {
       const rightStart = t.start + halfSize;
       const rightEnd = t.start + t.size;
 
-      // Left half (cyan) — drawn as arc segment along the track
+      // LEFT HALF (cyan)
       if (t.dualState === 'full' || t.dualState === 'left') {
-        // Glow
+        // Wide outer glow
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
           dynamicRadius, leftStart, leftEnd);
         ctx.strokeStyle = '#00e5ff';
-        ctx.globalAlpha = 0.35;
-        ctx.lineWidth = glowWidth;
+        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = 16;
         ctx.lineCap = 'butt';
-        setShadowBlur(20);
+        setShadowBlur(28);
         ctx.shadowColor = '#00e5ff';
         ctx.stroke();
-        // Core
+
+        // Mid body
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
+          dynamicRadius, leftStart, leftEnd);
+        ctx.strokeStyle = '#00e5ff';
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 5;
+        setShadowBlur(12);
+        ctx.shadowColor = '#00e5ff';
+        ctx.stroke();
+
+        // Bright core line
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
           dynamicRadius, leftStart, leftEnd);
         ctx.strokeStyle = '#ffffff';
         ctx.globalAlpha = 0.95;
-        ctx.lineWidth = bodyWidth;
-        setShadowBlur(10);
+        ctx.lineWidth = 2;
+        setShadowBlur(8);
         ctx.shadowColor = '#00e5ff';
         ctx.stroke();
       }
 
-      // Right half (magenta) — drawn as arc segment along the track
+      // RIGHT HALF (magenta)
       if (t.dualState === 'full' || t.dualState === 'right') {
-        // Glow
+        // Wide outer glow
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
           dynamicRadius, rightStart, rightEnd);
         ctx.strokeStyle = '#ff00cc';
-        ctx.globalAlpha = 0.35;
-        ctx.lineWidth = glowWidth;
+        ctx.globalAlpha = 0.28;
+        ctx.lineWidth = 16;
         ctx.lineCap = 'butt';
-        setShadowBlur(20);
+        setShadowBlur(28);
         ctx.shadowColor = '#ff00cc';
         ctx.stroke();
-        // Core
+
+        // Mid body
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
+          dynamicRadius, rightStart, rightEnd);
+        ctx.strokeStyle = '#ff00cc';
+        ctx.globalAlpha = 0.7;
+        ctx.lineWidth = 5;
+        setShadowBlur(12);
+        ctx.shadowColor = '#ff00cc';
+        ctx.stroke();
+
+        // Bright core line
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
           dynamicRadius, rightStart, rightEnd);
         ctx.strokeStyle = '#ffffff';
         ctx.globalAlpha = 0.95;
-        ctx.lineWidth = bodyWidth;
-        setShadowBlur(10);
+        ctx.lineWidth = 2;
+        setShadowBlur(8);
         ctx.shadowColor = '#ff00cc';
         ctx.stroke();
       }
 
-      // Perfect center divider — bright white dot at the split point
+      // PERFECT CENTRE DIVIDER — visible white dot + short
+      // perpendicular tick so the split point is unmissable
       if (t.dualState === 'full') {
-        const splitPt = getPointOnShape(
-          t.start + halfSize, worldShape,
-          centerObj.x, centerObj.y, dynamicRadius
-        );
+        const splitAngle = t.start + halfSize;
+        const splitPt = getPointOnShape(splitAngle, worldShape,
+          centerObj.x, centerObj.y, dynamicRadius);
+
+        // Outer glow ring
         ctx.beginPath();
-        ctx.arc(splitPt.x, splitPt.y, 3.5, 0, Math.PI * 2);
+        ctx.arc(splitPt.x, splitPt.y, 7, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.15;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ffffff';
+        ctx.fill();
+
+        // Solid dot
+        ctx.beginPath();
+        ctx.arc(splitPt.x, splitPt.y, 4, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.globalAlpha = 1.0;
         ctx.shadowBlur = 14;
