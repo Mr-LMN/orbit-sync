@@ -1810,18 +1810,20 @@ function buildCornerPrecisionTarget(anchorAngle, options = {}) {
 }
 
 function buildDualTarget(startAngle, options = {}) {
-  const segSize = options.segmentSize ?? 0.028;
-  const gap = options.gap ?? 0.02;
-  const totalSize = (segSize * 2) + gap;
+  const halfSize = options.halfSize ?? 0.045;
+  const perfectWindow = options.perfectWindow ?? 0.014;
+  const totalSize = halfSize * 2;
+
   return buildTarget(startAngle, totalSize, {
-    color: '#73f8ff',
+    color: '#ffffff',
     active: true,
     hp: 1,
     mechanic: 'dual',
     dualHits: [false, false],
+    dualPerfectWindow: perfectWindow,
     dualSegments: [
-      { offset: 0, size: segSize, color: '#5cf6ff' },
-      { offset: segSize + gap, size: segSize, color: '#ff5ec8' }
+      { offset: 0, size: halfSize, color: '#5cf6ff' },
+      { offset: halfSize, size: halfSize, color: '#ff5ec8' }
     ]
   });
 }
@@ -1844,8 +1846,8 @@ function spawnWorld2MechanicTargets() {
   if (id === '2-1') {
     const cornerIdx = stageHits % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], {
-      backWindow: 0.09,
-      overshootWindow: 0.09,
+      backWindow: 0.135,
+      overshootWindow: 0.135,
       perfectWindow: 0.015,
       color: '#90fcff'
     }));
@@ -1854,7 +1856,7 @@ function spawnWorld2MechanicTargets() {
 
   if (id === '2-2') {
     const base = (Math.random() * Math.PI * 2);
-    targets.push(buildDualTarget(base, { segmentSize: 0.028, gap: 0.02 }));
+    targets.push(buildDualTarget(base, { halfSize: 0.045, perfectWindow: 0.014 }));
     return;
   }
 
@@ -1868,7 +1870,7 @@ function spawnWorld2MechanicTargets() {
     const cornerIdx = stageHits % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { overshootWindow: 0.075, perfectWindow: 0.016, color: '#74f9ff' }));
     if (stageHits % 2 === 0) {
-      targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), { segmentSize: 0.064, gap: 0.016 }));
+      targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.2) % (Math.PI * 2), { halfSize: 0.04, perfectWindow: 0.013 }));
     } else {
       targets.push(buildSplitTarget((corners[(cornerIdx + 2) % 4] + 0.15) % (Math.PI * 2), Math.PI / 10, { color: '#c389ff' }));
     }
@@ -1878,7 +1880,7 @@ function spawnWorld2MechanicTargets() {
   if (id === '2-5') {
     const cornerIdx = (stageHits + 1) % 4;
     targets.push(buildCornerPrecisionTarget(corners[cornerIdx], { backWindow: 0.03, overshootWindow: 0.06, perfectWindow: 0.012, color: '#90fcff' }));
-    targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), { segmentSize: 0.05, gap: 0.014 }));
+    targets.push(buildDualTarget((corners[(cornerIdx + 1) % 4] + 0.12) % (Math.PI * 2), { halfSize: 0.038, perfectWindow: 0.012 }));
     targets.push(buildSplitTarget((corners[(cornerIdx + 3) % 4] - 0.1 + Math.PI * 2) % (Math.PI * 2), Math.PI / 13, { color: '#d97cff' }));
   }
 }
@@ -2302,42 +2304,50 @@ function draw() {
 
     if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
       ctx.save();
+
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.globalAlpha = 0.9;
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#ffffff';
+      ctx.stroke();
+
       t.dualSegments.forEach((seg, idx) => {
         const cleared = t.dualHits && t.dualHits[idx];
-        const segCenter = t.start + seg.offset + (seg.size / 2);
-        const pt = getPointOnShape(segCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-
-        if (idx === 0) {
-          const nextSeg = t.dualSegments[1];
-          const nextCenter = t.start + nextSeg.offset + (nextSeg.size / 2);
-          const nextPt = getPointOnShape(nextCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-          ctx.beginPath();
-          ctx.moveTo(pt.x, pt.y);
-          ctx.lineTo(nextPt.x, nextPt.y);
-          ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-          ctx.lineWidth = 2;
-          ctx.shadowBlur = 0;
-          ctx.stroke();
-        }
-
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, cleared ? 6 : 8, 0, Math.PI * 2);
-        ctx.fillStyle = cleared ? 'rgba(45,56,72,0.8)' : seg.color;
-        ctx.globalAlpha = cleared ? 0.5 : 0.95;
-        ctx.shadowBlur = cleared ? 0 : 14;
-        ctx.shadowColor = seg.color;
-        ctx.fill();
+        const segStart = t.start + seg.offset;
+        const segEnd = segStart + seg.size;
 
         if (!cleared) {
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 3.2, 0, Math.PI * 2);
-          ctx.fillStyle = '#ffffff';
+          buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, segStart, segEnd);
+          ctx.strokeStyle = seg.color;
+          ctx.globalAlpha = 0.92;
+          ctx.lineWidth = 6.2;
+          ctx.lineCap = 'round';
+          ctx.shadowBlur = 14;
+          ctx.shadowColor = seg.color;
+          ctx.stroke();
+
+          buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, segStart, segEnd);
+          ctx.strokeStyle = '#ffffff';
           ctx.globalAlpha = 0.95;
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = '#ffffff';
-          ctx.fill();
+          ctx.lineWidth = 2.8;
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = seg.color;
+          ctx.stroke();
         }
       });
+
+      const centerPt = getPointOnShape(t.start + t.size / 2, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      ctx.beginPath();
+      ctx.arc(centerPt.x, centerPt.y, 2.4, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.75;
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#ffffff';
+      ctx.fill();
+
       ctx.restore();
       return;
     }
@@ -2821,8 +2831,12 @@ function update() {
       const allSegmentsCleared = t.dualHits.every(Boolean);
       const insideNow = isInsideTarget(angle, t);
       const hasStartedDualChain = t.dualHits.some(Boolean);
-      if (!allSegmentsCleared) {
-        if (hasStartedDualChain && t.dualInsideWindow && !insideNow && !deferredFailReason) {
+
+      if (!allSegmentsCleared && hasStartedDualChain) {
+        if (insideNow) {
+          t.dualInsideWindow = true;
+        } else if (t.dualInsideWindow && !deferredFailReason) {
+          t.dualInsideWindow = false;
           deferredFailReason = 'DUAL TARGET DROPPED';
         }
       }
@@ -3044,14 +3058,29 @@ function tap() {
         else continue;
       } else if (t.mechanic === 'dual' && Array.isArray(t.dualSegments)) {
         const localAngle = normalizeAngle(angle - t.start);
-        hitSegmentIndex = t.dualSegments.findIndex((seg, idx) => !t.dualHits[idx] && localAngle >= seg.offset && localAngle <= (seg.offset + seg.size));
-        if (hitSegmentIndex === -1) continue;
-        const seg = t.dualSegments[hitSegmentIndex];
-        const segCenter = seg.offset + (seg.size / 2);
-        const segDist = Math.abs(localAngle - segCenter);
-        if (segDist < seg.size / 5) hitQuality = "perfect";
-        else if (segDist < seg.size / 2.4) hitQuality = "good";
-        else hitQuality = "ok";
+        const totalCenter = t.size / 2;
+        const centerDist = Math.abs(localAngle - totalCenter);
+
+        if (centerDist <= (t.dualPerfectWindow || 0.014)) {
+          hitSegmentIndex = 99;
+          hitQuality = "perfect";
+        } else {
+          hitSegmentIndex = t.dualSegments.findIndex((seg, idx) =>
+            !t.dualHits[idx] &&
+            localAngle >= seg.offset &&
+            localAngle <= (seg.offset + seg.size)
+          );
+
+          if (hitSegmentIndex === -1) continue;
+
+          const seg = t.dualSegments[hitSegmentIndex];
+          const segCenter = seg.offset + (seg.size / 2);
+          const segDist = Math.abs(localAngle - segCenter);
+
+          if (segDist < seg.size / 5) hitQuality = "perfect";
+          else if (segDist < seg.size / 2.4) hitQuality = "good";
+          else hitQuality = "ok";
+        }
       } else {
         if (dist < targets[i].size / 6) hitQuality = "perfect";
         else if (dist < targets[i].size / 3) hitQuality = "good";
@@ -3104,14 +3133,24 @@ function tap() {
     }
 
     if (t.mechanic === 'dual' && hitSegmentIndex !== -1) {
-      t.dualHits[hitSegmentIndex] = true;
-      t.dualInsideWindow = true;
-      createPopup(hitX, hitY - 36, `LINK ${t.dualHits.filter(Boolean).length}/2`, t.dualSegments[hitSegmentIndex].color);
-      createParticles(hitX, hitY, t.dualSegments[hitSegmentIndex].color, 16);
-      if (!t.dualHits.every(Boolean)) {
-        t.color = '#ffffff';
-      } else {
+      if (hitSegmentIndex === 99) {
+        t.dualHits = [true, true];
+        t.dualInsideWindow = false;
         t.active = false;
+        createPopup(hitX, hitY - 36, "PERFECT LINK", "#ffffff");
+        createParticles(hitX, hitY, '#ffffff', 24);
+        createShockwave('#ffffff', 22);
+      } else {
+        t.dualHits[hitSegmentIndex] = true;
+        t.dualInsideWindow = true;
+        createPopup(hitX, hitY - 36, `LINK ${t.dualHits.filter(Boolean).length}/2`, t.dualSegments[hitSegmentIndex].color);
+        createParticles(hitX, hitY, t.dualSegments[hitSegmentIndex].color, 16);
+
+        if (t.dualHits.every(Boolean)) {
+          t.dualInsideWindow = false;
+          t.active = false;
+          createPopup(hitX, hitY - 18, "LINKED", "#ffffff");
+        }
       }
     } else if ((t.mechanic === 'split' || t.mechanic === 'splitChild') && t.splitOnHit) {
       t.active = false;
