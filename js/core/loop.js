@@ -663,12 +663,23 @@ function getActiveSplitFamilyMembers(familyId) {
   return targets.filter((t) => t.active && isSplitEntity(t) && (familyId == null || t.splitFamilyId === familyId));
 }
 
+function pruneInactiveSplitTargets() {
+  if (!Array.isArray(targets) || targets.length === 0) return 0;
+  const before = targets.length;
+  targets = targets.filter((t) => t.active || !isSplitEntity(t));
+  return before - targets.length;
+}
+
 function hasActiveSplitFamily() {
   return getActiveSplitFamilyMembers().length > 0;
 }
 
 function spawnControlledSplitRoot(options = {}) {
   if (!isSplitStageMode()) return null;
+  pruneInactiveSplitTargets();
+  targets.forEach((t) => {
+    if (t.active && isSplitEntity(t)) t.active = false;
+  });
   const familyId = getNextSplitFamilyId();
   const size = options.size || Math.PI / 4.2;
   const baseStart = typeof options.startAngle === 'number'
@@ -695,6 +706,7 @@ function spawnControlledSplitRoot(options = {}) {
 
 function maybeRespawnSplitRootForStage(clearedFamilyId) {
   if (!isSplitStageMode() || !clearedFamilyId) return false;
+  pruneInactiveSplitTargets();
   if (stageHits >= levelData.hitsNeeded || !isPlaying) return false;
   if (getActiveSplitFamilyMembers(clearedFamilyId).length > 0) return false;
   if (hasActiveSplitFamily()) return false;
@@ -720,6 +732,7 @@ function draw() {
   const worldNum = parseInt(levelData ? levelData.id.split('-')[0] : '1', 10);
   const railGlowScale = theme.railGlowScale || 1;
   const now = performance.now();
+  const splitPulseTime = now * 0.015;
   const useHeavyEffects = !isMobile || multiplier > 2;
   const shadowBlurCap = useHeavyEffects ? 999 : 8;
   const setShadowBlur = (value) => { ctx.shadowBlur = Math.min(shadowBlurCap, value); };
@@ -1165,6 +1178,9 @@ function draw() {
 
       const depth = Number.isFinite(t.splitGeneration) ? t.splitGeneration : (t.splitDepth || 0);
       const isRootSplit = depth === 0;
+      const isSmallSplit = depth >= 2;
+      const isMediumSplit = depth === 1;
+      const splitHeavy = useHeavyEffects && !isSmallSplit;
 
       const palette = depth === 0
         ? { glow: '#2ff6ff', body: '#5deeff', core: '#ffffff', accent: '#ff4fd8' }
@@ -1172,66 +1188,72 @@ function draw() {
           ? { glow: '#ff4fd8', body: '#ff9b54', core: '#ffffff', accent: '#ffc08a' }
           : { glow: '#ffd54a', body: '#ffe68b', core: '#ffffff', accent: '#7cf7ff' };
 
-      const pulse = 1 + Math.sin((performance.now() * 0.015) + (t.start * 6.5)) * 0.045;
+      const pulse = 1 + Math.sin(splitPulseTime + (t.start * 6.5)) * (isSmallSplit ? 0.03 : 0.045);
       const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
       const generationScale = Math.pow(0.8, depth);
-      const outerWidth = (14.2 * generationScale) * pulse;
-      const midWidth = (6.6 * generationScale) * pulse;
-      const coreWidth = (2.9 * generationScale) * pulse;
-      const capRadius = (4.9 * generationScale);
+      const outerWidth = (depth === 0 ? 14.2 : depth === 1 ? 10.8 : 7.4) * generationScale * pulse;
+      const midWidth = (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2) * generationScale * pulse;
+      const coreWidth = (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1) * generationScale * pulse;
+      const capRadius = Math.max(2.1, (depth === 0 ? 4.9 : depth === 1 ? 3.8 : 2.7) * generationScale);
 
-      // Big readable outer glow
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = palette.glow;
-      ctx.globalAlpha = 0.16 + (launchMix * 0.1);
-      ctx.lineWidth = outerWidth;
-      ctx.lineCap = 'butt';
-      ctx.shadowBlur = 18 + (depth === 0 ? 4 : 0);
-      ctx.shadowColor = palette.glow;
-      ctx.stroke();
+      if (!isSmallSplit) {
+        // Big readable outer glow
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+        ctx.strokeStyle = palette.glow;
+        ctx.globalAlpha = (depth === 0 ? 0.16 : 0.12) + (launchMix * 0.08);
+        ctx.lineWidth = outerWidth;
+        ctx.lineCap = 'butt';
+        ctx.shadowBlur = splitHeavy ? (depth === 0 ? 18 : 12) : 6;
+        ctx.shadowColor = palette.glow;
+        ctx.stroke();
+      }
 
       // Main body
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = palette.body;
-      ctx.globalAlpha = 0.92;
+      ctx.globalAlpha = isSmallSplit ? 0.9 : 0.92;
       ctx.lineWidth = midWidth;
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = splitHeavy ? (depth === 0 ? 11 : 8) : (isSmallSplit ? 2 : 5);
       ctx.shadowColor = palette.glow;
       ctx.stroke();
 
       // Bright core
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = palette.core;
-      ctx.globalAlpha = 0.96;
+      ctx.globalAlpha = isSmallSplit ? 0.9 : 0.96;
       ctx.lineWidth = coreWidth;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = splitHeavy ? (depth === 0 ? 9 : 6) : (isSmallSplit ? 0 : 3);
       ctx.shadowColor = palette.core;
       ctx.stroke();
 
       // End caps so the arc reads properly at speed
-      const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-      const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      if (!isSmallSplit) {
+        const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
-      ctx.beginPath();
-      ctx.arc(startPt.x, startPt.y, capRadius, 0, Math.PI * 2);
-      ctx.arc(endPt.x, endPt.y, capRadius, 0, Math.PI * 2);
-      ctx.fillStyle = palette.accent;
-      ctx.globalAlpha = 0.75;
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = palette.glow;
-      ctx.fill();
+        ctx.beginPath();
+        ctx.arc(startPt.x, startPt.y, capRadius, 0, Math.PI * 2);
+        ctx.arc(endPt.x, endPt.y, capRadius, 0, Math.PI * 2);
+        ctx.fillStyle = palette.accent;
+        ctx.globalAlpha = isMediumSplit ? 0.66 : 0.75;
+        ctx.shadowBlur = splitHeavy ? (isMediumSplit ? 8 : 12) : 3;
+        ctx.shadowColor = palette.glow;
+        ctx.fill();
+      }
 
       // Visible crack / split marker in the middle
       const crackAngle = t.start + (t.size / 2);
       const crackPt = getPointOnShape(crackAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
-      ctx.beginPath();
-      ctx.arc(crackPt.x, crackPt.y, depth === 0 ? 7 : depth === 1 ? 5.1 : 3.9, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = isRootSplit ? 0.16 : 0.12;
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = '#ffffff';
-      ctx.fill();
+      if (!isSmallSplit) {
+        ctx.beginPath();
+        ctx.arc(crackPt.x, crackPt.y, depth === 0 ? 7 : 5.1, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = isRootSplit ? 0.16 : 0.11;
+        ctx.shadowBlur = splitHeavy ? 14 : 4;
+        ctx.shadowColor = '#ffffff';
+        ctx.fill();
+      }
 
       ctx.beginPath();
       const crackSize = depth === 0 ? 6 : depth === 1 ? 4.8 : 3.8;
@@ -1242,7 +1264,7 @@ function draw() {
       ctx.strokeStyle = '#ffffff';
       ctx.globalAlpha = 0.95;
       ctx.lineWidth = depth === 0 ? 2 : depth === 1 ? 1.5 : 1.2;
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = isSmallSplit ? 0 : (splitHeavy ? 7 : 2);
       ctx.shadowColor = '#ffffff';
       ctx.stroke();
 
@@ -2183,12 +2205,15 @@ function tap() {
 
         targets.push(leftChild, rightChild);
 
-        createParticles(hitX, hitY, nextDepth === 1 ? '#7cf7ff' : '#ffd54a', nextDepth === 1 ? 26 : 18);
-        createParticles(hitX, hitY, nextDepth === 1 ? '#ff4fd8' : '#ffffff', nextDepth === 1 ? 18 : 12);
-        createShockwave('#ffffff', nextDepth === 1 ? 32 : 24);
-        createShockwave(nextDepth === 1 ? '#7cf7ff' : '#ffd54a', nextDepth === 1 ? 26 : 20);
-        pulseBrightness(nextDepth === 1 ? 1.75 : 1.45, nextDepth === 1 ? 120 : 90);
-        triggerScreenShake(nextDepth === 1 ? 7 : 5);
+        const splitFx = nextDepth === 1
+          ? { pA: 22, pB: 14, swA: 30, swB: 24, pulse: 1.68, pulseDur: 110, shake: 6 }
+          : { pA: 12, pB: 8, swA: 20, swB: 16, pulse: 1.32, pulseDur: 72, shake: 3 };
+        createParticles(hitX, hitY, nextDepth === 1 ? '#7cf7ff' : '#ffd54a', splitFx.pA);
+        createParticles(hitX, hitY, nextDepth === 1 ? '#ff4fd8' : '#ffffff', splitFx.pB);
+        createShockwave('#ffffff', splitFx.swA);
+        createShockwave(nextDepth === 1 ? '#7cf7ff' : '#ffd54a', splitFx.swB);
+        pulseBrightness(splitFx.pulse, splitFx.pulseDur);
+        triggerScreenShake(splitFx.shake);
 
         if (audioCtx) {
           playPop(nextDepth === 1 ? 3 : 4, false, nextDepth === 2);
@@ -2200,6 +2225,9 @@ function tap() {
           nextDepth === 1 ? "SPLIT BURST!" : "SHATTER BURST!",
           nextDepth === 1 ? '#7cf7ff' : '#ffd54a'
         );
+      }
+      if (splitGeneration >= 1) {
+        pruneInactiveSplitTargets();
       }
       maybeRespawnSplitRootForStage(splitFamilyId);
     } else {
