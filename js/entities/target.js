@@ -35,7 +35,7 @@
     const totalSize = backWindow + overshootWindow;
     const start = normalizeAngle(anchorAngle - backWindow);
     const t = buildTarget(start, totalSize, {
-      color: options.color || '#ffd54a',
+      color: options.color || '#78f8ff',
       move: options.move || 0,
       mechanic: 'corner',
       hp: options.hp || 1
@@ -52,7 +52,7 @@
   function buildDualTarget(startAngle, options = {}) {
     const size = options.size || (Math.PI / 3.1);
     const t = buildTarget(normalizeAngle(startAngle), size, {
-      color: options.color || '#d594ff',
+      color: options.color || '#2ff6ff',
       move: options.move || 0,
       mechanic: 'dual',
       isDual: true,
@@ -63,6 +63,7 @@
     t.leftColor = options.leftColor || '#2ff6ff';
     t.rightColor = options.rightColor || '#ff4fd8';
     t.coreColor = options.coreColor || '#ffffff';
+    t.shellColor = options.shellColor || '#ffd54a';
     return t;
   }
 
@@ -125,7 +126,7 @@
         overshootWindow: 0.135,
         perfectWindow: 0.015,
         hitboxExpand: 0.028,
-        color: '#90fcff',
+        color: '#78f8ff',
         move: levelData.moveSpeed || 0
       }));
       return;
@@ -146,7 +147,7 @@
 
       if (mechanics.includes('corner') && (mechanics.length === 1 || Math.random() < 0.45)) {
         targets.push(buildCornerPrecisionTarget(base + (Math.random() * 0.3 - 0.15), {
-          color: '#ffd54a',
+          color: '#78f8ff',
           move: levelData.moveSpeed || 0
         }));
       } else if (mechanics.includes('dual') && (mechanics.length === 1 || Math.random() < 0.6)) {

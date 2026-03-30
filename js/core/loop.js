@@ -216,7 +216,7 @@ function computeWorldPalette(level) {
   if (level && level.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
   switch (worldNum) {
     case 1: return { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
-    case 2: return { primary: '#ff00cc', secondary: '#cc00ff', bg: '#07070a' };
+    case 2: return { primary: '#2ff6ff', secondary: '#ff4fd8', bg: '#07070a' };
     case 3: return { primary: '#ffaa00', secondary: '#ff6600', bg: '#080500' };
     default: return { primary: '#00ff88', secondary: '#00e5ff', bg: '#050508' };
   }
@@ -246,11 +246,11 @@ function getWorldVisualTheme(level) {
   }
   if (worldNum === 2) {
     return {
-      railColor: '#ff00cc',
+      railColor: '#2ff6ff',
       targetColor: '#2ff6ff',
-      targetGlowColor: '#0fdcff',
+      targetGlowColor: '#27dfff',
       targetCoreColor: '#f8ffff',
-      railGlowScale: 0.82
+      railGlowScale: 0.76
     };
   }
   if (worldNum === 3) {
@@ -777,9 +777,9 @@ function draw() {
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
     ctx.strokeStyle = theme.railColor || palette.primary;
-    ctx.lineWidth = 16;
-    ctx.globalAlpha = (0.055 + Math.abs(Math.sin(now / 1800)) * 0.03) * railGlowScale;
-    ctx.shadowBlur = 26 * railGlowScale;
+    ctx.lineWidth = 12;
+    ctx.globalAlpha = (0.045 + Math.abs(Math.sin(now / 1800)) * 0.02) * railGlowScale;
+    ctx.shadowBlur = 20 * railGlowScale;
     ctx.shadowColor = theme.railColor || palette.primary;
     ctx.stroke();
 
@@ -787,9 +787,9 @@ function draw() {
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
     ctx.strokeStyle = theme.railColor || palette.primary;
-    ctx.lineWidth = 5;
-    ctx.globalAlpha = (0.12 + Math.abs(Math.sin(now / 1600)) * 0.025) * railGlowScale;
-    ctx.shadowBlur = 14 * railGlowScale;
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = (0.11 + Math.abs(Math.sin(now / 1600)) * 0.02) * railGlowScale;
+    ctx.shadowBlur = 11 * railGlowScale;
     ctx.shadowColor = theme.railColor || palette.primary;
     ctx.stroke();
 
@@ -797,13 +797,13 @@ function draw() {
     // no circles, just a slightly brighter section of the line
     const cornerPoints = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
     cornerPoints.forEach((cornerAngle, idx) => {
-      const span = Math.PI / 14;
+      const span = Math.PI / 18;
       buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
         orbitRadius, cornerAngle - span, cornerAngle + span, 6);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2.5;
-      ctx.globalAlpha = 0.24 + Math.abs(Math.sin(now / 1100 + idx)) * 0.08;
-      ctx.shadowBlur = 12;
+      ctx.lineWidth = 2.1;
+      ctx.globalAlpha = 0.2 + Math.abs(Math.sin(now / 1100 + idx)) * 0.06;
+      ctx.shadowBlur = 9;
       ctx.shadowColor = theme.railColor || palette.primary;
       ctx.stroke();
     });
@@ -1031,97 +1031,125 @@ function draw() {
       const leftEnd = t.start + halfSize;
       const rightStart = t.start + halfSize;
       const rightEnd = t.start + t.size;
+      const isDiamondWorld = worldShape === 'diamond' && worldNum === 2 && !isBoss;
+      const leftColor = t.leftColor || '#2ff6ff';
+      const rightColor = t.rightColor || '#ff4fd8';
+      const coreColor = t.coreColor || '#ffffff';
+      const shellColor = t.shellColor || '#ffd54a';
+      const shellWidth = isDiamondWorld ? 9.2 : 12.5;
+      const bodyWidth = isDiamondWorld ? 4.4 : 5.2;
+      const coreWidth = isDiamondWorld ? 2.4 : 2.1;
+      const shellAlpha = isDiamondWorld ? 0.11 : 0.2;
+      const bodyAlpha = isDiamondWorld ? 0.86 : 0.74;
+      const halfPad = isDiamondWorld ? 0.0018 : 0;
 
       // LEFT HALF (cyan)
       if (t.dualState === 'full' || t.dualState === 'left') {
-        // Wide outer glow
+        // Gold support shell to help separation from the rail.
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, leftStart, leftEnd);
-        ctx.strokeStyle = '#00e5ff';
-        ctx.globalAlpha = 0.28;
-        ctx.lineWidth = 16;
+          dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
+        ctx.strokeStyle = shellColor;
+        ctx.globalAlpha = shellAlpha;
+        ctx.lineWidth = shellWidth;
         ctx.lineCap = 'butt';
-        setShadowBlur(28);
-        ctx.shadowColor = '#00e5ff';
+        setShadowBlur(isDiamondWorld ? 10 : 22);
+        ctx.shadowColor = shellColor;
         ctx.stroke();
 
-        // Mid body
+        // Main illuminated body.
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, leftStart, leftEnd);
-        ctx.strokeStyle = '#00e5ff';
-        ctx.globalAlpha = 0.7;
-        ctx.lineWidth = 5;
-        setShadowBlur(12);
-        ctx.shadowColor = '#00e5ff';
+          dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
+        ctx.strokeStyle = leftColor;
+        ctx.globalAlpha = bodyAlpha;
+        ctx.lineWidth = bodyWidth;
+        setShadowBlur(isDiamondWorld ? 6 : 12);
+        ctx.shadowColor = leftColor;
         ctx.stroke();
 
-        // Bright core line
+        // Crisp white core.
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, leftStart, leftEnd);
-        ctx.strokeStyle = '#ffffff';
-        ctx.globalAlpha = 0.95;
-        ctx.lineWidth = 2;
-        setShadowBlur(8);
-        ctx.shadowColor = '#00e5ff';
+          dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
+        ctx.strokeStyle = coreColor;
+        ctx.globalAlpha = 0.98;
+        ctx.lineWidth = coreWidth;
+        setShadowBlur(isDiamondWorld ? 5 : 8);
+        ctx.shadowColor = leftColor;
         ctx.stroke();
       }
 
       // RIGHT HALF (magenta)
       if (t.dualState === 'full' || t.dualState === 'right') {
-        // Wide outer glow
+        // Gold support shell to help separation from the rail.
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, rightStart, rightEnd);
-        ctx.strokeStyle = '#ff00cc';
-        ctx.globalAlpha = 0.28;
-        ctx.lineWidth = 16;
+          dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
+        ctx.strokeStyle = shellColor;
+        ctx.globalAlpha = shellAlpha;
+        ctx.lineWidth = shellWidth;
         ctx.lineCap = 'butt';
-        setShadowBlur(28);
-        ctx.shadowColor = '#ff00cc';
+        setShadowBlur(isDiamondWorld ? 10 : 22);
+        ctx.shadowColor = shellColor;
         ctx.stroke();
 
-        // Mid body
+        // Main illuminated body.
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, rightStart, rightEnd);
-        ctx.strokeStyle = '#ff00cc';
-        ctx.globalAlpha = 0.7;
-        ctx.lineWidth = 5;
-        setShadowBlur(12);
-        ctx.shadowColor = '#ff00cc';
+          dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
+        ctx.strokeStyle = rightColor;
+        ctx.globalAlpha = bodyAlpha;
+        ctx.lineWidth = bodyWidth;
+        setShadowBlur(isDiamondWorld ? 6 : 12);
+        ctx.shadowColor = rightColor;
         ctx.stroke();
 
-        // Bright core line
+        // Crisp white core.
         buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, rightStart, rightEnd);
-        ctx.strokeStyle = '#ffffff';
-        ctx.globalAlpha = 0.95;
-        ctx.lineWidth = 2;
-        setShadowBlur(8);
-        ctx.shadowColor = '#ff00cc';
+          dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
+        ctx.strokeStyle = coreColor;
+        ctx.globalAlpha = 0.98;
+        ctx.lineWidth = coreWidth;
+        setShadowBlur(isDiamondWorld ? 5 : 8);
+        ctx.shadowColor = rightColor;
         ctx.stroke();
       }
 
-      // PERFECT CENTRE DIVIDER — visible white dot + short
-      // perpendicular tick so the split point is unmissable
+      // PERFECT CENTRE DIVIDER — stronger center lock indicator.
       if (t.dualState === 'full') {
         const splitAngle = t.start + halfSize;
         const splitPt = getPointOnShape(splitAngle, worldShape,
           centerObj.x, centerObj.y, dynamicRadius);
+        const ringRadius = isDiamondWorld ? 8.2 : 7;
+        const dotRadius = isDiamondWorld ? 4.7 : 4;
+        const tickLen = isDiamondWorld ? 7.4 : 5.8;
+        const radialX = splitPt.x - centerObj.x;
+        const radialY = splitPt.y - centerObj.y;
+        const radialLen = Math.hypot(radialX, radialY) || 1;
+        const tx = -radialY / radialLen;
+        const ty = radialX / radialLen;
 
         // Outer glow ring
         ctx.beginPath();
-        ctx.arc(splitPt.x, splitPt.y, 7, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = 0.15;
-        ctx.shadowBlur = 20;
+        ctx.arc(splitPt.x, splitPt.y, ringRadius, 0, Math.PI * 2);
+        ctx.fillStyle = coreColor;
+        ctx.globalAlpha = isDiamondWorld ? 0.2 : 0.15;
+        ctx.shadowBlur = isDiamondWorld ? 16 : 20;
         ctx.shadowColor = '#ffffff';
         ctx.fill();
 
+        ctx.beginPath();
+        ctx.moveTo(splitPt.x - tx * tickLen, splitPt.y - ty * tickLen);
+        ctx.lineTo(splitPt.x + tx * tickLen, splitPt.y + ty * tickLen);
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = 0.9;
+        ctx.lineWidth = isDiamondWorld ? 2.4 : 2;
+        ctx.shadowBlur = isDiamondWorld ? 10 : 8;
+        ctx.shadowColor = '#ffffff';
+        ctx.stroke();
+
         // Solid dot
         ctx.beginPath();
-        ctx.arc(splitPt.x, splitPt.y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
+        ctx.arc(splitPt.x, splitPt.y, dotRadius, 0, Math.PI * 2);
+        ctx.fillStyle = coreColor;
         ctx.globalAlpha = 1.0;
-        ctx.shadowBlur = 14;
+        ctx.shadowBlur = isDiamondWorld ? 12 : 14;
         ctx.shadowColor = '#ffffff';
         ctx.fill();
       }
@@ -1139,24 +1167,26 @@ function draw() {
       const isRootSplit = depth === 0;
 
       const palette = depth === 0
-        ? { glow: '#7cf7ff', body: '#23d7ff', core: '#ffffff', accent: '#b8ffff' }
+        ? { glow: '#2ff6ff', body: '#5deeff', core: '#ffffff', accent: '#ff4fd8' }
         : depth === 1
-          ? { glow: '#ff4fd8', body: '#ff9b54', core: '#ffffff', accent: '#ffd2a6' }
-          : { glow: '#ffd54a', body: '#fff1a8', core: '#ffffff', accent: '#7cf7ff' };
+          ? { glow: '#ff4fd8', body: '#ff9b54', core: '#ffffff', accent: '#ffc08a' }
+          : { glow: '#ffd54a', body: '#ffe68b', core: '#ffffff', accent: '#7cf7ff' };
 
       const pulse = 1 + Math.sin((performance.now() * 0.015) + (t.start * 6.5)) * 0.045;
       const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
-      const outerWidth = (depth === 0 ? 15 : depth === 1 ? 10.8 : 7.8) * pulse;
-      const midWidth = (depth === 0 ? 7 : depth === 1 ? 4.8 : 3.4) * pulse;
-      const coreWidth = (depth === 0 ? 2.8 : depth === 1 ? 2.1 : 1.6) * pulse;
+      const generationScale = Math.pow(0.8, depth);
+      const outerWidth = (14.2 * generationScale) * pulse;
+      const midWidth = (6.6 * generationScale) * pulse;
+      const coreWidth = (2.9 * generationScale) * pulse;
+      const capRadius = (4.9 * generationScale);
 
       // Big readable outer glow
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = palette.glow;
-      ctx.globalAlpha = 0.18 + (launchMix * 0.12);
+      ctx.globalAlpha = 0.16 + (launchMix * 0.1);
       ctx.lineWidth = outerWidth;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = 26;
+      ctx.shadowBlur = 18 + (depth === 0 ? 4 : 0);
       ctx.shadowColor = palette.glow;
       ctx.stroke();
 
@@ -1165,7 +1195,7 @@ function draw() {
       ctx.strokeStyle = palette.body;
       ctx.globalAlpha = 0.92;
       ctx.lineWidth = midWidth;
-      ctx.shadowBlur = 16;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = palette.glow;
       ctx.stroke();
 
@@ -1181,7 +1211,6 @@ function draw() {
       // End caps so the arc reads properly at speed
       const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
       const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-      const capRadius = depth === 0 ? 4.8 : depth === 1 ? 3.7 : 2.9;
 
       ctx.beginPath();
       ctx.arc(startPt.x, startPt.y, capRadius, 0, Math.PI * 2);
@@ -2065,10 +2094,10 @@ function tap() {
             // PARTIAL HIT (Hit the edge)
             if (diff < 0) {
               t.dualState = 'right'; // Left side destroyed
-              createParticles(hitX, hitY, '#00e5ff', 16);
+              createParticles(hitX, hitY, '#2ff6ff', 16);
             } else {
               t.dualState = 'left'; // Right side destroyed
-              createParticles(hitX, hitY, '#ff00cc', 16);
+              createParticles(hitX, hitY, '#ff4fd8', 16);
             }
             if (audioCtx) playPop(4, false);
             triggerScreenShake(3);
@@ -2080,10 +2109,10 @@ function tap() {
           const remainingState = t.dualState;
           t.dualState = 'cleared';
           t.active = false;
-          const pColor = remainingState === 'left' ? '#00e5ff' : '#ff00cc';
+          const pColor = remainingState === 'left' ? '#2ff6ff' : '#ff4fd8';
           createParticles(hitX, hitY, pColor, 18);
           if (audioCtx) playPop(1, false, true);
-          createPopup(hitX, hitY - 22, "LINKED", "#00ff88");
+          createPopup(hitX, hitY - 22, "LINKED", "#ffffff");
         } else {
           // STANDARD TARGET
           t.dualState = 'cleared';
