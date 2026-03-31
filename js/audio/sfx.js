@@ -101,7 +101,11 @@
   }
 
   function stopBossDrone() {
-    if (!audio.bossDrone || !audio.bossDroneGain || !audio.audioCtx) return;
+    if (!audio.bossDrone && !audio.bossDroneOsc2 && !audio.bossDroneGain) return;
+    if (!audio.audioCtx || !audio.bossDroneGain) {
+      disposeBossDroneNodes();
+      return;
+    }
     const stopToken = ++audio.bossDroneStopToken;
     audio.bossDroneGain.gain.cancelScheduledValues(audio.audioCtx.currentTime);
     audio.bossDroneGain.gain.linearRampToValueAtTime(0.001, audio.audioCtx.currentTime + 0.8);
