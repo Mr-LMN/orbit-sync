@@ -717,6 +717,25 @@ function hasActiveSplitFamily() {
   return getActiveSplitFamilyMembers().length > 0;
 }
 
+function getSplitCruiseSpeed(stage = levelData, generation = 0, sideSign = 0) {
+  const baseSpeed = stage?.moveSpeed || 0;
+  if (!stage || stage.id === '2-3') return baseSpeed;
+
+  if (stage.id === '2-4') {
+    const generationMultiplier = generation === 0 ? 1.15 : generation === 1 ? 1.07 : 0.98;
+    const lateralBias = sideSign === 0 ? 0 : 0.00032 * sideSign;
+    return Math.max(0.0048, (baseSpeed * generationMultiplier) + lateralBias);
+  }
+
+  if (stage.id === '2-5') {
+    const generationMultiplier = generation === 0 ? 1.0 : generation === 1 ? 1.06 : 1.02;
+    const lateralBias = sideSign === 0 ? 0 : 0.0002 * sideSign;
+    return Math.max(0.0045, (baseSpeed * generationMultiplier) + lateralBias);
+  }
+
+  return baseSpeed;
+}
+
 function spawnControlledSplitRoot(options = {}) {
   if (!isSplitStageMode()) return null;
   pruneInactiveSplitTargets();
@@ -729,7 +748,7 @@ function spawnControlledSplitRoot(options = {}) {
     ? normalizeAngle(options.startAngle)
     : normalizeAngle((Math.random() * Math.PI * 2) - (size / 2));
   const splitRoot = buildSplitTarget(baseStart, size, {
-    move: options.move ?? (levelData.moveSpeed || 0),
+    move: getSplitCruiseSpeed(levelData, 0, 0),
     color: options.color || '#2ff6ff',
     splitFamilyId: familyId,
     splitGeneration: 0,
@@ -1304,8 +1323,6 @@ function draw() {
       const outerWidth = (depth === 0 ? 14.2 : depth === 1 ? 10.8 : 7.4) * generationScale * pulse * tutorialWidthBoost;
       const midWidth = (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2) * generationScale * pulse * tutorialWidthBoost;
       const coreWidth = (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1) * generationScale * pulse * tutorialWidthBoost;
-      const capRadius = Math.max(2.1, (depth === 0 ? 4.9 : depth === 1 ? 3.8 : 2.7) * generationScale);
-      const hideEndpointCaps = isTutorialSplit && isRootSplit;
 
       if (!isSmallSplit) {
         // Big readable outer glow
@@ -1324,6 +1341,7 @@ function draw() {
       ctx.strokeStyle = palette.body;
       ctx.globalAlpha = isSmallSplit ? 0.9 : 0.92;
       ctx.lineWidth = midWidth;
+      ctx.lineCap = 'round';
       ctx.shadowBlur = splitHeavy ? (depth === 0 ? 11 : 8) : (isSmallSplit ? 2 : 5);
       ctx.shadowColor = palette.glow;
       ctx.stroke();
@@ -1333,24 +1351,10 @@ function draw() {
       ctx.strokeStyle = palette.core;
       ctx.globalAlpha = isSmallSplit ? 0.9 : 0.96;
       ctx.lineWidth = coreWidth;
+      ctx.lineCap = 'round';
       ctx.shadowBlur = splitHeavy ? (depth === 0 ? 9 : 6) : (isSmallSplit ? 0 : 3);
       ctx.shadowColor = palette.core;
       ctx.stroke();
-
-      // End caps so the arc reads properly at speed
-      if (!isSmallSplit && !hideEndpointCaps) {
-        const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-        const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-
-        ctx.beginPath();
-        ctx.arc(startPt.x, startPt.y, capRadius, 0, Math.PI * 2);
-        ctx.arc(endPt.x, endPt.y, capRadius, 0, Math.PI * 2);
-        ctx.fillStyle = palette.accent;
-        ctx.globalAlpha = isMediumSplit ? 0.66 : 0.75;
-        ctx.shadowBlur = splitHeavy ? (isMediumSplit ? 8 : 12) : 3;
-        ctx.shadowColor = palette.glow;
-        ctx.fill();
-      }
 
       // Visible crack / split marker in the middle
       const crackAngle = t.start + (t.size / 2);
@@ -1899,7 +1903,9 @@ function update() {
 
         if (t.splitLaunchT >= 1) {
           t.start = normalizeAngle(t.splitLaunchTarget);
-          t.moveSpeed = levelData.moveSpeed || 0;
+          t.moveSpeed = Number.isFinite(t.splitCruiseSpeed)
+            ? t.splitCruiseSpeed
+            : getSplitCruiseSpeed(levelData, t.splitGeneration || t.splitDepth || 0, t.splitSideSign || 0);
         }
       }
 
@@ -2351,6 +2357,8 @@ function tap() {
           splitGeneration: nextDepth
         });
         leftChild.moveSpeed = 0;
+        leftChild.splitCruiseSpeed = getSplitCruiseSpeed(levelData, nextDepth, -1);
+        leftChild.splitSideSign = -1;
         leftChild.splitLaunchT = 0;
         leftChild.splitLaunchFrom = spawnStart;
         leftChild.splitLaunchTarget = leftTargetStart;
@@ -2370,6 +2378,8 @@ function tap() {
           splitGeneration: nextDepth
         });
         rightChild.moveSpeed = 0;
+        rightChild.splitCruiseSpeed = getSplitCruiseSpeed(levelData, nextDepth, 1);
+        rightChild.splitSideSign = 1;
         rightChild.splitLaunchT = 0;
         rightChild.splitLaunchFrom = spawnStart;
         rightChild.splitLaunchTarget = rightTargetStart;
