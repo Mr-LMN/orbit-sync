@@ -16,7 +16,7 @@
     updateWorldSelectorUI();
     refreshMenuWorldPreview();
 
-    requestAnimationFrame(update);
+    OrbitGame.core.loop.startMainLoop();
     OG.state.initialized = true;
     return true;
   }

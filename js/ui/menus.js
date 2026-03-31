@@ -28,6 +28,7 @@
     markScoreCoinDirty(true);
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
+    OrbitGame.core.loop.startMainLoop();
   }
 
   function changeWorld(dir) {

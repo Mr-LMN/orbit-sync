@@ -46,9 +46,11 @@
     setTimeout(() => canvas.style.boxShadow = 'none', 100);
     if (navigator.vibrate) vibrate(12);
 
-    setTimeout(() => {
+    if (nearMissFailTimeout) clearTimeout(nearMissFailTimeout);
+    nearMissFailTimeout = setTimeout(() => {
       nearMissReplayActive = false;
       handleFail(reason);
+      nearMissFailTimeout = null;
     }, 420);
   }
 

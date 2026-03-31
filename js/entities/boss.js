@@ -15,11 +15,13 @@
     isPlaying = false;
     bossTransitionLock = true;
     bossPauseUntil = performance.now() + duration;
-    setTimeout(() => {
+    if (bossPauseTimeout) clearTimeout(bossPauseTimeout);
+    bossPauseTimeout = setTimeout(() => {
       if (performance.now() >= bossPauseUntil) {
         bossTransitionLock = false;
         isPlaying = true;
       }
+      bossPauseTimeout = null;
     }, duration + 20);
   }
 
@@ -38,7 +40,8 @@
     soundShieldBreak();
     vibrate([80, 40, 80]);
 
-    setTimeout(() => {
+    if (bossIntroTimeout) clearTimeout(bossIntroTimeout);
+    bossIntroTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';
       ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
       clearCinematicOverlayMode();
@@ -52,6 +55,7 @@
       spawnTargets();
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
+      bossIntroTimeout = null;
     }, 1700);
   }
 
@@ -77,7 +81,8 @@
     createShockwave('#ff3366', 42);
     createParticles(centerObj.x, centerObj.y, '#ff3366', 42);
 
-    setTimeout(() => {
+    if (bossCinematicTimeout) clearTimeout(bossCinematicTimeout);
+    bossCinematicTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';
       ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
       clearCinematicOverlayMode();
@@ -90,6 +95,7 @@
       spawnTargets();
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
+      bossCinematicTimeout = null;
     }, 1800);
   }
 
