@@ -740,6 +740,7 @@ function spawnControlledSplitRoot(options = {}) {
   splitRoot.splitGeneration = 0;
   splitRoot.splitDepth = 0;
   splitRoot.splitOnHit = true;
+  splitRoot.splitTutorial = !!options.tutorialSplit;
   splitRoot.hp = 1;
   splitRoot.active = true;
   activeSplitFamilyId = familyId;
@@ -1223,6 +1224,7 @@ function draw() {
       const isRootSplit = depth === 0;
       const isSmallSplit = depth >= 2;
       const isMediumSplit = depth === 1;
+      const isTutorialSplit = levelData && levelData.id === '2-3';
       const splitHeavy = useHeavyEffects && !isSmallSplit;
 
       const palette = depth === 0
@@ -1234,9 +1236,10 @@ function draw() {
       const pulse = 1 + Math.sin(splitPulseTime + (t.start * 6.5)) * (isSmallSplit ? 0.03 : 0.045);
       const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
       const generationScale = Math.pow(0.8, depth);
-      const outerWidth = (depth === 0 ? 14.2 : depth === 1 ? 10.8 : 7.4) * generationScale * pulse;
-      const midWidth = (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2) * generationScale * pulse;
-      const coreWidth = (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1) * generationScale * pulse;
+      const tutorialWidthBoost = isTutorialSplit && isRootSplit ? 1.14 : 1;
+      const outerWidth = (depth === 0 ? 14.2 : depth === 1 ? 10.8 : 7.4) * generationScale * pulse * tutorialWidthBoost;
+      const midWidth = (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2) * generationScale * pulse * tutorialWidthBoost;
+      const coreWidth = (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1) * generationScale * pulse * tutorialWidthBoost;
       const capRadius = Math.max(2.1, (depth === 0 ? 4.9 : depth === 1 ? 3.8 : 2.7) * generationScale);
 
       if (!isSmallSplit) {
@@ -2125,7 +2128,7 @@ function tap() {
         const halfSize = t.targetHalfWidth || t.size / 2;
         if (t.dualState === 'full') {
           // Perfect = near the split point, good = within inner half, ok = outer edge
-          if (distToSplit <= halfSize * 0.22) hitQuality = "perfect";
+          if (distToSplit <= halfSize * 0.2) hitQuality = "perfect";
           else if (distToSplit <= halfSize * 0.55) hitQuality = "good";
           else hitQuality = "ok";
         } else {
@@ -2134,12 +2137,12 @@ function tap() {
             ? normalizeAngle(t.start + halfSize / 2)
             : normalizeAngle(t.start + halfSize + halfSize / 2);
           const distToCenter = Math.abs(signedAngularDistance(angle, remainCenter));
-          if (distToCenter <= halfSize * 0.3) hitQuality = "perfect";
+          if (distToCenter <= halfSize * 0.27) hitQuality = "perfect";
           else if (distToCenter <= halfSize * 0.6) hitQuality = "good";
           else hitQuality = "ok";
         }
       } else {
-        if (dist < targets[i].size / 6) hitQuality = "perfect";
+        if (dist < targets[i].size / 6.5) hitQuality = "perfect";
         else if (dist < targets[i].size / 3) hitQuality = "good";
         else hitQuality = "ok";
       }
@@ -2196,7 +2199,7 @@ function tap() {
       const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
       const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
       const diff = signedAngularDistance(angle, centerAngle);
-      const perfectThreshold = targetHalfWidth * 0.5;
+      const perfectThreshold = targetHalfWidth * 0.46;
 
       if (Math.abs(diff) <= targetHalfWidth) {
         if (t.isDual && t.dualState === 'full') {
@@ -2246,13 +2249,18 @@ function tap() {
 
       const nextDepth = (t.splitDepth || 0) + 1;
       if (t.splitOnHit && splitGeneration < 2 && nextDepth <= 2) {
+        const isSplitTutorialStage = levelData && levelData.id === '2-3';
         const parentCenter = normalizeAngle(t.start + (t.size / 2));
-        const childSize = Math.max(Math.PI / 40, t.size * 0.8);
+        const childSize = Math.max(Math.PI / 40, t.size * (isSplitTutorialStage ? (nextDepth === 1 ? 0.62 : 0.56) : 0.8));
 
         // Fire the new pieces outward into fresh random positions around the ring.
         const launchBase = nextDepth === 1 ? 0.95 : 1.2;
-        const leftOffset = launchBase + (Math.random() * 0.42);
-        const rightOffset = launchBase + (Math.random() * 0.42);
+        const leftOffset = isSplitTutorialStage
+          ? (nextDepth === 1 ? 1.22 : 0.82)
+          : (launchBase + (Math.random() * 0.42));
+        const rightOffset = isSplitTutorialStage
+          ? (nextDepth === 1 ? 1.22 : 0.82)
+          : (launchBase + (Math.random() * 0.42));
 
         const leftTargetStart = normalizeAngle(parentCenter - leftOffset - (childSize / 2));
         const rightTargetStart = normalizeAngle(parentCenter + rightOffset - (childSize / 2));
@@ -2302,8 +2310,12 @@ function tap() {
         targets.push(leftChild, rightChild);
 
         const splitFx = nextDepth === 1
-          ? { pA: 22, pB: 14, swA: 30, swB: 24, pulse: 1.68, pulseDur: 110, shake: 6 }
-          : { pA: 12, pB: 8, swA: 20, swB: 16, pulse: 1.32, pulseDur: 72, shake: 3 };
+          ? (isSplitTutorialStage
+            ? { pA: 30, pB: 22, swA: 34, swB: 28, pulse: 1.82, pulseDur: 130, shake: 8 }
+            : { pA: 22, pB: 14, swA: 30, swB: 24, pulse: 1.68, pulseDur: 110, shake: 6 })
+          : (isSplitTutorialStage
+            ? { pA: 14, pB: 10, swA: 24, swB: 18, pulse: 1.38, pulseDur: 84, shake: 4 }
+            : { pA: 12, pB: 8, swA: 20, swB: 16, pulse: 1.32, pulseDur: 72, shake: 3 });
         createParticles(hitX, hitY, nextDepth === 1 ? '#7cf7ff' : '#ffd54a', splitFx.pA);
         createParticles(hitX, hitY, nextDepth === 1 ? '#ff4fd8' : '#ffffff', splitFx.pB);
         createShockwave('#ffffff', splitFx.swA);

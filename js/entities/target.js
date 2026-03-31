@@ -156,6 +156,18 @@
       return;
     }
 
+    if (id === '2-3' && splitControl && splitControl.isSplitStageMode(levelData)) {
+      const tutorialSize = Math.PI / 3.35;
+      splitControl.spawnControlledSplitRoot({
+        startAngle: normalizeAngle(-Math.PI / 2 - (tutorialSize / 2)),
+        size: tutorialSize,
+        move: levelData.moveSpeed || 0,
+        color: '#2ff6ff',
+        tutorialSplit: true
+      });
+      return;
+    }
+
     let splitSpawned = false;
 
     for (let i = 0; i < count; i++) {
