@@ -10,7 +10,7 @@
     { id: '1-6', title: 'The Aegis Core', hitsNeeded: 99, speed: 0.045, lives: 3, boss: 'aegis', moveSpeed: 0.03, reverse: true, text: 'BOSS: Break the shields. Expose the core.' },
     { id: '2-1', title: 'Corner Precision', hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['corner'], text: 'Corner point is PERFECT. The target extends further into the rail for an OK hit.' },
     { id: '2-2', title: 'Dual Hit Circuit', hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['dual'], text: 'Each target has 2 coloured halves. Hit one side or land dead-centre to clear both.' },
-    { id: '2-3', title: 'Split Reaction', hitsNeeded: 5, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['split'], text: 'Hit once to split. Hit again to shatter the fragments.' },
+    { id: '2-3', title: 'Split Reaction', hitsNeeded: 2, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['split'], text: 'Hit once to split. Hit again to shatter the fragments.' },
     { id: '2-4', title: 'Split Loop Drill', hitsNeeded: 6, speed: 0.035, lives: 3, targets: 1, moveSpeed: 0.003, reverse: false, mechanics: ['split'], text: 'Read the split tree: 1 big → 2 medium → 4 small, then reset and repeat.' },
     { id: '2-5', title: 'Pressure Wave', hitsNeeded: 8, speed: 0.038, lives: 3, targets: 2, moveSpeed: 0.0045, reverse: false, mechanics: ['corner', 'dual', 'split'], text: 'Fast reads, mixed mechanics, cleaner pressure before the boss.' },
     { id: '2-6', title: 'The Prism', hitsNeeded: 99, speed: 0.048, lives: 3, boss: 'prism', moveSpeed: 0.025, reverse: true, text: 'BOSS: The Prism defends each corner. Break them all.' }

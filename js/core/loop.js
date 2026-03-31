@@ -898,6 +898,7 @@ function draw() {
   const orbColor = multiColors[Math.min(multiplier - 1, 7)];
   const baseBodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
   const shouldDrawTargetMarkers = useHeavyEffects || worldShape === 'circle';
+  const shouldDrawWorld2MechanicBrackets = shouldDrawTargetMarkers && worldNum === 2 && worldShape === 'diamond' && !isBoss;
 
   // TARGETS
   targets.forEach(t => {
@@ -927,6 +928,41 @@ function draw() {
       targetAlpha += 0.08;
       targetCoreAlpha = Math.min(1, targetCoreAlpha + 0.05);
     }
+    const drawWorld2AngularBracket = (angle, config = {}) => {
+      if (!shouldDrawWorld2MechanicBrackets) return;
+      const radial = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      const radialX = radial.x - centerObj.x;
+      const radialY = radial.y - centerObj.y;
+      const radialLen = Math.hypot(radialX, radialY) || 1;
+      const nx = radialX / radialLen;
+      const ny = radialY / radialLen;
+      const tx = -ny;
+      const ty = nx;
+      const dir = config.dir || 1;
+      const legOut = config.legOut || 1.6;
+      const legIn = config.legIn || 5.1;
+      const wing = config.wing || 4.1;
+
+      const elbowX = radial.x + nx * legOut;
+      const elbowY = radial.y + ny * legOut;
+      const innerX = radial.x - nx * legIn;
+      const innerY = radial.y - ny * legIn;
+      const wingX = elbowX + tx * wing * dir;
+      const wingY = elbowY + ty * wing * dir;
+
+      ctx.beginPath();
+      ctx.moveTo(wingX, wingY);
+      ctx.lineTo(elbowX, elbowY);
+      ctx.lineTo(innerX, innerY);
+      ctx.strokeStyle = '#e9fdff';
+      ctx.globalAlpha = config.alpha || (0.42 + (approach * 0.16) + (hitFlash * 0.1));
+      ctx.lineWidth = config.width || 1.45;
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'miter';
+      ctx.shadowBlur = config.shadowBlur || 5;
+      ctx.shadowColor = targetGlowColor;
+      ctx.stroke();
+    };
 
     if (t.isPhantom) {
       ctx.save();
@@ -1083,6 +1119,11 @@ function draw() {
       ctx.shadowBlur = 12;
       ctx.shadowColor = '#9afcff';
       ctx.fill();
+
+      if (shouldDrawWorld2MechanicBrackets) {
+        drawWorld2AngularBracket(t.start, { dir: -1, alpha: 0.52, width: 1.55, wing: 4.5, legIn: 5.6 });
+        drawWorld2AngularBracket(t.start + t.size, { dir: 1, alpha: 0.52, width: 1.55, wing: 4.5, legIn: 5.6 });
+      }
       ctx.restore();
       return;
     }
@@ -1215,6 +1256,23 @@ function draw() {
         ctx.shadowBlur = isDiamondWorld ? 12 : 14;
         ctx.shadowColor = '#ffffff';
         ctx.fill();
+
+        if (shouldDrawWorld2MechanicBrackets) {
+          drawWorld2AngularBracket(splitAngle, { dir: -1, alpha: 0.5, width: 1.4, wing: 3.7, legIn: 4.7, legOut: 1.3, shadowBlur: 4 });
+          drawWorld2AngularBracket(splitAngle, { dir: 1, alpha: 0.5, width: 1.4, wing: 3.7, legIn: 4.7, legOut: 1.3, shadowBlur: 4 });
+        }
+      }
+
+      if (shouldDrawWorld2MechanicBrackets) {
+        const dualEdges = t.dualState === 'left'
+          ? [leftStart, leftEnd]
+          : t.dualState === 'right'
+            ? [rightStart, rightEnd]
+            : [leftStart, rightEnd];
+        if (dualEdges.length > 1) {
+          drawWorld2AngularBracket(dualEdges[0], { dir: -1, alpha: 0.46, width: 1.38, wing: 3.9, legIn: 4.9, legOut: 1.3 });
+          drawWorld2AngularBracket(dualEdges[dualEdges.length - 1], { dir: 1, alpha: 0.46, width: 1.38, wing: 3.9, legIn: 4.9, legOut: 1.3 });
+        }
       }
 
       ctx.globalAlpha = 1.0;
@@ -1320,6 +1378,12 @@ function draw() {
       ctx.shadowBlur = isSmallSplit ? 0 : (splitHeavy ? 7 : 2);
       ctx.shadowColor = '#ffffff';
       ctx.stroke();
+
+      if (shouldDrawWorld2MechanicBrackets) {
+        const splitBracketAlpha = isSmallSplit ? 0.26 : isMediumSplit ? 0.34 : 0.4;
+        drawWorld2AngularBracket(t.start, { dir: -1, alpha: splitBracketAlpha, width: isSmallSplit ? 1.05 : 1.2, wing: isSmallSplit ? 3.1 : 3.5, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
+        drawWorld2AngularBracket(t.start + t.size, { dir: 1, alpha: splitBracketAlpha, width: isSmallSplit ? 1.05 : 1.2, wing: isSmallSplit ? 3.1 : 3.5, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
+      }
 
       ctx.restore();
       return;
