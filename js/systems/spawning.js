@@ -35,36 +35,49 @@
     }
 
     if (levelData.boss === 'prism') {
-      if (!isBossPhaseTwo) {
-        ui.text.innerText = bossPhase === 1
-          ? 'BOSS: Destroy all 4 corner shields!'
-          : 'PRISM ENRAGED: Faster corners!';
-        ui.text.style.color = bossPhase === 1 ? '#ff00cc' : '#ff3366';
+      const isPhaseTwoSequence = bossPhase === 2;
+      isBossPhaseTwo = false;
+      if (!isPhaseTwoSequence) {
+        world2BossSequenceProgress = 0;
+        world2BossSequenceLength = 0;
+        world2BossArenaRotationSpeed = 0.0034;
+        ui.text.innerText = 'PHASE 1: Stabilize the rotating prism rail.';
+        ui.text.style.color = '#2ff6ff';
         for (let i = 0; i < 4; i++) {
+          const anchor = (i * Math.PI / 2) + 0.06;
           targets.push(buildTarget(
-            (i * Math.PI / 2) + 0.1,
-            Math.PI / 6,
+            anchor,
+            Math.PI / 5.7,
             {
-              color: bossPhase === 1 ? '#ff00cc' : '#ff3366',
+              color: i % 2 === 0 ? '#2ff6ff' : '#ff4fd8',
               active: true,
-              hp: bossPhase === 1 ? 2 : 1,
+              hp: 2,
               isBossShield: true,
-              moveSpeed: bossPhase === 1 ? 0 : 0.035 * (i % 2 === 0 ? 1 : -1)
+              moveSpeed: 0
             }
           ));
         }
       } else {
-        ui.text.innerText = 'PRISM CORE OPEN — HIT IT!';
-        ui.text.style.color = '#ffffff';
-        targets.push(buildTarget(
-          Math.random() * Math.PI * 2,
-          Math.PI / 10,
-          {
-            color: '#ff00cc',
-            active: true,
-            hp: 1
-          }
-        ));
+        world2BossSequenceProgress = 0;
+        world2BossSequenceLength = 5;
+        world2BossArenaRotationSpeed = 0.0052;
+        ui.text.innerText = 'PHASE 2: Hit the highlighted sequence in order.';
+        ui.text.style.color = '#ffd54a';
+        for (let i = 0; i < world2BossSequenceLength; i++) {
+          const seqTarget = buildTarget(
+            normalizeAngle((-Math.PI / 2) + (i * ((Math.PI * 2) / world2BossSequenceLength))),
+            Math.PI / 7.1,
+            {
+              color: '#4e5970',
+              active: true,
+              hp: 1,
+              isBossShield: true,
+              moveSpeed: 0
+            }
+          );
+          seqTarget.sequenceIndex = i;
+          targets.push(seqTarget);
+        }
       }
       return;
     }

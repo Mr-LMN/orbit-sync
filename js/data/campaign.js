@@ -13,7 +13,18 @@
     { id: '2-3', title: 'Split Reaction', hitsNeeded: 2, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['split'], text: 'Hit once to split. Hit again to shatter the fragments.' },
     { id: '2-4', title: 'Split Loop Drill', hitsNeeded: 2, speed: 0.035, lives: 3, targets: 1, moveSpeed: 0.0062, reverse: false, mechanics: ['split'], text: 'Read the split tree: 1 big → 2 medium → 4 small, then reset and repeat.' },
     { id: '2-5', title: 'Pressure Wave', hitsNeeded: 8, speed: 0.038, lives: 3, targets: 2, moveSpeed: 0.0045, reverse: false, mechanics: ['corner', 'dual', 'split'], text: 'Fast reads, mixed mechanics, cleaner pressure before the boss.' },
-    { id: '2-6', title: 'The Prism', hitsNeeded: 99, speed: 0.048, lives: 3, boss: 'prism', moveSpeed: 0.025, reverse: true, text: 'BOSS: The Prism defends each corner. Break them all.' }
+    {
+      id: '2-6',
+      title: 'The Prism',
+      hitsNeeded: 99,
+      speed: 0.048,
+      lives: 3,
+      boss: 'prism',
+      moveSpeed: 0.025,
+      reverse: true,
+      bossConfig: { phases: ['rotation', 'sequence'], sequenceLength: 5, shakeDisabled: true },
+      text: 'BOSS: Adapt to rotation, then complete the sequence.'
+    }
   ];
 
   OG.data = OG.data || {};
