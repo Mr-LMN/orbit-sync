@@ -754,7 +754,13 @@ function maybeRespawnSplitRootForStage(clearedFamilyId) {
   if (stageHits >= levelData.hitsNeeded || !isPlaying) return false;
   if (getActiveSplitFamilyMembers(clearedFamilyId).length > 0) return false;
   if (hasActiveSplitFamily()) return false;
-  spawnControlledSplitRoot();
+  const mechanics = Array.isArray(levelData?.mechanics) ? levelData.mechanics : [];
+  const isPureSplitStage = mechanics.length === 1 && mechanics[0] === 'split';
+  if (isPureSplitStage) {
+    triggerStageClear();
+  } else {
+    spawnControlledSplitRoot();
+  }
   return true;
 }
 
@@ -1241,6 +1247,7 @@ function draw() {
       const midWidth = (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2) * generationScale * pulse * tutorialWidthBoost;
       const coreWidth = (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1) * generationScale * pulse * tutorialWidthBoost;
       const capRadius = Math.max(2.1, (depth === 0 ? 4.9 : depth === 1 ? 3.8 : 2.7) * generationScale);
+      const hideEndpointCaps = isTutorialSplit && isRootSplit;
 
       if (!isSmallSplit) {
         // Big readable outer glow
@@ -1273,7 +1280,7 @@ function draw() {
       ctx.stroke();
 
       // End caps so the arc reads properly at speed
-      if (!isSmallSplit) {
+      if (!isSmallSplit && !hideEndpointCaps) {
         const startPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, dynamicRadius);
         const endPt = getPointOnShape(t.start + t.size, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
