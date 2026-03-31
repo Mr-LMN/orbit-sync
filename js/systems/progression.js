@@ -68,6 +68,7 @@
 
         stageClearHoldUntil = performance.now() + 850;
 
+        world2BossTransitionFrom25 = !!(levelData && levelData.id === '2-5' && nextLevelObj && nextLevelObj.id === '2-6');
         currentLevelIdx = nextLevelIdx;
         loadLevel(currentLevelIdx);
       }

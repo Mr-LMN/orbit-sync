@@ -155,6 +155,11 @@ let bossPauseTimeout = null;
 let worldClearDelayTimeout = null;
 let worldClearTallyInterval = null;
 let stageClearHoldUntil = 0;
+let world2BossTransitionFrom25 = false;
+let world2BossArenaRotation = 0;
+let world2BossArenaRotationSpeed = 0;
+let world2BossSequenceProgress = 0;
+let world2BossSequenceLength = 0;
 let nearMissReplayUntil = 0;
 let nearMissReplayActive = false;
 let activeSplitFamilyId = null;
@@ -298,10 +303,27 @@ function updateCanvasSize() {
 updateCanvasSize();
 window.addEventListener('resize', updateCanvasSize);
 
-function getPointOnShape(t, shape, cx, cy, radius) { return OrbitGame.systems.rendering.getPointOnShape(t, shape, cx, cy, radius); }
+function getArenaAngleOffset() {
+  return (levelData && levelData.id === '2-6' && levelData.boss === 'prism') ? world2BossArenaRotation : 0;
+}
+
+function getPointOnShape(t, shape, cx, cy, radius) {
+  const adjustedAngle = normalizeAngle(t + getArenaAngleOffset());
+  return OrbitGame.systems.rendering.getPointOnShape(adjustedAngle, shape, cx, cy, radius);
+}
 
 function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps = 40) {
-  return OrbitGame.systems.rendering.buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps);
+  const offset = getArenaAngleOffset();
+  return OrbitGame.systems.rendering.buildShapePath(
+    ctx,
+    shape,
+    cx,
+    cy,
+    radius,
+    startAngle + offset,
+    endAngle + offset,
+    steps
+  );
 }
 
 // Generate subtle background dust for depth
@@ -528,6 +550,7 @@ function clearRunTransientTimers() {
   if (bossPauseTimeout) { clearTimeout(bossPauseTimeout); bossPauseTimeout = null; }
   if (worldClearDelayTimeout) { clearTimeout(worldClearDelayTimeout); worldClearDelayTimeout = null; }
   if (worldClearTallyInterval) { clearInterval(worldClearTallyInterval); worldClearTallyInterval = null; }
+  world2BossArenaRotationSpeed = 0;
 }
 function resetRunState() {
   clearRunTransientTimers();
@@ -540,6 +563,11 @@ function resetRunState() {
   isBossPhaseTwo = false; bossPhase = 1;
   bossPauseUntil = 0; bossTransitionLock = false; stageClearHoldUntil = 0;
   isCinematicIntro = false; bossIntroPlaying = false;
+  world2BossTransitionFrom25 = false;
+  world2BossArenaRotation = 0;
+  world2BossArenaRotationSpeed = 0;
+  world2BossSequenceProgress = 0;
+  world2BossSequenceLength = 0;
   lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
@@ -568,7 +596,10 @@ function showNearMissReplay(reason, nearestEdgeDistance) { return OrbitGame.enti
 function createShockwave(color, speed = 40) { return OrbitGame.entities.effects.createShockwave(color, speed); }
 function createTargetHitRipple(x, y, color = '#ffffff') { return OrbitGame.entities.effects.createTargetHitRipple(x, y, color); }
 function triggerTargetHitFeedback(target, x, y) { return OrbitGame.entities.effects.triggerTargetHitFeedback(target, x, y); }
-function triggerScreenShake(intensity = 5) { return OrbitGame.entities.effects.triggerScreenShake(intensity); }
+function triggerScreenShake(intensity = 5) {
+  if (levelData && levelData.id === '2-6' && levelData.boss === 'prism') return;
+  return OrbitGame.entities.effects.triggerScreenShake(intensity);
+}
 function pulseBrightness(amount = 1.6, duration = 120) { return OrbitGame.entities.effects.pulseBrightness(amount, duration); }
 function scheduleBossSpawn(delay = 700) { return OrbitGame.entities.boss.scheduleBossSpawn(delay); }
 function pauseGameplayBriefly(duration = 750) { return OrbitGame.entities.boss.pauseGameplayBriefly(duration); }
@@ -642,6 +673,11 @@ function loadLevel(idx) {
   shockwaves = [];
   targetHitRipples = [];
   isBossPhaseTwo = false; bossPhase = 1;
+  world2BossArenaRotation = 0;
+  world2BossArenaRotationSpeed = 0;
+  world2BossSequenceProgress = 0;
+  world2BossSequenceLength = 0;
+  if (levelData.id !== '2-6') world2BossTransitionFrom25 = false;
   resetSplitFamilyState();
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
@@ -651,7 +687,7 @@ function loadLevel(idx) {
 
   if (levelData.boss) {
     isCinematicIntro = true;
-    if (levelData.id === '1-6' || levelData.boss === 'aegis') {
+    if (levelData.id === '1-6' || levelData.boss === 'aegis' || (levelData.id === '2-6' && levelData.boss === 'prism')) {
       triggerBossIntro();
     } else {
       if (ui.gameUI) ui.gameUI.style.display = 'block';
@@ -1780,6 +1816,9 @@ function update() {
   else moveStep *= nearMissSpeedScale;
 
   moveStep *= delta;
+  if (!inMenu && levelData && levelData.id === '2-6' && levelData.boss === 'prism' && !isBossTransitionPaused) {
+    world2BossArenaRotation = normalizeAngle(world2BossArenaRotation + (world2BossArenaRotationSpeed * delta));
+  }
 
   angle += moveStep;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
@@ -1802,6 +1841,15 @@ function update() {
     if (t.hitFlash && t.hitFlash < 0.02) t.hitFlash = 0;
     if (t.hitScalePulse) t.hitScalePulse *= Math.pow(0.42, delta);
     if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
+    if (levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex)) {
+      if (t.sequenceIndex < world2BossSequenceProgress) {
+        t.color = '#ffffff';
+      } else if (t.sequenceIndex === world2BossSequenceProgress) {
+        t.color = '#ffd54a';
+      } else {
+        t.color = '#4e5970';
+      }
+    }
 
     if (t.isHeart && totalStageDistance > t.expireDistance) {
       t.active = false; const expPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, orbitRadius);
@@ -2243,6 +2291,46 @@ function tap() {
     ringHitFlash = Math.max(ringHitFlash, 0.26);
 
     if (levelData.boss && !isBossPhaseTwo && t.isBossShield) {
+      const isWorld2PrismBoss = levelData.id === '2-6' && levelData.boss === 'prism';
+      if (isWorld2PrismBoss && bossPhase === 2 && Number.isFinite(t.sequenceIndex)) {
+        const expectedIdx = world2BossSequenceProgress;
+        if (t.sequenceIndex !== expectedIdx) {
+          world2BossSequenceProgress = 0;
+          multiplier = 1;
+          streak = 0;
+          ui.streak.innerText = streak;
+          updateMultiplierUI();
+          createPopup(centerObj.x, centerObj.y - 68, 'SEQUENCE RESET', '#ff4fd8');
+          createPopup(hitX, hitY - 20, 'WRONG NODE', '#ff4fd8');
+          createParticles(hitX, hitY, '#ff4fd8', 12);
+          pulseBrightness(1.24, 120);
+          return;
+        }
+
+        t.active = false;
+        world2BossSequenceProgress++;
+        createParticles(hitX, hitY, '#ffd54a', 16);
+        createPopup(hitX, hitY - 18, `${world2BossSequenceProgress}/${world2BossSequenceLength}`, '#ffffff');
+        soundBossShieldHit(Math.max(1, world2BossSequenceLength - world2BossSequenceProgress));
+
+        if (world2BossSequenceProgress >= world2BossSequenceLength) {
+          ui.bossPhase2.className = "boss-segment";
+          createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
+          createShockwave('#00ff88', 55);
+          createShockwave('#ffffff', 70);
+          createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
+          soundBossDefeated();
+          stopBossDrone();
+          world2BossArenaRotationSpeed = 0;
+          stageHits = 999;
+          isPlaying = false;
+          setTimeout(() => {
+            triggerStageClear();
+          }, 1600);
+        }
+        return;
+      }
+
       t.hp--;
       triggerScreenShake(4);
       vibrate(15);
@@ -2258,17 +2346,30 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
       }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
-        isBossPhaseTwo = true;
-        if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";
-        else ui.bossPhase2.className = "boss-segment";
-        pauseGameplayBriefly(760);
-        createPopup(centerObj.x, centerObj.y - 50, "CORE EXPOSED", "#ffffff");
-        triggerScreenShake(26);
-        createShockwave('#ffffff', 48);
-        createShockwave('#00e5ff', 34);
-        pulseBrightness(2.0, 140);
-        soundCoreExposed();
-        scheduleBossSpawn(760);
+        if (isWorld2PrismBoss && bossPhase === 1) {
+          bossPhase = 2;
+          ui.bossPhase1.className = "boss-segment";
+          ui.bossPhase2.className = "boss-segment active-segment";
+          pauseGameplayBriefly(880);
+          createPopup(centerObj.x, centerObj.y - 56, "PHASE 2", "#ffd54a");
+          createPopup(centerObj.x, centerObj.y - 28, "SEQUENCE ONLINE", "#ffffff");
+          createShockwave('#ffd54a', 36);
+          pulseBrightness(1.65, 140);
+          escalateBossDrone();
+          scheduleBossSpawn(880);
+        } else {
+          isBossPhaseTwo = true;
+          if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";
+          else ui.bossPhase2.className = "boss-segment";
+          pauseGameplayBriefly(760);
+          createPopup(centerObj.x, centerObj.y - 50, "CORE EXPOSED", "#ffffff");
+          triggerScreenShake(26);
+          createShockwave('#ffffff', 48);
+          createShockwave('#00e5ff', 34);
+          pulseBrightness(2.0, 140);
+          soundCoreExposed();
+          scheduleBossSpawn(760);
+        }
       } return;
     }
 

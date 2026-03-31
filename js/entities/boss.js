@@ -44,6 +44,7 @@
   function triggerBossIntro() {
     if (!levelData.boss || bossIntroPlaying) return;
     const isAegisIntro = levelData.id === '1-6' || levelData.boss === 'aegis';
+    const isWorld2BossIntro = levelData.id === '2-6' && levelData.boss === 'prism';
     bossIntroPlaying = true;
     isCinematicIntro = true;
     isPlaying = false;
@@ -103,6 +104,33 @@
         targets = [];
       });
       vibrate([80, 40, 90, 30, 70]);
+    } else if (isWorld2BossIntro) {
+      ui.title.style.color = '#f7fbff';
+      ui.title.innerText = '';
+      ui.subtitle.innerText = '';
+      forceHideOverlayExtras();
+
+      queueIntroStep(120, () => {
+        ui.title.innerText = 'So...';
+        ui.subtitle.innerText = '';
+        createPopup(centerObj.x, centerObj.y - 64, 'PRISM LINK', '#2ff6ff');
+      });
+      queueIntroStep(1080, () => {
+        ui.title.innerText = "You think you've mastered it?";
+        ui.subtitle.innerText = '';
+        createPopup(centerObj.x, centerObj.y - 30, 'PROVE IT', '#ff4fd8');
+        pulseBrightness(1.18, 180);
+      });
+      queueIntroStep(2240, () => {
+        ui.title.innerText = "Let's see.";
+        ui.subtitle.innerText = 'PHASE 1 // ROTATION CALIBRATION';
+        createPopup(centerObj.x, centerObj.y + 8, 'BEGIN', '#ffd54a');
+        createShockwave('#2ff6ff', 28);
+        createShockwave('#ffffff', 24);
+      });
+      queueIntroStep(3160, () => {
+        ui.subtitle.innerText = 'Stay aligned. Then execute the sequence.';
+      });
     } else {
       ui.title.innerText = 'THE PRISM';
       ui.title.style.color = '#ff3366';
@@ -123,12 +151,16 @@
       if (ui.gameUI) ui.gameUI.style.display = 'block';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
-      ui.bossPhase2.className = 'boss-segment active-segment';
+      ui.bossPhase2.className = isWorld2BossIntro ? 'boss-segment' : 'boss-segment active-segment';
+      if (isWorld2BossIntro) {
+        world2BossArenaRotationSpeed = world2BossTransitionFrom25 ? 0.0038 : 0.0032;
+        world2BossTransitionFrom25 = false;
+      }
       spawnTargets();
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, isAegisIntro ? 2850 : 1700);
+    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 3950 : 1700));
   }
 
   function playBossCinematic() {
