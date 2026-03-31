@@ -27,18 +27,36 @@
 
   function triggerBossIntro() {
     if (!levelData.boss || bossIntroPlaying) return;
+    const isAegisIntro = levelData.id === '1-6' || levelData.boss === 'aegis';
     bossIntroPlaying = true;
     isCinematicIntro = true;
     isPlaying = false;
 
     setOverlayState('cinematic');
     setCinematicOverlayMode();
-    ui.title.innerText = levelData.id === '1-6' ? 'THE AEGIS CORE' : 'THE PRISM';
-    ui.title.style.color = '#ff3366';
-    ui.subtitle.innerText = levelData.id === '1-6' ? 'BREAK THE SHIELDS' : 'BREAK EACH CORNER';
+    if (ui.gameUI) ui.gameUI.style.display = 'none';
 
-    soundShieldBreak();
-    vibrate([80, 40, 80]);
+    if (isAegisIntro) {
+      ui.title.innerText = 'THE AEGIS CORE';
+      ui.title.style.color = '#ff3366';
+      ui.subtitle.innerText = 'Break the shields. Expose the core.';
+
+      createPopup(centerObj.x, centerObj.y - 92, 'BOSS', '#ff3366');
+      setTimeout(() => createPopup(centerObj.x, centerObj.y - 56, 'BREAK', '#ffffff'), 340);
+      setTimeout(() => createPopup(centerObj.x, centerObj.y - 26, 'THE', '#00e5ff'), 620);
+      setTimeout(() => createPopup(centerObj.x, centerObj.y + 4, 'SHIELDS', '#00ff88'), 900);
+      setTimeout(() => {
+        createShockwave('#ffffff', 34);
+        soundShieldBreak();
+      }, 1100);
+      vibrate([80, 40, 90, 30, 70]);
+    } else {
+      ui.title.innerText = 'THE PRISM';
+      ui.title.style.color = '#ff3366';
+      ui.subtitle.innerText = 'Hold the corners. Break each prism shield.';
+      soundShieldBreak();
+      vibrate([80, 40, 80]);
+    }
 
     if (bossIntroTimeout) clearTimeout(bossIntroTimeout);
     bossIntroTimeout = setTimeout(() => {
@@ -56,7 +74,7 @@
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, 1700);
+    }, isAegisIntro ? 2450 : 1700);
   }
 
   function playBossCinematic() {

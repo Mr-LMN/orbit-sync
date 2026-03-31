@@ -25,7 +25,9 @@
       splitDepth: config.splitDepth || 0,
       splitFamilyId: config.splitFamilyId ?? null,
       splitGeneration: config.splitGeneration || 0,
-      hp: config.hp || 1
+      isBossShield: !!config.isBossShield,
+      nextDirectionSwapAt: config.nextDirectionSwapAt || 0,
+      hp: Number.isFinite(config.hp) ? config.hp : 1
     };
   }
 
