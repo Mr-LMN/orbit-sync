@@ -15,59 +15,90 @@
     return worldNum === 2 ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
   }
 
+  function hasActiveMusicGraph() {
+    return !!(
+      audio.baseSource &&
+      audio.bossSource &&
+      audio.baseGain &&
+      audio.bossGain
+    );
+  }
+
   async function startDynamicMusic(baseTrackPath) {
     if (!audio.audioCtx || !audio.musicEnabled) return;
-    if (audio.isMusicPlaying && audio.currentBaseTrack === baseTrackPath) return;
-
-    disposeMusicNodes();
-
-    try {
-      if (!audio.baseAudioBuffers[baseTrackPath]) {
-        audio.baseAudioBuffers[baseTrackPath] = await loadAudioFile(baseTrackPath);
-      }
-      if (!audio.bossAudioBuffer) audio.bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
-
-      audio.baseSource = audio.audioCtx.createBufferSource();
-      audio.bossSource = audio.audioCtx.createBufferSource();
-      audio.baseSource.buffer = audio.baseAudioBuffers[baseTrackPath];
-      audio.bossSource.buffer = audio.bossAudioBuffer;
-      audio.baseSource.loop = true;
-      audio.bossSource.loop = true;
-
-      audio.baseGain = audio.audioCtx.createGain();
-      audio.bossGain = audio.audioCtx.createGain();
-
-      audio.bossGain.gain.value = 0;
-      audio.baseGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
-      audio.baseGain.gain.linearRampToValueAtTime(0.6, audio.audioCtx.currentTime + 2.5);
-
-      audio.baseSource.connect(audio.baseGain);
-      audio.baseGain.connect(audio.audioCtx.destination);
-      audio.bossSource.connect(audio.bossGain);
-      audio.bossGain.connect(audio.audioCtx.destination);
-
-      const startTime = audio.audioCtx.currentTime + 0.1;
-      audio.baseSource.start(startTime);
-      audio.bossSource.start(startTime);
-      audio.currentBaseTrack = baseTrackPath;
-      audio.isMusicPlaying = true;
-      audio.currentMusicState = { mult: -1, boss: null };
-    } catch (e) {
-      console.warn('Dynamic music failed', e);
+    if (
+      audio.isMusicPlaying &&
+      audio.currentBaseTrack === baseTrackPath &&
+      hasActiveMusicGraph()
+    ) {
+      return;
     }
+    if (audio.musicStartPromise && audio.pendingBaseTrack === baseTrackPath) {
+      return audio.musicStartPromise;
+    }
+
+    // Ownership guard prevents duplicate music stacks after revive/restart/level transitions.
+    const startToken = ++audio.musicStartToken;
+    audio.pendingBaseTrack = baseTrackPath;
+    audio.musicStartPromise = (async function startMusicWithOwnership() {
+      try {
+        if (!audio.baseAudioBuffers[baseTrackPath]) {
+          audio.baseAudioBuffers[baseTrackPath] = await loadAudioFile(baseTrackPath);
+        }
+        if (!audio.bossAudioBuffer) audio.bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
+        if (startToken !== audio.musicStartToken) return;
+
+        disposeMusicNodes();
+        if (startToken !== audio.musicStartToken) return;
+
+        audio.baseSource = audio.audioCtx.createBufferSource();
+        audio.bossSource = audio.audioCtx.createBufferSource();
+        audio.baseSource.buffer = audio.baseAudioBuffers[baseTrackPath];
+        audio.bossSource.buffer = audio.bossAudioBuffer;
+        audio.baseSource.loop = true;
+        audio.bossSource.loop = true;
+
+        audio.baseGain = audio.audioCtx.createGain();
+        audio.bossGain = audio.audioCtx.createGain();
+
+        audio.bossGain.gain.value = 0;
+        audio.baseGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
+        audio.baseGain.gain.linearRampToValueAtTime(0.6, audio.audioCtx.currentTime + 2.5);
+
+        audio.baseSource.connect(audio.baseGain);
+        audio.baseGain.connect(audio.audioCtx.destination);
+        audio.bossSource.connect(audio.bossGain);
+        audio.bossGain.connect(audio.audioCtx.destination);
+
+        const startTime = audio.audioCtx.currentTime + 0.1;
+        audio.baseSource.start(startTime);
+        audio.bossSource.start(startTime);
+        audio.currentBaseTrack = baseTrackPath;
+        audio.isMusicPlaying = true;
+        audio.currentMusicState = { mult: -1, boss: null };
+      } catch (e) {
+        console.warn('Dynamic music failed', e);
+      } finally {
+        if (audio.musicStartToken === startToken) {
+          audio.musicStartPromise = null;
+          audio.pendingBaseTrack = null;
+        }
+      }
+    })();
+    return audio.musicStartPromise;
   }
 
   function disposeMusicNodes() {
     try {
       if (audio.baseSource) {
         try { audio.baseSource.stop(); } catch (e) {}
-        audio.baseSource.disconnect();
+        try { audio.baseSource.disconnect(); } catch (e) {}
       }
     } catch (e) {}
     try {
       if (audio.bossSource) {
         try { audio.bossSource.stop(); } catch (e) {}
-        audio.bossSource.disconnect();
+        try { audio.bossSource.disconnect(); } catch (e) {}
       }
     } catch (e) {}
     try { if (audio.baseGain) audio.baseGain.disconnect(); } catch (e) {}
@@ -82,6 +113,9 @@
   function stopDynamicMusic() {
     if (!audio.audioCtx) return;
     try {
+      audio.musicStartToken += 1;
+      audio.musicStartPromise = null;
+      audio.pendingBaseTrack = null;
       if (audio.baseGain) {
         audio.baseGain.gain.cancelScheduledValues(audio.audioCtx.currentTime);
         audio.baseGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
@@ -148,6 +182,7 @@
   audio.baseVolumeForMultiplier = baseVolumeForMultiplier;
   audio.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
   audio.updateMusicState = updateMusicState;
+  audio.hasActiveMusicGraph = hasActiveMusicGraph;
 
   window.loadAudioFile = loadAudioFile;
   window.getBaseTrackForLevel = getBaseTrackForLevel;
@@ -157,4 +192,5 @@
   window.baseVolumeForMultiplier = baseVolumeForMultiplier;
   window.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
   window.updateMusicState = updateMusicState;
+  window.hasActiveMusicGraph = hasActiveMusicGraph;
 })(window);

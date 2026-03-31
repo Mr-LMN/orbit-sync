@@ -44,10 +44,18 @@
 
   function startBossDrone() {
     if (!audio.sfxEnabled) return;
-    if (!audio.audioCtx || audio.bossDrone) return;
+    if (!audio.audioCtx) return;
+    if (audio.bossDrone && audio.bossDroneOsc2 && audio.bossDroneGain) return;
+    if (audio.bossDroneStopTimeout) {
+      clearTimeout(audio.bossDroneStopTimeout);
+      audio.bossDroneStopTimeout = null;
+    }
+    audio.bossDroneStopToken += 1;
+    disposeBossDroneNodes();
 
     audio.bossDrone = audio.audioCtx.createOscillator();
     const osc2 = audio.audioCtx.createOscillator();
+    audio.bossDroneOsc2 = osc2;
     audio.bossDroneGain = audio.makeGain(0);
 
     audio.bossDrone.connect(audio.bossDroneGain);
@@ -63,26 +71,51 @@
 
     audio.bossDrone.start();
     osc2.start();
-    audio.bossDrone._osc2 = osc2;
+  }
+
+  function disposeBossDroneNodes() {
+    if (audio.bossDroneStopTimeout) {
+      clearTimeout(audio.bossDroneStopTimeout);
+      audio.bossDroneStopTimeout = null;
+    }
+    try {
+      if (audio.bossDrone) {
+        try { audio.bossDrone.stop(); } catch (e) {}
+        try { audio.bossDrone.disconnect(); } catch (e) {}
+      }
+    } catch (e) {}
+    try {
+      if (audio.bossDroneOsc2) {
+        try { audio.bossDroneOsc2.stop(); } catch (e) {}
+        try { audio.bossDroneOsc2.disconnect(); } catch (e) {}
+      }
+    } catch (e) {}
+    try {
+      if (audio.bossDroneGain) {
+        try { audio.bossDroneGain.disconnect(); } catch (e) {}
+      }
+    } catch (e) {}
+    audio.bossDrone = null;
+    audio.bossDroneOsc2 = null;
+    audio.bossDroneGain = null;
   }
 
   function stopBossDrone() {
-    if (!audio.bossDrone) return;
+    if (!audio.bossDrone || !audio.bossDroneGain || !audio.audioCtx) return;
+    const stopToken = ++audio.bossDroneStopToken;
+    audio.bossDroneGain.gain.cancelScheduledValues(audio.audioCtx.currentTime);
     audio.bossDroneGain.gain.linearRampToValueAtTime(0.001, audio.audioCtx.currentTime + 0.8);
-    setTimeout(() => {
-      try {
-        audio.bossDrone.stop();
-        audio.bossDrone._osc2.stop();
-      } catch (e) {}
-      audio.bossDrone = null;
-      audio.bossDroneGain = null;
+    audio.bossDroneStopTimeout = setTimeout(() => {
+      if (stopToken !== audio.bossDroneStopToken) return;
+      disposeBossDroneNodes();
+      audio.bossDroneStopTimeout = null;
     }, 900);
   }
 
   function escalateBossDrone() {
-    if (!audio.bossDrone || !audio.audioCtx) return;
+    if (!audio.bossDrone || !audio.bossDroneOsc2 || !audio.bossDroneGain || !audio.audioCtx) return;
     audio.bossDrone.frequency.linearRampToValueAtTime(80, audio.audioCtx.currentTime + 0.5);
-    audio.bossDrone._osc2.frequency.linearRampToValueAtTime(83, audio.audioCtx.currentTime + 0.5);
+    audio.bossDroneOsc2.frequency.linearRampToValueAtTime(83, audio.audioCtx.currentTime + 0.5);
     audio.bossDroneGain.gain.linearRampToValueAtTime(0.18, audio.audioCtx.currentTime + 0.5);
   }
 
