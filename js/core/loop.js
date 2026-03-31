@@ -161,6 +161,7 @@ let activeSplitFamilyId = null;
 let nextSplitFamilyId = 1;
 let mainLoopRafId = null;
 let isMainLoopRunning = false;
+let glitchActive = false;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
@@ -1865,22 +1866,47 @@ function update() {
 
 
 function glitchCanvas(duration, callback) {
+  // On mobile, skip pixel manipulation entirely —
+  // getImageData/putImageData force GPU-CPU sync which
+  // causes severe frame drops on mobile hardware.
+  if (isMobile) {
+    callback();
+    return;
+  }
+
+  glitchActive = true;
   const startTime = Date.now();
-  const originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let originalImageData;
+  try {
+    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  } catch (e) {
+    // getImageData can fail on some browsers — fall back gracefully
+    glitchActive = false;
+    callback();
+    return;
+  }
 
   function glitchFrame() {
+    // Cancel if revive/restart happened mid-glitch
+    if (!glitchActive) return;
+
     if (Date.now() - startTime > duration) {
+      glitchActive = false;
       callback();
       return;
     }
     ctx.putImageData(originalImageData, 0, 0);
-    const slices = 6;
+    // Reduce from 6 slices to 3 — half the GPU readbacks
+    const slices = 3;
     for (let s = 0; s < slices; s++) {
       const sliceY = Math.random() * canvas.height;
-      const sliceH = Math.random() * 30 + 5;
-      const shift = (Math.random() - 0.5) * 30;
-      const slice = ctx.getImageData(0, sliceY, canvas.width, sliceH);
-      ctx.putImageData(slice, shift, sliceY);
+      // Use a fixed-size slice buffer instead of getImageData each time
+      const sliceH = Math.floor(Math.random() * 20 + 5);
+      const shift = Math.floor((Math.random() - 0.5) * 24);
+      try {
+        const slice = ctx.getImageData(0, sliceY, canvas.width, sliceH);
+        ctx.putImageData(slice, shift, sliceY);
+      } catch (e) {}
     }
     requestAnimationFrame(glitchFrame);
   }
@@ -1986,6 +2012,7 @@ function handleFail(reason) {
 }
 
 function restartCurrentStageAfterRevive() {
+  glitchActive = false;
   const pending = runCents;
   const banked = globalCoins;
   const usedChance = usedLastChance;
@@ -2505,6 +2532,7 @@ function triggerStageClear() { return OrbitGame.systems.progression.triggerStage
 function startCampaign() { return OrbitGame.ui.menus.startCampaign(); }
 
 function restartFromCheckpoint() {
+  glitchActive = false;
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
   ui.gameUI.style.display = 'block';
@@ -2518,7 +2546,6 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
-  startMainLoop();
 }
 
 function returnToMenu() {
