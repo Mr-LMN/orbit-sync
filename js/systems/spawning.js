@@ -115,6 +115,28 @@
         hp: 1
       }));
     }
+
+    if (levelData.hasHeart && !inMenu && !levelData.boss) {
+      const baseProbability = lives === 1 ? 0.85 : lives === 2 ? 0.4 : 0.15;
+      const diminishingFactor = Math.pow(0.5, lifeZonesSpawnedThisRun);
+      const finalChance = baseProbability * diminishingFactor;
+
+      if (lifeZonesSpawnedThisRun < 4 && Math.random() < finalChance) {
+        lifeZonesSpawnedThisRun++;
+        targets.push(buildTarget(
+          Math.random() * Math.PI * 2,
+          Math.PI / 10,
+          {
+            color: '#ffaa00',
+            active: true,
+            isHeart: true,
+            isLifeZone: true,
+            expireDistance: Math.PI * 5
+          }
+        ));
+        setTimeout(() => soundLifeZone(), 100);
+      }
+    }
   }
 
   OG.systems.spawning.spawnTargets = spawnTargets;

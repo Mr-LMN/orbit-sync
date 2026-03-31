@@ -32,7 +32,27 @@
   }
 
   function showComboPopup(multiplierLevel) {
-    createPopup(centerObj.x, centerObj.y - orbitRadius - 24, `x${multiplierLevel}!`, '#ffd54a', 'perfect');
+    const milestones = {
+      4: { label: 'x4 COMBO!', color: '#00f7ff' },
+      6: { label: 'x6 RAMPAGE!', color: '#ff67f3' },
+      8: { label: 'x8 GOD MODE!', color: '#ffd84d' }
+    };
+    const m = milestones[multiplierLevel];
+    if (!m) return;
+    const p = createPopup(
+      centerObj.x,
+      centerObj.y - orbitRadius - 26,
+      m.label,
+      m.color
+    );
+    p.animType = 'combo';
+    p.life = 1.65;
+    p.riseSpeed = 0.75;
+    p.fadeSpeed = 0.027;
+    p.shadow = 32;
+    createShockwave(m.color, 42);
+    createShockwave('#ffffff', 50);
+    createUpwardBurstParticles(centerObj.x, centerObj.y - 14, m.color, 28);
   }
 
   function showNearMissReplay(reason, nearestEdgeDistance) {
@@ -55,12 +75,25 @@
   }
 
   function createShockwave(color, speed = 40) {
-    shockwaves.push({ radius: 10, alpha: 1, color, speed });
+    shockwaves.push({
+      radius: orbitRadius * 0.15,
+      opacity: 1.0,
+      color,
+      speed,
+      width: 5
+    });
   }
 
   function createTargetHitRipple(x, y, color = '#ffffff') {
     if (targetHitRipples.length >= MAX_HIT_RIPPLES) targetHitRipples.shift();
-    targetHitRipples.push({ x, y, radius: 8, alpha: 1, color, width: 2.5 });
+    targetHitRipples.push({
+      x,
+      y,
+      radius: 3,
+      speed: 2.6,
+      life: 1.0,
+      color
+    });
   }
 
   function triggerTargetHitFeedback(target, x, y) {

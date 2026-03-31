@@ -22,16 +22,12 @@
       const p = getParticle();
       p.x = x;
       p.y = y;
-      p.dx = Math.cos(ang) * speed;
-      p.dy = Math.sin(ang) * speed;
+      p.vx = Math.cos(ang) * speed;
+      p.vy = Math.sin(ang) * speed;
+      p.angle = ang;
+      p.length = Math.random() * 10 + 5;
       p.life = 1;
       p.color = color;
-      p.type = 'normal';
-      p.size = Math.random() * 4 + 2;
-      p.gravity = 0;
-      p.drag = 0.985;
-      p.spin = (Math.random() - 0.5) * 0.2;
-      p.rotation = Math.random() * Math.PI * 2;
       particles.push(p);
     }
   }
@@ -45,18 +41,14 @@
       const p = getParticle();
       const spread = (Math.random() - 0.5) * 1.4;
       const speed = Math.random() * 6 + 3;
-      p.x = x + (Math.random() - 0.5) * 10;
-      p.y = y + (Math.random() - 0.5) * 4;
-      p.dx = Math.sin(spread) * speed * 0.45;
-      p.dy = -Math.abs(Math.cos(spread) * speed);
+      p.x = x;
+      p.y = y;
+      p.vx = Math.sin(spread) * speed * 0.45;
+      p.vy = -Math.abs(Math.cos(spread) * speed);
+      p.angle = Math.atan2(p.vy, p.vx);
+      p.length = Math.random() * 11 + 6;
       p.life = 1;
       p.color = color;
-      p.type = 'burst';
-      p.size = Math.random() * 3.2 + 1.8;
-      p.gravity = 0.18 + Math.random() * 0.06;
-      p.drag = 0.975;
-      p.spin = (Math.random() - 0.5) * 0.25;
-      p.rotation = Math.random() * Math.PI * 2;
       particles.push(p);
     }
   }

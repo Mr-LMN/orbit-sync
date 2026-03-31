@@ -11,10 +11,24 @@
       active: true,
       color: config.color || (worldNum === 2 ? '#ff4fd8' : '#ff3366'),
       move: config.move || 0,
+      moveSpeed: config.moveSpeed !== undefined ? config.moveSpeed : (config.move || 0),
       shrink: config.shrink || null,
       initialSize: size,
+      baseSize: size,
+      spawnDistance: (typeof totalStageDistance !== 'undefined') ? totalStageDistance : 0,
+      shrinkConfig: (!config.isHeart && !config.isBossShield && levelData && levelData.shrink)
+        ? levelData.shrink
+        : null,
+      pulseConfig: (!config.isHeart && !config.isBossShield && !config.isPhantom
+        && !config.isCornerBonus && levelData && levelData.pulse)
+        ? levelData.pulse
+        : null,
+      pulsePhaseOffset: (size % (Math.PI * 2)) * 420,
+      pulseAtMinimum: false,
       distanceMoved: 0,
       isHeart: !!config.isHeart,
+      isLifeZone: !!config.isLifeZone,
+      expireDistance: config.expireDistance || (Math.PI * 5),
       isPhantom: !!config.isPhantom,
       isCornerBonus: !!config.isCornerBonus,
       mechanic: config.mechanic || null,
