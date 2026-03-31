@@ -1834,6 +1834,7 @@ function update() {
   if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
 
   let deferredFailReason = null;
+  let pendingSplitFamilyRespawnId = null;
   targets.forEach(t => {
     if (!t.active) return;
 
@@ -1961,9 +1962,16 @@ function update() {
       if (traveled > Math.PI * 6) {
         // Child has circled 3 times without being hit — despawn silently
         t.active = false;
+        if (t.splitFamilyId != null) {
+          pendingSplitFamilyRespawnId = t.splitFamilyId;
+        }
       }
     }
   });
+
+  if (pendingSplitFamilyRespawnId != null) {
+    maybeRespawnSplitRootForStage(pendingSplitFamilyRespawnId);
+  }
 
   if (deferredFailReason) {
     handleFail(deferredFailReason);
