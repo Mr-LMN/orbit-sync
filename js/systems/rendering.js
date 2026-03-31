@@ -50,14 +50,39 @@
       const rawSpan = endAngle - startAngle;
       let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
       if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
-      const actualSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
-      ctx.beginPath();
-      for (let i = 0; i <= actualSteps; i++) {
-        const t = startAngle + (span * i / actualSteps);
-        const pt = getPointOnShape(t, 'diamond', cx, cy, radius);
-        if (i === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
+      const sectorSize = Math.PI / 2;
+      const normalize = (value) => ((value % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const startNorm = normalize(startAngle);
+      const endUnwrapped = startNorm + span;
+      const pointAngles = [startNorm];
+
+      const firstBoundaryIndex = Math.floor(startNorm / sectorSize) + 1;
+      const boundaryCount = Math.floor((endUnwrapped - (firstBoundaryIndex * sectorSize)) / sectorSize) + 1;
+      for (let i = 0; i < boundaryCount; i++) {
+        const boundary = (firstBoundaryIndex + i) * sectorSize;
+        if (boundary > startNorm && boundary < endUnwrapped) pointAngles.push(boundary);
       }
+      pointAngles.push(endUnwrapped);
+
+      const fallbackSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
+      const needsFallbackSampling = pointAngles.length <= 2 && fallbackSteps > 2;
+
+      ctx.beginPath();
+      if (needsFallbackSampling) {
+        for (let i = 0; i <= fallbackSteps; i++) {
+          const t = startNorm + (span * i / fallbackSteps);
+          const pt = getPointOnShape(t, 'diamond', cx, cy, radius);
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        }
+        return;
+      }
+
+      pointAngles.forEach((unwrappedAngle, idx) => {
+        const pt = getPointOnShape(unwrappedAngle, 'diamond', cx, cy, radius);
+        if (idx === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
       return;
     }
     const rawSpan = endAngle - startAngle;
