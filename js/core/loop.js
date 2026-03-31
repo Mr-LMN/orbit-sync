@@ -501,11 +501,21 @@ function forceHideOverlayExtras() {
 function setCinematicOverlayMode() {
   ui.overlay.style.display = 'flex';
   ui.btn.style.display = 'none';
+  if (ui.menuBtn) {
+    ui.menuBtn.blur();
+    ui.menuBtn.style.outline = 'none';
+  }
+  if (document.activeElement && typeof document.activeElement.blur === 'function') {
+    document.activeElement.blur();
+  }
   forceHideOverlayExtras();
 }
 function clearCinematicOverlayMode() {
   ui.btn.style.display = 'inline-block';
-  if (ui.menuBtn) ui.menuBtn.style.display = 'inline-block';
+  if (ui.menuBtn) {
+    ui.menuBtn.style.display = 'inline-block';
+    ui.menuBtn.style.outline = '';
+  }
 }
 function clearRunTransientTimers() {
   if (tempTextTimeout) { clearTimeout(tempTextTimeout); tempTextTimeout = null; }
@@ -640,8 +650,12 @@ function loadLevel(idx) {
 
   if (levelData.boss) {
     isCinematicIntro = true;
-    if (ui.gameUI) ui.gameUI.style.display = 'block';
-    playBossCinematic();
+    if (levelData.id === '1-6' || levelData.boss === 'aegis') {
+      triggerBossIntro();
+    } else {
+      if (ui.gameUI) ui.gameUI.style.display = 'block';
+      playBossCinematic();
+    }
   } else {
     stopBossDrone();
     spawnTargets();
@@ -2130,9 +2144,12 @@ function tap() {
       if (t.hp === 1) t.color = '#ff3366'; // critical
       if (t.hp <= 0) { t.active = false; soundShieldBreak(); }
       createParticles(hitX, hitY, t.color, 14);
-      if (t.hp > 0) createPopup(hitX, hitY - 18, `${t.hp} HIT${t.hp > 1 ? 'S' : ''}`, t.color);
       const shieldsLeft = targets.filter(tgt => tgt.isBossShield && tgt.active).length;
-      createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, "#ffffff");
+      const shouldShowShieldReadout = levelData.boss !== 'aegis';
+      if (shouldShowShieldReadout) {
+        if (t.hp > 0) createPopup(hitX, hitY - 18, `${t.hp} HIT${t.hp > 1 ? 'S' : ''}`, t.color);
+        createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
+      }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
         isBossPhaseTwo = true;
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";
