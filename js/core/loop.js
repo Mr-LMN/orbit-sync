@@ -148,11 +148,19 @@ let bossSpawnTimeout = null;
 let bossPauseUntil = 0;
 let bossTransitionLock = false;
 let brightnessPulseTimeout = null;
+let nearMissFailTimeout = null;
+let bossIntroTimeout = null;
+let bossCinematicTimeout = null;
+let bossPauseTimeout = null;
+let worldClearDelayTimeout = null;
+let worldClearTallyInterval = null;
 let stageClearHoldUntil = 0;
 let nearMissReplayUntil = 0;
 let nearMissReplayActive = false;
 let activeSplitFamilyId = null;
 let nextSplitFamilyId = 1;
+let mainLoopRafId = null;
+let isMainLoopRunning = false;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
@@ -499,7 +507,19 @@ function clearCinematicOverlayMode() {
   ui.btn.style.display = 'inline-block';
   if (ui.menuBtn) ui.menuBtn.style.display = 'inline-block';
 }
+function clearRunTransientTimers() {
+  if (tempTextTimeout) { clearTimeout(tempTextTimeout); tempTextTimeout = null; }
+  if (brightnessPulseTimeout) { clearTimeout(brightnessPulseTimeout); brightnessPulseTimeout = null; }
+  if (bossSpawnTimeout) { clearTimeout(bossSpawnTimeout); bossSpawnTimeout = null; }
+  if (nearMissFailTimeout) { clearTimeout(nearMissFailTimeout); nearMissFailTimeout = null; }
+  if (bossIntroTimeout) { clearTimeout(bossIntroTimeout); bossIntroTimeout = null; }
+  if (bossCinematicTimeout) { clearTimeout(bossCinematicTimeout); bossCinematicTimeout = null; }
+  if (bossPauseTimeout) { clearTimeout(bossPauseTimeout); bossPauseTimeout = null; }
+  if (worldClearDelayTimeout) { clearTimeout(worldClearDelayTimeout); worldClearDelayTimeout = null; }
+  if (worldClearTallyInterval) { clearInterval(worldClearTallyInterval); worldClearTallyInterval = null; }
+}
 function resetRunState() {
+  clearRunTransientTimers();
   score = 0; stageHits = 0; lives = maxLives; multiplier = 1; streak = 0;
   distanceTraveled = 0; runCents = 0;
   angle = 0; direction = 1;
@@ -507,7 +527,11 @@ function resetRunState() {
   currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
   scoreAtCheckpoint = 0; scoreAtLevelStart = 0;
   isBossPhaseTwo = false; bossPhase = 1;
+  bossPauseUntil = 0; bossTransitionLock = false; stageClearHoldUntil = 0;
+  isCinematicIntro = false; bossIntroPlaying = false;
   lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
+  particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
+  resetSplitFamilyState();
 }
 function loseLife(reason) {
   lives--;
@@ -596,6 +620,7 @@ function loadLevel(idx) {
     return false;
   }
   scoreAtLevelStart = score;
+  clearRunTransientTimers();
   levelData = campaign[idx];
   ensureCorrectMusicForLevel();
   currentWorldPalette = computeWorldPalette(levelData);
@@ -1620,10 +1645,33 @@ function isInsideTarget(playerAngle, t) { return OrbitGame.entities.target.isIns
 
 function showTempText(text, color, duration) { return OrbitGame.entities.effects.showTempText(text, color, duration); }
 
+function queueNextMainLoopFrame() {
+  if (mainLoopRafId !== null) return;
+  mainLoopRafId = requestAnimationFrame(update);
+  isMainLoopRunning = true;
+}
+
+function startMainLoop() {
+  // Guard against duplicate RAF chains after revive/restart/start flows.
+  if (isMainLoopRunning || mainLoopRafId !== null) return false;
+  queueNextMainLoopFrame();
+  return true;
+}
+
+function stopMainLoop() {
+  if (mainLoopRafId !== null) {
+    cancelAnimationFrame(mainLoopRafId);
+    mainLoopRafId = null;
+  }
+  isMainLoopRunning = false;
+}
+
 function update() {
-  if (isCinematicIntro) { requestAnimationFrame(update); return; }
-  if (bossIntroPlaying) { draw(); requestAnimationFrame(update); return; }
-  if (!isPlaying && !inMenu) { draw(); requestAnimationFrame(update); return; }
+  mainLoopRafId = null;
+  isMainLoopRunning = true;
+  if (isCinematicIntro) { queueNextMainLoopFrame(); return; }
+  if (bossIntroPlaying) { draw(); queueNextMainLoopFrame(); return; }
+  if (!isPlaying && !inMenu) { draw(); queueNextMainLoopFrame(); return; }
   const frameNow = performance.now();
   const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
   lastFrameTime = frameNow;
@@ -1777,7 +1825,7 @@ function update() {
   if (deferredFailReason) {
     handleFail(deferredFailReason);
     draw();
-    requestAnimationFrame(update);
+    queueNextMainLoopFrame();
     return;
   }
 
@@ -1798,7 +1846,7 @@ function update() {
   }
 
   updateMusicState(multiplier, (levelData && levelData.boss));
-  draw(); requestAnimationFrame(update);
+  draw(); queueNextMainLoopFrame();
 }
 
 
@@ -1930,6 +1978,7 @@ function restartCurrentStageAfterRevive() {
   const reviveCost = currentReviveCost;
   const reviveTotal = reviveCount;
 
+  clearRunTransientTimers();
   loadLevel(currentLevelIdx);
 
   runCents = pending;
@@ -2452,9 +2501,11 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
+  startMainLoop();
 }
 
 function returnToMenu() {
+  clearRunTransientTimers();
   stopBossDrone();
   stopDynamicMusic();
   toggleSettings(false);
@@ -2488,6 +2539,7 @@ function refreshMenuWorldPreview() {
 }
 
 function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampaignClear }) {
+  clearRunTransientTimers();
   isPlaying = false;
 
   // 1. Duck the music to a quiet hum
@@ -2525,15 +2577,17 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   ui.runCoins.innerText = `0 COINS`;
 
   // Start tally after 1 second delay for dramatic effect
-  setTimeout(() => {
-    let tallyInterval = setInterval(() => {
+  worldClearDelayTimeout = setTimeout(() => {
+    worldClearDelayTimeout = null;
+    worldClearTallyInterval = setInterval(() => {
       // Increment by a dynamic amount so it finishes in ~20 ticks
       let increment = Math.max(1, Math.ceil(coinsEarned / 20));
       currentDisplayCoins += increment;
 
       if (currentDisplayCoins >= coinsEarned) {
         currentDisplayCoins = coinsEarned;
-        clearInterval(tallyInterval);
+        clearInterval(worldClearTallyInterval);
+        worldClearTallyInterval = null;
 
         // Final Ding & Bank update
         if (audioCtx) playPop(8, true); // High pitch success ding
@@ -2580,3 +2634,5 @@ OrbitGame.core = OrbitGame.core || {};
 OrbitGame.core.loop = OrbitGame.core.loop || {};
 OrbitGame.core.loop.update = update;
 OrbitGame.core.loop.draw = draw;
+OrbitGame.core.loop.startMainLoop = startMainLoop;
+OrbitGame.core.loop.stopMainLoop = stopMainLoop;
