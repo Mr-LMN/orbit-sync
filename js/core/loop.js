@@ -1590,12 +1590,13 @@ function update() {
     if (t.hitScalePulse) t.hitScalePulse *= Math.pow(0.42, delta);
     if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
     if (levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex)) {
+      const baseCol = t.seqBaseColor || '#00e8ff';
       if (t.sequenceIndex < world2BossSequenceProgress) {
         t.color = '#ffffff';
       } else if (t.sequenceIndex === world2BossSequenceProgress) {
-        t.color = '#ffd54a';
+        t.color = baseCol; // Active node glows its crystal colour
       } else {
-        t.color = '#4e5970';
+        t.color = '#0d1526'; // Near-black — dormant, threatening
       }
     }
 

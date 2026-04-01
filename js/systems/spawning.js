@@ -60,15 +60,16 @@
       } else {
         world2BossSequenceProgress = 0;
         world2BossSequenceLength = 5;
-        world2BossArenaRotationSpeed = 0.0052;
-        ui.text.innerText = 'PHASE 2: Hit the highlighted sequence in order.';
-        ui.text.style.color = '#ffd54a';
+        world2BossArenaRotationSpeed = 0.0058;
+        ui.text.innerText = 'PHASE 2 — EXECUTE THE SEQUENCE. ONE MISTAKE RESETS.';
+        ui.text.style.color = '#00e8ff';
+        const seqColors = ['#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff', '#ff4fd8'];
         for (let i = 0; i < world2BossSequenceLength; i++) {
           const seqTarget = buildTarget(
             normalizeAngle((-Math.PI / 2) + (i * ((Math.PI * 2) / world2BossSequenceLength))),
-            Math.PI / 7.1,
+            Math.PI / 6.4,
             {
-              color: '#4e5970',
+              color: '#1a2238',
               active: true,
               hp: 1,
               isBossShield: true,
@@ -76,6 +77,7 @@
             }
           );
           seqTarget.sequenceIndex = i;
+          seqTarget.seqBaseColor = seqColors[i];
           targets.push(seqTarget);
         }
       }
