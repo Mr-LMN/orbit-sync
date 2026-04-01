@@ -179,10 +179,10 @@
     isPlaying = false;
     setCinematicOverlayMode();
 
-    const bossName = levelData.boss === 'aegis' ? 'THE AEGIS CORE' : 'THE PRISM';
+    const bossName = levelData.boss === 'aegis' ? 'THE AEGIS CORE' : 'AETHELRED';
     const bossTagline = levelData.boss === 'aegis'
       ? 'Break the shields. Expose the core.'
-      : 'Hold the corners. Break each prism shield.';
+      : 'Prism Warden. Hold the corners. Break each shard.';
 
     ui.title.innerText = bossName;
     ui.title.style.color = '#ff3366';
