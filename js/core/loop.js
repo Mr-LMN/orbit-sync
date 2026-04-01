@@ -811,11 +811,11 @@ function maybeRespawnSplitRootForStage(clearedFamilyId) {
   if (hasActiveSplitFamily()) return false;
   const mechanics = Array.isArray(levelData?.mechanics) ? levelData.mechanics : [];
   const isPureSplitStage = mechanics.length === 1 && mechanics[0] === 'split';
-  if (isPureSplitStage) {
-    triggerStageClear();
-  } else {
-    spawnControlledSplitRoot();
-  }
+  // Mixed-mechanic stages (e.g. 2-5) should not auto-respawn a split root.
+  // Respawning here can keep at least one target alive forever, preventing
+  // wave clear progression beyond wave 1.
+  if (!isPureSplitStage) return false;
+  triggerStageClear();
   return true;
 }
 
