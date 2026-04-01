@@ -10,7 +10,7 @@
 
   function updateShopUI() {
     updatePersistentCoinUI();
-    const items = ['classic', 'skull', 'fire'];
+    const items = ['classic', 'skull', 'prism'];
     items.forEach(id => {
       let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
       let preview = card ? card.querySelector('.item-preview') : null;
