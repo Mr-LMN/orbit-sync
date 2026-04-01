@@ -3,24 +3,46 @@
   OG.entities = OG.entities || {};
   OG.entities.target = OG.entities.target || {};
 
-  function buildTarget(start, size, config = {}) {
-    const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+  function resolveMovement(config, definition) {
+    const canMove = config.canMove !== undefined
+      ? !!config.canMove
+      : (definition && definition.canMove !== undefined ? !!definition.canMove : true);
+    const baseMove = config.move !== undefined
+      ? config.move
+      : (definition && definition.defaults && definition.defaults.move !== undefined ? definition.defaults.move : 0);
+    const baseMoveSpeed = config.moveSpeed !== undefined
+      ? config.moveSpeed
+      : (definition && definition.defaults && definition.defaults.moveSpeed !== undefined ? definition.defaults.moveSpeed : baseMove);
     return {
-      start,
+      move: canMove ? baseMove : 0,
+      moveSpeed: canMove ? baseMoveSpeed : 0,
+      canMove
+    };
+  }
+
+  function createTarget(type = 'standard', overrides = {}) {
+    const defs = OG.entities.targetDefinitions;
+    const definition = defs && defs.get ? defs.get(type) : null;
+    const defaults = definition && definition.defaults ? definition.defaults : {};
+    const config = Object.assign({}, defaults, overrides);
+    const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+    const movement = resolveMovement(config, definition);
+    const size = config.size;
+
+    const target = {
+      start: config.start,
       size,
-      active: true,
+      active: config.active !== undefined ? !!config.active : true,
       color: config.color || (worldNum === 2 ? '#ff4fd8' : '#ff3366'),
-      move: config.move || 0,
-      moveSpeed: config.moveSpeed !== undefined ? config.moveSpeed : (config.move || 0),
+      move: movement.move,
+      moveSpeed: movement.moveSpeed,
+      canMove: movement.canMove,
       shrink: config.shrink || null,
       initialSize: size,
       baseSize: size,
       spawnDistance: (typeof totalStageDistance !== 'undefined') ? totalStageDistance : 0,
-      shrinkConfig: (!config.isHeart && !config.isBossShield && levelData && levelData.shrink)
-        ? levelData.shrink
-        : null,
-      pulseConfig: (!config.isHeart && !config.isBossShield && !config.isPhantom
-        && !config.isCornerBonus && levelData && levelData.pulse)
+      shrinkConfig: (!config.isHeart && !config.isBossShield && levelData && levelData.shrink) ? levelData.shrink : null,
+      pulseConfig: (!config.isHeart && !config.isBossShield && !config.isPhantom && !config.isCornerBonus && levelData && levelData.pulse)
         ? levelData.pulse
         : null,
       pulsePhaseOffset: (size % (Math.PI * 2)) * 420,
@@ -31,7 +53,13 @@
       expireDistance: config.expireDistance || (Math.PI * 5),
       isPhantom: !!config.isPhantom,
       isCornerBonus: !!config.isCornerBonus,
-      mechanic: config.mechanic || null,
+      type: config.type || (definition ? definition.type : type),
+      mechanic: config.mechanic !== undefined ? config.mechanic : (definition ? definition.mechanic : null),
+      variant: config.variant || null,
+      renderStyle: config.renderStyle || null,
+      hitProfile: config.hitProfile || (definition ? definition.hitProfile : null),
+      behaviour: config.behaviour || (definition ? definition.behaviour : null),
+      config: config.config || null,
       isDual: !!config.isDual,
       dualState: config.dualState || 'full',
       targetHalfWidth: config.targetHalfWidth || null,
@@ -43,6 +71,24 @@
       nextDirectionSwapAt: config.nextDirectionSwapAt || 0,
       hp: Number.isFinite(config.hp) ? config.hp : 1
     };
+
+    if (Number.isFinite(config.cornerAnchor)) target.cornerAnchor = normalizeAngle(config.cornerAnchor);
+    if (config.cornerBackWindow !== undefined) target.cornerBackWindow = config.cornerBackWindow;
+    if (config.cornerOvershootWindow !== undefined) target.cornerOvershootWindow = config.cornerOvershootWindow;
+    if (config.cornerPerfectWindow !== undefined) target.cornerPerfectWindow = config.cornerPerfectWindow;
+    if (config.cornerHitboxExpand !== undefined) target.cornerHitboxExpand = config.cornerHitboxExpand;
+    if (config.cornerVisualThickness !== undefined) target.cornerVisualThickness = config.cornerVisualThickness;
+
+    if (config.leftColor) target.leftColor = config.leftColor;
+    if (config.rightColor) target.rightColor = config.rightColor;
+    if (config.coreColor) target.coreColor = config.coreColor;
+    if (config.shellColor) target.shellColor = config.shellColor;
+
+    return target;
+  }
+
+  function buildTarget(start, size, config = {}) {
+    return createTarget(config.type || 'standard', Object.assign({}, config, { start, size }));
   }
 
   function buildCornerPrecisionTarget(anchorAngle, options = {}) {
@@ -50,44 +96,48 @@
     const overshootWindow = options.overshootWindow ?? 0.135;
     const totalSize = backWindow + overshootWindow;
     const start = normalizeAngle(anchorAngle - backWindow);
-    const t = buildTarget(start, totalSize, {
+    return createTarget('corner', {
+      start,
+      size: totalSize,
       color: options.color || '#78f8ff',
       move: options.move || 0,
-      mechanic: 'corner',
-      hp: options.hp || 1
+      hp: options.hp || 1,
+      cornerAnchor: anchorAngle,
+      cornerBackWindow: backWindow,
+      cornerOvershootWindow: overshootWindow,
+      cornerPerfectWindow: options.perfectWindow ?? 0.015,
+      cornerHitboxExpand: options.hitboxExpand ?? 0.028,
+      cornerVisualThickness: options.visualThickness ?? 1.0
     });
-    t.cornerAnchor = normalizeAngle(anchorAngle);
-    t.cornerBackWindow = backWindow;
-    t.cornerOvershootWindow = overshootWindow;
-    t.cornerPerfectWindow = options.perfectWindow ?? 0.015;
-    t.cornerHitboxExpand = options.hitboxExpand ?? 0.028;
-    t.cornerVisualThickness = options.visualThickness ?? 1.0;
-    return t;
   }
 
   function buildDualTarget(startAngle, options = {}) {
     const size = options.size || (Math.PI / 3.1);
-    const t = buildTarget(normalizeAngle(startAngle), size, {
+    const t = createTarget('dual', {
+      start: normalizeAngle(startAngle),
+      size,
       color: options.color || '#2ff6ff',
       move: options.move || 0,
-      mechanic: 'dual',
+      hp: options.hp || 1,
       isDual: true,
       dualState: 'full',
-      hp: options.hp || 1
+      targetHalfWidth: size / 2,
+      leftColor: options.leftColor || '#2ff6ff',
+      rightColor: options.rightColor || '#ff4fd8',
+      coreColor: options.coreColor || '#ffffff',
+      shellColor: options.shellColor || '#ffd54a'
     });
-    t.targetHalfWidth = size / 2;
-    t.leftColor = options.leftColor || '#2ff6ff';
-    t.rightColor = options.rightColor || '#ff4fd8';
-    t.coreColor = options.coreColor || '#ffffff';
-    t.shellColor = options.shellColor || '#ffd54a';
     return t;
   }
 
   function buildSplitTarget(startAngle, size, options = {}) {
-    return buildTarget(normalizeAngle(startAngle), size, {
+    const splitType = options.mechanic === 'splitChild' ? 'splitChild' : 'splitRoot';
+    return createTarget(splitType, {
+      start: normalizeAngle(startAngle),
+      size,
       color: options.color || '#2ff6ff',
       move: options.move || 0,
-      mechanic: options.mechanic || 'split',
+      mechanic: options.mechanic || (splitType === 'splitChild' ? 'splitChild' : 'split'),
       splitOnHit: true,
       splitDepth: options.splitDepth || 0,
       splitFamilyId: options.splitFamilyId ?? null,
@@ -205,6 +255,7 @@
     return playerAngle >= t.start && playerAngle <= end;
   }
 
+  OG.entities.target.createTarget = createTarget;
   OG.entities.target.buildTarget = buildTarget;
   OG.entities.target.buildCornerPrecisionTarget = buildCornerPrecisionTarget;
   OG.entities.target.buildDualTarget = buildDualTarget;

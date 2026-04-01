@@ -1156,276 +1156,23 @@ function draw() {
       return;
     }
 
-    if (t.mechanic === 'corner') {
-      ctx.save();
-      const markerPt = getPointOnShape(t.cornerAnchor, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = '#78f8ff';
-      ctx.globalAlpha = 0.92;
-      ctx.lineWidth = 3.4;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = '#78f8ff';
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.arc(markerPt.x, markerPt.y, 3.2 + (approach * 1.2), 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.globalAlpha = 0.95;
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#9afcff';
-      ctx.fill();
-
-      if (shouldDrawWorld2MechanicBrackets) {
-        drawWorld2AngularBracket(t.start, { dir: -1, alpha: 0.52, width: 1.55, wing: 4.5, legIn: 5.6 });
-        drawWorld2AngularBracket(t.start + t.size, { dir: 1, alpha: 0.52, width: 1.55, wing: 4.5, legIn: 5.6 });
-      }
-      ctx.restore();
-      return;
-    }
-
-    if (t.isDual && t.dualState !== 'cleared') {
-      ctx.save();
-      const halfSize = t.targetHalfWidth || (t.size / 2);
-      const leftStart = t.start;
-      const leftEnd = t.start + halfSize;
-      const rightStart = t.start + halfSize;
-      const rightEnd = t.start + t.size;
-      const isDiamondWorld = worldShape === 'diamond' && worldNum === 2 && !isBoss;
-      const leftColor = t.leftColor || '#2ff6ff';
-      const rightColor = t.rightColor || '#ff4fd8';
-      const coreColor = t.coreColor || '#ffffff';
-      const shellColor = t.shellColor || '#ffd54a';
-      const shellWidth = isDiamondWorld ? 9.2 : 12.5;
-      const bodyWidth = isDiamondWorld ? 4.4 : 5.2;
-      const coreWidth = isDiamondWorld ? 2.4 : 2.1;
-      const shellAlpha = isDiamondWorld ? 0.11 : 0.2;
-      const bodyAlpha = isDiamondWorld ? 0.86 : 0.74;
-      const halfPad = isDiamondWorld ? 0.0018 : 0;
-
-      // LEFT HALF (cyan)
-      if (t.dualState === 'full' || t.dualState === 'left') {
-        // Gold support shell to help separation from the rail.
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
-        ctx.strokeStyle = shellColor;
-        ctx.globalAlpha = shellAlpha;
-        ctx.lineWidth = shellWidth;
-        ctx.lineCap = 'butt';
-        setShadowBlur(isDiamondWorld ? 10 : 22);
-        ctx.shadowColor = shellColor;
-        ctx.stroke();
-
-        // Main illuminated body.
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
-        ctx.strokeStyle = leftColor;
-        ctx.globalAlpha = bodyAlpha;
-        ctx.lineWidth = bodyWidth;
-        setShadowBlur(isDiamondWorld ? 6 : 12);
-        ctx.shadowColor = leftColor;
-        ctx.stroke();
-
-        // Crisp white core.
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
-        ctx.strokeStyle = coreColor;
-        ctx.globalAlpha = 0.98;
-        ctx.lineWidth = coreWidth;
-        setShadowBlur(isDiamondWorld ? 5 : 8);
-        ctx.shadowColor = leftColor;
-        ctx.stroke();
-      }
-
-      // RIGHT HALF (magenta)
-      if (t.dualState === 'full' || t.dualState === 'right') {
-        // Gold support shell to help separation from the rail.
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
-        ctx.strokeStyle = shellColor;
-        ctx.globalAlpha = shellAlpha;
-        ctx.lineWidth = shellWidth;
-        ctx.lineCap = 'butt';
-        setShadowBlur(isDiamondWorld ? 10 : 22);
-        ctx.shadowColor = shellColor;
-        ctx.stroke();
-
-        // Main illuminated body.
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
-        ctx.strokeStyle = rightColor;
-        ctx.globalAlpha = bodyAlpha;
-        ctx.lineWidth = bodyWidth;
-        setShadowBlur(isDiamondWorld ? 6 : 12);
-        ctx.shadowColor = rightColor;
-        ctx.stroke();
-
-        // Crisp white core.
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-          dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
-        ctx.strokeStyle = coreColor;
-        ctx.globalAlpha = 0.98;
-        ctx.lineWidth = coreWidth;
-        setShadowBlur(isDiamondWorld ? 5 : 8);
-        ctx.shadowColor = rightColor;
-        ctx.stroke();
-      }
-
-      // PERFECT CENTRE DIVIDER — stronger center lock indicator.
-      if (t.dualState === 'full') {
-        const splitAngle = t.start + halfSize;
-        const splitPt = getPointOnShape(splitAngle, worldShape,
-          centerObj.x, centerObj.y, dynamicRadius);
-        const ringRadius = isDiamondWorld ? 8.2 : 7;
-        const dotRadius = isDiamondWorld ? 4.7 : 4;
-        const tickLen = isDiamondWorld ? 7.4 : 5.8;
-        const radialX = splitPt.x - centerObj.x;
-        const radialY = splitPt.y - centerObj.y;
-        const radialLen = Math.hypot(radialX, radialY) || 1;
-        const tx = -radialY / radialLen;
-        const ty = radialX / radialLen;
-
-        // Outer glow ring
-        ctx.beginPath();
-        ctx.arc(splitPt.x, splitPt.y, ringRadius, 0, Math.PI * 2);
-        ctx.fillStyle = coreColor;
-        ctx.globalAlpha = isDiamondWorld ? 0.2 : 0.15;
-        ctx.shadowBlur = isDiamondWorld ? 16 : 20;
-        ctx.shadowColor = '#ffffff';
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(splitPt.x - tx * tickLen, splitPt.y - ty * tickLen);
-        ctx.lineTo(splitPt.x + tx * tickLen, splitPt.y + ty * tickLen);
-        ctx.strokeStyle = '#ffffff';
-        ctx.globalAlpha = 0.9;
-        ctx.lineWidth = isDiamondWorld ? 2.4 : 2;
-        ctx.shadowBlur = isDiamondWorld ? 10 : 8;
-        ctx.shadowColor = '#ffffff';
-        ctx.stroke();
-
-        // Solid dot
-        ctx.beginPath();
-        ctx.arc(splitPt.x, splitPt.y, dotRadius, 0, Math.PI * 2);
-        ctx.fillStyle = coreColor;
-        ctx.globalAlpha = 1.0;
-        ctx.shadowBlur = isDiamondWorld ? 12 : 14;
-        ctx.shadowColor = '#ffffff';
-        ctx.fill();
-
-        if (shouldDrawWorld2MechanicBrackets) {
-          drawWorld2AngularBracket(splitAngle, { dir: -1, alpha: 0.5, width: 1.4, wing: 3.7, legIn: 4.7, legOut: 1.3, shadowBlur: 4 });
-          drawWorld2AngularBracket(splitAngle, { dir: 1, alpha: 0.5, width: 1.4, wing: 3.7, legIn: 4.7, legOut: 1.3, shadowBlur: 4 });
-        }
-      }
-
-      if (shouldDrawWorld2MechanicBrackets) {
-        const dualEdges = t.dualState === 'left'
-          ? [leftStart, leftEnd]
-          : t.dualState === 'right'
-            ? [rightStart, rightEnd]
-            : [leftStart, rightEnd];
-        if (dualEdges.length > 1) {
-          drawWorld2AngularBracket(dualEdges[0], { dir: -1, alpha: 0.46, width: 1.38, wing: 3.9, legIn: 4.9, legOut: 1.3 });
-          drawWorld2AngularBracket(dualEdges[dualEdges.length - 1], { dir: 1, alpha: 0.46, width: 1.38, wing: 3.9, legIn: 4.9, legOut: 1.3 });
-        }
-      }
-
-      ctx.globalAlpha = 1.0;
-      ctx.shadowBlur = 0;
-      ctx.restore();
-      return;
-    }
-
-    if (t.mechanic === 'split' || t.mechanic === 'splitChild') {
-      ctx.save();
-
-      const depth = Number.isFinite(t.splitGeneration) ? t.splitGeneration : (t.splitDepth || 0);
-      const isRootSplit = depth === 0;
-      const isSmallSplit = depth >= 2;
-      const isMediumSplit = depth === 1;
-      const isTutorialSplit = levelData && levelData.id === '2-3';
-      const splitHeavy = useHeavyEffects && !isSmallSplit;
-
-      const palette = depth === 0
-        ? { glow: '#2ff6ff', body: '#5deeff', core: '#ffffff', accent: '#ff4fd8' }
-        : depth === 1
-          ? { glow: '#ff4fd8', body: '#ff9b54', core: '#ffffff', accent: '#ffc08a' }
-          : { glow: '#ffd54a', body: '#ffe68b', core: '#ffffff', accent: '#7cf7ff' };
-
-      const pulse = 1 + Math.sin(splitPulseTime + (t.start * 6.5)) * (isSmallSplit ? 0.03 : 0.045);
-      const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
-      const generationScale = Math.pow(0.8, depth);
-      const tutorialWidthBoost = isTutorialSplit && isRootSplit ? 1.14 : 1;
-      const outerWidth = (depth === 0 ? 14.2 : depth === 1 ? 10.8 : 7.4) * generationScale * pulse * tutorialWidthBoost;
-      const midWidth = (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2) * generationScale * pulse * tutorialWidthBoost;
-      const coreWidth = (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1) * generationScale * pulse * tutorialWidthBoost;
-
-      if (!isSmallSplit) {
-        // Big readable outer glow
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-        ctx.strokeStyle = palette.glow;
-        ctx.globalAlpha = (depth === 0 ? 0.16 : 0.12) + (launchMix * 0.08);
-        ctx.lineWidth = outerWidth;
-        ctx.lineCap = 'butt';
-        ctx.shadowBlur = splitHeavy ? (depth === 0 ? 18 : 12) : 6;
-        ctx.shadowColor = palette.glow;
-        ctx.stroke();
-      }
-
-      // Main body
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = palette.body;
-      ctx.globalAlpha = isSmallSplit ? 0.9 : 0.92;
-      ctx.lineWidth = midWidth;
-      ctx.lineCap = 'round';
-      ctx.shadowBlur = splitHeavy ? (depth === 0 ? 11 : 8) : (isSmallSplit ? 2 : 5);
-      ctx.shadowColor = palette.glow;
-      ctx.stroke();
-
-      // Bright core
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = palette.core;
-      ctx.globalAlpha = isSmallSplit ? 0.9 : 0.96;
-      ctx.lineWidth = coreWidth;
-      ctx.lineCap = 'round';
-      ctx.shadowBlur = splitHeavy ? (depth === 0 ? 9 : 6) : (isSmallSplit ? 0 : 3);
-      ctx.shadowColor = palette.core;
-      ctx.stroke();
-
-      // Visible crack / split marker in the middle
-      const crackAngle = t.start + (t.size / 2);
-      const crackPt = getPointOnShape(crackAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-
-      if (!isSmallSplit) {
-        ctx.beginPath();
-        ctx.arc(crackPt.x, crackPt.y, depth === 0 ? 7 : 5.1, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.globalAlpha = isRootSplit ? 0.16 : 0.11;
-        ctx.shadowBlur = splitHeavy ? 14 : 4;
-        ctx.shadowColor = '#ffffff';
-        ctx.fill();
-      }
-
-      ctx.beginPath();
-      const crackSize = depth === 0 ? 6 : depth === 1 ? 4.8 : 3.8;
-      ctx.moveTo(crackPt.x - crackSize, crackPt.y - crackSize);
-      ctx.lineTo(crackPt.x + crackSize, crackPt.y + crackSize);
-      ctx.moveTo(crackPt.x - crackSize, crackPt.y + crackSize);
-      ctx.lineTo(crackPt.x + crackSize, crackPt.y - crackSize);
-      ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = 0.95;
-      ctx.lineWidth = depth === 0 ? 2 : depth === 1 ? 1.5 : 1.2;
-      ctx.shadowBlur = isSmallSplit ? 0 : (splitHeavy ? 7 : 2);
-      ctx.shadowColor = '#ffffff';
-      ctx.stroke();
-
-      if (shouldDrawWorld2MechanicBrackets) {
-        const splitBracketAlpha = isSmallSplit ? 0.26 : isMediumSplit ? 0.34 : 0.4;
-        drawWorld2AngularBracket(t.start, { dir: -1, alpha: splitBracketAlpha, width: isSmallSplit ? 1.05 : 1.2, wing: isSmallSplit ? 3.1 : 3.5, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
-        drawWorld2AngularBracket(t.start + t.size, { dir: 1, alpha: splitBracketAlpha, width: isSmallSplit ? 1.05 : 1.2, wing: isSmallSplit ? 3.1 : 3.5, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
-      }
-
-      ctx.restore();
+    const targetRenderer = OrbitGame.entities && OrbitGame.entities.targetRenderers;
+    if (targetRenderer && targetRenderer.renderTarget && targetRenderer.renderTarget(ctx, t, {
+      worldShape,
+      worldNum,
+      isBoss,
+      levelData,
+      centerObj,
+      dynamicRadius,
+      approach,
+      useHeavyEffects,
+      splitPulseTime,
+      shouldDrawWorld2MechanicBrackets,
+      buildShapePath,
+      getPointOnShape,
+      drawWorld2AngularBracket,
+      setShadowBlur
+    })) {
       return;
     }
 
@@ -2195,89 +1942,21 @@ function tap() {
 
   for (let i = 0; i < targets.length; i++) {
     if (!targets[i].active) continue;
-    let endAngle = targets[i].start + targets[i].size; let tCenter = targets[i].start + (targets[i].size / 2);
     const t = targets[i];
-    const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(tCenter);
-    const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
-    const diffFromCenter = signedAngularDistance(angle, centerAngle);
-    let isHit = (endAngle > Math.PI * 2) ? (angle >= targets[i].start || angle <= (endAngle - Math.PI * 2)) : (angle >= targets[i].start && angle <= endAngle);
-    if (t.isDual && t.dualState !== 'cleared') {
-      const splitAngle = normalizeAngle(t.start + (t.targetHalfWidth || t.size / 2));
-      const fullEnd = normalizeAngle(t.start + t.size);
-      const normPlayer = normalizeAngle(angle);
-      const normStart = normalizeAngle(t.start);
-
-      // Arc-based check — no signed distance confusion
-      function inArc(a, start, end) {
-        const s = normalizeAngle(start);
-        const e = normalizeAngle(end);
-        return e >= s
-          ? (a >= s && a <= e)
-          : (a >= s || a <= e);
-      }
-
-      if (t.dualState === 'left') {
-        isHit = inArc(normPlayer, normStart, splitAngle);
-      } else if (t.dualState === 'right') {
-        isHit = inArc(normPlayer, splitAngle, fullEnd);
-      } else {
-        isHit = inArc(normPlayer, normStart, fullEnd);
-      }
+    const hitProfiles = OrbitGame.entities && OrbitGame.entities.targetHitProfiles;
+    let isHit = false;
+    if (hitProfiles && hitProfiles.isHit) {
+      isHit = hitProfiles.isHit(t, angle, { normalizeAngle, signedAngularDistance });
     }
 
     if (isHit) {
       hitIndex = i;
-      let dist = Math.abs(signedAngularDistance(angle, tCenter));
-      if (t.mechanic === 'corner') {
-        const localAngle = normalizeAngle(angle - t.start);
-
-        const visiblePerfectWindow = t.cornerPerfectWindow || 0.015;
-        const visibleBackWindow = t.cornerBackWindow || 0.135;
-        const visibleOvershootWindow = t.cornerOvershootWindow || 0.135;
-
-        // hidden forgiveness margins so the target feels fair
-        const hitboxExpand = t.cornerHitboxExpand || 0.028;
-
-        const backWindow = visibleBackWindow + hitboxExpand;
-        const overshootWindow = visibleOvershootWindow + hitboxExpand;
-
-        const perfectStart = visibleBackWindow - visiblePerfectWindow;
-        const perfectEnd = visibleBackWindow + visiblePerfectWindow;
-
-        if (localAngle >= 0 && localAngle <= (backWindow + overshootWindow)) {
-          if (localAngle >= (perfectStart - hitboxExpand * 0.25) && localAngle <= (perfectEnd + hitboxExpand * 0.25)) {
-            hitQuality = "perfect";
-          } else if (Math.abs(localAngle - visibleBackWindow) < (backWindow * 0.72)) {
-            hitQuality = "good";
-          } else {
-            hitQuality = "ok";
-          }
-        } else {
+      if (hitProfiles && hitProfiles.getHitQuality) {
+        const quality = hitProfiles.getHitQuality(t, angle, { normalizeAngle, signedAngularDistance });
+        if (!quality) {
           continue;
         }
-      } else if (t.isDual && t.dualState !== 'cleared') {
-        const splitAngle = normalizeAngle(t.start + (t.targetHalfWidth || t.size / 2));
-        const distToSplit = Math.abs(signedAngularDistance(angle, splitAngle));
-        const halfSize = t.targetHalfWidth || t.size / 2;
-        if (t.dualState === 'full') {
-          // Perfect = near the split point, good = within inner half, ok = outer edge
-          if (distToSplit <= halfSize * 0.2) hitQuality = "perfect";
-          else if (distToSplit <= halfSize * 0.55) hitQuality = "good";
-          else hitQuality = "ok";
-        } else {
-          // Remaining half — any hit counts, quality based on distance to its center
-          const remainCenter = t.dualState === 'left'
-            ? normalizeAngle(t.start + halfSize / 2)
-            : normalizeAngle(t.start + halfSize + halfSize / 2);
-          const distToCenter = Math.abs(signedAngularDistance(angle, remainCenter));
-          if (distToCenter <= halfSize * 0.27) hitQuality = "perfect";
-          else if (distToCenter <= halfSize * 0.6) hitQuality = "good";
-          else hitQuality = "ok";
-        }
-      } else {
-        if (dist < targets[i].size / 6.5) hitQuality = "perfect";
-        else if (dist < targets[i].size / 3) hitQuality = "good";
-        else hitQuality = "ok";
+        hitQuality = quality;
       }
       break;
     }
@@ -2381,153 +2060,28 @@ function tap() {
       } return;
     }
 
-    if (t.isDual && t.dualState !== 'cleared') {
-      const centerAngle = (typeof t.angle === 'number') ? t.angle : normalizeAngle(t.start + (t.size / 2));
-      const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
-      const diff = signedAngularDistance(angle, centerAngle);
-      const perfectThreshold = targetHalfWidth * 0.46;
-
-      if (Math.abs(diff) <= targetHalfWidth) {
-        if (t.isDual && t.dualState === 'full') {
-          if (Math.abs(diff) <= perfectThreshold) {
-            // PERFECT CENTER HIT
-            t.dualState = 'cleared';
-            t.active = false;
-            createParticles(hitX, hitY, '#ffffff', 24);
-            createShockwave('#ffffff', 22);
-            if (audioCtx) playPop(1, false, true);
-            createPopup(hitX, hitY - 36, "PERFECT LINK", "#ffffff");
-          } else {
-            // PARTIAL HIT (Hit the edge)
-            if (diff < 0) {
-              t.dualState = 'right'; // Left side destroyed
-              createParticles(hitX, hitY, '#2ff6ff', 16);
-            } else {
-              t.dualState = 'left'; // Right side destroyed
-              createParticles(hitX, hitY, '#ff4fd8', 16);
-            }
-            if (audioCtx) playPop(4, false);
-            triggerScreenShake(3);
-            createPopup(hitX, hitY - 30, "HALF CLEARED", "#ffffff");
-            return; // Do not clear the target! Let it loop around.
-          }
-        } else if (t.isDual && t.dualState !== 'cleared') {
-          // FINISHING OFF THE REMAINING HALF
-          const remainingState = t.dualState;
-          t.dualState = 'cleared';
-          t.active = false;
-          const pColor = remainingState === 'left' ? '#2ff6ff' : '#ff4fd8';
-          createParticles(hitX, hitY, pColor, 18);
-          if (audioCtx) playPop(1, false, true);
-          createPopup(hitX, hitY - 22, "LINKED", "#ffffff");
-        } else {
-          // STANDARD TARGET
-          t.dualState = 'cleared';
-          t.active = false;
-          createParticles(hitX, hitY, '#00ff88', 20);
-          if (audioCtx) playPop(1, false, true);
-        }
-      }
-    } else if (t.mechanic === 'split' || t.mechanic === 'splitChild') {
-      const splitFamilyId = t.splitFamilyId;
-      const splitGeneration = Number.isFinite(t.splitGeneration) ? t.splitGeneration : (t.splitDepth || 0);
-      t.active = false;
-
-      const nextDepth = (t.splitDepth || 0) + 1;
-      if (t.splitOnHit && splitGeneration < 2 && nextDepth <= 2) {
-        const isSplitTutorialStage = levelData && levelData.id === '2-3';
-        const parentCenter = normalizeAngle(t.start + (t.size / 2));
-        const childSize = Math.max(Math.PI / 40, t.size * (isSplitTutorialStage ? (nextDepth === 1 ? 0.62 : 0.56) : 0.8));
-
-        // Fire the new pieces outward into fresh random positions around the ring.
-        const launchBase = nextDepth === 1 ? 0.95 : 1.2;
-        const leftOffset = isSplitTutorialStage
-          ? (nextDepth === 1 ? 1.22 : 0.82)
-          : (launchBase + (Math.random() * 0.42));
-        const rightOffset = isSplitTutorialStage
-          ? (nextDepth === 1 ? 1.22 : 0.82)
-          : (launchBase + (Math.random() * 0.42));
-
-        const leftTargetStart = normalizeAngle(parentCenter - leftOffset - (childSize / 2));
-        const rightTargetStart = normalizeAngle(parentCenter + rightOffset - (childSize / 2));
-        const spawnStart = normalizeAngle(parentCenter - (childSize / 2));
-
-        const leftColor = nextDepth === 1 ? '#ff9b54' : '#ffd54a';
-        const rightColor = nextDepth === 1 ? '#ff4fd8' : '#7cf7ff';
-
-        const leftChild = buildTarget(spawnStart, childSize, {
-          color: leftColor,
-          active: true,
-          hp: 1,
-          mechanic: 'splitChild',
-          splitOnHit: nextDepth < 2,
-          splitDepth: nextDepth,
-          splitFamilyId,
-          splitGeneration: nextDepth
-        });
-        leftChild.moveSpeed = 0;
-        leftChild.splitCruiseSpeed = getSplitCruiseSpeed(levelData, nextDepth, -1);
-        leftChild.splitSideSign = -1;
-        leftChild.splitLaunchT = 0;
-        leftChild.splitLaunchFrom = spawnStart;
-        leftChild.splitLaunchTarget = leftTargetStart;
-        leftChild.splitFamilyId = splitFamilyId;
-        leftChild.splitGeneration = nextDepth;
-        leftChild.hitScalePulse = 1.1;
-        leftChild.hitFlash = 1;
-
-        const rightChild = buildTarget(spawnStart, childSize, {
-          color: rightColor,
-          active: true,
-          hp: 1,
-          mechanic: 'splitChild',
-          splitOnHit: nextDepth < 2,
-          splitDepth: nextDepth,
-          splitFamilyId,
-          splitGeneration: nextDepth
-        });
-        rightChild.moveSpeed = 0;
-        rightChild.splitCruiseSpeed = getSplitCruiseSpeed(levelData, nextDepth, 1);
-        rightChild.splitSideSign = 1;
-        rightChild.splitLaunchT = 0;
-        rightChild.splitLaunchFrom = spawnStart;
-        rightChild.splitLaunchTarget = rightTargetStart;
-        rightChild.splitFamilyId = splitFamilyId;
-        rightChild.splitGeneration = nextDepth;
-        rightChild.hitScalePulse = 1.1;
-        rightChild.hitFlash = 1;
-
-        targets.push(leftChild, rightChild);
-
-        const splitFx = nextDepth === 1
-          ? (isSplitTutorialStage
-            ? { pA: 30, pB: 22, swA: 34, swB: 28, pulse: 1.82, pulseDur: 130, shake: 8 }
-            : { pA: 22, pB: 14, swA: 30, swB: 24, pulse: 1.68, pulseDur: 110, shake: 6 })
-          : (isSplitTutorialStage
-            ? { pA: 14, pB: 10, swA: 24, swB: 18, pulse: 1.38, pulseDur: 84, shake: 4 }
-            : { pA: 12, pB: 8, swA: 20, swB: 16, pulse: 1.32, pulseDur: 72, shake: 3 });
-        createParticles(hitX, hitY, nextDepth === 1 ? '#7cf7ff' : '#ffd54a', splitFx.pA);
-        createParticles(hitX, hitY, nextDepth === 1 ? '#ff4fd8' : '#ffffff', splitFx.pB);
-        createShockwave('#ffffff', splitFx.swA);
-        createShockwave(nextDepth === 1 ? '#7cf7ff' : '#ffd54a', splitFx.swB);
-        pulseBrightness(splitFx.pulse, splitFx.pulseDur);
-        triggerScreenShake(splitFx.shake);
-
-        if (audioCtx) {
-          playPop(nextDepth === 1 ? 3 : 4, false, nextDepth === 2);
-        }
-
-        createPopup(
-          hitX,
-          hitY - 32,
-          nextDepth === 1 ? "SPLIT BURST!" : "SHATTER BURST!",
-          nextDepth === 1 ? '#7cf7ff' : '#ffd54a'
-        );
-      }
-      if (splitGeneration >= 1) {
-        pruneInactiveSplitTargets();
-      }
-      maybeRespawnSplitRootForStage(splitFamilyId);
+    const targetBehaviours = OrbitGame.entities && OrbitGame.entities.targetBehaviours;
+    if (targetBehaviours && targetBehaviours.applyHit) {
+      targetBehaviours.applyHit(t, {
+        angle,
+        hitX,
+        hitY,
+        levelData,
+        targets,
+        audioCtx,
+        normalizeAngle,
+        signedAngularDistance,
+        buildTarget,
+        getSplitCruiseSpeed,
+        pruneInactiveSplitTargets,
+        maybeRespawnSplitRootForStage,
+        createParticles,
+        createShockwave,
+        createPopup,
+        pulseBrightness,
+        triggerScreenShake,
+        playPop
+      });
     } else {
       t.active = false;
     }
