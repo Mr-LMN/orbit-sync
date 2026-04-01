@@ -60,6 +60,11 @@ function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 let globalCoins = parseInt(localStorage.getItem('orbitSync_coins')) || 0;
 let unlockedSkins = JSON.parse(localStorage.getItem('orbitSync_unlocks')) || ['classic'];
 let activeSkin = localStorage.getItem('orbitSync_equipped') || 'classic';
+if (!Array.isArray(unlockedSkins)) unlockedSkins = ['classic'];
+unlockedSkins = unlockedSkins.map((skinId) => skinId === 'fire' ? 'prism' : skinId);
+if (!unlockedSkins.includes('classic')) unlockedSkins.unshift('classic');
+unlockedSkins = [...new Set(unlockedSkins)];
+if (activeSkin === 'fire') activeSkin = 'prism';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = maxWorldUnlocked;
 let personalBest = {
@@ -351,6 +356,43 @@ function updateShopUI() { return OrbitGame.ui.shop.updateShopUI(); }
 function buyItem(id, cost) { return OrbitGame.ui.shop.buyItem(id, cost); }
 function equipSkin(id) { return OrbitGame.ui.shop.equipSkin(id); }
 
+const prismOrbImage = new Image();
+let prismOrbImageReady = false;
+prismOrbImage.onload = () => { prismOrbImageReady = true; };
+prismOrbImage.src = 'assets/1775068154785.png';
+
+function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
+  const pulseScale = 1 + (pulse * 0.45);
+
+  ctx.beginPath();
+  ctx.arc(x, y, (radius * 1.9) * pulseScale, 0, Math.PI * 2);
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.1);
+  glow.addColorStop(0, 'rgba(180, 255, 255, 0.38)');
+  glow.addColorStop(0.7, 'rgba(90, 225, 255, 0.12)');
+  glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = glow;
+  ctx.globalAlpha = 0.9;
+  ctx.fill();
+
+  if (!prismOrbImageReady) {
+    const fallbackGrad = ctx.createRadialGradient(x - (radius * 0.3), y - (radius * 0.3), 0, x, y, radius * 1.2);
+    fallbackGrad.addColorStop(0, '#f5ffff');
+    fallbackGrad.addColorStop(0.4, '#8af6ff');
+    fallbackGrad.addColorStop(1, '#3abfe0');
+    ctx.beginPath();
+    ctx.arc(x, y, radius * (1.05 + pulse * 0.2), 0, Math.PI * 2);
+    ctx.fillStyle = fallbackGrad;
+    ctx.globalAlpha = 1;
+    ctx.fill();
+    return;
+  }
+
+  const spriteSize = radius * 2.75 * pulseScale;
+  ctx.imageSmoothingEnabled = true;
+  ctx.globalAlpha = 1;
+  ctx.drawImage(prismOrbImage, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
+}
+
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
   if (skin === 'skull') {
@@ -360,11 +402,8 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     ctx.fillText('💀', x, y);
     return;
   }
-  if (skin === 'fire') {
-    ctx.font = `${Math.round(radius * 3.75)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🔥', x, y);
+  if (skin === 'prism') {
+    drawPrismOrbSkin(ctx, x, y, radius, pulse);
     return;
   }
 
@@ -450,11 +489,35 @@ function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
   ctx.globalAlpha = savedAlpha;
 
   // Overlay skin glyphs while keeping orb material visible underneath.
-  if (skin === 'skull' || skin === 'fire') {
+  if (skin === 'skull') {
     ctx.font = `${Math.round(radius * 2.35)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(skin === 'skull' ? '💀' : '🔥', x, y + 0.5);
+    ctx.fillText('💀', x, y + 0.5);
+  } else if (skin === 'prism') {
+    if (prismOrbImageReady) {
+      const previewPulse = 1 + (Math.sin(performance.now() * 0.004) * 0.03);
+      const glowRadius = radius * 1.55 * previewPulse;
+      const glow = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
+      glow.addColorStop(0, 'rgba(170,255,255,0.24)');
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.beginPath();
+      ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
+      ctx.fillStyle = glow;
+      ctx.fill();
+
+      const spriteSize = radius * 2.45 * previewPulse;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(prismOrbImage, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
+    } else {
+      const fallbackGrad = ctx.createRadialGradient(x - radius * 0.2, y - radius * 0.2, 0, x, y, radius);
+      fallbackGrad.addColorStop(0, '#f5ffff');
+      fallbackGrad.addColorStop(1, '#3abfe0');
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 0.95, 0, Math.PI * 2);
+      ctx.fillStyle = fallbackGrad;
+      ctx.fill();
+    }
   }
 
   ctx.restore();
