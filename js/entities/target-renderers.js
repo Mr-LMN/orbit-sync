@@ -5,21 +5,79 @@
   function renderCornerTarget(ctx, t, rc) {
     ctx.save();
     const markerPt = rc.getPointOnShape(t.cornerAnchor, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius);
+
+    // Arc body — slightly thicker, brighter
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = '#78f8ff';
-    ctx.globalAlpha = 0.92;
-    ctx.lineWidth = 3.4;
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#78f8ff';
+    ctx.strokeStyle = '#00e8ff';
+    ctx.globalAlpha = 0.88;
+    ctx.lineWidth = 4.5;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = '#00e8ff';
     ctx.stroke();
 
+    // Outer aura pass
+    rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = '#00e8ff';
+    ctx.globalAlpha = 0.18 + rc.approach * 0.12;
+    ctx.lineWidth = 12;
+    ctx.shadowBlur = 28;
+    ctx.stroke();
+
+    // Chevron marker at corner point
+    const cx = markerPt.x;
+    const cy = markerPt.y;
+    const radialX = cx - rc.centerObj.x;
+    const radialY = cy - rc.centerObj.y;
+    const radialLen = Math.hypot(radialX, radialY) || 1;
+    const nx = radialX / radialLen; // outward normal
+    const ny = radialY / radialLen;
+    const tx = -ny; // tangent
+    const ty = nx;
+
+    const chevSize = 10 + rc.approach * 4;
+    const chevDepth = 6 + rc.approach * 2;
+    const chevAlpha = 0.85 + rc.approach * 0.15;
+    const pulseScale = 1 + Math.sin(Date.now() / 240) * 0.06 * rc.approach;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // Outer glow chevron
     ctx.beginPath();
-    ctx.arc(markerPt.x, markerPt.y, 3.2 + (rc.approach * 1.2), 0, Math.PI * 2);
+    ctx.moveTo((-tx * chevSize - nx * chevDepth) * pulseScale, (-ty * chevSize - ny * chevDepth) * pulseScale);
+    ctx.lineTo(0, (nx * chevDepth) * pulseScale);
+    ctx.lineTo((tx * chevSize - nx * chevDepth) * pulseScale, (ty * chevSize - ny * chevDepth) * pulseScale);
+    ctx.strokeStyle = '#00e8ff';
+    ctx.globalAlpha = chevAlpha * 0.45;
+    ctx.lineWidth = 7;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = '#00e8ff';
+    ctx.stroke();
+
+    // Core chevron — bright white
+    ctx.beginPath();
+    ctx.moveTo((-tx * chevSize - nx * chevDepth) * pulseScale, (-ty * chevSize - ny * chevDepth) * pulseScale);
+    ctx.lineTo(0, (nx * chevDepth) * pulseScale);
+    ctx.lineTo((tx * chevSize - nx * chevDepth) * pulseScale, (ty * chevSize - ny * chevDepth) * pulseScale);
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = chevAlpha;
+    ctx.lineWidth = 2.2;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#9af8ff';
+    ctx.stroke();
+
+    // Centre dot
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.5 + rc.approach * 1.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = 0.95;
-    ctx.shadowBlur = 12;
-    ctx.shadowColor = '#9afcff';
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#00e8ff';
     ctx.fill();
+
+    ctx.restore();
 
     if (rc.shouldDrawWorld2MechanicBrackets) {
       rc.drawWorld2AngularBracket(t.start, { dir: -1, alpha: 0.52, width: 1.55, wing: 4.5, legIn: 5.6 });

@@ -244,11 +244,11 @@ function getWorldVisualTheme(level) {
   }
   if (worldNum === 2) {
     return {
-      railColor: '#ff00cc',
+      railColor: '#00cfff',
       targetColor: '#2ff6ff',
-      targetGlowColor: '#0fdcff',
-      targetCoreColor: '#f8ffff',
-      railGlowScale: 0.82
+      targetGlowColor: '#7ef9ff',
+      targetCoreColor: '#f0ffff',
+      railGlowScale: 0.95
     };
   }
   if (worldNum === 3) {
