@@ -105,31 +105,40 @@
       });
       vibrate([80, 40, 90, 30, 70]);
     } else if (isWorld2BossIntro) {
-      ui.title.style.color = '#f7fbff';
+      ui.title.style.color = '#00e8ff';
       ui.title.innerText = '';
       ui.subtitle.innerText = '';
       forceHideOverlayExtras();
 
-      queueIntroStep(120, () => {
-        ui.title.innerText = 'So...';
-        ui.subtitle.innerText = '';
-        createPopup(centerObj.x, centerObj.y - 64, 'PRISM LINK', '#2ff6ff');
+      queueIntroStep(80, () => {
+        ui.title.innerText = 'AETHELRED';
+        ui.subtitle.innerText = 'PRISM WARDEN';
+        createShockwave('#00e8ff', 18);
       });
-      queueIntroStep(1080, () => {
-        ui.title.innerText = "You think you've mastered it?";
-        ui.subtitle.innerText = '';
-        createPopup(centerObj.x, centerObj.y - 30, 'PROVE IT', '#ff4fd8');
-        pulseBrightness(1.18, 180);
+      queueIntroStep(700, () => {
+        ui.title.innerText = 'AETHELRED';
+        ui.subtitle.innerText = 'Refraction complete. You made it this far.';
+        createPopup(centerObj.x, centerObj.y - 72, 'TARGET LOCK', '#00e8ff');
+        createShockwave('#00cfff', 26);
+        pulseBrightness(1.22, 140);
       });
-      queueIntroStep(2240, () => {
-        ui.title.innerText = "Let's see.";
-        ui.subtitle.innerText = 'PHASE 1 // ROTATION CALIBRATION';
-        createPopup(centerObj.x, centerObj.y + 8, 'BEGIN', '#ffd54a');
-        createShockwave('#2ff6ff', 28);
-        createShockwave('#ffffff', 24);
+      queueIntroStep(1700, () => {
+        ui.title.innerText = 'AETHELRED';
+        ui.subtitle.innerText = "Then let's find your breaking point.";
+        createPopup(centerObj.x, centerObj.y - 36, 'PHASE 1', '#ff4fd8');
+        createPopup(centerObj.x, centerObj.y + 4, 'ROTATION CALIBRATION', '#ffffff');
+        createShockwave('#ff4fd8', 32);
+        createShockwave('#00e8ff', 24);
+        pulseBrightness(1.35, 180);
+        vibrate([60, 30, 80, 30, 60]);
       });
-      queueIntroStep(3160, () => {
-        ui.subtitle.innerText = 'Stay aligned. Then execute the sequence.';
+      queueIntroStep(2800, () => {
+        ui.title.innerText = 'AETHELRED';
+        ui.subtitle.innerText = 'Stay aligned. Survive the sequence.';
+        createShockwave('#ffffff', 20);
+        createShockwave('#00cfff', 38);
+        createShockwave('#ff4fd8', 52);
+        pulseBrightness(1.6, 200);
       });
     } else {
       ui.title.innerText = 'THE PRISM';
