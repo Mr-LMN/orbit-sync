@@ -1660,6 +1660,7 @@ function update() {
       if (t._dualPassStarted && !insideNow && t.dualState !== 'cleared') {
         // Orb passed through remaining half without hitting —
         // reset to full, player gets another chance but loses streak
+        t.dualState = 'full';
         t._dualPassStarted = false;
         if (multiplier > 1) {
           multiplier = 1;
