@@ -320,6 +320,28 @@ function equipSkin(id) { return OrbitGame.ui.shop.equipSkin(id); }
 
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+
+  // World 2: concentric crystal ring halo around the orb
+  if (typeof worldNum !== 'undefined' && worldNum === 2 && !isBoss) {
+    const now = performance.now();
+    const ringCount = 2;
+    for (let i = 0; i < ringCount; i++) {
+      const ringPhase = now / (1400 + i * 380) + i * Math.PI;
+      const ringRadius = (radius * 2.6) + i * (radius * 1.1) + Math.sin(ringPhase) * 2.5;
+      const ringAlpha = (0.28 - i * 0.09) * (0.75 + Math.sin(ringPhase + Math.PI / 2) * 0.25);
+      ctx.beginPath();
+      ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+      ctx.strokeStyle = i === 0 ? '#00cfff' : '#b0f4ff';
+      ctx.globalAlpha = ringAlpha;
+      ctx.lineWidth = i === 0 ? 2.2 : 1.2;
+      ctx.shadowBlur = 14 - i * 4;
+      ctx.shadowColor = '#00cfff';
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
+
   if (skin === 'skull') {
     ctx.font = `${Math.round(radius * 3.75)}px sans-serif`;
     ctx.textAlign = 'center';
