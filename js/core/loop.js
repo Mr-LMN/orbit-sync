@@ -1005,13 +1005,28 @@ function draw() {
       const wingX = elbowX + tx * wing * dir;
       const wingY = elbowY + ty * wing * dir;
 
+      // Glow pass — wide, soft
+      ctx.beginPath();
+      ctx.moveTo(wingX, wingY);
+      ctx.lineTo(elbowX, elbowY);
+      ctx.lineTo(innerX, innerY);
+      ctx.strokeStyle = targetGlowColor;
+      ctx.globalAlpha = (config.alpha || (0.42 + approach * 0.16 + hitFlash * 0.1)) * 0.55;
+      ctx.lineWidth = (config.width || 1.45) * 5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowBlur = (config.shadowBlur || 5) * 2.5;
+      ctx.shadowColor = targetGlowColor;
+      ctx.stroke();
+
+      // Core pass — sharp, bright
       ctx.beginPath();
       ctx.moveTo(wingX, wingY);
       ctx.lineTo(elbowX, elbowY);
       ctx.lineTo(innerX, innerY);
       ctx.strokeStyle = '#e9fdff';
-      ctx.globalAlpha = config.alpha || (0.42 + (approach * 0.16) + (hitFlash * 0.1));
-      ctx.lineWidth = config.width || 1.45;
+      ctx.globalAlpha = config.alpha || (0.82 + approach * 0.18 + hitFlash * 0.18);
+      ctx.lineWidth = (config.width || 1.45) * 2.2;
       ctx.lineCap = 'butt';
       ctx.lineJoin = 'miter';
       ctx.shadowBlur = config.shadowBlur || 5;
@@ -1989,10 +2004,15 @@ function tap() {
           streak = 0;
           ui.streak.innerText = streak;
           updateMultiplierUI();
-          createPopup(centerObj.x, centerObj.y - 68, 'SEQUENCE RESET', '#ff4fd8');
-          createPopup(hitX, hitY - 20, 'WRONG NODE', '#ff4fd8');
-          createParticles(hitX, hitY, '#ff4fd8', 12);
-          pulseBrightness(1.24, 120);
+          triggerScreenShake(16);
+          pulseBrightness(1.8, 180);
+          createShockwave('#ff3366', 32);
+          createParticles(hitX, hitY, '#ff3366', 22);
+          createPopup(hitX, hitY - 24, 'WRONG NODE', '#ff3366');
+          createPopup(centerObj.x, centerObj.y - 56, 'SEQUENCE BROKEN', '#ff3366');
+          createPopup(centerObj.x, centerObj.y - 22, 'RESETTING...', '#ffffff');
+          soundFail();
+          vibrate([50, 30, 80]);
           return;
         }
 
@@ -2039,13 +2059,19 @@ function tap() {
           bossPhase = 2;
           ui.bossPhase1.className = "boss-segment";
           ui.bossPhase2.className = "boss-segment active-segment";
-          pauseGameplayBriefly(880);
-          createPopup(centerObj.x, centerObj.y - 56, "PHASE 2", "#ffd54a");
-          createPopup(centerObj.x, centerObj.y - 28, "SEQUENCE ONLINE", "#ffffff");
-          createShockwave('#ffd54a', 36);
-          pulseBrightness(1.65, 140);
+          pauseGameplayBriefly(1100);
+          triggerScreenShake(28);
+          pulseBrightness(2.2, 200);
+          createShockwave('#00e8ff', 28);
+          createShockwave('#ff4fd8', 44);
+          createShockwave('#ffd54a', 62);
+          createParticles(centerObj.x, centerObj.y, '#00e8ff', 50);
+          createParticles(centerObj.x, centerObj.y, '#ff4fd8', 30);
+          createPopup(centerObj.x, centerObj.y - 62, "AETHELRED", "#00e8ff");
+          createPopup(centerObj.x, centerObj.y - 30, "INITIATE SEQUENCE", "#ffd54a");
+          createPopup(centerObj.x, centerObj.y + 8, "DON'T BREAK THE CHAIN", "#ffffff");
           escalateBossDrone();
-          scheduleBossSpawn(880);
+          scheduleBossSpawn(1100);
         } else {
           isBossPhaseTwo = true;
           if (bossPhase === 1) ui.bossPhase1.className = "boss-segment";

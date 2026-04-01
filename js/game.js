@@ -302,7 +302,12 @@ for (let i = 0; i < 50; i++) {
     speed: Math.random() * 0.2 + 0.05,
     opacity: Math.random() * 0.4 + 0.1,
     driftPhase: Math.random() * Math.PI * 2,
-    driftAmp: Math.random() * 0.25 + 0.08
+    driftAmp: Math.random() * 0.25 + 0.08,
+    // Crystal shard properties for World 2
+    rotation: Math.random() * Math.PI,
+    rotationSpeed: (Math.random() - 0.5) * 0.008,
+    isShard: Math.random() < 0.5,
+    shardLen: Math.random() * 6 + 3
   });
 }
 
@@ -667,19 +672,56 @@ function draw() {
   ctx.fillStyle = '#07070a';
   ctx.fillRect(0, 0, viewportWidth, viewportHeight);
 
-  // Ambient background dust
+  // Ambient background dust / crystal shards
+  const isWorld2Bg = worldNum === 2;
   bgDust.forEach(d => {
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255, ${d.opacity})`;
-    ctx.fill();
-
     let speedMult = isBoss ? 3.5 : 1;
-    if (worldNum === 2 && !isBoss) {
-      d.x += Math.sin((now * 0.0012) + d.driftPhase + (d.y * 0.005)) * d.driftAmp;
-      if (d.x < -2) d.x = viewportWidth + 2;
-      if (d.x > viewportWidth + 2) d.x = -2;
+
+    if (isWorld2Bg && !isBoss) {
+      // Crystal shard — thin rotated line
+      d.rotation = (d.rotation || 0) + (d.rotationSpeed || 0.003);
+      d.x += Math.sin((now * 0.0009) + d.driftPhase + (d.y * 0.004)) * (d.driftAmp * 0.6);
+      if (d.x < -4) d.x = viewportWidth + 4;
+      if (d.x > viewportWidth + 4) d.x = -4;
+
+      const len = d.shardLen || 5;
+      const alpha = d.opacity * 0.65;
+      const isCyanShard = d.driftPhase < Math.PI;
+      const shardColor = isCyanShard ? `rgba(0,207,255,${alpha})` : `rgba(180,240,255,${alpha})`;
+
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.rotation);
+      ctx.beginPath();
+      ctx.moveTo(-len, 0);
+      ctx.lineTo(len, 0);
+      ctx.strokeStyle = shardColor;
+      ctx.lineWidth = d.size * 0.8;
+      ctx.globalAlpha = alpha;
+      ctx.shadowBlur = isBoss ? 0 : 4;
+      ctx.shadowColor = isCyanShard ? '#00cfff' : '#b0f4ff';
+      ctx.stroke();
+      // Second shard leg — makes a diamond/cross shape on larger particles
+      if (d.size > 1.2) {
+        ctx.rotate(Math.PI / 3);
+        ctx.beginPath();
+        ctx.moveTo(-len * 0.55, 0);
+        ctx.lineTo(len * 0.55, 0);
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+    } else {
+      // World 1 default — white circles
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255, ${d.opacity})`;
+      ctx.globalAlpha = 1.0;
+      ctx.fill();
     }
+
     if (drawTick % (isMobile ? 3 : 1) === 0) {
       d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
     }
