@@ -2036,10 +2036,15 @@ function tap() {
           triggerScreenShake(24); scheduleBossSpawn(700); return;
         } else {
           ui.bossPhase2.className = "boss-segment";
-          createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
-          createShockwave('#00ff88', 55);
-          createShockwave('#ffffff', 70);
-          createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
+          const isWorld2Boss = levelData && levelData.id === '2-6';
+          const defeatColor = isWorld2Boss ? '#00e8ff' : '#00ff88';
+          const defeatColor2 = isWorld2Boss ? '#ff4fd8' : '#ffffff';
+          createParticles(centerObj.x, centerObj.y, defeatColor, isWorld2Boss ? 80 : 50);
+          createParticles(centerObj.x, centerObj.y, defeatColor2, isWorld2Boss ? 40 : 0);
+          createShockwave(defeatColor, 45);
+          createShockwave(defeatColor2, 62);
+          createShockwave('#ffffff', 80);
+          createPopup(centerObj.x, centerObj.y - 50, isWorld2Boss ? "AETHELRED SHATTERED!" : "BOSS DEFEATED!", defeatColor);
           soundBossDefeated();
           stopBossDrone();
           triggerScreenShake(20);
