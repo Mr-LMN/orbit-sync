@@ -514,7 +514,8 @@ function drawOrb(ctx, orbAngle, worldShape, options = {}) {
   const opacity = (typeof options.opacity === 'number') ? options.opacity : 1;
   const glowScale = (typeof options.glowScale === 'number') ? options.glowScale : 1;
   const radius = 8.5 * glowScale;
-  const color = options.colorOverride || orbColor;
+  const fallbackColor = multiColors[Math.min(Math.max(multiplier - 1, 0), multiColors.length - 1)] || '#ffffff';
+  const color = options.colorOverride || fallbackColor;
 
   ctx.save();
   ctx.globalAlpha *= opacity;
