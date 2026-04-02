@@ -28,7 +28,7 @@
     {
       id: '3-1',
       title: 'Echo Arrival',
-      hitsNeeded: 5,
+      hitsNeeded: 1,
       speed: 0.034,
       lives: 3,
       targets: 1,

@@ -21,7 +21,7 @@
     },
     world3: {
       id: 'world3',
-      title: 'SINGULARITY',
+      title: 'RESONANCE',
       unlocked: false,
       stages: [],
       bossStageId: null,
