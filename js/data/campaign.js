@@ -28,6 +28,16 @@
   ];
 
   OG.data = OG.data || {};
+  if (typeof OG.data.registerCampaignStages === 'function') {
+    OG.data.registerCampaignStages(campaign);
+  } else {
+    campaign.forEach((stage, idx) => {
+      if (!stage || !stage.id) return;
+      const worldNum = parseInt(String(stage.id).split('-')[0], 10);
+      stage.worldId = Number.isFinite(worldNum) ? `world${worldNum}` : 'world1';
+      stage.stageIndex = idx;
+    });
+  }
   OG.data.campaign = campaign;
 
   // Legacy alias for existing logic during migration.

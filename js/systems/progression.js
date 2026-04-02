@@ -29,11 +29,37 @@
       const nextLevelIdx = currentLevelIdx + 1;
       const nextLevelObj = campaign[nextLevelIdx] || null;
       const currentWorld = parseInt(levelData.id.split('-')[0], 10);
+      const currentWorldId = levelData.worldId || (OG.data && typeof OG.data.worldIdFromStageId === 'function'
+        ? OG.data.worldIdFromStageId(levelData.id)
+        : `world${currentWorld}`);
       const nextWorld = nextLevelObj ? parseInt(nextLevelObj.id.split('-')[0], 10) : null;
       const worldAdvanced = !!nextLevelObj && nextWorld > currentWorld;
       const campaignComplete = !nextLevelObj;
 
+      if (typeof playerProgress === 'object' && playerProgress) {
+        playerProgress.completedStages[levelData.id] = true;
+      }
+
+      let unlockedNextWorldId = null;
+      if (wasBoss && OG.data && typeof OG.data.unlockNextWorldByBoss === 'function') {
+        unlockedNextWorldId = OG.data.unlockNextWorldByBoss(currentWorldId);
+      }
+
+      if (unlockedNextWorldId && typeof playerProgress === 'object' && playerProgress) {
+        if (!Array.isArray(playerProgress.unlockedWorlds)) playerProgress.unlockedWorlds = ['world1'];
+        if (!playerProgress.unlockedWorlds.includes(unlockedNextWorldId)) {
+          playerProgress.unlockedWorlds.push(unlockedNextWorldId);
+        }
+      }
+
       if (nextWorld && nextWorld > maxWorldUnlocked) { maxWorldUnlocked = nextWorld; saveData(); }
+      if (unlockedNextWorldId && maxWorldUnlocked < 3) {
+        const unlockedNum = parseInt(unlockedNextWorldId.replace('world', ''), 10);
+        if (Number.isFinite(unlockedNum) && unlockedNum > maxWorldUnlocked) {
+          maxWorldUnlocked = unlockedNum;
+        }
+      }
+      saveData();
 
       if (wasBoss || worldAdvanced || campaignComplete) {
         showWorldClearSequence({
