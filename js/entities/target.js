@@ -72,6 +72,7 @@
       dualState: config.dualState || 'full',
       targetHalfWidth: config.targetHalfWidth || null,
       splitOnHit: !!config.splitOnHit,
+      deterministicWorld4: !!config.deterministicWorld4,
       splitDepth: config.splitDepth || 0,
       splitFamilyId: config.splitFamilyId ?? null,
       splitGeneration: config.splitGeneration || 0,
