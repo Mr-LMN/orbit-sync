@@ -72,6 +72,18 @@
       reverse: false,
       mechanics: ['handoff'],
       text: 'Follow the highlighted orb. Orange first, then cyan.'
+    },
+    {
+      id: '4-5',
+      title: 'Convergence',
+      hitsNeeded: 8,
+      speed: 0.038,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['handoff', 'fracture', 'mixed'],
+      text: 'Everything converges here. Read cleanly, hand off smoothly, and clear the fracture aftermath.'
     }
   ];
 
