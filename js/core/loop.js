@@ -1621,21 +1621,30 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
+  // WORLD 3 + WORLD 4 RENDER GUARDRAIL:
+  // If either world uses echo mechanics or focus-mode dimming, the echo orb MUST be rendered here too.
+  // Never add world-specific dimming for main/echo without updating both the main-orb and echo-orb draw paths together.
+  // Breaking this causes the player orb to appear "missing" even when logic is correct.
   // PLAYER ORB
-  const isWorld4 = getWorldNum() === 4;
+  const currentWorldNum = getWorldNum();
+  const isWorld3 = currentWorldNum === 3;
+  const isWorld4 = currentWorldNum === 4;
+
   drawOrb(ctx, angle, worldShape, {
-    opacity: (isWorld4 && world4FocusMode === 'echo') ? 0.34 : 1,
+    opacity: (isWorld4 && world4FocusMode === 'echo') ? 0.45 : 1,
     glowScale: (isWorld4 && world4FocusMode === 'main') ? 1.18 : 1
   });
-  if (worldNum === 3) {
+
+  if (isWorld3 || isWorld4) {
     if (echoHistory.length > 0) {
       ctx.save();
       const step = Math.max(1, Math.floor(echoHistory.length / 8));
       for (let i = echoHistory.length - 1, sample = 0; i >= 0 && sample < 8; i -= step, sample++) {
         const histAngle = echoHistory[i].angle;
-        const p = getPointOnShape(histAngle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+        const p = getPointOnShape(histAngle, worldShape, centerObj.x, centerObj.y, orbitRadius);
         const alpha = 0.28 * (1 - sample / 8);
         const r = 5 - sample * 0.45;
+
         ctx.beginPath();
         ctx.arc(p.x, p.y, Math.max(1.5, r), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(120,238,255,${alpha})`;
@@ -1643,8 +1652,7 @@ function draw() {
       }
       ctx.restore();
     }
-  }
-  if (getWorldNum() === 3 || getWorldNum() === 4) {
+
     drawOrb(ctx, echoAngle, worldShape, {
       colorOverride: '#66f0ff',
       opacity: (isWorld4 && world4FocusMode === 'main') ? 0.22 : ((isWorld4 && world4FocusMode === 'echo') ? 0.88 : 0.58),
