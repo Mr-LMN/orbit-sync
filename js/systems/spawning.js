@@ -126,6 +126,64 @@
       }));
       return;
     }
+    if (worldNum === 4 && levelData.id === '4-1') {
+      const step = stageHits || 0;
+      world4TutorialStep = step;
+      const baseAngles = [Math.PI * 1.05, Math.PI * 0.28, Math.PI * 1.52, Math.PI * 0.82];
+      const angleToUse = baseAngles[step % baseAngles.length];
+
+      if (step === 0) {
+        world4FocusMode = 'main';
+        ui.text.innerText = 'MAIN ORB: hit the orange target.';
+        ui.text.style.color = '#ff9f1a';
+        targets.push(buildTarget(angleToUse, Math.PI / 7.5, {
+          active: true,
+          hp: 1,
+          color: '#ff9f1a'
+        }));
+        return;
+      }
+
+      if (step === 1) {
+        world4FocusMode = 'echo';
+        ui.text.innerText = 'ECHO ORB: now hit the cyan target.';
+        ui.text.style.color = '#66f0ff';
+        targets.push(buildTarget(angleToUse, Math.PI / 7.5, {
+          active: true,
+          hp: 1,
+          color: '#66f0ff',
+          isEchoTarget: true
+        }));
+        return;
+      }
+
+      if (step === 2) {
+        world4FocusMode = 'main';
+        ui.text.innerText = 'Orange first.';
+        ui.text.style.color = '#ff9f1a';
+        targets.push(buildTarget(angleToUse, Math.PI / 7.5, {
+          active: true,
+          hp: 1,
+          color: '#ff9f1a'
+        }));
+        return;
+      }
+
+      if (step === 3) {
+        world4FocusMode = 'echo';
+        ui.text.innerText = 'Then cyan.';
+        ui.text.style.color = '#66f0ff';
+        targets.push(buildTarget(angleToUse, Math.PI / 7.5, {
+          active: true,
+          hp: 1,
+          color: '#66f0ff',
+          isEchoTarget: true
+        }));
+        return;
+      }
+
+      world4FocusMode = 'none';
+    }
 
     const progressionFactor = Math.min(1, Math.max(0, stageHits / Math.max(1, levelData.hitsNeeded || 5)));
     let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
