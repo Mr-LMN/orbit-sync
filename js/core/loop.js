@@ -67,6 +67,40 @@ unlockedSkins = [...new Set(unlockedSkins)];
 if (activeSkin === 'fire') activeSkin = 'prism';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = maxWorldUnlocked;
+function defaultPlayerProgress() {
+  return {
+    unlockedWorlds: ['world1'],
+    completedStages: {},
+    stageStars: {},
+    unlockedBonus: false,
+    hardModeUnlocked: {},
+    bestScores: {}
+  };
+}
+
+let playerProgress = (() => {
+  const base = defaultPlayerProgress();
+  let stored = null;
+  try {
+    stored = JSON.parse(localStorage.getItem('orbitSync_playerProgress') || 'null');
+  } catch (err) {
+    stored = null;
+  }
+  if (stored && typeof stored === 'object') {
+    const merged = Object.assign({}, base, stored);
+    if (!Array.isArray(merged.unlockedWorlds)) merged.unlockedWorlds = ['world1'];
+    merged.unlockedWorlds = [...new Set(merged.unlockedWorlds)];
+    if (!merged.unlockedWorlds.includes('world1')) merged.unlockedWorlds.unshift('world1');
+    if (maxWorldUnlocked >= 2 && !merged.unlockedWorlds.includes('world2')) merged.unlockedWorlds.push('world2');
+    if (maxWorldUnlocked >= 3 && !merged.unlockedWorlds.includes('world3')) merged.unlockedWorlds.push('world3');
+    return merged;
+  }
+  if (maxWorldUnlocked >= 2) base.unlockedWorlds.push('world2');
+  if (maxWorldUnlocked >= 3) base.unlockedWorlds.push('world3');
+  return base;
+})();
+if (playerProgress.unlockedWorlds.includes('world3')) maxWorldUnlocked = Math.max(maxWorldUnlocked, 3);
+else if (playerProgress.unlockedWorlds.includes('world2')) maxWorldUnlocked = Math.max(maxWorldUnlocked, 2);
 let personalBest = {
   score: parseInt(localStorage.getItem('orbitSync_pbScore')) || 0,
   streak: parseInt(localStorage.getItem('orbitSync_pbStreak')) || 0,
@@ -77,6 +111,10 @@ function saveData() {
   localStorage.setItem('orbitSync_coins', Math.floor(globalCoins));
   localStorage.setItem('orbitSync_unlocks', JSON.stringify(unlockedSkins));
   localStorage.setItem('orbitSync_equipped', activeSkin);
+  if (!playerProgress.unlockedWorlds.includes('world1')) playerProgress.unlockedWorlds.unshift('world1');
+  if (maxWorldUnlocked >= 2 && !playerProgress.unlockedWorlds.includes('world2')) playerProgress.unlockedWorlds.push('world2');
+  if (maxWorldUnlocked >= 3 && !playerProgress.unlockedWorlds.includes('world3')) playerProgress.unlockedWorlds.push('world3');
+  localStorage.setItem('orbitSync_playerProgress', JSON.stringify(playerProgress));
   localStorage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
 }
 
