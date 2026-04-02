@@ -168,6 +168,10 @@ let currentLevelIdx = 0; let levelData;
 let score = 0; let stageHits = 0; let runCents = 0;
 const maxLives = 3;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
+let echoAngle = 0;
+let echoHistory = [];
+const ECHO_DELAY_MS = 450;
+const ECHO_HISTORY_MAX_MS = 1200;
 const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
 const NEAR_MISS_COOLDOWN_MS = 700;
 let lastNearMissAt = -Infinity;
@@ -374,6 +378,22 @@ function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps 
   );
 }
 
+function recordEchoHistory(nowMs, angleValue) {
+  echoHistory.push({ t: nowMs, angle: angleValue });
+  const cutoff = nowMs - ECHO_HISTORY_MAX_MS;
+  while (echoHistory.length && echoHistory[0].t < cutoff) {
+    echoHistory.shift();
+  }
+}
+
+function getDelayedEchoAngle(nowMs, fallbackAngle) {
+  const targetTime = nowMs - ECHO_DELAY_MS;
+  for (let i = echoHistory.length - 1; i >= 0; i--) {
+    if (echoHistory[i].t <= targetTime) return echoHistory[i].angle;
+  }
+  return fallbackAngle;
+}
+
 // Generate subtle background dust for depth
 for (let i = 0; i < 50; i++) {
   bgDust.push({
@@ -486,6 +506,20 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.arc(x + (radius * 0.47), y + (radius * 0.47), Math.max(0.9, radius * 0.14), 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
   ctx.fill();
+}
+
+function drawOrb(ctx, orbAngle, worldShape, options = {}) {
+  const pt = getPointOnShape(orbAngle, worldShape, centerObj.x, centerObj.y, orbitRadius);
+  const orbPulse = options.isEcho ? 0 : Math.abs(Math.sin(Date.now() / 200)) * 2.5;
+  const opacity = (typeof options.opacity === 'number') ? options.opacity : 1;
+  const glowScale = (typeof options.glowScale === 'number') ? options.glowScale : 1;
+  const radius = 8.5 * glowScale;
+  const color = options.colorOverride || orbColor;
+
+  ctx.save();
+  ctx.globalAlpha *= opacity;
+  drawOrbSkin(ctx, pt.x, pt.y, activeSkin, radius, orbPulse, color);
+  ctx.restore();
 }
 
 function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
@@ -1512,12 +1546,15 @@ function draw() {
   ctx.shadowBlur = 0;
 
   // PLAYER ORB
-  const orbPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
-  const x = orbPt.x;
-  const y = orbPt.y;
-
-  const orbPulse = Math.abs(Math.sin(Date.now() / 200)) * 2.5;
-  drawOrbSkin(ctx, x, y, activeSkin, 8.5, orbPulse, orbColor);
+  drawOrb(ctx, angle, worldShape);
+  if (worldNum === 3) {
+    drawOrb(ctx, echoAngle, worldShape, {
+      colorOverride: '#78eeff',
+      opacity: 0.45,
+      glowScale: 0.65,
+      isEcho: true
+    });
+  }
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
@@ -1707,6 +1744,14 @@ function update() {
 
   if (angle > Math.PI * 2) angle -= Math.PI * 2;
   if (angle < 0) angle += Math.PI * 2;
+  if (worldNum === 3) {
+    const nowMs = performance.now();
+    recordEchoHistory(nowMs, angle);
+    echoAngle = getDelayedEchoAngle(nowMs, angle);
+  } else {
+    echoHistory.length = 0;
+    echoAngle = angle;
+  }
 
   if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
   if (!inMenu && comboCount > 0) {
@@ -2062,10 +2107,27 @@ function tap() {
   if (bossTransitionLock) return;
   if (nearMissReplayActive) return;
   let hitIndex = -1; let hitQuality = "miss"; let hitSegmentIndex = -1;
+  let hitAngleForEffects = angle;
 
   for (let i = 0; i < targets.length; i++) {
     if (!targets[i].active) continue;
     const t = targets[i];
+    if (t.isEchoTarget) {
+      const echoHit = isInsideTarget(echoAngle, t);
+      if (echoHit) {
+        hitIndex = i;
+        hitAngleForEffects = echoAngle;
+        const hitProfiles = OrbitGame.entities && OrbitGame.entities.targetHitProfiles;
+        if (hitProfiles && hitProfiles.getHitQuality) {
+          const quality = hitProfiles.getHitQuality(t, echoAngle, { normalizeAngle, signedAngularDistance });
+          if (!quality) continue;
+          hitQuality = quality;
+        }
+        break;
+      } else {
+        continue;
+      }
+    }
     const hitProfiles = OrbitGame.entities && OrbitGame.entities.targetHitProfiles;
     let isHit = false;
     if (hitProfiles && hitProfiles.isHit) {
@@ -2085,7 +2147,7 @@ function tap() {
     }
   }
 
-  const hitPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  const hitPt = getPointOnShape(hitAngleForEffects, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
   const hitX = hitPt.x;
   const hitY = hitPt.y;
 
@@ -2384,6 +2446,10 @@ function tap() {
       triggerStageClear();
     }
   } else {
+    const touchingEchoOnlyTarget = targets.some((t) => t.active && t.isEchoTarget && isInsideTarget(angle, t));
+    if (touchingEchoOnlyTarget) {
+      return;
+    }
     comboCount = 0;
     comboTimer = 0;
     comboGlow = 0;

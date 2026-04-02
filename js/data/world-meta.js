@@ -95,7 +95,8 @@
   OG.data.WORLDS = OG.data.WORLDS || cloneWorldsTemplate();
   OG.data.worldMeta = [
     { id: 1, label: 'WORLD 1' },
-    { id: 2, label: 'WORLD 2' }
+    { id: 2, label: 'WORLD 2' },
+    { id: 3, label: 'WORLD 3' }
   ];
   OG.data.worldOrder = WORLD_ORDER.slice();
   OG.data.worldIdFromStageId = worldIdFromStageId;
