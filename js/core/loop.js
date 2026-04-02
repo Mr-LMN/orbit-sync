@@ -519,7 +519,26 @@ function drawOrb(ctx, orbAngle, worldShape, options = {}) {
 
   ctx.save();
   ctx.globalAlpha *= opacity;
-  drawOrbSkin(ctx, pt.x, pt.y, activeSkin, radius, orbPulse, color);
+
+  if (options.isEcho) {
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, radius * 1.05, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 18;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, radius * 0.46, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(230,255,255,0.85)';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = color;
+    ctx.fill();
+  } else {
+    drawOrbSkin(ctx, pt.x, pt.y, activeSkin, radius, orbPulse, color);
+  }
+
   ctx.restore();
 }
 
@@ -1317,23 +1336,27 @@ function draw() {
       return;
     }
     if (t.isEchoTarget) {
-      const echoPulse = 0.75 + Math.sin(Date.now() / 120) * 0.12;
+      const pulse = 0.88 + Math.sin(Date.now() / 110) * 0.12;
+
       ctx.save();
-      ctx.beginPath();
+      ctx.strokeStyle = `rgba(90,245,255,${0.98 * pulse})`;
+      ctx.lineWidth = 3.6;
+      if (ctx.setLineDash) ctx.setLineDash([7, 4]);
+
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = `rgba(120,238,255,${0.9 * echoPulse})`;
-      ctx.lineWidth = 3;
-      if (ctx.setLineDash) ctx.setLineDash([6, 4]);
-      ctx.lineCap = 'round';
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#66f0ff';
       ctx.stroke();
+
       if (ctx.setLineDash) ctx.setLineDash([]);
 
-      ctx.beginPath();
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius - 6, t.start, t.start + t.size);
-      ctx.strokeStyle = `rgba(200,255,255,${0.35 * echoPulse})`;
-      ctx.lineWidth = 1.5;
-      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(220,255,255,${0.38 * pulse})`;
+      ctx.lineWidth = 1.6;
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius - 3, t.start, t.start + t.size);
+      ctx.shadowBlur = 8;
+      ctx.shadowColor = '#c8ffff';
       ctx.stroke();
+
       ctx.restore();
       return;
     }
@@ -1605,9 +1628,9 @@ function draw() {
       ctx.restore();
     }
     drawOrb(ctx, echoAngle, worldShape, {
-      colorOverride: '#78eeff',
-      opacity: 0.45,
-      glowScale: 0.65,
+      colorOverride: '#66f0ff',
+      opacity: 0.58,
+      glowScale: 0.78,
       isEcho: true
     });
   }

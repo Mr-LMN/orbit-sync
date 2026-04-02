@@ -28,19 +28,19 @@
     {
       id: '3-1',
       title: 'Echo Arrival',
-      hitsNeeded: 1,
-      speed: 0.034,
+      hitsNeeded: 2,
+      speed: 0.033,
       lives: 3,
       targets: 1,
       moveSpeed: 0,
       reverse: false,
       mechanics: ['echo'],
-      text: 'Your delayed echo can hit cyan targets. Tap when the echo orb passes through the zone.'
+      text: 'The cyan ghost trails behind you. Let the echo hit first.'
     },
     {
       id: '3-2',
       title: 'Echo Field',
-      hitsNeeded: 3,
+      hitsNeeded: 4,
       speed: 0.032,
       lives: 3,
       targets: 1,
@@ -52,7 +52,7 @@
     {
       id: '3-3',
       title: 'Split Field',
-      hitsNeeded: 4,
+      hitsNeeded: 6,
       speed: 0.034,
       lives: 3,
       targets: 1,

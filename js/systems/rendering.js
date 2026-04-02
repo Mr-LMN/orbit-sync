@@ -11,10 +11,11 @@
       const sideIndex = Math.floor(norm / sideSize) % 3;
       const localT = (norm - sideIndex * sideSize) / sideSize;
 
+      // Wider-base isosceles triangle for cleaner gameplay/readability
       const corners = [
-        { x: tx + Math.cos(-Math.PI / 2) * tradius, y: ty + Math.sin(-Math.PI / 2) * tradius },
-        { x: tx + Math.cos(-Math.PI / 2 + tau / 3) * tradius, y: ty + Math.sin(-Math.PI / 2 + tau / 3) * tradius },
-        { x: tx + Math.cos(-Math.PI / 2 + 2 * tau / 3) * tradius, y: ty + Math.sin(-Math.PI / 2 + 2 * tau / 3) * tradius }
+        { x: tx, y: ty - tradius * 1.08 },
+        { x: tx + tradius * 0.92, y: ty + tradius * 0.62 },
+        { x: tx - tradius * 0.92, y: ty + tradius * 0.62 }
       ];
 
       const a = corners[sideIndex];
