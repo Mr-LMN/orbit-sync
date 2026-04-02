@@ -510,13 +510,19 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.fill();
 }
 
+// CRITICAL RENDERING GUARDRAIL:
+// drawOrb() is the core player-orb renderer used by all worlds.
+// Do not reference outer-scope color variables here (e.g. orbColor from draw()).
+// Always derive fallback color locally inside this function.
+// World-specific orb styling must be passed through options or handled by separate wrappers.
+// Breaking this function makes the player orb disappear globally.
 function drawOrb(ctx, orbAngle, worldShape, options = {}) {
   const pt = getPointOnShape(orbAngle, worldShape, centerObj.x, centerObj.y, orbitRadius);
   const orbPulse = options.isEcho ? 0 : Math.abs(Math.sin(Date.now() / 200)) * 2.5;
   const opacity = (typeof options.opacity === 'number') ? options.opacity : 1;
   const glowScale = (typeof options.glowScale === 'number') ? options.glowScale : 1;
   const radius = 8.5 * glowScale;
-  const fallbackColor = multiColors[Math.min(Math.max(multiplier - 1, 0), multiColors.length - 1)] || '#ffffff';
+  const fallbackColor = multiColors[Math.min(Math.max(multiplier - 1, 0), 7)] || '#ffffff';
   const color = options.colorOverride || fallbackColor;
 
   ctx.save();
