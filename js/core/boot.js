@@ -4,6 +4,10 @@
 
   function init() {
     if (OG.state.initialized) return true;
+    if (!Array.isArray(campaign) || campaign.length === 0) {
+      console.error('Campaign data is missing; boot aborted.');
+      return false;
+    }
 
     if (OG.core && OG.core.input && OG.core.input.bind) {
       OG.core.input.bind();
@@ -16,7 +20,7 @@
     updateWorldSelectorUI();
     refreshMenuWorldPreview();
 
-    OrbitGame.core.loop.startMainLoop();
+    OG.core.loop.startMainLoop();
     OG.state.initialized = true;
     return true;
   }
