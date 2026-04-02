@@ -172,6 +172,8 @@ let echoAngle = 0;
 let echoHistory = [];
 const ECHO_DELAY_MS = 450;
 const ECHO_HISTORY_MAX_MS = 1200;
+let world4FocusMode = 'none'; // 'main' | 'echo' | 'none'
+let world4TutorialStep = 0;
 const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
 const NEAR_MISS_COOLDOWN_MS = 700;
 let lastNearMissAt = -Infinity;
@@ -838,6 +840,10 @@ function loadLevel(idx) {
   world2BossArenaRotationSpeed = 0;
   world2BossSequenceProgress = 0;
   world2BossSequenceLength = 0;
+  world4TutorialStep = 0;
+  if (getWorldNum() !== 4 || levelData.id !== '4-1') {
+    world4FocusMode = 'none';
+  }
   if (levelData.id !== '2-6') world2BossTransitionFrom25 = false;
   resetSplitFamilyState();
 
@@ -1610,7 +1616,11 @@ function draw() {
   ctx.shadowBlur = 0;
 
   // PLAYER ORB
-  drawOrb(ctx, angle, worldShape);
+  const isWorld4 = getWorldNum() === 4;
+  drawOrb(ctx, angle, worldShape, {
+    opacity: (isWorld4 && world4FocusMode === 'echo') ? 0.34 : 1,
+    glowScale: (isWorld4 && world4FocusMode === 'main') ? 1.18 : 1
+  });
   if (worldNum === 3) {
     if (echoHistory.length > 0) {
       ctx.save();
@@ -1627,10 +1637,12 @@ function draw() {
       }
       ctx.restore();
     }
+  }
+  if (getWorldNum() === 3 || getWorldNum() === 4) {
     drawOrb(ctx, echoAngle, worldShape, {
       colorOverride: '#66f0ff',
-      opacity: 0.58,
-      glowScale: 0.78,
+      opacity: (isWorld4 && world4FocusMode === 'main') ? 0.22 : ((isWorld4 && world4FocusMode === 'echo') ? 0.88 : 0.58),
+      glowScale: (isWorld4 && world4FocusMode === 'echo') ? 1.05 : 0.78,
       isEcho: true
     });
   }

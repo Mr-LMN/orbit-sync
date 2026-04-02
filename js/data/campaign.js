@@ -60,6 +60,18 @@
       reverse: false,
       mechanics: ['echo', 'mixed'],
       text: 'Orange targets are for the real orb. Cyan targets are for the delayed echo.'
+    },
+    {
+      id: '4-1',
+      title: 'Signal Handoff',
+      hitsNeeded: 4,
+      speed: 0.034,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['handoff'],
+      text: 'Follow the highlighted orb. Orange first, then cyan.'
     }
   ];
 
