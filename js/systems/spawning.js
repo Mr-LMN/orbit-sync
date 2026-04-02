@@ -111,15 +111,18 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-3') {
-      ui.text.innerText = 'Both orbs must line up for a sync hit.';
-      ui.text.style.color = '#ffd54a';
-      const baseAngles = [Math.PI * 0.9, Math.PI * 1.55, Math.PI * 0.35];
+      ui.text.innerText = 'Orange = real orb. Cyan = delayed echo.';
+      ui.text.style.color = '#ffffff';
+
+      const baseAngles = [Math.PI * 0.9, Math.PI * 1.55, Math.PI * 0.35, Math.PI * 1.2];
       const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
-      targets.push(buildTarget(angleToUse, Math.PI / 7, {
+      const useEchoTarget = ((stageHits || 0) % 2) === 1;
+
+      targets.push(buildTarget(angleToUse, Math.PI / 7.5, {
         active: true,
         hp: 1,
-        color: '#ffd54a',
-        isSyncTarget: true
+        color: useEchoTarget ? '#78eeff' : '#ffaa00',
+        isEchoTarget: useEchoTarget
       }));
       return;
     }
