@@ -66,7 +66,7 @@ if (!unlockedSkins.includes('classic')) unlockedSkins.unshift('classic');
 unlockedSkins = [...new Set(unlockedSkins)];
 if (activeSkin === 'fire') activeSkin = 'prism';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
-let menuSelectedWorld = maxWorldUnlocked;
+let menuSelectedWorld = 1;
 function defaultPlayerProgress() {
   return {
     unlockedWorlds: ['world1'],
@@ -261,6 +261,7 @@ Object.defineProperties(stateBridge, {
   multiplier: { get: () => multiplier, set: (v) => { multiplier = v; } },
   lives: { get: () => lives, set: (v) => { lives = v; } },
   globalCoins: { get: () => globalCoins, set: (v) => { globalCoins = v; } },
+  menuSelectedWorld: { get: () => menuSelectedWorld, set: (v) => { menuSelectedWorld = v; } },
   currentWorld: { get: () => parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : menuSelectedWorld || 1), 10) },
   currentStage: { get: () => (levelData && levelData.id) ? levelData.id : null },
   waveCounter: { get: () => stageHits, set: (v) => { stageHits = v; } },
@@ -462,16 +463,19 @@ function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
 }
 
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
+  ctx.save();
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
   if (skin === 'skull') {
     ctx.font = `${Math.round(radius * 3.75)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('💀', x, y);
+    ctx.restore();
     return;
   }
   if (skin === 'prism') {
     drawPrismOrbSkin(ctx, x, y, radius, pulse);
+    ctx.restore();
     return;
   }
 
@@ -511,6 +515,7 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.arc(x + (radius * 0.47), y + (radius * 0.47), Math.max(0.9, radius * 0.14), 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
   ctx.fill();
+  ctx.restore();
 }
 
 // CRITICAL RENDERING GUARDRAIL:

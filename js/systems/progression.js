@@ -4,7 +4,7 @@
   OG.systems.progression = OG.systems.progression || {};
 
   function getCheckpointIndex() {
-    let currentWorld = levelData.id.split('-')[0];
+    let currentWorld = String((OG.state && OG.state.legacy && OG.state.legacy.menuSelectedWorld) || 1);
     for (let i = 0; i < campaign.length; i++) { if (campaign[i].id.startsWith(currentWorld + '-')) return i; }
     return 0;
   }
