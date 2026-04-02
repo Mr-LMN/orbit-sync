@@ -4,9 +4,10 @@
 
   function applyDualHit(t, hitCtx) {
     const centerAngle = (typeof t.angle === 'number') ? t.angle : hitCtx.normalizeAngle(t.start + (t.size / 2));
-    const targetHalfWidth = t.targetHalfWidth || (t.size / 2);
+    const visualHalfWidth = t.targetHalfWidth || (t.size / 2);
+    const targetHalfWidth = visualHalfWidth * 1.24;
     const diff = hitCtx.signedAngularDistance(hitCtx.angle, centerAngle);
-    const perfectThreshold = targetHalfWidth * 0.46;
+    const perfectThreshold = visualHalfWidth * 0.2;
 
     if (Math.abs(diff) > targetHalfWidth) return;
 
@@ -14,6 +15,7 @@
       if (Math.abs(diff) <= perfectThreshold) {
         t.dualState = 'cleared';
         t.active = false;
+        t.state = 'final';
         hitCtx.createParticles(hitCtx.hitX, hitCtx.hitY, '#ffffff', 24);
         hitCtx.createShockwave('#ffffff', 22);
         if (hitCtx.audioCtx) hitCtx.playPop(1, false, true);
@@ -21,9 +23,11 @@
       } else {
         if (diff < 0) {
           t.dualState = 'right';
+          t.state = 'split';
           hitCtx.createParticles(hitCtx.hitX, hitCtx.hitY, '#2ff6ff', 16);
         } else {
           t.dualState = 'left';
+          t.state = 'split';
           hitCtx.createParticles(hitCtx.hitX, hitCtx.hitY, '#ff4fd8', 16);
         }
         if (hitCtx.audioCtx) hitCtx.playPop(4, false);
@@ -35,6 +39,7 @@
       const remainingState = t.dualState;
       t.dualState = 'cleared';
       t.active = false;
+      t.state = 'final';
       const pColor = remainingState === 'left' ? '#2ff6ff' : '#ff4fd8';
       hitCtx.createParticles(hitCtx.hitX, hitCtx.hitY, pColor, 18);
       if (hitCtx.audioCtx) hitCtx.playPop(1, false, true);
@@ -48,6 +53,7 @@
     const splitFamilyId = t.splitFamilyId;
     const splitGeneration = Number.isFinite(t.splitGeneration) ? t.splitGeneration : (t.splitDepth || 0);
     t.active = false;
+    t.state = 'final';
 
     const nextDepth = (t.splitDepth || 0) + 1;
     if (t.splitOnHit && splitGeneration < 2 && nextDepth <= 2) {
@@ -65,9 +71,12 @@
       const rightColor = nextDepth === 1 ? '#ff4fd8' : '#7cf7ff';
 
       const leftChild = hitCtx.buildTarget(spawnStart, childSize, {
-        color: leftColor, active: true, hp: 1, mechanic: 'splitChild', type: 'splitChild', splitOnHit: nextDepth < 2,
+        color: leftColor, active: true, hp: 1, mechanic: 'splitChild', type: 'shard', splitOnHit: nextDepth < 2,
         splitDepth: nextDepth, splitFamilyId, splitGeneration: nextDepth
       });
+      leftChild.size = childSize;
+      leftChild.baseSize = childSize;
+      leftChild.state = nextDepth >= 2 ? 'final' : 'split';
       leftChild.moveSpeed = 0;
       leftChild.splitCruiseSpeed = hitCtx.getSplitCruiseSpeed(hitCtx.levelData, nextDepth, -1);
       leftChild.splitSideSign = -1;
@@ -80,9 +89,12 @@
       leftChild.hitFlash = 1;
 
       const rightChild = hitCtx.buildTarget(spawnStart, childSize, {
-        color: rightColor, active: true, hp: 1, mechanic: 'splitChild', type: 'splitChild', splitOnHit: nextDepth < 2,
+        color: rightColor, active: true, hp: 1, mechanic: 'splitChild', type: 'shard', splitOnHit: nextDepth < 2,
         splitDepth: nextDepth, splitFamilyId, splitGeneration: nextDepth
       });
+      rightChild.size = childSize;
+      rightChild.baseSize = childSize;
+      rightChild.state = nextDepth >= 2 ? 'final' : 'split';
       rightChild.moveSpeed = 0;
       rightChild.splitCruiseSpeed = hitCtx.getSplitCruiseSpeed(hitCtx.levelData, nextDepth, 1);
       rightChild.splitSideSign = 1;

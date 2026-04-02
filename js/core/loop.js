@@ -167,6 +167,10 @@ let world2BossSequenceProgress = 0;
 let world2BossSequenceLength = 0;
 let nearMissReplayUntil = 0;
 let nearMissReplayActive = false;
+let comboCount = 0;
+let comboTimer = 0;
+let comboGlow = 0;
+let hitStopUntil = 0;
 let activeSplitFamilyId = null;
 let nextSplitFamilyId = 1;
 let mainLoopRafId = null;
@@ -218,7 +222,8 @@ Object.defineProperties(stateBridge, {
   waveCounter: { get: () => stageHits, set: (v) => { stageHits = v; } },
   bossFight: { get: () => ({ isBossPhaseTwo, bossPhase, bossIntroPlaying, bossTransitionLock }) },
   revive: { get: () => ({ currentReviveCost, reviveCount, usedLastChance }) },
-  world2: { get: () => ({ nearMissReplayUntil, nearMissReplayActive }) }
+  world2: { get: () => ({ nearMissReplayUntil, nearMissReplayActive }) },
+  combo: { get: () => ({ comboCount, comboTimer }) }
 });
 
 
@@ -632,6 +637,7 @@ function resetRunState() {
   world2BossSequenceProgress = 0;
   world2BossSequenceLength = 0;
   lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
+  comboCount = 0; comboTimer = 0; comboGlow = 0; hitStopUntil = 0;
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
 }
@@ -1045,6 +1051,10 @@ function draw() {
     if (isWorld2PrimaryTarget) {
       targetAlpha += 0.08;
       targetCoreAlpha = Math.min(1, targetCoreAlpha + 0.05);
+    }
+    if (comboGlow > 0.01 && !t.isPhantom && !t.isLifeZone) {
+      targetAlpha += comboGlow * 0.16;
+      targetCoreAlpha = Math.min(1, targetCoreAlpha + (comboGlow * 0.08));
     }
     const drawWorld2AngularBracket = (angle, config = {}) => {
       if (!shouldDrawWorld2MechanicBrackets) return;
@@ -1631,13 +1641,17 @@ function update() {
   lastFrameTime = frameNow;
   const isBossTransitionPaused = frameNow < bossPauseUntil;
   const isStageClearHoldPaused = frameNow < stageClearHoldUntil;
+  const isHitStopPaused = frameNow < hitStopUntil;
   const nearMissSpeedScale = frameNow < nearMissReplayUntil ? 0.3 : 1;
   const worldShape = currentWorldShape;
   const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
 
   let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
+  if (!inMenu) {
+    moveStep *= (1 + Math.min(0.2, totalStageDistance / (Math.PI * 48)));
+  }
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
-  if (isBossTransitionPaused || isStageClearHoldPaused) moveStep = 0;
+  if (isBossTransitionPaused || isStageClearHoldPaused || isHitStopPaused) moveStep = 0;
   else moveStep *= nearMissSpeedScale;
 
   moveStep *= delta;
@@ -1649,7 +1663,7 @@ function update() {
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
   const tPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
-  trail.push({ x: tPt.x, y: tPt.y });
+  trail.push({ x: Math.round(tPt.x), y: Math.round(tPt.y) });
   const maxTrailMultiplier = isMobile ? 3 : 4;
   if (trail.length > multiplier * maxTrailMultiplier) trail.shift();
 
@@ -1657,6 +1671,14 @@ function update() {
   if (angle < 0) angle += Math.PI * 2;
 
   if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
+  if (!inMenu && comboCount > 0) {
+    comboTimer = Math.max(0, comboTimer - (delta * 16.6667));
+    if (comboTimer === 0) comboCount = 0;
+  }
+  if (comboGlow > 0) {
+    comboGlow *= Math.pow(0.82, delta);
+    if (comboGlow < 0.01) comboGlow = 0;
+  }
 
   let deferredFailReason = null;
   let pendingSplitFamilyRespawnId = null;
@@ -1688,7 +1710,10 @@ function update() {
       if (Math.random() < 0.42) t.moveSpeed *= -1;
       t.nextDirectionSwapAt = frameNow + 1200 + Math.random() * 1000;
     }
-    if (isBossTransitionPaused || isStageClearHoldPaused) currentMoveSpeed = 0;
+    if (isBossTransitionPaused || isStageClearHoldPaused || isHitStopPaused) currentMoveSpeed = 0;
+    if (!inMenu && currentMoveSpeed) {
+      currentMoveSpeed *= (1 + Math.min(0.15, totalStageDistance / (Math.PI * 52)));
+    }
 
     if (currentMoveSpeed !== 0) {
       t.start += currentMoveSpeed * delta;
@@ -1723,32 +1748,12 @@ function update() {
       t.pulseAtMinimum = false;
     }
 
-    if (t.baseSize) {
-      t.size = t.baseSize * sizeScale;
+    if (t.spawnScale && t.spawnScale < 1) {
+      t.spawnScale = Math.min(1, t.spawnScale + (0.08 * delta));
     }
 
-    if (!inMenu && t.mechanic === 'dual' && t.active
-        && t.dualState !== 'full' && t.dualState !== 'cleared') {
-      // Player partially cleared a dual — track if remaining
-      // half has been passed through without being hit
-      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-      const insideNow = isInsideTarget(normAngle, t);
-      if (!t._dualPassStarted && insideNow) {
-        t._dualPassStarted = true;
-      }
-      if (t._dualPassStarted && !insideNow && t.dualState !== 'cleared') {
-        // Orb passed through remaining half without hitting —
-        // reset to full, player gets another chance but loses streak
-        t.dualState = 'full';
-        t._dualPassStarted = false;
-        if (multiplier > 1) {
-          multiplier = 1;
-          streak = 0;
-          ui.streak.innerText = streak;
-          updateMultiplierUI();
-          showTempText('DROPPED!', '#ff9900', 900);
-        }
-      }
+    if (t.baseSize) {
+      t.size = t.baseSize * sizeScale * (t.spawnScale || 1);
     }
 
     if (t.isLifeZone && t.active) {
@@ -2056,6 +2061,10 @@ function tap() {
     distanceTraveled = 0;
     hitFlashColor = t.color || '#00ff88';
     ringHitFlash = Math.max(ringHitFlash, 0.26);
+    hitStopUntil = Math.max(hitStopUntil, performance.now() + 28);
+    comboCount++;
+    comboTimer = 1600;
+    comboGlow = Math.min(1.4, comboGlow + 0.2);
 
     if (levelData.boss && !isBossPhaseTwo && t.isBossShield) {
       const isWorld2PrismBoss = levelData.id === '2-6' && levelData.boss === 'prism';
@@ -2181,6 +2190,9 @@ function tap() {
       // Player hit a phantom — punish without the usual hit flow
       const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
       const isDiamondWorld = worldNum === 2;
+      comboCount = 0;
+      comboTimer = 0;
+      comboGlow = 0;
       t.active = false;
       triggerScreenShake(isDiamondWorld ? 11 : 8);
       canvas.style.filter = 'brightness(2)';
@@ -2322,7 +2334,10 @@ function tap() {
     runCents += centsEarned;
     markScoreCoinDirty();
     updateMultiplierUI();
-    createParticles(hitX, hitY, t.color);
+    createParticles(hitX, hitY, t.color, 18 + Math.min(18, comboCount));
+    if (comboCount > 2 && comboCount % 3 === 0) {
+      createPopup(hitX, hitY - 36, `COMBO x${comboCount}`, '#ffd54a');
+    }
     const shouldForceHudFlush = targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active)
       || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
@@ -2331,6 +2346,9 @@ function tap() {
       triggerStageClear();
     }
   } else {
+    comboCount = 0;
+    comboTimer = 0;
+    comboGlow = 0;
     let nearestEdgeDistance = Infinity;
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];

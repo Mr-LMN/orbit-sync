@@ -9,18 +9,25 @@
   }
 
   function isHit(t, angle, utils) {
-    const endAngle = t.start + t.size;
+    const hitboxScale = t.hitboxScale || 1.25;
+    const expand = (t.size * (hitboxScale - 1)) * 0.5;
+    const startAngle = t.start - expand;
+    const endAngle = t.start + t.size + expand;
     let result = endAngle > Math.PI * 2
-      ? (angle >= t.start || angle <= (endAngle - Math.PI * 2))
-      : (angle >= t.start && angle <= endAngle);
+      ? (angle >= startAngle || angle <= (endAngle - Math.PI * 2))
+      : (angle >= startAngle && angle <= endAngle);
 
     if (t.isDual && t.dualState !== 'cleared') {
-      const splitAngle = utils.normalizeAngle(t.start + (t.targetHalfWidth || t.size / 2));
-      const fullEnd = utils.normalizeAngle(t.start + t.size);
+      const visualHalf = t.targetHalfWidth || t.size / 2;
+      const dualExpand = visualHalf * 0.24;
+      const splitAngle = utils.normalizeAngle(t.start + visualHalf);
+      const fullEnd = utils.normalizeAngle(t.start + t.size + dualExpand);
       const normPlayer = utils.normalizeAngle(angle);
-      const normStart = utils.normalizeAngle(t.start);
-      if (t.dualState === 'left') result = inArc(utils.normalizeAngle, normPlayer, normStart, splitAngle);
-      else if (t.dualState === 'right') result = inArc(utils.normalizeAngle, normPlayer, splitAngle, fullEnd);
+      const normStart = utils.normalizeAngle(t.start - dualExpand);
+      const leftEnd = utils.normalizeAngle(splitAngle + dualExpand);
+      const rightStart = utils.normalizeAngle(splitAngle - dualExpand);
+      if (t.dualState === 'left') result = inArc(utils.normalizeAngle, normPlayer, normStart, leftEnd);
+      else if (t.dualState === 'right') result = inArc(utils.normalizeAngle, normPlayer, rightStart, fullEnd);
       else result = inArc(utils.normalizeAngle, normPlayer, normStart, fullEnd);
     }
 

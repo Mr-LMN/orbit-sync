@@ -58,7 +58,7 @@
       }
     },
     splitRoot: {
-      type: 'splitRoot',
+      type: 'fracture',
       renderer: 'split',
       hitProfile: 'split',
       behaviour: 'split',
@@ -76,7 +76,7 @@
       }
     },
     splitChild: {
-      type: 'splitChild',
+      type: 'shard',
       renderer: 'split',
       hitProfile: 'split',
       behaviour: 'split',
