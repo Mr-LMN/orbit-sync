@@ -57,6 +57,8 @@
       isLifeZone: !!config.isLifeZone,
       expireDistance: config.expireDistance || (Math.PI * 5),
       isPhantom: !!config.isPhantom,
+      isEchoTarget: !!config.isEchoTarget,
+      isSyncTarget: !!config.isSyncTarget,
       isCornerBonus: !!config.isCornerBonus,
       type: normalizedType,
       state: config.state || (normalizedType === 'dual' ? 'split' : 'intact'),

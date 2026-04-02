@@ -36,6 +36,30 @@
       reverse: false,
       mechanics: ['echo'],
       text: 'Your delayed echo can hit cyan targets. Tap when the echo orb passes through the zone.'
+    },
+    {
+      id: '3-2',
+      title: 'Echo Field',
+      hitsNeeded: 3,
+      speed: 0.032,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['echo'],
+      text: 'Only the delayed echo can score. Watch the cyan ghost, then tap.'
+    },
+    {
+      id: '3-3',
+      title: 'Resonance Lock',
+      hitsNeeded: 3,
+      speed: 0.034,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['echo', 'sync'],
+      text: 'Tap only when both the real orb and the echo line up.'
     }
   ];
 

@@ -97,6 +97,32 @@
       }));
       return;
     }
+    if (worldNum === 3 && levelData.id === '3-2') {
+      ui.text.innerText = 'Tap when the cyan echo reaches the target.';
+      ui.text.style.color = '#78eeff';
+      const baseAngles = [Math.PI * 0.85, Math.PI * 1.45, Math.PI * 0.2];
+      const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
+      targets.push(buildTarget(angleToUse, Math.PI / 8, {
+        active: true,
+        hp: 1,
+        color: '#78eeff',
+        isEchoTarget: true
+      }));
+      return;
+    }
+    if (worldNum === 3 && levelData.id === '3-3') {
+      ui.text.innerText = 'Both orbs must line up for a sync hit.';
+      ui.text.style.color = '#ffd54a';
+      const baseAngles = [Math.PI * 0.9, Math.PI * 1.55, Math.PI * 0.35];
+      const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
+      targets.push(buildTarget(angleToUse, Math.PI / 7, {
+        active: true,
+        hp: 1,
+        color: '#ffd54a',
+        isSyncTarget: true
+      }));
+      return;
+    }
 
     const progressionFactor = Math.min(1, Math.max(0, stageHits / Math.max(1, levelData.hitsNeeded || 5)));
     let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;

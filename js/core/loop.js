@@ -1315,6 +1315,46 @@ function draw() {
       ctx.restore();
       return;
     }
+    if (t.isEchoTarget) {
+      const echoPulse = 0.75 + Math.sin(Date.now() / 120) * 0.12;
+      ctx.save();
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = `rgba(120,238,255,${0.9 * echoPulse})`;
+      ctx.lineWidth = 3;
+      if (ctx.setLineDash) ctx.setLineDash([6, 4]);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      if (ctx.setLineDash) ctx.setLineDash([]);
+
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius - 6, t.start, t.start + t.size);
+      ctx.strokeStyle = `rgba(200,255,255,${0.35 * echoPulse})`;
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    if (t.isSyncTarget) {
+      const syncPulse = 0.82 + Math.sin(Date.now() / 120) * 0.1;
+      ctx.save();
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = `rgba(255,170,0,${0.95 * syncPulse})`;
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius + 5, t.start, t.start + t.size);
+      ctx.strokeStyle = `rgba(120,238,255,${0.55 * syncPulse})`;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
 
     const targetRenderer = OrbitGame.entities && OrbitGame.entities.targetRenderers;
     if (targetRenderer && targetRenderer.renderTarget && targetRenderer.renderTarget(ctx, t, {
@@ -1548,6 +1588,21 @@ function draw() {
   // PLAYER ORB
   drawOrb(ctx, angle, worldShape);
   if (worldNum === 3) {
+    if (echoHistory.length > 0) {
+      ctx.save();
+      const step = Math.max(1, Math.floor(echoHistory.length / 8));
+      for (let i = echoHistory.length - 1, sample = 0; i >= 0 && sample < 8; i -= step, sample++) {
+        const histAngle = echoHistory[i].angle;
+        const p = getPointOnShape(histAngle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+        const alpha = 0.28 * (1 - sample / 8);
+        const r = 5 - sample * 0.45;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, Math.max(1.5, r), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(120,238,255,${alpha})`;
+        ctx.fill();
+      }
+      ctx.restore();
+    }
     drawOrb(ctx, echoAngle, worldShape, {
       colorOverride: '#78eeff',
       opacity: 0.45,
@@ -2108,6 +2163,7 @@ function tap() {
   if (nearMissReplayActive) return;
   let hitIndex = -1; let hitQuality = "miss"; let hitSegmentIndex = -1;
   let hitAngleForEffects = angle;
+  const hitProfiles = OrbitGame.entities && OrbitGame.entities.targetHitProfiles;
 
   for (let i = 0; i < targets.length; i++) {
     if (!targets[i].active) continue;
@@ -2117,7 +2173,6 @@ function tap() {
       if (echoHit) {
         hitIndex = i;
         hitAngleForEffects = echoAngle;
-        const hitProfiles = OrbitGame.entities && OrbitGame.entities.targetHitProfiles;
         if (hitProfiles && hitProfiles.getHitQuality) {
           const quality = hitProfiles.getHitQuality(t, echoAngle, { normalizeAngle, signedAngularDistance });
           if (!quality) continue;
@@ -2128,7 +2183,28 @@ function tap() {
         continue;
       }
     }
-    const hitProfiles = OrbitGame.entities && OrbitGame.entities.targetHitProfiles;
+    if (t.isSyncTarget) {
+      const realHit = hitProfiles && hitProfiles.isHit
+        ? hitProfiles.isHit(t, angle, { normalizeAngle, signedAngularDistance })
+        : false;
+      if (!realHit) {
+        continue;
+      }
+      const echoHit = hitProfiles && hitProfiles.isHit
+        ? hitProfiles.isHit(t, echoAngle, { normalizeAngle, signedAngularDistance })
+        : false;
+      if (!echoHit) {
+        if (typeof createPopup === 'function') {
+          createPopup(centerObj.x, centerObj.y - 40, 'ECHO NOT IN RANGE', '#78eeff');
+        }
+        continue;
+      }
+      hitIndex = i;
+      hitQuality = 'good';
+      hitAngleForEffects = angle;
+      break;
+    }
+
     let isHit = false;
     if (hitProfiles && hitProfiles.isHit) {
       isHit = hitProfiles.isHit(t, angle, { normalizeAngle, signedAngularDistance });
