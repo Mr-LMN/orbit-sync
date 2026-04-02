@@ -89,6 +89,7 @@
       return;
     }
 
+    const progressionFactor = Math.min(1, Math.max(0, stageHits / Math.max(1, levelData.hitsNeeded || 5)));
     let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;
     const isFixedThreeTargetTutorialStage = levelData.id === '1-5' || levelData.fixedTargetCount === true;
     if (tCount === 3 && !isFixedThreeTargetTutorialStage) {
@@ -102,6 +103,7 @@
     if (tCount === 4) sizeModifier = 0.35;
 
     let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
+    baseSize *= (1 - (0.12 * progressionFactor));
     let offset = Math.random() * Math.PI * 2;
     const isDual = levelData.mechanics && levelData.mechanics.includes('dual');
 
@@ -112,6 +114,19 @@
         active: true,
         hp: 1
       });
+      const shouldUseFracture = !inMenu
+        && !levelData.boss
+        && worldNum >= 2
+        && progressionFactor > 0.35
+        && Math.random() < (0.14 * progressionFactor);
+      if (shouldUseFracture) {
+        target.type = 'fracture';
+        target.state = 'intact';
+        target.mechanic = 'split';
+        target.splitOnHit = true;
+        target.splitGeneration = 0;
+        target.splitDepth = 0;
+      }
       target.angle = angle;
       target.baseAngle = angle;
       target.isDual = isDual;

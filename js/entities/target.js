@@ -27,7 +27,12 @@
     const config = Object.assign({}, defaults, overrides);
     const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
     const movement = resolveMovement(config, definition);
-    const size = config.size;
+    const size = Number.isFinite(config.size) ? config.size : 1;
+    const normalizedType = config.type === 'dual' || type === 'dual'
+      ? 'dual'
+      : (config.type === 'fracture' || config.type === 'shard' || type === 'fracture' || type === 'shard' || type === 'splitRoot' || type === 'splitChild'
+        ? (config.type === 'shard' || type === 'shard' || type === 'splitChild' ? 'shard' : 'fracture')
+        : 'standard');
 
     const target = {
       start: config.start,
@@ -53,7 +58,8 @@
       expireDistance: config.expireDistance || (Math.PI * 5),
       isPhantom: !!config.isPhantom,
       isCornerBonus: !!config.isCornerBonus,
-      type: config.type || (definition ? definition.type : type),
+      type: normalizedType,
+      state: config.state || (normalizedType === 'dual' ? 'split' : 'intact'),
       mechanic: config.mechanic !== undefined ? config.mechanic : (definition ? definition.mechanic : null),
       variant: config.variant || null,
       renderStyle: config.renderStyle || null,
@@ -70,6 +76,8 @@
       isBossShield: !!config.isBossShield,
       nextDirectionSwapAt: config.nextDirectionSwapAt || 0,
       hp: Number.isFinite(config.hp) ? config.hp : 1
+      ,
+      spawnScale: Number.isFinite(config.spawnScale) ? config.spawnScale : 0.86
     };
 
     if (Number.isFinite(config.cornerAnchor)) target.cornerAnchor = normalizeAngle(config.cornerAnchor);
@@ -131,17 +139,18 @@
   }
 
   function buildSplitTarget(startAngle, size, options = {}) {
-    const splitType = options.mechanic === 'splitChild' ? 'splitChild' : 'splitRoot';
+    const splitType = options.mechanic === 'splitChild' ? 'shard' : 'fracture';
     return createTarget(splitType, {
       start: normalizeAngle(startAngle),
       size,
       color: options.color || '#2ff6ff',
       move: options.move || 0,
-      mechanic: options.mechanic || (splitType === 'splitChild' ? 'splitChild' : 'split'),
+      mechanic: options.mechanic || (splitType === 'shard' ? 'splitChild' : 'split'),
       splitOnHit: true,
       splitDepth: options.splitDepth || 0,
       splitFamilyId: options.splitFamilyId ?? null,
       splitGeneration: options.splitGeneration || 0,
+      state: options.state || (splitType === 'shard' ? 'split' : 'intact'),
       hp: options.hp || 1
     });
   }
