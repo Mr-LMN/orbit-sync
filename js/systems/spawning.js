@@ -91,7 +91,7 @@
     if (worldNum === 3 && levelData.id === '3-1') {
       targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 7.5, {
         isEchoTarget: true,
-        color: '#78eeff',
+        color: '#66f0ff',
         active: true,
         hp: 1
       }));
@@ -99,13 +99,13 @@
     }
     if (worldNum === 3 && levelData.id === '3-2') {
       ui.text.innerText = 'Tap when the cyan echo reaches the target.';
-      ui.text.style.color = '#78eeff';
+      ui.text.style.color = '#66f0ff';
       const baseAngles = [Math.PI * 0.85, Math.PI * 1.45, Math.PI * 0.2];
       const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
       targets.push(buildTarget(angleToUse, Math.PI / 8, {
         active: true,
         hp: 1,
-        color: '#78eeff',
+        color: '#66f0ff',
         isEchoTarget: true
       }));
       return;
@@ -114,14 +114,14 @@
       ui.text.innerText = 'Orange = real orb. Cyan = delayed echo.';
       ui.text.style.color = '#ffffff';
 
-      const baseAngles = [Math.PI * 0.9, Math.PI * 1.55, Math.PI * 0.35, Math.PI * 1.2];
+      const baseAngles = [Math.PI * 0.92, Math.PI * 1.52, Math.PI * 0.34, Math.PI * 1.18];
       const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
       const useEchoTarget = ((stageHits || 0) % 2) === 1;
 
-      targets.push(buildTarget(angleToUse, Math.PI / 7.5, {
+      targets.push(buildTarget(angleToUse, Math.PI / 7.4, {
         active: true,
         hp: 1,
-        color: useEchoTarget ? '#78eeff' : '#ffaa00',
+        color: useEchoTarget ? '#66f0ff' : '#ff9f1a',
         isEchoTarget: useEchoTarget
       }));
       return;
