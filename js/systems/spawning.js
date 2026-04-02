@@ -88,6 +88,15 @@
       spawnWorld2MechanicTargets();
       return;
     }
+    if (worldNum === 3 && levelData.id === '3-1') {
+      targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 7.5, {
+        isEchoTarget: true,
+        color: '#78eeff',
+        active: true,
+        hp: 1
+      }));
+      return;
+    }
 
     const progressionFactor = Math.min(1, Math.max(0, stageHits / Math.max(1, levelData.hitsNeeded || 5)));
     let tCount = levelData.targets === 'boss' || levelData.targets === 'random' ? Math.floor(Math.random() * 3) + 1 : levelData.targets;

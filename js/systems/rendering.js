@@ -4,6 +4,28 @@
   OG.systems.rendering = OG.systems.rendering || {};
 
   function getPointOnShape(t, shape, cx, cy, radius) {
+    function getTrianglePoint(angle, tx, ty, tradius) {
+      const tau = Math.PI * 2;
+      const norm = ((angle % tau) + tau) % tau;
+      const sideSize = tau / 3;
+      const sideIndex = Math.floor(norm / sideSize) % 3;
+      const localT = (norm - sideIndex * sideSize) / sideSize;
+
+      const corners = [
+        { x: tx + Math.cos(-Math.PI / 2) * tradius, y: ty + Math.sin(-Math.PI / 2) * tradius },
+        { x: tx + Math.cos(-Math.PI / 2 + tau / 3) * tradius, y: ty + Math.sin(-Math.PI / 2 + tau / 3) * tradius },
+        { x: tx + Math.cos(-Math.PI / 2 + 2 * tau / 3) * tradius, y: ty + Math.sin(-Math.PI / 2 + 2 * tau / 3) * tradius }
+      ];
+
+      const a = corners[sideIndex];
+      const b = corners[(sideIndex + 1) % 3];
+
+      return {
+        x: a.x + (b.x - a.x) * localT,
+        y: a.y + (b.y - a.y) * localT
+      };
+    }
+
     if (shape === 'circle') return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
     if (shape === 'square') {
       const a = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
@@ -28,6 +50,9 @@
       const p1 = corners[sectorIdx];
       const p2 = corners[(sectorIdx + 1) % 4];
       return { x: p1.x + (p2.x - p1.x) * progress, y: p1.y + (p2.y - p1.y) * progress };
+    }
+    if (shape === 'triangle') {
+      return getTrianglePoint(t, cx, cy, radius);
     }
     const sides = 6;
     const rotation = -Math.PI / 2;

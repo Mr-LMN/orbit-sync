@@ -24,6 +24,18 @@
       reverse: true,
       bossConfig: { phases: ['rotation', 'sequence'], sequenceLength: 5, shakeDisabled: true },
       text: 'BOSS: Adapt to rotation, then complete the sequence.'
+    },
+    {
+      id: '3-1',
+      title: 'Echo Arrival',
+      hitsNeeded: 5,
+      speed: 0.034,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['echo'],
+      text: 'Your delayed echo can hit cyan targets. Tap when the echo orb passes through the zone.'
     }
   ];
 
