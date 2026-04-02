@@ -427,6 +427,7 @@ prismOrbImage.onload = () => { prismOrbImageReady = true; };
 prismOrbImage.src = 'assets/1775068154785.png';
 
 function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
+  ctx.save();
   const pulseScale = 1 + (pulse * 0.45);
 
   ctx.beginPath();
@@ -449,6 +450,7 @@ function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
     ctx.fillStyle = fallbackGrad;
     ctx.globalAlpha = 1;
     ctx.fill();
+    ctx.restore();
     return;
   }
 
@@ -456,6 +458,7 @@ function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
   ctx.imageSmoothingEnabled = true;
   ctx.globalAlpha = 1;
   ctx.drawImage(prismOrbImage, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
+  ctx.restore();
 }
 
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {

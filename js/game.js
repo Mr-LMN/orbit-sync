@@ -400,6 +400,22 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.fill();
 }
 
+
+function drawOrb(ctx, orbAngle, worldShape, options = {}) {
+  const pt = getPointOnShape(orbAngle, worldShape, centerObj.x, centerObj.y, orbitRadius);
+  const orbPulse = Math.abs(Math.sin(Date.now() / 200)) * 2.5;
+  const opacity = (typeof options.opacity === 'number') ? options.opacity : 1;
+  const glowScale = (typeof options.glowScale === 'number') ? options.glowScale : 1;
+  const radius = 8.5 * glowScale;
+  const fallbackColor = multiColors[Math.min(Math.max(multiplier - 1, 0), 7)] || '#ffffff';
+  const color = options.colorOverride || fallbackColor;
+
+  ctx.save();
+  ctx.globalAlpha *= opacity;
+  drawOrbSkin(ctx, pt.x, pt.y, activeSkin, radius, orbPulse, color);
+  ctx.restore();
+}
+
 function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
   const savedAlpha = ctx.globalAlpha;
   ctx.save();
@@ -1349,12 +1365,7 @@ function draw() {
   ctx.shadowBlur = 0;
 
   // PLAYER ORB
-  const orbPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
-  const x = orbPt.x;
-  const y = orbPt.y;
-
-  const orbPulse = Math.abs(Math.sin(Date.now() / 200)) * 2.5;
-  drawOrbSkin(ctx, x, y, activeSkin, 8.5, orbPulse, orbColor);
+  drawOrb(ctx, angle, worldShape, { colorOverride: orbColor });
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
