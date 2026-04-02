@@ -2198,7 +2198,7 @@ function tap() {
         if (typeof createPopup === 'function') {
           createPopup(centerObj.x, centerObj.y - 40, 'ECHO NOT IN RANGE', '#78eeff');
         }
-        continue;
+        return;
       }
       hitIndex = i;
       hitQuality = 'good';

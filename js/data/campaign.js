@@ -51,15 +51,15 @@
     },
     {
       id: '3-3',
-      title: 'Resonance Lock',
-      hitsNeeded: 3,
+      title: 'Split Field',
+      hitsNeeded: 4,
       speed: 0.034,
       lives: 3,
       targets: 1,
       moveSpeed: 0,
       reverse: false,
-      mechanics: ['echo', 'sync'],
-      text: 'Tap only when both the real orb and the echo line up.'
+      mechanics: ['echo', 'mixed'],
+      text: 'Orange targets are for the real orb. Cyan targets are for the delayed echo.'
     }
   ];
 
