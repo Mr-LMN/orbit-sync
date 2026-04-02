@@ -52,8 +52,11 @@
         }
       }
 
-      if (nextWorld && nextWorld > maxWorldUnlocked) { maxWorldUnlocked = nextWorld; saveData(); }
-      if (unlockedNextWorldId && maxWorldUnlocked < 3) {
+      if (nextWorld && nextWorld > maxWorldUnlocked) {
+        maxWorldUnlocked = nextWorld;
+      }
+      const knownWorldCount = Array.isArray(OG.data && OG.data.worldMeta) ? OG.data.worldMeta.length : 3;
+      if (unlockedNextWorldId && maxWorldUnlocked < knownWorldCount) {
         const unlockedNum = parseInt(unlockedNextWorldId.replace('world', ''), 10);
         if (Number.isFinite(unlockedNum) && unlockedNum > maxWorldUnlocked) {
           maxWorldUnlocked = unlockedNum;

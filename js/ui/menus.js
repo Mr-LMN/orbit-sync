@@ -33,8 +33,9 @@
 
   function changeWorld(dir) {
     menuSelectedWorld += dir;
+    const maxSelectableWorld = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld < 1) menuSelectedWorld = 1;
-    if (menuSelectedWorld > maxWorldUnlocked) menuSelectedWorld = maxWorldUnlocked;
+    if (menuSelectedWorld > maxSelectableWorld) menuSelectedWorld = maxSelectableWorld;
     updateWorldSelectorUI();
     refreshMenuWorldPreview();
   }
