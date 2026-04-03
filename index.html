@@ -73,11 +73,13 @@
         <button id="adminToolsBtn" class="settings-toggle">Open</button>
       </div>
       <div id="adminToolsPanel" class="admin-tools-panel" style="display: none;">
-        <div class="admin-code-entry">
+        <div id="adminCodeEntry" class="admin-code-entry">
           <input id="adminCodeInput" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Admin code">
           <button id="adminCodeSubmit" class="settings-toggle">Unlock</button>
         </div>
         <div id="adminStageControls" class="admin-stage-controls" style="display: none;">
+          <label for="adminWorldSelect">Temporary world selector</label>
+          <select id="adminWorldSelect"></select>
           <label for="adminStageSelect">Temporary stage selector</label>
           <select id="adminStageSelect"></select>
           <div class="admin-stage-actions">
