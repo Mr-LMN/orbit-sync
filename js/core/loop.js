@@ -1922,6 +1922,11 @@ function update() {
       if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
       if (t.start < 0) t.start += Math.PI * 2;
     }
+    if (t.drift) {
+      t.start += t.drift * delta;
+      if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
+      if (t.start < 0) t.start += Math.PI * 2;
+    }
     // Keep dual target center angle in sync with movement
     if (t.isDual && typeof t.targetHalfWidth === 'number') {
       t.angle = normalizeAngle(t.start + t.targetHalfWidth);

@@ -126,6 +126,81 @@
       }));
       return;
     }
+    if (worldNum === 3 && levelData.id === '3-4') {
+      ui.text.innerText = 'Echo Drift: cyan targets rotate slowly.';
+      ui.text.style.color = '#66f0ff';
+
+      const wave = Math.max(1, (stageHits || 0) + 1);
+      const count = 3 + Math.min(4, wave);
+      const spacing = (Math.PI * 2) / count;
+      const offset = ((stageHits || 0) % count) * (spacing * 0.5);
+
+      for (let i = 0; i < count; i++) {
+        const a = normalizeAngle(offset + (i * spacing));
+        targets.push(buildTarget(a, Math.PI / 9, {
+          active: true,
+          hp: 1,
+          color: '#66f0ff',
+          isEchoTarget: true,
+          drift: 0.002 + (wave * 0.0005)
+        }));
+      }
+      return;
+    }
+    if (worldNum === 3 && levelData.id === '3-5') {
+      ui.text.innerText = 'Cross Signal: orange + cyan, echo arcs drift.';
+      ui.text.style.color = '#ffffff';
+
+      const wave = Math.max(1, (stageHits || 0) + 1);
+      const count = 4 + Math.min(4, wave);
+      const spacing = (Math.PI * 2) / count;
+      const offset = ((stageHits || 0) % count) * (spacing * 0.35);
+
+      for (let i = 0; i < count; i++) {
+        const a = normalizeAngle(offset + (i * spacing));
+        const isEcho = i % 2 === 0;
+        targets.push(buildTarget(a, Math.PI / 9.4, {
+          active: true,
+          hp: 1,
+          color: isEcho ? '#66f0ff' : '#ff9f1a',
+          isEchoTarget: isEcho,
+          drift: isEcho ? 0.002 : 0
+        }));
+      }
+      return;
+    }
+    if (worldNum === 3 && levelData.id === '3-6') {
+      const wave = Math.max(1, (stageHits || 0) + 1);
+      const phase = Math.min(3, Math.floor(wave / 2) + 1);
+      ui.text.innerText = `Resonance Core: phase ${phase}`;
+      ui.text.style.color = '#ffffff';
+
+      const count = 4 + phase;
+      const spacing = (Math.PI * 2) / count;
+      const offset = (stageHits || 0) * 0.22;
+
+      for (let i = 0; i < count; i++) {
+        const a = normalizeAngle(offset + (i * spacing));
+        let isEcho = false;
+
+        if (phase === 1) {
+          isEcho = true;
+        } else if (phase === 2) {
+          isEcho = i % 2 === 0;
+        } else {
+          isEcho = Math.random() > 0.5;
+        }
+
+        targets.push(buildTarget(a, Math.PI / 10, {
+          active: true,
+          hp: 1,
+          color: isEcho ? '#66f0ff' : '#ff9f1a',
+          isEchoTarget: isEcho,
+          drift: isEcho ? 0.003 : 0
+        }));
+      }
+      return;
+    }
     if (worldNum === 4 && levelData.id === '4-1') {
       const step = stageHits || 0;
       world4TutorialStep = step;
