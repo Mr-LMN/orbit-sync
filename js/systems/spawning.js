@@ -35,12 +35,16 @@
     }
 
     if (levelData.boss === 'prism') {
+      const isPhaseOne = bossPhase === 1;
       const isPhaseTwoSequence = bossPhase === 2;
+      const isPhaseTwoCorners = bossPhase === 3;
+      const isPhaseTwoCore = bossPhase === 4;
       isBossPhaseTwo = false;
-      if (!isPhaseTwoSequence) {
+      if (isPhaseOne) {
         world2BossSequenceProgress = 0;
         world2BossSequenceLength = 0;
         world2BossArenaRotationSpeed = 0.0034;
+        world2BossNextForcedReverseAt = 0;
         ui.text.innerText = 'THE PRISM // ALIGNMENT';
         ui.text.style.color = '#2ff6ff';
         for (let i = 0; i < 4; i++) {
@@ -51,7 +55,7 @@
             {
               color: i % 2 === 0 ? '#2ff6ff' : '#ff4fd8',
               active: true,
-              hp: 2,
+              hp: 3,
               isBossShield: true,
               moveSpeed: 0
             }
@@ -59,13 +63,14 @@
           facetTarget.prismFacet = true;
           targets.push(facetTarget);
         }
-      } else {
+      } else if (isPhaseTwoSequence) {
         world2BossSequenceProgress = 0;
-        world2BossSequenceLength = 5;
-        world2BossArenaRotationSpeed = 0.0058;
+        world2BossSequenceLength = 7;
+        world2BossArenaRotationSpeed = 0.0068;
+        world2BossNextForcedReverseAt = performance.now() + 2200;
         ui.text.innerText = 'SEQUENCE // CALIBRATION';
         ui.text.style.color = '#00e8ff';
-        const seqColors = ['#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff', '#ff4fd8'];
+        const seqColors = ['#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff'];
         for (let i = 0; i < world2BossSequenceLength; i++) {
           const seqTarget = buildTarget(
             normalizeAngle((-Math.PI / 2) + (i * ((Math.PI * 2) / world2BossSequenceLength))),
@@ -75,7 +80,7 @@
               active: true,
               hp: 1,
               isBossShield: true,
-              moveSpeed: 0
+              moveSpeed: 0.0026 * (i % 2 === 0 ? 1 : -1)
             }
           );
           seqTarget.sequenceIndex = i;
@@ -85,6 +90,36 @@
           seqTarget.seqPulseOffset = i * 160;
           targets.push(seqTarget);
         }
+      } else if (isPhaseTwoCorners) {
+        world2BossSequenceProgress = 0;
+        world2BossSequenceLength = 4;
+        world2BossArenaRotationSpeed = 0.006;
+        ui.text.innerText = 'FINAL LOCK // CORNERS';
+        ui.text.style.color = '#ffd54a';
+        const cornerAnchors = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
+        cornerAnchors.forEach((anchor, idx) => {
+          const cornerTarget = buildTarget(normalizeAngle(anchor + 0.04), Math.PI / 8.6, {
+            color: idx % 2 === 0 ? '#ffd54a' : '#00e8ff',
+            active: true,
+            hp: 1,
+            isBossShield: true,
+            moveSpeed: 0
+          });
+          cornerTarget.isPrismCornerLock = true;
+          targets.push(cornerTarget);
+        });
+      } else if (isPhaseTwoCore) {
+        world2BossArenaRotationSpeed = 0.0052;
+        ui.text.innerText = 'CORE // FINAL STRIKE';
+        ui.text.style.color = '#ffffff';
+        const coreTarget = buildTarget(normalizeAngle(-Math.PI / 2), Math.PI / 9.5, {
+          color: '#ffffff',
+          active: true,
+          hp: 1,
+          moveSpeed: 0
+        });
+        coreTarget.isPrismFinalCore = true;
+        targets.push(coreTarget);
       }
       return;
     }
