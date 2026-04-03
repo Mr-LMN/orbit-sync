@@ -33,10 +33,11 @@
 
   async function startDynamicMusic(baseTrackPath) {
     if (!audio.audioCtx || !audio.musicEnabled) return;
+    const bossTrackPath = getBossTrackForLevel(currentLevelIdx);
     if (
       audio.isMusicPlaying &&
       audio.currentBaseTrack === baseTrackPath &&
-      audio.currentBossTrack === getBossTrackForLevel(currentLevelIdx) &&
+      audio.currentBossTrack === bossTrackPath &&
       hasActiveMusicGraph()
     ) {
       return;
@@ -50,7 +51,6 @@
     audio.pendingBaseTrack = baseTrackPath;
     audio.musicStartPromise = (async function startMusicWithOwnership() {
       try {
-        const bossTrackPath = getBossTrackForLevel(currentLevelIdx);
         if (!audio.baseAudioBuffers[baseTrackPath]) {
           audio.baseAudioBuffers[baseTrackPath] = await loadAudioFile(baseTrackPath);
         }

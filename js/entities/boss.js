@@ -117,28 +117,20 @@
       });
       queueIntroStep(700, () => {
         ui.title.innerText = 'THE PRISM';
-        ui.subtitle.innerText = 'FACET TEST';
-        createPopup(centerObj.x, centerObj.y - 72, 'ALIGNMENT', '#00e8ff');
+        ui.subtitle.innerText = 'SEQUENCE';
+        createPopup(centerObj.x, centerObj.y - 72, 'SEQUENCE', '#00e8ff');
         createShockwave('#00cfff', 26);
         pulseBrightness(1.22, 140);
       });
       queueIntroStep(1700, () => {
         ui.title.innerText = 'THE PRISM';
-        ui.subtitle.innerText = 'SEQUENCE';
+        ui.subtitle.innerText = 'BEGIN';
         createPopup(centerObj.x, centerObj.y - 36, 'ALIGNMENT', '#ff4fd8');
-        createPopup(centerObj.x, centerObj.y + 4, 'CALIBRATION', '#ffffff');
+        createPopup(centerObj.x, centerObj.y + 4, 'SEQUENCE', '#ffffff');
         createShockwave('#ff4fd8', 32);
         createShockwave('#00e8ff', 24);
         pulseBrightness(1.35, 180);
         vibrate([60, 30, 80, 30, 60]);
-      });
-      queueIntroStep(2800, () => {
-        ui.title.innerText = 'THE PRISM';
-        ui.subtitle.innerText = 'BEGIN';
-        createShockwave('#ffffff', 20);
-        createShockwave('#00cfff', 38);
-        createShockwave('#ff4fd8', 52);
-        pulseBrightness(1.6, 200);
       });
     } else {
       ui.title.innerText = 'THE PRISM';
@@ -169,7 +161,7 @@
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 3950 : 1700));
+    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 3050 : 1700));
   }
 
   function playBossCinematic() {

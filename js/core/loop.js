@@ -2533,7 +2533,7 @@ function tap() {
           createParticles(centerObj.x, centerObj.y, '#ff4fd8', 30);
           createPopup(centerObj.x, centerObj.y - 62, "ALIGNMENT", "#00e8ff");
           createPopup(centerObj.x, centerObj.y - 30, "SEQUENCE", "#ffd54a");
-          createPopup(centerObj.x, centerObj.y + 8, "CALIBRATION", "#ffffff");
+          createPopup(centerObj.x, centerObj.y + 8, "BEGIN", "#ffffff");
           escalateBossDrone();
           scheduleBossSpawn(1100);
         } else {
