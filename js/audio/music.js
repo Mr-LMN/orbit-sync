@@ -15,6 +15,13 @@
     return worldNum === 2 ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
   }
 
+  function getBossTrackForLevel(levelIdx) {
+    const level = campaign[levelIdx];
+    if (!level || !level.boss) return 'assets/boss.mp3';
+    if (level.id === '2-6' && level.boss === 'prism') return 'assets/calculated_threat.mp3';
+    return 'assets/boss.mp3';
+  }
+
   function hasActiveMusicGraph() {
     return !!(
       audio.baseSource &&
@@ -29,6 +36,7 @@
     if (
       audio.isMusicPlaying &&
       audio.currentBaseTrack === baseTrackPath &&
+      audio.currentBossTrack === getBossTrackForLevel(currentLevelIdx) &&
       hasActiveMusicGraph()
     ) {
       return;
@@ -42,10 +50,13 @@
     audio.pendingBaseTrack = baseTrackPath;
     audio.musicStartPromise = (async function startMusicWithOwnership() {
       try {
+        const bossTrackPath = getBossTrackForLevel(currentLevelIdx);
         if (!audio.baseAudioBuffers[baseTrackPath]) {
           audio.baseAudioBuffers[baseTrackPath] = await loadAudioFile(baseTrackPath);
         }
-        if (!audio.bossAudioBuffer) audio.bossAudioBuffer = await loadAudioFile('assets/boss.mp3');
+        if (!audio.bossAudioBuffers[bossTrackPath]) {
+          audio.bossAudioBuffers[bossTrackPath] = await loadAudioFile(bossTrackPath);
+        }
         if (startToken !== audio.musicStartToken) return;
 
         disposeMusicNodes();
@@ -54,7 +65,7 @@
         audio.baseSource = audio.audioCtx.createBufferSource();
         audio.bossSource = audio.audioCtx.createBufferSource();
         audio.baseSource.buffer = audio.baseAudioBuffers[baseTrackPath];
-        audio.bossSource.buffer = audio.bossAudioBuffer;
+        audio.bossSource.buffer = audio.bossAudioBuffers[bossTrackPath];
         audio.baseSource.loop = true;
         audio.bossSource.loop = true;
 
@@ -74,6 +85,7 @@
         audio.baseSource.start(startTime);
         audio.bossSource.start(startTime);
         audio.currentBaseTrack = baseTrackPath;
+        audio.currentBossTrack = bossTrackPath;
         audio.isMusicPlaying = true;
         audio.currentMusicState = { mult: -1, boss: null };
       } catch (e) {
@@ -126,6 +138,7 @@
       }
       disposeMusicNodes();
       audio.currentBaseTrack = null;
+      audio.currentBossTrack = null;
       audio.currentMusicState = { mult: 1, boss: false };
     } catch (e) {
       console.warn('stopDynamicMusic failed', e);
@@ -176,6 +189,7 @@
 
   audio.loadAudioFile = loadAudioFile;
   audio.getBaseTrackForLevel = getBaseTrackForLevel;
+  audio.getBossTrackForLevel = getBossTrackForLevel;
   audio.startDynamicMusic = startDynamicMusic;
   audio.disposeMusicNodes = disposeMusicNodes;
   audio.stopDynamicMusic = stopDynamicMusic;
@@ -186,6 +200,7 @@
 
   window.loadAudioFile = loadAudioFile;
   window.getBaseTrackForLevel = getBaseTrackForLevel;
+  window.getBossTrackForLevel = getBossTrackForLevel;
   window.startDynamicMusic = startDynamicMusic;
   window.disposeMusicNodes = disposeMusicNodes;
   window.stopDynamicMusic = stopDynamicMusic;

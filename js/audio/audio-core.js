@@ -8,7 +8,9 @@
   const defaultState = {
     audioCtx: null,
     bossAudioBuffer: null,
+    bossAudioBuffers: {},
     currentBaseTrack: null,
+    currentBossTrack: null,
     baseAudioBuffers: {},
     baseSource: null,
     bossSource: null,
@@ -41,7 +43,9 @@
   const legacyAliases = [
     'audioCtx',
     'bossAudioBuffer',
+    'bossAudioBuffers',
     'currentBaseTrack',
+    'currentBossTrack',
     'baseAudioBuffers',
     'baseSource',
     'bossSource',

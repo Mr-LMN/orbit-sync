@@ -41,13 +41,13 @@
         world2BossSequenceProgress = 0;
         world2BossSequenceLength = 0;
         world2BossArenaRotationSpeed = 0.0034;
-        ui.text.innerText = 'PHASE 1: Stabilize the rotating prism rail.';
+        ui.text.innerText = 'THE PRISM // ALIGNMENT';
         ui.text.style.color = '#2ff6ff';
         for (let i = 0; i < 4; i++) {
           const anchor = (i * Math.PI / 2) + 0.06;
-          targets.push(buildTarget(
+          const facetTarget = buildTarget(
             anchor,
-            Math.PI / 5.7,
+            Math.PI / 5.3,
             {
               color: i % 2 === 0 ? '#2ff6ff' : '#ff4fd8',
               active: true,
@@ -55,13 +55,15 @@
               isBossShield: true,
               moveSpeed: 0
             }
-          ));
+          );
+          facetTarget.prismFacet = true;
+          targets.push(facetTarget);
         }
       } else {
         world2BossSequenceProgress = 0;
         world2BossSequenceLength = 5;
         world2BossArenaRotationSpeed = 0.0058;
-        ui.text.innerText = 'PHASE 2 — EXECUTE THE SEQUENCE. ONE MISTAKE RESETS.';
+        ui.text.innerText = 'SEQUENCE // CALIBRATION';
         ui.text.style.color = '#00e8ff';
         const seqColors = ['#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff', '#ff4fd8'];
         for (let i = 0; i < world2BossSequenceLength; i++) {
@@ -78,6 +80,9 @@
           );
           seqTarget.sequenceIndex = i;
           seqTarget.seqBaseColor = seqColors[i];
+          seqTarget.seqIdleColorA = '#2b4169';
+          seqTarget.seqIdleColorB = '#3a567f';
+          seqTarget.seqPulseOffset = i * 160;
           targets.push(seqTarget);
         }
       }

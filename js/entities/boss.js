@@ -111,30 +111,30 @@
       forceHideOverlayExtras();
 
       queueIntroStep(80, () => {
-        ui.title.innerText = 'AETHELRED';
-        ui.subtitle.innerText = 'PRISM WARDEN';
+        ui.title.innerText = 'THE PRISM';
+        ui.subtitle.innerText = 'ALIGNMENT';
         createShockwave('#00e8ff', 18);
       });
       queueIntroStep(700, () => {
-        ui.title.innerText = 'AETHELRED';
-        ui.subtitle.innerText = 'Refraction complete. You made it this far.';
-        createPopup(centerObj.x, centerObj.y - 72, 'TARGET LOCK', '#00e8ff');
+        ui.title.innerText = 'THE PRISM';
+        ui.subtitle.innerText = 'FACET TEST';
+        createPopup(centerObj.x, centerObj.y - 72, 'ALIGNMENT', '#00e8ff');
         createShockwave('#00cfff', 26);
         pulseBrightness(1.22, 140);
       });
       queueIntroStep(1700, () => {
-        ui.title.innerText = 'AETHELRED';
-        ui.subtitle.innerText = "Then let's find your breaking point.";
-        createPopup(centerObj.x, centerObj.y - 36, 'PHASE 1', '#ff4fd8');
-        createPopup(centerObj.x, centerObj.y + 4, 'ROTATION CALIBRATION', '#ffffff');
+        ui.title.innerText = 'THE PRISM';
+        ui.subtitle.innerText = 'SEQUENCE';
+        createPopup(centerObj.x, centerObj.y - 36, 'ALIGNMENT', '#ff4fd8');
+        createPopup(centerObj.x, centerObj.y + 4, 'CALIBRATION', '#ffffff');
         createShockwave('#ff4fd8', 32);
         createShockwave('#00e8ff', 24);
         pulseBrightness(1.35, 180);
         vibrate([60, 30, 80, 30, 60]);
       });
       queueIntroStep(2800, () => {
-        ui.title.innerText = 'AETHELRED';
-        ui.subtitle.innerText = 'Stay aligned. Survive the sequence.';
+        ui.title.innerText = 'THE PRISM';
+        ui.subtitle.innerText = 'BEGIN';
         createShockwave('#ffffff', 20);
         createShockwave('#00cfff', 38);
         createShockwave('#ff4fd8', 52);
@@ -179,10 +179,10 @@
     isPlaying = false;
     setCinematicOverlayMode();
 
-    const bossName = levelData.boss === 'aegis' ? 'THE AEGIS CORE' : 'AETHELRED';
+    const bossName = levelData.boss === 'aegis' ? 'THE AEGIS CORE' : 'THE PRISM';
     const bossTagline = levelData.boss === 'aegis'
       ? 'Break the shields. Expose the core.'
-      : 'Prism Warden. Hold the corners. Break each shard.';
+      : 'ALIGNMENT // SEQUENCE';
 
     ui.title.innerText = bossName;
     ui.title.style.color = '#ff3366';

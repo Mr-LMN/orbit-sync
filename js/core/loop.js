@@ -825,6 +825,16 @@ function rgbaFromHex(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function blendHexColors(fromHex, toHex, amount) {
+  const t = Math.max(0, Math.min(1, amount));
+  const from = hexToRgb(fromHex);
+  const to = hexToRgb(toHex);
+  const r = Math.round(from.r + ((to.r - from.r) * t));
+  const g = Math.round(from.g + ((to.g - from.g) * t));
+  const b = Math.round(from.b + ((to.b - from.b) * t));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 function normalizeAngle(a) { return OrbitGame.systems.collision.normalizeAngle(a); }
 
 function signedAngularDistance(from, to) { return OrbitGame.systems.collision.signedAngularDistance(from, to); }
@@ -1179,6 +1189,14 @@ function draw() {
     const hitScalePulse = t.hitScalePulse || 0;
     const dynamicRadius = orbitRadius + (hitScalePulse * 1.4);
     const isBossShield = !!t.isBossShield;
+    const isWorld2PrismFacet = !!(
+      isBossShield &&
+      t.prismFacet &&
+      levelData &&
+      levelData.id === '2-6' &&
+      levelData.boss === 'prism' &&
+      bossPhase === 1
+    );
     const bodyWidth = baseBodyWidth;
     const shieldBodyWidth = bodyWidth + 1.4;
     const glowWidth = worldShape === 'diamond' ? bodyWidth + 1.5 : bodyWidth + 4;
@@ -1208,6 +1226,12 @@ function draw() {
         targetGlowColor = t.isEchoTarget ? '#9af8ff' : '#ffd7a3';
         targetCoreColor = '#ffffff';
       }
+    }
+    if (isWorld2PrismFacet) {
+      targetAlpha += 0.18;
+      targetCoreAlpha = Math.min(1, targetCoreAlpha + 0.08);
+      targetGlowColor = t.color || '#bde9ff';
+      targetCoreColor = '#f4fcff';
     }
     if (comboGlow > 0.01 && !t.isPhantom && !t.isLifeZone) {
       targetAlpha += comboGlow * 0.16;
@@ -1515,6 +1539,25 @@ function draw() {
       ctx.lineWidth = shieldBodyWidth + 1.6;
       ctx.shadowBlur = 0;
       ctx.stroke();
+
+      if (isWorld2PrismFacet) {
+        const facetCenter = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        const radialX = facetCenter.x - centerObj.x;
+        const radialY = facetCenter.y - centerObj.y;
+        const radialLen = Math.hypot(radialX, radialY) || 1;
+        const tx = -radialY / radialLen;
+        const ty = radialX / radialLen;
+        const markerLen = 6.8;
+        ctx.beginPath();
+        ctx.moveTo(facetCenter.x - (tx * markerLen), facetCenter.y - (ty * markerLen));
+        ctx.lineTo(facetCenter.x + (tx * markerLen), facetCenter.y + (ty * markerLen));
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = 0.82 + (approach * 0.18);
+        ctx.lineWidth = 1.7;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#d8efff';
+        ctx.stroke();
+      }
     }
 
     // --- ACTIVE TARGET BODY (glow + crisp core for timing window readability) ---
@@ -1972,12 +2015,15 @@ function update() {
     if (t.hitScalePulse && t.hitScalePulse < 0.02) t.hitScalePulse = 0;
     if (levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex)) {
       const baseCol = t.seqBaseColor || '#00e8ff';
+      const idleA = t.seqIdleColorA || '#2b4169';
+      const idleB = t.seqIdleColorB || '#3a567f';
+      const idlePulse = (Math.sin((frameNow + (t.seqPulseOffset || 0)) / 260) + 1) * 0.5;
       if (t.sequenceIndex < world2BossSequenceProgress) {
-        t.color = '#ffffff';
+        t.color = '#dff6ff';
       } else if (t.sequenceIndex === world2BossSequenceProgress) {
-        t.color = baseCol; // Active node glows its crystal colour
+        t.color = blendHexColors(baseCol, '#ffffff', 0.28 + (idlePulse * 0.54));
       } else {
-        t.color = '#0d1526'; // Near-black — dormant, threatening
+        t.color = blendHexColors(idleA, idleB, idlePulse);
       }
     }
 
@@ -2219,6 +2265,7 @@ function handleFail(reason) {
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
   if (lives <= 0) {
+    if (audioCtx) updateMusicState(multiplier, false);
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
@@ -2438,7 +2485,13 @@ function tap() {
           createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
           createShockwave('#00ff88', 55);
           createShockwave('#ffffff', 70);
-          createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
+          createShockwave('#9be7ff', 86);
+          createShockwave('#cfefff', 100);
+          createParticles(centerObj.x, centerObj.y, '#dff5ff', 84);
+          createUpwardBurstParticles(centerObj.x, centerObj.y - 6, '#d7ecff', 64);
+          pulseBrightness(2.45, 260);
+          createPopup(centerObj.x, centerObj.y - 64, "THE PRISM", "#dff5ff");
+          createPopup(centerObj.x, centerObj.y - 30, "SHATTERED", "#ffffff");
           soundBossDefeated();
           stopBossDrone();
           world2BossArenaRotationSpeed = 0;
@@ -2478,9 +2531,9 @@ function tap() {
           createShockwave('#ffd54a', 62);
           createParticles(centerObj.x, centerObj.y, '#00e8ff', 50);
           createParticles(centerObj.x, centerObj.y, '#ff4fd8', 30);
-          createPopup(centerObj.x, centerObj.y - 62, "AETHELRED", "#00e8ff");
-          createPopup(centerObj.x, centerObj.y - 30, "INITIATE SEQUENCE", "#ffd54a");
-          createPopup(centerObj.x, centerObj.y + 8, "DON'T BREAK THE CHAIN", "#ffffff");
+          createPopup(centerObj.x, centerObj.y - 62, "ALIGNMENT", "#00e8ff");
+          createPopup(centerObj.x, centerObj.y - 30, "SEQUENCE", "#ffd54a");
+          createPopup(centerObj.x, centerObj.y + 8, "CALIBRATION", "#ffffff");
           escalateBossDrone();
           scheduleBossSpawn(1100);
         } else {
