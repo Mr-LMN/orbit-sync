@@ -8,11 +8,11 @@
     { id: '1-4', title: 'Precision', hitsNeeded: 7, speed: 0.038, lives: 3, targets: 2, moveSpeed: 0.002, reverse: false, shrink: { startScale: 1, endScale: 0.8, distance: Math.PI * 3.1 }, text: 'Two zones slowly shrink. Stay calm and strike precisely.' },
     { id: '1-5', title: 'Split Focus', hitsNeeded: 8, speed: 0.04, lives: 3, targets: 3, fixedTargetCount: true, moveSpeed: 0.01, reverse: false, text: 'Three zones are active at once. Keep your attention split and steady.' },
     { id: '1-6', title: 'The Aegis Core', hitsNeeded: 99, speed: 0.045, lives: 3, boss: 'aegis', moveSpeed: 0.03, reverse: true, text: 'BOSS: Break the shields. Expose the core.' },
-    { id: '2-1', title: 'Corner Precision', hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['corner'], text: 'Corner point is PERFECT. The target extends further into the rail for an OK hit.' },
-    { id: '2-2', title: 'Dual Hit Circuit', hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['dual'], text: 'Each target has 2 coloured halves. Hit one side or land dead-centre to clear both.' },
-    { id: '2-3', title: 'Split Reaction', hitsNeeded: 2, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['split'], text: 'Hit once to split. Hit again to shatter the fragments.' },
-    { id: '2-4', title: 'Split Loop Drill', hitsNeeded: 2, speed: 0.035, lives: 3, targets: 1, moveSpeed: 0.0062, reverse: false, mechanics: ['split'], text: 'Read the split tree: 1 big → 2 medium → 4 small, then reset and repeat.' },
-      { id: '2-5', title: 'Fracture Point', hitsNeeded: 6, speed: 0.036, lives: 3, targets: 1, moveSpeed: 0.008, reverse: true, mechanics: ['dual'], shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 5.5 }, text: 'The prism is destabilising. One target. Shrinking window. Split it clean.' },
+    { id: '2-1', title: 'Refract', hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['corner'], text: 'Hit the corner point for PERFECT.' },
+    { id: '2-2', title: 'Split Signal', hitsNeeded: 5, speed: 0.03, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['dual'], text: 'Two halves. One seam. Dead-centre clears both.' },
+    { id: '2-3', title: 'Fracture', hitsNeeded: 2, speed: 0.032, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['split'], text: 'Hit once to crack. Finish the fragments.' },
+    { id: '2-4', title: 'Cascade', hitsNeeded: 2, speed: 0.035, lives: 3, targets: 1, moveSpeed: 0.0062, reverse: false, mechanics: ['split'], text: 'Track the cascade. Finish every shard.' },
+      { id: '2-5', title: 'Critical Angle', hitsNeeded: 6, speed: 0.036, lives: 3, targets: 1, moveSpeed: 0.008, reverse: true, mechanics: ['dual'], shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 5.5 }, text: 'Shrinking. Reversing. One target. No mistakes.' },
     {
       id: '2-6',
       title: 'The Prism',
@@ -23,7 +23,7 @@
       moveSpeed: 0.025,
       reverse: true,
       bossConfig: { phases: ['rotation', 'sequence'], sequenceLength: 5, shakeDisabled: true },
-      text: 'BOSS: Adapt to rotation, then complete the sequence.'
+      text: 'BOSS: Break the facets. Complete the sequence.'
     },
     {
       id: '3-1',
