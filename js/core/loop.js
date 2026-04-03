@@ -280,6 +280,12 @@ function getWorldShape() {
   return currentWorldShape;
 }
 
+function getWorldNum() {
+  const source = (levelData && levelData.id) ? levelData.id : `${menuSelectedWorld || 1}-1`;
+  const parsed = parseInt(String(source).split('-')[0], 10);
+  return Number.isFinite(parsed) ? parsed : 1;
+}
+
 function computeWorldPalette(level) {
   const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
   if (level && level.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
