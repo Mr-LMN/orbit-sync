@@ -123,6 +123,12 @@
     document.body.classList.add(`intensity-${Math.max(1, Math.min(3, level))}`);
   }
 
+  function clearIntensity() {
+    const root = document.documentElement;
+    root.style.setProperty('--pulse', '0');
+    document.body.classList.remove('intensity-1', 'intensity-2', 'intensity-3');
+  }
+
   function showTempText(text, color, duration) {
     if (tempTextTimeout) clearTimeout(tempTextTimeout);
     ui.text.innerText = text;
@@ -145,5 +151,6 @@
   OG.entities.effects.triggerScreenShake = triggerScreenShake;
   OG.entities.effects.pulseBrightness = pulseBrightness;
   OG.entities.effects.triggerIntensity = triggerIntensity;
+  OG.entities.effects.clearIntensity = clearIntensity;
   OG.entities.effects.showTempText = showTempText;
 })(window);

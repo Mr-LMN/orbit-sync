@@ -26,7 +26,11 @@
     c.textAlign = 'left';
     c.fillText('ORBIT SYNC', 40, 50);
 
-    const title = generateTitle(score, personalBest.world, personalBest.streak, reviveCount);
+    const runWorld = (typeof getCurrentRunWorld === 'function')
+      ? getCurrentRunWorld()
+      : parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+    const runStreakBest = Math.max(runBestStreak || 0, streak || 0);
+    const title = generateTitle(score, runWorld, runStreakBest, reviveCount);
     c.fillStyle = palette.primary;
     c.font = '900 52px Orbitron, sans-serif';
     c.letterSpacing = '2px';
@@ -45,8 +49,8 @@
 
     const stats = [
       { label: 'SCORE', value: score },
-      { label: 'BEST STREAK', value: personalBest.streak },
-      { label: 'WORLD', value: personalBest.world },
+      { label: 'BEST STREAK', value: runStreakBest },
+      { label: 'WORLD', value: runWorld },
       { label: 'REVIVES USED', value: reviveCount }
     ];
 
@@ -98,7 +102,7 @@
           : `Used ${reviveCount} revive${reviveCount > 1 ? 's' : ''}.`;
         navigator.share({
           title: 'Orbit Sync',
-          text: `I got "${title}" with a score of ${score}. ${reviveText} Can you beat it?`,
+          text: `I hit ${title} in World ${runWorld} with score ${score} (best streak ${runStreakBest}). ${reviveText} Can you beat it?`,
           files: [file]
         }).catch(() => downloadCard(card));
       } else {

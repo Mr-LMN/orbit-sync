@@ -216,7 +216,7 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   animation: popIn 0.4s ease;
 }
 .subtle-failure {
-  opacity: 0.5;
+  opacity: 0.68;
   font-size: 0.9rem !important;
 }
 .run-coins-box { display: inline-flex; align-items: center; justify-content: center; width: auto; max-width: 100%; margin: 8px auto 14px; padding: 10px 18px; border: none; outline: none; border-radius: 999px; font-size: clamp(1rem, 2.2vw, 1.28rem); letter-spacing: 1px; color: #ffc65d; font-weight: 700; background: rgba(255, 190, 60, 0.08); text-align: center; text-shadow: 0 0 12px rgba(255, 198, 93, 0.24); box-shadow: 0 0 18px rgba(255, 190, 60, 0.18), inset 0 0 20px rgba(255, 190, 60, 0.05); animation: coin-chip-pulse 3.2s ease-in-out infinite; }
@@ -245,6 +245,7 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
   0%, 100% { box-shadow: 0 0 14px rgba(255, 190, 60, 0.14), inset 0 0 18px rgba(255, 190, 60, 0.04); }
   50% { box-shadow: 0 0 22px rgba(255, 190, 60, 0.24), inset 0 0 22px rgba(255, 190, 60, 0.08); }
 }
+body.intensity-1 { animation: bgPulse 2.2s ease-in-out infinite; }
 body.intensity-2 { animation: bgPulse 1.2s infinite; }
 body.intensity-3 { animation: bgPulse 0.6s infinite; }
 @keyframes popIn {

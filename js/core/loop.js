@@ -762,6 +762,8 @@ function resetRunState() {
   world3BossCollapseTriggered = false;
   lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
   comboCount = 0; comboTimer = 0; comboGlow = 0; hitStopUntil = 0;
+  lastMultiplierDisplay = 1;
+  clearIntensity();
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
 }
@@ -802,6 +804,7 @@ function createPopup(x, y, text, color, hitQuality = null) { return OrbitGame.en
 function showComboPopup(multiplierLevel) { return OrbitGame.entities.effects.showComboPopup(multiplierLevel); }
 function showNearMissReplay(reason, nearestEdgeDistance) { return OrbitGame.entities.effects.showNearMissReplay(reason, nearestEdgeDistance); }
 function triggerIntensity(level) { return OrbitGame.entities.effects.triggerIntensity(level); }
+function clearIntensity() { return OrbitGame.entities.effects.clearIntensity(); }
 function createShockwave(color, speed = 40) { return OrbitGame.entities.effects.createShockwave(color, speed); }
 function createTargetHitRipple(x, y, color = '#ffffff') { return OrbitGame.entities.effects.createTargetHitRipple(x, y, color); }
 function triggerTargetHitFeedback(target, x, y) { return OrbitGame.entities.effects.triggerTargetHitFeedback(target, x, y); }
@@ -812,6 +815,14 @@ function triggerScreenShake(intensity = 5) {
 function pulseBrightness(amount = 1.6, duration = 120) { return OrbitGame.entities.effects.pulseBrightness(amount, duration); }
 function scheduleBossSpawn(delay = 700) { return OrbitGame.entities.boss.scheduleBossSpawn(delay); }
 function pauseGameplayBriefly(duration = 750) { return OrbitGame.entities.boss.pauseGameplayBriefly(duration); }
+
+function getCurrentRunWorld() {
+  if (levelData && levelData.id) {
+    const parsed = parseInt(String(levelData.id).split('-')[0], 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return parseInt(menuSelectedWorld || 1, 10) || 1;
+}
 
 function hexToRgb(hex) {
   const cleanHex = hex.replace('#', '');
@@ -2287,34 +2298,42 @@ function handleFail(reason) {
 
   if (lives <= 0) {
     if (audioCtx) updateMusicState(multiplier, false);
+    clearIntensity();
+    const previousPB = {
+      score: personalBest.score || 0,
+      streak: personalBest.streak || 0,
+      world: personalBest.world || 1
+    };
+    const currentRunWorld = getCurrentRunWorld();
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
-    const bestScore = personalBest.score || 0;
-    const scoreDiff = Math.max(0, bestScore - score);
     updatePBDisplay(newRecords);
-    glitchCanvas(200, () => {
+    glitchCanvas(120, () => {
       ui.overlay.style.display = 'flex';
       ui.title.style.color = '#ff3366';
       ui.title.classList.add('run-title');
-      ui.title.innerText = generateTitle(score, personalBest.world, streakBeforeFail, reviveCount);
-      ui.subtitle.innerText = "Tap to sync again";
+      ui.title.innerText = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
+      ui.subtitle.innerText = "Reset. Refocus. Sync again.";
       ui.subtitle.classList.add('subtle-failure');
     });
     const newRecordBanner = document.getElementById('newRecordBanner');
     if (newRecordBanner) {
       let pbMessage = '';
-      if (score > bestScore) pbMessage = '★ NEW RECORD ★';
-      else if (scoreDiff > 0 && scoreDiff <= (bestScore * 0.1)) pbMessage = `⚡ ${scoreDiff} away from your best`;
+      const scoreDiff = Math.max(0, previousPB.score - score);
+      const closeMargin = Math.max(3, Math.floor(previousPB.score * 0.1));
+      if (newRecords.score || newRecords.streak || newRecords.world) pbMessage = '★ NEW RECORD ★';
+      else if (previousPB.score > 0 && scoreDiff > 0 && scoreDiff <= closeMargin) pbMessage = `⚡ ${scoreDiff} from best`;
       newRecordBanner.style.display = pbMessage ? 'block' : 'none';
       newRecordBanner.innerText = pbMessage;
     }
     const closeMissBanner = document.getElementById('closeMissBanner');
     if (closeMissBanner) {
       const isCloseMiss = Number.isFinite(failEdgeDistance) && failEdgeDistance > 0 && failEdgeDistance < 0.08;
+      closeMissBanner.innerText = '⚠ CLOSE MISS';
       closeMissBanner.style.display = isCloseMiss ? 'block' : 'none';
     }
-    ui.btn.innerText = "Retry";
+    ui.btn.innerText = "SYNC AGAIN";
     ui.btn.onclick = function () {
       ui.overlay.style.display = 'none';
       restartFromCheckpoint();
@@ -2827,9 +2846,12 @@ function tap() {
     streak++;
     runBestStreak = Math.max(runBestStreak, streak);
     ui.streak.innerText = streak;
-    if (streak === 10) globalCoins += 5;
-    if (streak === 20) globalCoins += 15;
-    if (streak === 30) globalCoins += 30;
+    const streakMilestoneBonus = streak === 10 ? 5 : (streak === 20 ? 15 : (streak === 30 ? 30 : 0));
+    if (streakMilestoneBonus > 0) {
+      runCents += streakMilestoneBonus;
+      createPopup(hitX, hitY - 54, `STREAK +${streakMilestoneBonus}`, '#ffd27a');
+      markScoreCoinDirty();
+    }
     if (streak % 5 === 0) {
       triggerScreenShake(4);
       if (audioCtx) playPop(10, true);
@@ -2959,6 +2981,7 @@ function restartFromCheckpoint() {
 
 function returnToMenu() {
   clearRunTransientTimers();
+  clearIntensity();
   stopBossDrone();
   stopDynamicMusic();
   toggleSettings(false);

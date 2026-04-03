@@ -10,6 +10,7 @@
 
     if (multiplier <= 1) {
       ui.bigMultiplier.style.display = 'none';
+      if (typeof clearIntensity === 'function') clearIntensity();
       lastMultiplierDisplay = multiplier;
       return;
     } else {
