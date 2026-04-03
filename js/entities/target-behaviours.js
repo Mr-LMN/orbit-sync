@@ -127,8 +127,8 @@
 
       const splitFx = isWorld2Split
         ? (nextDepth === 1
-          ? { pA: 10, pB: 6, swA: 24, swB: 18, pulse: 1.48, pulseDur: 92, shake: 5, pop: 'PRISM FRACTURE', popColor: '#f4fbff' }
-          : { pA: 7, pB: 4, swA: 16, swB: 13, pulse: 1.22, pulseDur: 62, shake: 3, pop: 'SHARD CLEAR', popColor: '#deefff' })
+          ? { pA: 10, pB: 6, swA: 24, swB: 18, pulse: 1.48, pulseDur: 92, shake: 5, pop: 'FRACTURE', popColor: '#f4fbff' }
+          : { pA: 7, pB: 4, swA: 16, swB: 13, pulse: 1.22, pulseDur: 62, shake: 3, pop: 'SHARD', popColor: '#deefff' })
         : (nextDepth === 1
           ? (isSplitTutorialStage
             ? { pA: 30, pB: 22, swA: 34, swB: 28, pulse: 1.82, pulseDur: 130, shake: 8, pop: 'SPLIT BURST!', popColor: '#7cf7ff' }
