@@ -69,7 +69,7 @@
     if (nearMissFailTimeout) clearTimeout(nearMissFailTimeout);
     nearMissFailTimeout = setTimeout(() => {
       nearMissReplayActive = false;
-      handleFail(reason);
+      handleFail(reason, nearestEdgeDistance);
       nearMissFailTimeout = null;
     }, 420);
   }

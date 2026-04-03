@@ -2280,9 +2280,8 @@ function updatePBDisplay(newRecords) {
   }
 }
 
-function handleFail(reason) {
+function handleFail(reason, failEdgeDistance = Infinity) {
   const streakBeforeFail = streak;
-  const failEdgeDistance = nearestEdgeDistance;
   loseLife(reason);
   distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
@@ -2937,7 +2936,7 @@ function tap() {
       canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
       setTimeout(() => canvas.style.boxShadow = 'none', 100);
       if (navigator.vibrate) vibrate(12);
-      handleFail("MISSED");
+      handleFail("MISSED", nearestEdgeDistance);
     } else {
       perfectLifeStreak = 0;
       if (nearestTarget) {
@@ -2948,7 +2947,7 @@ function tap() {
       if (lives <= 1 && nearestEdgeDistance <= NEAR_MISS_THRESHOLD) {
         showNearMissReplay("MISSED", nearestEdgeDistance);
       } else {
-        handleFail("MISSED");
+        handleFail("MISSED", nearestEdgeDistance);
       }
     }
   }
