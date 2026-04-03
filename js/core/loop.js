@@ -1220,17 +1220,17 @@ function draw() {
       const wingX = elbowX + tx * wing * dir;
       const wingY = elbowY + ty * wing * dir;
 
-      // Glow pass — wide, soft
+      // Glow pass — restrained for crisp World 2 geometry
       ctx.beginPath();
       ctx.moveTo(wingX, wingY);
       ctx.lineTo(elbowX, elbowY);
       ctx.lineTo(innerX, innerY);
       ctx.strokeStyle = targetGlowColor;
-      ctx.globalAlpha = (config.alpha || (0.42 + approach * 0.16 + hitFlash * 0.1)) * 0.55;
-      ctx.lineWidth = (config.width || 1.45) * 5;
+      ctx.globalAlpha = (config.alpha || (0.42 + approach * 0.16 + hitFlash * 0.1)) * 0.34;
+      ctx.lineWidth = (config.width || 1.45) * 3.1;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.shadowBlur = (config.shadowBlur || 5) * 2.5;
+      ctx.shadowBlur = (config.shadowBlur || 5) * 1.4;
       ctx.shadowColor = targetGlowColor;
       ctx.stroke();
 
@@ -1239,12 +1239,12 @@ function draw() {
       ctx.moveTo(wingX, wingY);
       ctx.lineTo(elbowX, elbowY);
       ctx.lineTo(innerX, innerY);
-      ctx.strokeStyle = '#e9fdff';
-      ctx.globalAlpha = config.alpha || (0.82 + approach * 0.18 + hitFlash * 0.18);
-      ctx.lineWidth = (config.width || 1.45) * 2.2;
+      ctx.strokeStyle = '#f3fdff';
+      ctx.globalAlpha = config.alpha || (0.88 + approach * 0.14 + hitFlash * 0.12);
+      ctx.lineWidth = (config.width || 1.45) * 1.6;
       ctx.lineCap = 'butt';
       ctx.lineJoin = 'miter';
-      ctx.shadowBlur = config.shadowBlur || 5;
+      ctx.shadowBlur = (config.shadowBlur || 5) * 0.8;
       ctx.shadowColor = targetGlowColor;
       ctx.stroke();
     };
