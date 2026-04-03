@@ -779,6 +779,21 @@ function gainLifeFromPerfectStreak() {
 }
 function createParticles(x, y, color, count = 20) { return OrbitGame.entities.particles.createParticles(x, y, color, count); }
 function createUpwardBurstParticles(x, y, color, count = 36) { return OrbitGame.entities.particles.createUpwardBurstParticles(x, y, color, count); }
+function createDirectionalShardBurst(x, y, axisAngle, config = {}) {
+  const depth = Number.isFinite(config.depth) ? config.depth : 1;
+  const tangentAngle = axisAngle + (Math.PI * 0.5);
+  const spread = depth >= 2 ? 5 : depth === 1 ? 7 : 9;
+  const stride = depth >= 2 ? 3.6 : depth === 1 ? 4.8 : 6;
+  const leftColor = config.leftColor || '#e3f3ff';
+  const rightColor = config.rightColor || '#f4fbff';
+  for (let i = 0; i < spread; i++) {
+    const amount = (i + 1) * stride;
+    const tx = Math.cos(tangentAngle) * amount;
+    const ty = Math.sin(tangentAngle) * amount;
+    createParticles(x - tx, y - ty, leftColor, 1);
+    createParticles(x + tx, y + ty, rightColor, 1);
+  }
+}
 function createPopup(x, y, text, color, hitQuality = null) { return OrbitGame.entities.effects.createPopup(x, y, text, color, hitQuality); }
 function showComboPopup(multiplierLevel) { return OrbitGame.entities.effects.showComboPopup(multiplierLevel); }
 function showNearMissReplay(reason, nearestEdgeDistance) { return OrbitGame.entities.effects.showNearMissReplay(reason, nearestEdgeDistance); }
@@ -2501,6 +2516,7 @@ function tap() {
         maybeRespawnSplitRootForStage,
         createParticles,
         createShockwave,
+        createDirectionalShardBurst,
         createPopup,
         pulseBrightness,
         triggerScreenShake,
