@@ -12,6 +12,13 @@
   }
 
   function startCampaign() {
+    let startLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
+    const stageOverrideId = OG.debug && OG.debug.stageOverrideId;
+    if (stageOverrideId && Array.isArray(campaign)) {
+      const overrideIdx = campaign.findIndex((stage) => stage && stage.id === stageOverrideId);
+      if (overrideIdx >= 0) startLevelIdx = overrideIdx;
+    }
+
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
@@ -21,7 +28,7 @@
     ui.text.style.display = 'none';
     inMenu = false;
     isPlaying = true;
-    currentLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
+    currentLevelIdx = startLevelIdx;
     resetRunState();
     ui.score.innerText = '0';
     ui.streak.innerText = '0';

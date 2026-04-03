@@ -68,6 +68,25 @@
         <span>Haptics</span>
         <button id="hapticsToggleBtn" class="settings-toggle" onclick="toggleHapticsSetting()"></button>
       </div>
+      <div class="settings-row settings-admin-row">
+        <span>Diagnostics</span>
+        <button id="adminToolsBtn" class="settings-toggle off">Open</button>
+      </div>
+      <div id="adminToolsPanel" class="admin-tools-panel" style="display: none;">
+        <div class="admin-code-entry">
+          <input id="adminCodeInput" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Admin code">
+          <button id="adminCodeSubmit" class="settings-toggle off">Unlock</button>
+        </div>
+        <div id="adminStageControls" class="admin-stage-controls" style="display: none;">
+          <label for="adminStageSelect">Temporary stage selector</label>
+          <select id="adminStageSelect"></select>
+          <div class="admin-stage-actions">
+            <button id="adminStageApply" class="settings-toggle">Set</button>
+            <button id="adminStageClear" class="settings-toggle off">Clear</button>
+          </div>
+          <p id="adminStageStatus" class="admin-stage-status">No test stage selected.</p>
+        </div>
+      </div>
     </div>
   </div>
 
