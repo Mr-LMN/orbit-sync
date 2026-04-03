@@ -2175,9 +2175,10 @@ function handleFail(reason) {
       reviveBtn.style.display = 'none';
     }
 
-    if (coinReviveBtn && globalCoins >= 50) {
+    const reviveCost = currentReviveCost || 50;
+    if (coinReviveBtn && globalCoins >= reviveCost) {
       coinReviveBtn.style.display = 'block';
-      coinReviveBtn.innerText = 'REVIVE (🪙 50)';
+      coinReviveBtn.innerText = `REVIVE (🪙 ${reviveCost})`;
       coinReviveBtn.onclick = function () {
         if (audioCtx) soundUIClick();
         attemptCoinRevive();
