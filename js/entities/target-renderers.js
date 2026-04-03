@@ -199,6 +199,8 @@
 
     const pulse = 1 + Math.sin(rc.splitPulseTime + (t.start * 6.5)) * (isSmallSplit ? 0.03 : 0.045);
     const launchMix = typeof t.splitLaunchT === 'number' ? (1 - Math.min(1, t.splitLaunchT)) : 0;
+    const seamFlash = typeof t.hitFlash === 'number' ? Math.min(1, t.hitFlash) : 0;
+    const sideSign = Number.isFinite(t.splitSideSign) ? t.splitSideSign : 0;
     const generationScale = Math.pow(0.8, depth);
     const tutorialWidthBoost = isTutorialSplit && isRootSplit ? 1.14 : 1;
     const outerWidth = (isWorld2Split
@@ -214,7 +216,9 @@
     if (!isSmallSplit) {
       rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = palette.glow;
-      ctx.globalAlpha = (isWorld2Split ? (depth === 0 ? 0.14 : 0.09) : (depth === 0 ? 0.16 : 0.12)) + (launchMix * (isWorld2Split ? 0.06 : 0.08));
+      ctx.globalAlpha = (isWorld2Split ? (depth === 0 ? 0.14 : 0.09) : (depth === 0 ? 0.16 : 0.12))
+        + (launchMix * (isWorld2Split ? (depth === 0 ? 0.12 : 0.09) : 0.08))
+        + (isWorld2Split ? seamFlash * (isRootSplit ? 0.16 : 0.08) : 0);
       ctx.lineWidth = outerWidth;
       ctx.lineCap = 'butt';
       ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 14 : 9) : (depth === 0 ? 18 : 12)) : (isWorld2Split ? 5 : 6);
@@ -223,35 +227,55 @@
     }
 
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = palette.body; ctx.globalAlpha = isWorld2Split ? (isSmallSplit ? 0.86 : (isRootSplit ? 0.95 : 0.9)) : (isSmallSplit ? 0.9 : 0.92); ctx.lineWidth = midWidth; ctx.lineCap = isWorld2Split ? 'butt' : 'round';
+    ctx.strokeStyle = palette.body; ctx.globalAlpha = isWorld2Split ? (isSmallSplit ? 0.86 : (isRootSplit ? 0.95 : 0.9)) + (seamFlash * (isSmallSplit ? 0.04 : 0.08)) : (isSmallSplit ? 0.9 : 0.92); ctx.lineWidth = midWidth; ctx.lineCap = isWorld2Split ? 'butt' : 'round';
     ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 9 : 6) : (depth === 0 ? 11 : 8)) : (isSmallSplit ? (isWorld2Split ? 1 : 2) : (isWorld2Split ? 4 : 5)); ctx.shadowColor = palette.glow; ctx.stroke();
 
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = palette.core; ctx.globalAlpha = isWorld2Split ? (isSmallSplit ? 0.86 : (isRootSplit ? 0.98 : 0.92)) : (isSmallSplit ? 0.9 : 0.96); ctx.lineWidth = coreWidth; ctx.lineCap = isWorld2Split ? 'butt' : 'round';
+    ctx.strokeStyle = palette.core; ctx.globalAlpha = isWorld2Split ? (isSmallSplit ? 0.86 : (isRootSplit ? 0.98 : 0.92)) + (seamFlash * (isSmallSplit ? 0.06 : 0.12)) : (isSmallSplit ? 0.9 : 0.96); ctx.lineWidth = coreWidth; ctx.lineCap = isWorld2Split ? 'butt' : 'round';
     ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 7 : 5) : (depth === 0 ? 9 : 6)) : (isSmallSplit ? 0 : (isWorld2Split ? 2 : 3)); ctx.shadowColor = palette.core; ctx.stroke();
 
     const crackAngle = t.start + (t.size / 2);
     const crackPt = rc.getPointOnShape(crackAngle, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius);
+    const radialX = crackPt.x - rc.centerObj.x;
+    const radialY = crackPt.y - rc.centerObj.y;
+    const radialLen = Math.hypot(radialX, radialY) || 1;
+    const tangentX = -radialY / radialLen;
+    const tangentY = radialX / radialLen;
+    const radialNx = radialX / radialLen;
+    const radialNy = radialY / radialLen;
 
     if (!isSmallSplit) {
       ctx.beginPath();
       ctx.arc(crackPt.x, crackPt.y, isWorld2Split ? (depth === 0 ? 7.2 : 4.5) : (depth === 0 ? 7 : 5.1), 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = isWorld2Split ? (isRootSplit ? 0.14 : 0.07) : (isRootSplit ? 0.16 : 0.11); ctx.shadowBlur = splitHeavy ? (isWorld2Split ? 8 : 14) : (isWorld2Split ? 3 : 4); ctx.shadowColor = '#ffffff'; ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.globalAlpha = isWorld2Split ? (isRootSplit ? 0.14 : 0.07) + (seamFlash * (isRootSplit ? 0.16 : 0.08)) : (isRootSplit ? 0.16 : 0.11); ctx.shadowBlur = splitHeavy ? (isWorld2Split ? 8 : 14) : (isWorld2Split ? 3 : 4); ctx.shadowColor = '#ffffff'; ctx.fill();
     }
 
     ctx.beginPath();
     const crackSize = depth === 0 ? 6 : depth === 1 ? 4.8 : 3.8;
-    ctx.moveTo(crackPt.x - crackSize, crackPt.y - crackSize);
-    ctx.lineTo(crackPt.x + crackSize, crackPt.y + crackSize);
-    ctx.moveTo(crackPt.x - crackSize, crackPt.y + crackSize);
-    ctx.lineTo(crackPt.x + crackSize, crackPt.y - crackSize);
-    ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 0.95; ctx.lineWidth = depth === 0 ? 2 : depth === 1 ? 1.5 : 1.2;
+    if (isWorld2Split) {
+      const seamLen = crackSize + (depth === 0 ? 2.2 : depth === 1 ? 1.4 : 0.7);
+      const seamTilt = sideSign * (depth === 0 ? 0.8 : 0.6);
+      ctx.moveTo(crackPt.x - (tangentX * seamLen) + (radialNx * seamTilt), crackPt.y - (tangentY * seamLen) + (radialNy * seamTilt));
+      ctx.lineTo(crackPt.x + (tangentX * seamLen) + (radialNx * seamTilt), crackPt.y + (tangentY * seamLen) + (radialNy * seamTilt));
+      const notchInset = depth === 0 ? 2.6 : 1.9;
+      ctx.moveTo(crackPt.x + (radialNx * notchInset), crackPt.y + (radialNy * notchInset));
+      ctx.lineTo(crackPt.x + (radialNx * (notchInset + 1.7)) + (tangentX * sideSign * 2.2), crackPt.y + (radialNy * (notchInset + 1.7)) + (tangentY * sideSign * 2.2));
+      ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = (depth === 0 ? 0.98 : 0.92) + (seamFlash * (depth === 0 ? 0.22 : 0.14)); ctx.lineWidth = depth === 0 ? 2.15 : depth === 1 ? 1.55 : 1.18;
+    } else {
+      ctx.moveTo(crackPt.x - crackSize, crackPt.y - crackSize);
+      ctx.lineTo(crackPt.x + crackSize, crackPt.y + crackSize);
+      ctx.moveTo(crackPt.x - crackSize, crackPt.y + crackSize);
+      ctx.lineTo(crackPt.x + crackSize, crackPt.y - crackSize);
+      ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 0.95; ctx.lineWidth = depth === 0 ? 2 : depth === 1 ? 1.5 : 1.2;
+    }
     ctx.shadowBlur = isSmallSplit ? 0 : (splitHeavy ? 7 : 2); ctx.shadowColor = '#ffffff'; ctx.stroke();
 
     if (rc.shouldDrawWorld2MechanicBrackets) {
-      const splitBracketAlpha = isSmallSplit ? 0.26 : isMediumSplit ? 0.34 : 0.4;
-      rc.drawWorld2AngularBracket(t.start, { dir: -1, alpha: splitBracketAlpha, width: isSmallSplit ? 1.05 : 1.2, wing: isSmallSplit ? 3.1 : 3.5, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
-      rc.drawWorld2AngularBracket(t.start + t.size, { dir: 1, alpha: splitBracketAlpha, width: isSmallSplit ? 1.05 : 1.2, wing: isSmallSplit ? 3.1 : 3.5, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
+      const splitBracketAlpha = (isSmallSplit ? 0.26 : isMediumSplit ? 0.34 : 0.4) + (isWorld2Split ? (launchMix * 0.2) : 0);
+      const bracketWidth = isSmallSplit ? 1.05 : 1.2;
+      const wing = (isSmallSplit ? 3.1 : 3.5) + (isWorld2Split ? launchMix * 0.55 : 0);
+      rc.drawWorld2AngularBracket(t.start, { dir: -1, alpha: splitBracketAlpha, width: bracketWidth, wing, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
+      rc.drawWorld2AngularBracket(t.start + t.size, { dir: 1, alpha: splitBracketAlpha, width: bracketWidth, wing, legIn: isSmallSplit ? 3.8 : 4.3, legOut: 1.2, shadowBlur: isSmallSplit ? 2 : 4 });
     }
 
     ctx.restore();
