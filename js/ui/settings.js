@@ -48,12 +48,16 @@
 
   function populateAdminStageOptions() {
     const select = document.getElementById('adminStageSelect');
+    const worldSelect = document.getElementById('adminWorldSelect');
     if (!select || !Array.isArray(campaign)) return;
     const previousValue = OG.debug.stageOverrideId || '';
+    const selectedWorld = worldSelect ? String(worldSelect.value || '').trim() : '';
     select.innerHTML = '';
     for (let i = 0; i < campaign.length; i++) {
       const stage = campaign[i];
       if (!stage || !stage.id) continue;
+      const worldNum = parseInt(String(stage.id).split('-')[0], 10);
+      if (selectedWorld && Number.isFinite(worldNum) && String(worldNum) !== selectedWorld) continue;
       const option = document.createElement('option');
       option.value = stage.id;
       option.innerText = `${stage.id} — ${stage.title || 'Stage'}`;
@@ -61,12 +65,42 @@
     }
     if (previousValue && getStageIndexById(previousValue) >= 0) {
       select.value = previousValue;
+    } else if (select.options.length > 0) {
+      select.selectedIndex = 0;
+    }
+  }
+
+  function populateAdminWorldOptions() {
+    const worldSelect = document.getElementById('adminWorldSelect');
+    if (!worldSelect || !Array.isArray(campaign)) return;
+    const worldValues = [];
+    for (let i = 0; i < campaign.length; i++) {
+      const stage = campaign[i];
+      if (!stage || !stage.id) continue;
+      const worldNum = parseInt(String(stage.id).split('-')[0], 10);
+      if (!Number.isFinite(worldNum) || worldValues.includes(worldNum)) continue;
+      worldValues.push(worldNum);
+    }
+    worldValues.sort((a, b) => a - b);
+    worldSelect.innerHTML = '';
+    for (let i = 0; i < worldValues.length; i++) {
+      const worldNum = worldValues[i];
+      const option = document.createElement('option');
+      option.value = String(worldNum);
+      option.innerText = `WORLD ${worldNum}`;
+      worldSelect.appendChild(option);
+    }
+    const overrideWorld = parseInt(String(OG.debug.stageOverrideId || '').split('-')[0], 10);
+    const fallbackWorld = Number.isFinite(menuSelectedWorld) ? menuSelectedWorld : 1;
+    const preferred = Number.isFinite(overrideWorld) ? overrideWorld : fallbackWorld;
+    if (worldValues.includes(preferred)) {
+      worldSelect.value = String(preferred);
     }
   }
 
   function applyStageOverrideSelection() {
     const select = document.getElementById('adminStageSelect');
-    if (!select || !adminUnlocked) return;
+    if (!select || (!adminUnlocked && !adminPanelVisible)) return;
     const selectedId = String(select.value || '').trim();
     const stageIndex = getStageIndexById(selectedId);
     if (stageIndex < 0) {
@@ -87,6 +121,10 @@
   function clearStageOverrideSelection() {
     OG.debug.stageOverrideId = null;
     updateSelectedStageStatus();
+  }
+
+  function onAdminWorldSelectionChanged() {
+    populateAdminStageOptions();
   }
 
   function validateAdminCodeEntry() {
@@ -112,9 +150,18 @@
 
   function toggleAdminPanel() {
     const panel = document.getElementById('adminToolsPanel');
+    const controls = document.getElementById('adminStageControls');
+    const codeEntry = document.getElementById('adminCodeEntry');
     if (!panel) return;
     adminPanelVisible = !adminPanelVisible;
     panel.style.display = adminPanelVisible ? 'block' : 'none';
+    if (controls) controls.style.display = adminPanelVisible ? 'grid' : 'none';
+    if (codeEntry) codeEntry.style.display = adminPanelVisible ? 'none' : '';
+    if (adminPanelVisible) {
+      populateAdminWorldOptions();
+      populateAdminStageOptions();
+      updateSelectedStageStatus();
+    }
   }
 
   function bindAdminControls() {
@@ -122,11 +169,13 @@
     const submitBtn = document.getElementById('adminCodeSubmit');
     const applyBtn = document.getElementById('adminStageApply');
     const clearBtn = document.getElementById('adminStageClear');
+    const worldSelect = document.getElementById('adminWorldSelect');
     const input = document.getElementById('adminCodeInput');
     if (openBtn) openBtn.addEventListener('click', toggleAdminPanel);
     if (submitBtn) submitBtn.addEventListener('click', validateAdminCodeEntry);
     if (applyBtn) applyBtn.addEventListener('click', applyStageOverrideSelection);
     if (clearBtn) clearBtn.addEventListener('click', clearStageOverrideSelection);
+    if (worldSelect) worldSelect.addEventListener('change', onAdminWorldSelectionChanged);
     if (input) {
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') validateAdminCodeEntry();

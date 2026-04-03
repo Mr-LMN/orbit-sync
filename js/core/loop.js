@@ -1386,43 +1386,41 @@ function draw() {
       return;
     }
     if (t.isEchoTarget) {
-      const pulse = 0.88 + Math.sin(Date.now() / 110) * 0.12;
-      const worldPulse = 1 + Math.sin(Date.now() * 0.01) * 0.1;
-      const ghostOffset = Math.sin(Date.now() / 260 + tCenter * 2.1) * 0.05;
+      const pulse = 0.96 + Math.sin(Date.now() / 300) * 0.04;
+      const ghostOffset = Math.sin(Date.now() / 600 + tCenter * 0.8) * 0.008;
+      const midAngle = normalizeAngle(t.start + (t.size / 2));
+      const markerPt = getPointOnShape(midAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
 
       ctx.save();
-      ctx.strokeStyle = `rgba(90,245,255,${0.98 * pulse})`;
-      ctx.lineWidth = 3.6;
-      if (ctx.setLineDash) ctx.setLineDash([7, 4]);
-
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius * worldPulse, t.start, t.start + t.size);
-      ctx.shadowBlur = 18;
+      ctx.strokeStyle = `rgba(110,246,255,${0.92 * pulse})`;
+      ctx.lineWidth = 3.2;
+      if (ctx.setLineDash) ctx.setLineDash([6, 4]);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.shadowBlur = 11;
       ctx.shadowColor = '#66f0ff';
       ctx.stroke();
 
       if (ctx.setLineDash) ctx.setLineDash([]);
-
-      ctx.strokeStyle = `rgba(220,255,255,${0.38 * pulse})`;
-      ctx.lineWidth = 1.6;
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius - 3, t.start, t.start + t.size);
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = '#c8ffff';
-      ctx.stroke();
-
-      // World 3+ echo identity: faint temporal ghost trail.
-      ctx.strokeStyle = 'rgba(130,255,255,0.26)';
-      ctx.lineWidth = 2;
+      ctx.strokeStyle = `rgba(170,255,255,${0.18 * pulse})`;
+      ctx.lineWidth = 1.4;
       buildShapePath(
         ctx,
         worldShape,
         centerObj.x,
         centerObj.y,
-        dynamicRadius - 5,
+        dynamicRadius - 2,
         normalizeAngle(t.start - ghostOffset),
         normalizeAngle(t.start + t.size - ghostOffset)
       );
-      ctx.shadowBlur = 5;
+      ctx.shadowBlur = 3;
       ctx.shadowColor = '#66f0ff';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(markerPt.x, markerPt.y, Math.max(3.2, orbitRadius * 0.01), 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(200,255,255,0.72)';
+      ctx.lineWidth = 1.4;
+      ctx.shadowBlur = 0;
       ctx.stroke();
 
       ctx.restore();
@@ -2619,14 +2617,14 @@ function tap() {
       const normalLen = Math.hypot(normalX, normalY) || 1;
       const outwardX = normalX / normalLen;
       const outwardY = normalY / normalLen;
-      const filthyPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "FILTHY PERFECT", '#ffffff', 'perfect');
+      const filthyPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "PERFECT", '#f5ffff', 'perfect');
       filthyPopup.animType = 'perfect';
-      filthyPopup.life = 1.55;
-      filthyPopup.riseSpeed = 0.95;
-      filthyPopup.fadeSpeed = 0.022;
-      filthyPopup.shadow = 32;
-      canvas.style.filter = 'brightness(2.45)';
-      setTimeout(() => canvas.style.filter = 'brightness(1)', 70);
+      filthyPopup.life = 1.42;
+      filthyPopup.riseSpeed = 0.82;
+      filthyPopup.fadeSpeed = 0.024;
+      filthyPopup.shadow = 24;
+      canvas.style.filter = 'brightness(2.1)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundPerfect(multiplier);
       if (audioCtx) playPop(10, true);
       vibrate([12, 28, 12]);
