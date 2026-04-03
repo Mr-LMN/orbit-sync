@@ -2,6 +2,11 @@
   const OG = window.OrbitGame;
   OG.ui = OG.ui || {};
   OG.ui.shop = OG.ui.shop || {};
+  const starterUnlocks = [
+    { id: 'pulse_core', cost: 25, locked: false },
+    { id: 'neon_ring', cost: 40, locked: false },
+    { id: 'void_skin', cost: 75, locked: true }
+  ];
 
   function toggleShop(show) {
     ui.shopModal.style.bottom = show ? '0' : '-100%';
@@ -46,4 +51,5 @@
   OG.ui.shop.updateShopUI = updateShopUI;
   OG.ui.shop.buyItem = buyItem;
   OG.ui.shop.equipSkin = equipSkin;
+  OG.ui.shop.starterUnlocks = starterUnlocks;
 })(window);

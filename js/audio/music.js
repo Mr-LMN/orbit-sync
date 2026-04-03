@@ -149,6 +149,18 @@
     return Math.min(0.8, 0.56 + (Math.max(1, currentMultiplier) - 1) * 0.02);
   }
 
+  function setMusicLayer(layer) {
+    if (!audio.audioCtx || !audio.baseGain || !audio.bossGain) return;
+    const now = audio.audioCtx.currentTime;
+    const clamped = Math.max(1, Math.min(3, layer));
+    const baseTargets = { 1: 0.56, 2: 0.7, 3: 0.8 };
+    const bossTargets = { 1: 0.0, 2: 0.18, 3: 0.26 };
+    audio.baseGain.gain.cancelScheduledValues(now);
+    audio.bossGain.gain.cancelScheduledValues(now);
+    audio.baseGain.gain.linearRampToValueAtTime(baseTargets[clamped], now + 0.3);
+    audio.bossGain.gain.linearRampToValueAtTime(bossTargets[clamped], now + 0.3);
+  }
+
   async function ensureCorrectMusicForLevel() {
     if (!audio.audioCtx || !audio.musicEnabled) return;
     const token = ++audio.musicLoadToken;
@@ -177,7 +189,13 @@
       audio.baseGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.linearRampToValueAtTime(0, now + 0.5);
-      audio.baseGain.gain.linearRampToValueAtTime(baseVolumeForMultiplier(currentMultiplier), now + 0.5);
+      let layer = 1;
+      if (currentMultiplier >= 8) layer = 3;
+      else if (currentMultiplier >= 7) layer = 2;
+      audio.baseGain.gain.linearRampToValueAtTime(
+        Math.max(baseVolumeForMultiplier(currentMultiplier), layer === 3 ? 0.8 : (layer === 2 ? 0.7 : 0.56)),
+        now + 0.5
+      );
     }
 
     const targetSpeed = 1.0 + (currentMultiplier * 0.015);
@@ -194,6 +212,7 @@
   audio.disposeMusicNodes = disposeMusicNodes;
   audio.stopDynamicMusic = stopDynamicMusic;
   audio.baseVolumeForMultiplier = baseVolumeForMultiplier;
+  audio.setMusicLayer = setMusicLayer;
   audio.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
   audio.updateMusicState = updateMusicState;
   audio.hasActiveMusicGraph = hasActiveMusicGraph;
@@ -205,6 +224,7 @@
   window.disposeMusicNodes = disposeMusicNodes;
   window.stopDynamicMusic = stopDynamicMusic;
   window.baseVolumeForMultiplier = baseVolumeForMultiplier;
+  window.setMusicLayer = setMusicLayer;
   window.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
   window.updateMusicState = updateMusicState;
   window.hasActiveMusicGraph = hasActiveMusicGraph;

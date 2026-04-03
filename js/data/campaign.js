@@ -91,36 +91,12 @@
       hitsNeeded: 10,
       speed: 0.037,
       lives: 3,
-      boss: true,
+      boss: 'spectre',
       targets: 1,
       moveSpeed: 0,
       reverse: false,
       mechanics: ['echo', 'mixed', 'drift', 'boss'],
       text: 'BOSS: Resonance Core phases through echo patterns. Stay composed.'
-    },
-    {
-      id: '4-1',
-      title: 'Signal Handoff',
-      hitsNeeded: 4,
-      speed: 0.034,
-      lives: 3,
-      targets: 1,
-      moveSpeed: 0,
-      reverse: false,
-      mechanics: ['handoff'],
-      text: 'Follow the highlighted orb. Orange first, then cyan.'
-    },
-    {
-      id: '4-5',
-      title: 'Convergence',
-      hitsNeeded: 8,
-      speed: 0.038,
-      lives: 3,
-      targets: 1,
-      moveSpeed: 0,
-      reverse: false,
-      mechanics: ['handoff', 'fracture', 'mixed'],
-      text: 'Everything converges here. Read cleanly, hand off smoothly, and clear the fracture aftermath.'
     }
   ];
 

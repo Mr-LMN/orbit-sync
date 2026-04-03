@@ -25,6 +25,9 @@
     if (didChange && (multiplier === 4 || multiplier === 6 || multiplier === 8)) {
       showComboPopup(multiplier);
     }
+    if (didChange && multiplier === 5) triggerIntensity(1);
+    if (didChange && multiplier === 7) triggerIntensity(2);
+    if (didChange && multiplier >= 8) triggerIntensity(3);
 
     lastMultiplierDisplay = multiplier;
   }
