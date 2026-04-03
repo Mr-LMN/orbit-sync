@@ -3,6 +3,21 @@
   OG.entities = OG.entities || {};
   OG.entities.boss = OG.entities.boss || {};
   let introSequenceTimeouts = [];
+  function getBossDisplayMeta() {
+    if (!levelData || !levelData.boss) {
+      return { name: 'BOSS', tagline: 'Stay synced.' };
+    }
+    if (levelData.boss === 'aegis') {
+      return { name: 'THE AEGIS CORE', tagline: 'Break the shields. Expose the core.' };
+    }
+    if (levelData.boss === 'prism') {
+      return { name: 'THE PRISM', tagline: 'ALIGNMENT // SEQUENCE' };
+    }
+    if (levelData.boss === 'spectre') {
+      return { name: 'THE SPECTRE', tagline: 'Track real + echo. Stay composed.' };
+    }
+    return { name: `THE ${String(levelData.boss).toUpperCase()}`, tagline: 'Stay synced.' };
+  }
 
   function clearIntroSequenceTimeouts() {
     if (!introSequenceTimeouts.length) return;
@@ -144,9 +159,10 @@
         createShockwave('#ffffff', 20);
       });
     } else {
-      ui.title.innerText = 'THE PRISM';
+      const bossMeta = getBossDisplayMeta();
+      ui.title.innerText = bossMeta.name;
       ui.title.style.color = '#ff3366';
-      ui.subtitle.innerText = 'Hold the corners. Break each prism shield.';
+      ui.subtitle.innerText = bossMeta.tagline;
       soundShieldBreak();
       vibrate([80, 40, 80]);
     }
@@ -182,10 +198,9 @@
     isPlaying = false;
     setCinematicOverlayMode();
 
-    const bossName = levelData.boss === 'aegis' ? 'THE AEGIS CORE' : 'THE PRISM';
-    const bossTagline = levelData.boss === 'aegis'
-      ? 'Break the shields. Expose the core.'
-      : 'ALIGNMENT // SEQUENCE';
+    const bossMeta = getBossDisplayMeta();
+    const bossName = bossMeta.name;
+    const bossTagline = bossMeta.tagline;
 
     ui.title.innerText = bossName;
     ui.title.style.color = '#ff3366';
