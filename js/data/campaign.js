@@ -62,6 +62,43 @@
       text: 'Orange targets are for the real orb. Cyan targets are for the delayed echo.'
     },
     {
+      id: '3-4',
+      title: 'Echo Drift',
+      hitsNeeded: 7,
+      speed: 0.035,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['echo', 'drift'],
+      text: 'Echo targets now drift. Track the cyan arc and tap on rhythm.'
+    },
+    {
+      id: '3-5',
+      title: 'Cross Signal',
+      hitsNeeded: 8,
+      speed: 0.036,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['echo', 'mixed', 'drift'],
+      text: 'Mixed orange and cyan reads, now with echo drift pressure.'
+    },
+    {
+      id: '3-6',
+      title: 'Resonance Core',
+      hitsNeeded: 10,
+      speed: 0.037,
+      lives: 3,
+      boss: true,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['echo', 'mixed', 'drift', 'boss'],
+      text: 'BOSS: Resonance Core phases through echo patterns. Stay composed.'
+    },
+    {
       id: '4-1',
       title: 'Signal Handoff',
       hitsNeeded: 4,

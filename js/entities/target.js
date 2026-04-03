@@ -78,6 +78,7 @@
       splitGeneration: config.splitGeneration || 0,
       isBossShield: !!config.isBossShield,
       nextDirectionSwapAt: config.nextDirectionSwapAt || 0,
+      drift: Number.isFinite(config.drift) ? config.drift : 0,
       hp: Number.isFinite(config.hp) ? config.hp : 1
       ,
       spawnScale: Number.isFinite(config.spawnScale) ? config.spawnScale : 0.86
