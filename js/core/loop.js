@@ -1363,13 +1363,15 @@ function draw() {
     }
     if (t.isEchoTarget) {
       const pulse = 0.88 + Math.sin(Date.now() / 110) * 0.12;
+      const worldPulse = 1 + Math.sin(Date.now() * 0.01) * 0.1;
+      const ghostOffset = Math.sin(Date.now() / 260 + tCenter * 2.1) * 0.05;
 
       ctx.save();
       ctx.strokeStyle = `rgba(90,245,255,${0.98 * pulse})`;
       ctx.lineWidth = 3.6;
       if (ctx.setLineDash) ctx.setLineDash([7, 4]);
 
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius * worldPulse, t.start, t.start + t.size);
       ctx.shadowBlur = 18;
       ctx.shadowColor = '#66f0ff';
       ctx.stroke();
@@ -1381,6 +1383,22 @@ function draw() {
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius - 3, t.start, t.start + t.size);
       ctx.shadowBlur = 8;
       ctx.shadowColor = '#c8ffff';
+      ctx.stroke();
+
+      // World 3+ echo identity: faint temporal ghost trail.
+      ctx.strokeStyle = 'rgba(130,255,255,0.26)';
+      ctx.lineWidth = 2;
+      buildShapePath(
+        ctx,
+        worldShape,
+        centerObj.x,
+        centerObj.y,
+        dynamicRadius - 5,
+        normalizeAngle(t.start - ghostOffset),
+        normalizeAngle(t.start + t.size - ghostOffset)
+      );
+      ctx.shadowBlur = 5;
+      ctx.shadowColor = '#66f0ff';
       ctx.stroke();
 
       ctx.restore();
@@ -2299,7 +2317,21 @@ function tap() {
 
   if (hitIndex !== -1) {
     let t = targets[hitIndex];
+    const targetCenterAngle = normalizeAngle(t.start + (t.size / 2));
+    const hitTimingAccuracy = Math.abs(signedAngularDistance(hitAngleForEffects, targetCenterAngle));
+    const hitTimingTier = hitTimingAccuracy < 0.03
+      ? 'filthy-perfect'
+      : (hitTimingAccuracy < 0.08 ? 'perfect' : (hitTimingAccuracy < 0.14 ? 'good' : 'weak'));
+
     triggerTargetHitFeedback(t, hitX, hitY);
+    if (t.isEchoTarget) {
+      // Echo-specific feedback
+      setTimeout(() => {
+        if (audioCtx) playPop(6, true);
+      }, 60);
+
+      createParticles(hitX, hitY, '#00eaff', 12);
+    }
     if (levelData.reverse !== false) {
       direction *= -1;
       trail = []; // Clear trail on direction flip — prevents corner artifacts
@@ -2525,7 +2557,38 @@ function tap() {
       vibrate(12);
     }
 
-    if (hitQuality === "perfect") {
+    if (hitTimingTier === 'filthy-perfect') {
+      perfectLifeStreak++;
+      if (currentLevelIdx >= 2) {
+        perfectFlash = Math.max(perfectFlash, 0.34);
+      }
+      ringHitFlash = Math.max(ringHitFlash, 0.38);
+      multiplier = Math.min(multiplier + 1, 8);
+      soundMultiplierUp(multiplier);
+      score += (4 * multiplier);
+      const normalX = hitX - centerObj.x;
+      const normalY = hitY - centerObj.y;
+      const normalLen = Math.hypot(normalX, normalY) || 1;
+      const outwardX = normalX / normalLen;
+      const outwardY = normalY / normalLen;
+      const filthyPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "FILTHY PERFECT", '#ffffff', 'perfect');
+      filthyPopup.animType = 'perfect';
+      filthyPopup.life = 1.55;
+      filthyPopup.riseSpeed = 0.95;
+      filthyPopup.fadeSpeed = 0.022;
+      filthyPopup.shadow = 32;
+      canvas.style.filter = 'brightness(2.45)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 70);
+      soundPerfect(multiplier);
+      if (audioCtx) playPop(10, true);
+      vibrate([12, 28, 12]);
+      createUpwardBurstParticles(hitX, hitY - 10, '#ffffff', 52);
+      createParticles(hitX, hitY, '#ffffff', 20);
+      if (perfectLifeStreak >= 6) {
+        gainLifeFromPerfectStreak();
+      }
+    }
+    else if (hitTimingTier === 'perfect' || hitQuality === "perfect") {
       perfectLifeStreak++;
       if (currentLevelIdx >= 2) {
         perfectFlash = Math.max(perfectFlash, 0.34);
@@ -2555,7 +2618,7 @@ function tap() {
         gainLifeFromPerfectStreak();
       }
     }
-    else if (hitQuality === "good") {
+    else if (hitTimingTier === 'good' || hitQuality === "good") {
       perfectLifeStreak = 0;
       ringHitFlash = Math.max(ringHitFlash, 0.26);
       score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
@@ -2575,8 +2638,16 @@ function tap() {
     streak++;
     runBestStreak = Math.max(runBestStreak, streak);
     ui.streak.innerText = streak;
+    if (streak % 5 === 0) {
+      triggerScreenShake(4);
+      if (audioCtx) playPop(10, true);
+      const streakPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+      createParticles(streakPt.x, streakPt.y, '#ffaa00', 25);
+    }
 
-    let centsEarned = (hitQuality === "perfect" ? 3 : hitQuality === "good" ? 2 : 1) * multiplier;
+    let centsEarned = (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect' || hitQuality === "perfect"
+      ? 3
+      : (hitTimingTier === 'good' || hitQuality === "good" ? 2 : 1)) * multiplier;
     runCents += centsEarned;
     markScoreCoinDirty();
     updateMultiplierUI();
@@ -2600,6 +2671,7 @@ function tap() {
     comboTimer = 0;
     comboGlow = 0;
     let nearestEdgeDistance = Infinity;
+    let nearestTarget = null;
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
       if (!t.active) continue;
@@ -2609,7 +2681,10 @@ function tap() {
       const distToStart = Math.abs(signedAngularDistance(angle, startEdge));
       const distToEnd = Math.abs(signedAngularDistance(angle, endEdge));
       const edgeDistance = Math.min(distToStart, distToEnd);
-      if (edgeDistance < nearestEdgeDistance) nearestEdgeDistance = edgeDistance;
+      if (edgeDistance < nearestEdgeDistance) {
+        nearestEdgeDistance = edgeDistance;
+        nearestTarget = t;
+      }
     }
 
     const now = Date.now();
@@ -2633,6 +2708,11 @@ function tap() {
       handleFail("MISSED");
     } else {
       perfectLifeStreak = 0;
+      if (nearestTarget) {
+        const nearestCenter = normalizeAngle(nearestTarget.start + (nearestTarget.size / 2));
+        const missDirection = signedAngularDistance(angle, nearestCenter);
+        createPopup(hitX, hitY - 42, missDirection > 0 ? 'TOO LATE' : 'TOO EARLY', '#78eeff');
+      }
       if (lives <= 1 && nearestEdgeDistance <= NEAR_MISS_THRESHOLD) {
         showNearMissReplay("MISSED", nearestEdgeDistance);
       } else {
