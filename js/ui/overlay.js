@@ -4,8 +4,11 @@
   OG.ui.overlay = OG.ui.overlay || {};
 
   function attemptCoinRevive() {
-    if (globalCoins >= 50) {
-      globalCoins -= 50;
+    const reviveCost = currentReviveCost || 50;
+
+    if (globalCoins >= reviveCost) {
+      globalCoins -= reviveCost;
+      currentReviveCost = reviveCost * 2;
       saveData();
       ui.coins.innerText = Math.floor(globalCoins);
 
@@ -16,12 +19,13 @@
       revive();
     } else {
       let btn = document.getElementById('coinReviveBtn');
-      btn.style.transform = 'translateX(-10px)';
-      setTimeout(() => btn.style.transform = 'translateX(10px)', 50);
-      setTimeout(() => btn.style.transform = 'translateX(0)', 100);
+      if (btn) {
+        btn.style.transform = 'translateX(-10px)';
+        setTimeout(() => btn.style.transform = 'translateX(10px)', 50);
+        setTimeout(() => btn.style.transform = 'translateX(0)', 100);
+      }
       if (audioCtx) soundFail();
     }
   }
-
   OG.ui.overlay.attemptCoinRevive = attemptCoinRevive;
 })(window);
