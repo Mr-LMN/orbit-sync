@@ -2648,7 +2648,7 @@ function tap() {
       const normalLen = Math.hypot(normalX, normalY) || 1;
       const outwardX = normalX / normalLen;
       const outwardY = normalY / normalLen;
-      const perfectPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "PERFECT!", '#fff36a', 'perfect');
+      const perfectPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "PERFECT", '#fff36a', 'perfect');
       perfectPopup.animType = 'perfect';
       perfectPopup.life = 1.45;
       perfectPopup.riseSpeed = 0.85;

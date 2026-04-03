@@ -100,7 +100,7 @@
 
   function applyStageOverrideSelection() {
     const select = document.getElementById('adminStageSelect');
-    if (!select || (!adminUnlocked && !adminPanelVisible)) return;
+    if (!select || !adminUnlocked) return;
     const selectedId = String(select.value || '').trim();
     const stageIndex = getStageIndexById(selectedId);
     if (stageIndex < 0) {
@@ -150,13 +150,9 @@
 
   function toggleAdminPanel() {
     const panel = document.getElementById('adminToolsPanel');
-    const controls = document.getElementById('adminStageControls');
-    const codeEntry = document.getElementById('adminCodeEntry');
     if (!panel) return;
     adminPanelVisible = !adminPanelVisible;
     panel.style.display = adminPanelVisible ? 'block' : 'none';
-    if (controls) controls.style.display = adminPanelVisible ? 'grid' : 'none';
-    if (codeEntry) codeEntry.style.display = adminPanelVisible ? 'none' : '';
     if (adminPanelVisible) {
       populateAdminWorldOptions();
       populateAdminStageOptions();
