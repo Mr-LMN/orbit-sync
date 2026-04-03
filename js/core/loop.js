@@ -209,6 +209,7 @@ let world2BossArenaRotation = 0;
 let world2BossArenaRotationSpeed = 0;
 let world2BossSequenceProgress = 0;
 let world2BossSequenceLength = 0;
+let world2BossNextForcedReverseAt = 0;
 let world3BossLastAnnouncedPhase = 0;
 let world3BossIntroDone = false;
 let world3BossCollapseTriggered = false;
@@ -753,6 +754,7 @@ function resetRunState() {
   world2BossArenaRotationSpeed = 0;
   world2BossSequenceProgress = 0;
   world2BossSequenceLength = 0;
+  world2BossNextForcedReverseAt = 0;
   world3BossLastAnnouncedPhase = 0;
   world3BossIntroDone = false;
   world3BossCollapseTriggered = false;
@@ -891,6 +893,7 @@ function loadLevel(idx) {
   world2BossArenaRotationSpeed = 0;
   world2BossSequenceProgress = 0;
   world2BossSequenceLength = 0;
+  world2BossNextForcedReverseAt = 0;
   world3BossLastAnnouncedPhase = 0;
   world3BossIntroDone = false;
   world3BossCollapseTriggered = false;
@@ -1967,6 +1970,16 @@ function update() {
     moveStep *= (1 + Math.min(0.2, totalStageDistance / (Math.PI * 48)));
   }
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
+  if (!inMenu && levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase >= 2 && bossPhase <= 4) {
+    moveStep *= 1.18;
+    if (bossPhase === 2 && performance.now() >= world2BossNextForcedReverseAt) {
+      direction *= -1;
+      trail = [];
+      world2BossNextForcedReverseAt = performance.now() + 2200;
+      createPopup(centerObj.x, centerObj.y - 66, 'POLARITY SHIFT', '#dff6ff');
+      vibrate([24, 30, 24]);
+    }
+  }
   if (isBossTransitionPaused || isStageClearHoldPaused || isHitStopPaused) moveStep = 0;
   else moveStep *= nearMissSpeedScale;
 
@@ -2033,7 +2046,8 @@ function update() {
       return;
     }
     let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
-    if (!inMenu && t.isBossShield && bossPhase === 2 && frameNow >= (t.nextDirectionSwapAt || 0)) {
+    const isWorld2PrismSequenceNode = levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex);
+    if (!inMenu && t.isBossShield && bossPhase === 2 && !isWorld2PrismSequenceNode && frameNow >= (t.nextDirectionSwapAt || 0)) {
       if (Math.random() < 0.42) t.moveSpeed *= -1;
       t.nextDirectionSwapAt = frameNow + 1200 + Math.random() * 1000;
     }
@@ -2481,25 +2495,34 @@ function tap() {
         soundBossShieldHit(Math.max(1, world2BossSequenceLength - world2BossSequenceProgress));
 
         if (world2BossSequenceProgress >= world2BossSequenceLength) {
-          ui.bossPhase2.className = "boss-segment";
-          createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
-          createShockwave('#00ff88', 55);
-          createShockwave('#ffffff', 70);
-          createShockwave('#9be7ff', 86);
-          createShockwave('#cfefff', 100);
-          createParticles(centerObj.x, centerObj.y, '#dff5ff', 84);
-          createUpwardBurstParticles(centerObj.x, centerObj.y - 6, '#d7ecff', 64);
-          pulseBrightness(2.45, 260);
-          createPopup(centerObj.x, centerObj.y - 64, "THE PRISM", "#dff5ff");
-          createPopup(centerObj.x, centerObj.y - 30, "SHATTERED", "#ffffff");
-          soundBossDefeated();
-          stopBossDrone();
-          world2BossArenaRotationSpeed = 0;
-          stageHits = 999;
-          isPlaying = false;
-          setTimeout(() => {
-            triggerStageClear();
-          }, 1600);
+          bossPhase = 3;
+          world2BossSequenceProgress = 0;
+          pauseGameplayBriefly(980);
+          triggerScreenShake(18);
+          pulseBrightness(2.0, 180);
+          createShockwave('#ffd54a', 44);
+          createPopup(centerObj.x, centerObj.y - 62, "FINAL LOCK", "#ffd54a");
+          createPopup(centerObj.x, centerObj.y - 30, "CORNERS", "#ffffff");
+          scheduleBossSpawn(980);
+        }
+        return;
+      }
+
+      if (isWorld2PrismBoss && bossPhase === 3 && t.isPrismCornerLock) {
+        t.active = false;
+        world2BossSequenceProgress++;
+        createParticles(hitX, hitY, '#ffe68b', 16);
+        createPopup(hitX, hitY - 18, `${world2BossSequenceProgress}/4`, '#ffffff');
+        soundBossShieldHit(Math.max(1, 4 - world2BossSequenceProgress));
+        if (world2BossSequenceProgress >= 4) {
+          bossPhase = 4;
+          pauseGameplayBriefly(980);
+          triggerScreenShake(20);
+          pulseBrightness(2.2, 220);
+          createShockwave('#ffffff', 52);
+          createPopup(centerObj.x, centerObj.y - 58, "CORE EXPOSED", "#ffffff");
+          createPopup(centerObj.x, centerObj.y - 24, "FINAL STRIKE", "#dff6ff");
+          scheduleBossSpawn(980);
         }
         return;
       }
@@ -2550,6 +2573,36 @@ function tap() {
           scheduleBossSpawn(760);
         }
       } return;
+    }
+
+    if (
+      levelData &&
+      levelData.id === '2-6' &&
+      levelData.boss === 'prism' &&
+      bossPhase === 4 &&
+      t.isPrismFinalCore
+    ) {
+      t.active = false;
+      ui.bossPhase2.className = "boss-segment";
+      createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
+      createShockwave('#00ff88', 55);
+      createShockwave('#ffffff', 70);
+      createShockwave('#9be7ff', 86);
+      createShockwave('#cfefff', 100);
+      createParticles(centerObj.x, centerObj.y, '#dff5ff', 84);
+      createUpwardBurstParticles(centerObj.x, centerObj.y - 6, '#d7ecff', 64);
+      pulseBrightness(2.45, 260);
+      createPopup(centerObj.x, centerObj.y - 64, "THE PRISM", "#dff5ff");
+      createPopup(centerObj.x, centerObj.y - 30, "SHATTERED", "#ffffff");
+      soundBossDefeated();
+      stopBossDrone();
+      world2BossArenaRotationSpeed = 0;
+      stageHits = 999;
+      isPlaying = false;
+      setTimeout(() => {
+        triggerStageClear();
+      }, 1600);
+      return;
     }
 
     const targetBehaviours = OrbitGame.entities && OrbitGame.entities.targetBehaviours;

@@ -132,6 +132,17 @@
         pulseBrightness(1.35, 180);
         vibrate([60, 30, 80, 30, 60]);
       });
+      queueIntroStep(2780, () => {
+        ui.title.innerText = 'THE PRISM';
+        ui.subtitle.innerText = 'FOCUS';
+        createPopup(centerObj.x, centerObj.y - 28, 'HOLD STEADY', '#dff6ff');
+      });
+      queueIntroStep(3780, () => {
+        ui.title.innerText = 'THE PRISM';
+        ui.subtitle.innerText = 'ENGAGE';
+        createPopup(centerObj.x, centerObj.y - 18, 'ALIGN NOW', '#ffffff');
+        createShockwave('#ffffff', 20);
+      });
     } else {
       ui.title.innerText = 'THE PRISM';
       ui.title.style.color = '#ff3366';
@@ -161,7 +172,7 @@
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 3050 : 1700));
+    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : 1700));
   }
 
   function playBossCinematic() {

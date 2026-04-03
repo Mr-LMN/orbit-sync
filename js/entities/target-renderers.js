@@ -137,9 +137,7 @@
     if (t.dualState === 'full') {
       const splitAngle = t.start + halfSize;
       const splitPt = rc.getPointOnShape(splitAngle, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius);
-      const ringRadius = isDiamondWorld ? 7.2 : 7;
-      const dotRadius = isDiamondWorld ? 2.8 : 4;
-      const tickLen = isDiamondWorld ? 8.2 : 5.8;
+      const seamLen = isDiamondWorld ? 7.2 : 5.8;
       const radialX = splitPt.x - rc.centerObj.x;
       const radialY = splitPt.y - rc.centerObj.y;
       const radialLen = Math.hypot(radialX, radialY) || 1;
@@ -147,20 +145,14 @@
       const ty = radialX / radialLen;
 
       ctx.beginPath();
-      ctx.arc(splitPt.x, splitPt.y, ringRadius, 0, Math.PI * 2);
-      ctx.fillStyle = coreColor; ctx.globalAlpha = isDiamondWorld ? 0.08 : 0.15; ctx.shadowBlur = isDiamondWorld ? 7 : 20; ctx.shadowColor = '#ffffff'; ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(splitPt.x - tx * tickLen, splitPt.y - ty * tickLen);
-      ctx.lineTo(splitPt.x + tx * tickLen, splitPt.y + ty * tickLen);
-      ctx.strokeStyle = isDiamondWorld ? '#f4feff' : '#ffffff'; ctx.globalAlpha = isDiamondWorld ? 0.98 : 0.9; ctx.lineWidth = isDiamondWorld ? 1.8 : 2; ctx.shadowBlur = isDiamondWorld ? 4 : 8; ctx.shadowColor = '#ffffff'; ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(splitPt.x, splitPt.y, dotRadius, 0, Math.PI * 2);
-      ctx.fillStyle = coreColor; ctx.globalAlpha = isDiamondWorld ? 0.92 : 1.0; ctx.shadowBlur = isDiamondWorld ? 5 : 14; ctx.shadowColor = '#ffffff'; ctx.fill();
-
-      if (rc.shouldDrawWorld2MechanicBrackets) {
-        rc.drawWorld2AngularBracket(splitAngle, { dir: -1, alpha: 0.5, width: 1.4, wing: 3.7, legIn: 4.7, legOut: 1.3, shadowBlur: 4 });
-        rc.drawWorld2AngularBracket(splitAngle, { dir: 1, alpha: 0.5, width: 1.4, wing: 3.7, legIn: 4.7, legOut: 1.3, shadowBlur: 4 });
-      }
+      ctx.moveTo(splitPt.x - tx * seamLen, splitPt.y - ty * seamLen);
+      ctx.lineTo(splitPt.x + tx * seamLen, splitPt.y + ty * seamLen);
+      ctx.strokeStyle = isDiamondWorld ? '#f4feff' : '#ffffff';
+      ctx.globalAlpha = isDiamondWorld ? 0.98 : 0.9;
+      ctx.lineWidth = isDiamondWorld ? 1.65 : 2;
+      ctx.shadowBlur = isDiamondWorld ? 3 : 8;
+      ctx.shadowColor = '#ffffff';
+      ctx.stroke();
     }
 
     if (rc.shouldDrawWorld2MechanicBrackets) {
@@ -204,13 +196,13 @@
     const generationScale = Math.pow(0.8, depth);
     const tutorialWidthBoost = isTutorialSplit && isRootSplit ? 1.14 : 1;
     const outerWidth = (isWorld2Split
-      ? (depth === 0 ? 15.2 : depth === 1 ? 9.9 : 6.8)
+      ? (depth === 0 ? 13.8 : depth === 1 ? 8.9 : 6.2)
       : (depth === 0 ? 14.2 : depth === 1 ? 10.8 : 7.4)) * generationScale * pulse * tutorialWidthBoost;
     const midWidth = (isWorld2Split
-      ? (depth === 0 ? 7.2 : depth === 1 ? 5.0 : 3.6)
+      ? (depth === 0 ? 6.4 : depth === 1 ? 4.4 : 3.3)
       : (depth === 0 ? 6.6 : depth === 1 ? 5.5 : 4.2)) * generationScale * pulse * tutorialWidthBoost;
     const coreWidth = (isWorld2Split
-      ? (depth === 0 ? 3.1 : depth === 1 ? 2.3 : 1.8)
+      ? (depth === 0 ? 2.8 : depth === 1 ? 2.0 : 1.7)
       : (depth === 0 ? 2.9 : depth === 1 ? 2.5 : 2.1)) * generationScale * pulse * tutorialWidthBoost;
 
     if (!isSmallSplit) {
@@ -221,18 +213,18 @@
         + (isWorld2Split ? seamFlash * (isRootSplit ? 0.16 : 0.08) : 0);
       ctx.lineWidth = outerWidth;
       ctx.lineCap = 'butt';
-      ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 14 : 9) : (depth === 0 ? 18 : 12)) : (isWorld2Split ? 5 : 6);
+      ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 11 : 7) : (depth === 0 ? 18 : 12)) : (isWorld2Split ? 4 : 6);
       ctx.shadowColor = palette.glow;
       ctx.stroke();
     }
 
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = palette.body; ctx.globalAlpha = isWorld2Split ? (isSmallSplit ? 0.86 : (isRootSplit ? 0.95 : 0.9)) + (seamFlash * (isSmallSplit ? 0.04 : 0.08)) : (isSmallSplit ? 0.9 : 0.92); ctx.lineWidth = midWidth; ctx.lineCap = isWorld2Split ? 'butt' : 'round';
-    ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 9 : 6) : (depth === 0 ? 11 : 8)) : (isSmallSplit ? (isWorld2Split ? 1 : 2) : (isWorld2Split ? 4 : 5)); ctx.shadowColor = palette.glow; ctx.stroke();
+    ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 7 : 5) : (depth === 0 ? 11 : 8)) : (isSmallSplit ? (isWorld2Split ? 1 : 2) : (isWorld2Split ? 3 : 5)); ctx.shadowColor = palette.glow; ctx.stroke();
 
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = palette.core; ctx.globalAlpha = isWorld2Split ? (isSmallSplit ? 0.86 : (isRootSplit ? 0.98 : 0.92)) + (seamFlash * (isSmallSplit ? 0.06 : 0.12)) : (isSmallSplit ? 0.9 : 0.96); ctx.lineWidth = coreWidth; ctx.lineCap = isWorld2Split ? 'butt' : 'round';
-    ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 7 : 5) : (depth === 0 ? 9 : 6)) : (isSmallSplit ? 0 : (isWorld2Split ? 2 : 3)); ctx.shadowColor = palette.core; ctx.stroke();
+    ctx.shadowBlur = splitHeavy ? (isWorld2Split ? (depth === 0 ? 5 : 4) : (depth === 0 ? 9 : 6)) : (isSmallSplit ? 0 : (isWorld2Split ? 1 : 3)); ctx.shadowColor = palette.core; ctx.stroke();
 
     const crackAngle = t.start + (t.size / 2);
     const crackPt = rc.getPointOnShape(crackAngle, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius);
