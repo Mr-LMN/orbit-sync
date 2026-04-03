@@ -1590,18 +1590,30 @@ function draw() {
 
   // TRAIL
   if (!inMenu && trail.length > 0) {
+    const currentWorldNum = getWorldNum();
+    const isEchoWorld = currentWorldNum === 3;
+
     for (let i = 0; i < trail.length; i++) {
       const p = trail[i];
       const life = i / trail.length;
-      const radius = Math.max(1.8, 9.5 * life);
-      const opacity = life * 0.42;
+
+      const radius = isEchoWorld
+        ? Math.max(1.2, 6.2 * life)
+        : Math.max(1.8, 9.5 * life);
+
+      const opacity = isEchoWorld
+        ? life * 0.18
+        : life * 0.42;
+
+      const trailColor = isEchoWorld ? '#dffcff' : orbColor;
+      const glowAmount = isEchoWorld ? (4 * life) : (10 * life);
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = orbColor;
+      ctx.fillStyle = trailColor;
       ctx.globalAlpha = opacity;
-      setShadowBlur(10 * life);
-      ctx.shadowColor = orbColor;
+      setShadowBlur(glowAmount);
+      ctx.shadowColor = trailColor;
       ctx.fill();
     }
     ctx.globalAlpha = 1.0;
