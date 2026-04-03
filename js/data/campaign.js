@@ -64,7 +64,7 @@
     {
       id: '3-4',
       title: 'Echo Drift',
-      hitsNeeded: 7,
+      hitsNeeded: 5,
       speed: 0.035,
       lives: 3,
       targets: 1,

@@ -127,22 +127,24 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-4') {
-      ui.text.innerText = 'Echo Drift: cyan targets rotate slowly.';
+      ui.text.innerText = 'Echo Drift: slow movement, mixed final wave.';
       ui.text.style.color = '#66f0ff';
 
       const wave = Math.max(1, (stageHits || 0) + 1);
-      const count = 3 + Math.min(4, wave);
+      const isFinalWave = wave >= 5;
+      const count = isFinalWave ? 6 : (3 + wave);
       const spacing = (Math.PI * 2) / count;
       const offset = ((stageHits || 0) % count) * (spacing * 0.5);
 
       for (let i = 0; i < count; i++) {
         const a = normalizeAngle(offset + (i * spacing));
+        const isEcho = isFinalWave ? (i % 2 === 0) : true;
         targets.push(buildTarget(a, Math.PI / 9, {
           active: true,
           hp: 1,
-          color: '#66f0ff',
-          isEchoTarget: true,
-          drift: 0.002 + (wave * 0.0005)
+          color: isEcho ? '#66f0ff' : '#ff9f1a',
+          isEchoTarget: isEcho,
+          drift: isEcho ? (0.002 + (wave * 0.0004)) : 0
         }));
       }
       return;
