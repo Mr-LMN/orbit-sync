@@ -259,7 +259,33 @@
     return false;
   }
 
+  function renderResonanceAccent(ctx, t, rc) {
+    if (!t || !t.isResonancePressureAccent) return;
+    const tCenter = t.start + (t.size / 2);
+    const markerSpan = Math.min(t.size * 0.2, 0.045);
+
+    ctx.save();
+    rc.buildShapePath(
+      ctx,
+      rc.worldShape,
+      rc.centerObj.x,
+      rc.centerObj.y,
+      rc.dynamicRadius,
+      tCenter - markerSpan,
+      tCenter + markerSpan
+    );
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.78;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#ffffff';
+    ctx.stroke();
+    ctx.restore();
+  }
+
   OG.entities.targetRenderers = {
-    renderTarget
+    renderTarget,
+    renderResonanceAccent
   };
 })(window);

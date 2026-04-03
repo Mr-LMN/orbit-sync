@@ -209,6 +209,9 @@ let world2BossArenaRotation = 0;
 let world2BossArenaRotationSpeed = 0;
 let world2BossSequenceProgress = 0;
 let world2BossSequenceLength = 0;
+let world3BossLastAnnouncedPhase = 0;
+let world3BossIntroDone = false;
+let world3BossCollapseTriggered = false;
 let nearMissReplayUntil = 0;
 let nearMissReplayActive = false;
 let comboCount = 0;
@@ -750,6 +753,9 @@ function resetRunState() {
   world2BossArenaRotationSpeed = 0;
   world2BossSequenceProgress = 0;
   world2BossSequenceLength = 0;
+  world3BossLastAnnouncedPhase = 0;
+  world3BossIntroDone = false;
+  world3BossCollapseTriggered = false;
   lastNearMissAt = -Infinity; nearMissReplayUntil = 0; nearMissReplayActive = false;
   comboCount = 0; comboTimer = 0; comboGlow = 0; hitStopUntil = 0;
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
@@ -860,6 +866,9 @@ function loadLevel(idx) {
   world2BossArenaRotationSpeed = 0;
   world2BossSequenceProgress = 0;
   world2BossSequenceLength = 0;
+  world3BossLastAnnouncedPhase = 0;
+  world3BossIntroDone = false;
+  world3BossCollapseTriggered = false;
   world4TutorialStep = 0;
   if (getWorldNum() !== 4 || levelData.id !== '4-1') {
     world4FocusMode = 'none';
@@ -1160,15 +1169,30 @@ function draw() {
     const glowWidth = worldShape === 'diamond' ? bodyWidth + 1.5 : bodyWidth + 4;
     const housingWidth = worldShape === 'diamond' ? glowWidth + 2 : glowWidth + 4;
     const isLiteTargetRender = !useHeavyEffects && !isBossShield;
+    const isResonanceCoreTarget = levelData && levelData.id === '3-6' && !!t.isResonanceBossTarget;
     // Stronger target contrast on diamond (especially during streaks)
     let targetAlpha = isBossShield ? (0.27 + approach * 0.27 + hitFlash * 0.2) : (0.45 + approach * 0.25 + hitFlash * 0.3);
     let targetCoreAlpha = isBossShield ? 0.94 : 0.92;
     const isWorld2PrimaryTarget = worldNum === 2 && !isBoss && !t.isPhantom && !t.isCornerBonus && !t.isLifeZone && !isBossShield;
-    const targetGlowColor = isWorld2PrimaryTarget ? theme.targetGlowColor : t.color;
-    const targetCoreColor = isWorld2PrimaryTarget ? theme.targetCoreColor : (isBossShield ? t.color : '#ffffff');
+    let targetGlowColor = isWorld2PrimaryTarget ? theme.targetGlowColor : t.color;
+    let targetCoreColor = isWorld2PrimaryTarget ? theme.targetCoreColor : (isBossShield ? t.color : '#ffffff');
+    let resonanceGlowBoost = 1;
+    let resonanceCoreBoost = 0;
+    let resonanceHousingBoost = 0;
     if (isWorld2PrimaryTarget) {
       targetAlpha += 0.08;
       targetCoreAlpha = Math.min(1, targetCoreAlpha + 0.05);
+    }
+    if (isResonanceCoreTarget) {
+      targetAlpha += 0.08;
+      targetCoreAlpha = Math.min(1, targetCoreAlpha + 0.06);
+      resonanceGlowBoost = t.isResonancePressureAccent ? 1.26 : 1.14;
+      resonanceCoreBoost = t.isResonancePressureAccent ? 0.95 : 0.5;
+      resonanceHousingBoost = 0.8;
+      if (t.isResonancePressureAccent) {
+        targetGlowColor = t.isEchoTarget ? '#9af8ff' : '#ffd7a3';
+        targetCoreColor = '#ffffff';
+      }
     }
     if (comboGlow > 0.01 && !t.isPhantom && !t.isLifeZone) {
       targetAlpha += comboGlow * 0.16;
@@ -1454,7 +1478,7 @@ function draw() {
       ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
       ctx.lineWidth = isBossShield
         ? (housingWidth + 2.6)
-        : (worldShape === 'diamond' ? housingWidth - 2 : housingWidth);
+        : ((worldShape === 'diamond' ? housingWidth - 2 : housingWidth) + resonanceHousingBoost);
       ctx.lineCap = 'butt';
       ctx.shadowBlur = 0;
       ctx.stroke();
@@ -1489,7 +1513,7 @@ function draw() {
     const glowMult = worldShape === 'diamond' ? 0.6 : 1.0;
     ctx.lineWidth = isBossShield
       ? (shieldBodyWidth + 3.6 + (approach * 1.15) + (hitFlash * 1.05))
-      : (glowWidth + (approach * 1.5 * glowMult) + (hitFlash * 1.2 * glowMult));
+      : ((glowWidth * resonanceGlowBoost) + (approach * 1.5 * glowMult) + (hitFlash * 1.2 * glowMult));
     setShadowBlur(isBossShield
       ? (12 + (approach * 12) + (hitFlash * 10))
       : (16 + (approach * 18) + (hitFlash * 14)));
@@ -1504,7 +1528,7 @@ function draw() {
       ctx.globalAlpha = targetCoreAlpha;
       ctx.lineWidth = isBossShield
         ? (Math.max(1.8, shieldBodyWidth * 0.36) + (approach * 0.22) + (hitFlash * 0.38))
-        : (bodyWidth + (approach * 0.8) + (hitFlash * 0.9));
+        : (bodyWidth + resonanceCoreBoost + (approach * 0.8) + (hitFlash * 0.9));
       setShadowBlur(isBossShield
         ? (7 + (approach * 6) + (hitFlash * 9))
         : (10 + (approach * 12) + (hitFlash * 16)));
@@ -1515,7 +1539,7 @@ function draw() {
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
       ctx.strokeStyle = targetCoreColor;
       ctx.globalAlpha = targetCoreAlpha;
-      ctx.lineWidth = bodyWidth + 1 + (approach * 0.8) + (hitFlash * 0.9);
+      ctx.lineWidth = bodyWidth + 1 + resonanceCoreBoost + (approach * 0.8) + (hitFlash * 0.9);
       setShadowBlur(6 + (approach * 6) + (hitFlash * 8));
       ctx.shadowColor = targetGlowColor;
       ctx.stroke();
@@ -1541,6 +1565,18 @@ function draw() {
       setShadowBlur(22);
       ctx.shadowColor = '#ffffff';
       ctx.stroke();
+    }
+
+    if (isResonanceCoreTarget) {
+      const targetRenderer = OrbitGame.entities && OrbitGame.entities.targetRenderers;
+      if (targetRenderer && targetRenderer.renderResonanceAccent) {
+        targetRenderer.renderResonanceAccent(ctx, t, {
+          centerObj,
+          dynamicRadius,
+          worldShape,
+          buildShapePath
+        });
+      }
     }
 
     // --- MIDPOINT MARKER (ideal precision hit cue) ---
@@ -2672,6 +2708,24 @@ function tap() {
     if (shouldForceHudFlush) flushScoreCoinUI();
 
     if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
+      const isResonanceFinalHit = levelData
+        && levelData.id === '3-6'
+        && stageHits === (levelData.hitsNeeded - 1)
+        && !world3BossCollapseTriggered;
+      if (isResonanceFinalHit) {
+        world3BossCollapseTriggered = true;
+        createPopup(centerObj.x, centerObj.y - 68, 'CORE COLLAPSE', '#ffffff');
+        createPopup(centerObj.x, centerObj.y - 36, 'RESONANCE BROKEN', '#66f0ff');
+        createPopup(centerObj.x, centerObj.y - 6, 'SIGNAL SILENCED', '#ffb468');
+        createShockwave('#ffffff', 44);
+        createShockwave('#66f0ff', 58);
+        createShockwave('#ff9f1a', 72);
+        createParticles(centerObj.x, centerObj.y, '#ffffff', 54);
+        createUpwardBurstParticles(centerObj.x, centerObj.y + 6, '#66f0ff', 48);
+        pulseBrightness(2.1, 170);
+        triggerScreenShake(22);
+        if (typeof vibrate === 'function') vibrate([35, 20, 55, 25, 80]);
+      }
       triggerStageClear();
     }
   } else {

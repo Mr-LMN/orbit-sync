@@ -172,35 +172,78 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-6') {
-      const wave = Math.max(1, (stageHits || 0) + 1);
-      const phase = Math.min(3, Math.floor(wave / 2) + 1);
-      ui.text.innerText = `Resonance Core: phase ${phase}`;
+      const waveIdx = Math.max(0, stageHits || 0);
+      const phase = waveIdx < 3 ? 1 : (waveIdx < 6 ? 2 : 3);
+      const phaseLabel = phase === 1
+        ? 'Resonance Core: track the afterimage.'
+        : (phase === 2 ? 'Resonance Core: signal crossover.' : 'Resonance Core: core unstable.');
+      ui.text.innerText = phaseLabel;
       ui.text.style.color = '#ffffff';
 
-      const count = 4 + phase;
-      const spacing = (Math.PI * 2) / count;
-      const offset = (stageHits || 0) * 0.22;
+      if (!world3BossIntroDone && waveIdx === 0) {
+        world3BossIntroDone = true;
+        showTempText('RESONANCE CORE', '#ffffff', 700);
+        createPopup(centerObj.x, centerObj.y - 78, 'RESONANCE CORE', '#ffffff');
+        setTimeout(() => showTempText('TRACK THE AFTERIMAGE', '#66f0ff', 760), 820);
+        setTimeout(() => showTempText('REAL / ECHO / SURVIVE', '#ffb468', 840), 1720);
+      }
 
-      for (let i = 0; i < count; i++) {
-        const a = normalizeAngle(offset + (i * spacing));
-        let isEcho = false;
-
-        if (phase === 1) {
-          isEcho = true;
-        } else if (phase === 2) {
-          isEcho = i % 2 === 0;
-        } else {
-          isEcho = Math.random() > 0.5;
+      if (phase !== world3BossLastAnnouncedPhase) {
+        world3BossLastAnnouncedPhase = phase;
+        if (phase === 2) {
+          createPopup(centerObj.x, centerObj.y - 54, 'PHASE 2', '#ffffff');
+          createPopup(centerObj.x, centerObj.y - 20, 'SIGNAL CROSSOVER', '#66f0ff');
+          showTempText('PHASE 2 — SIGNAL CROSSOVER', '#66f0ff', 920);
+          createShockwave('#66f0ff', 36);
+        } else if (phase === 3) {
+          createPopup(centerObj.x, centerObj.y - 54, 'PHASE 3', '#ffffff');
+          createPopup(centerObj.x, centerObj.y - 20, 'CORE UNSTABLE', '#ffb468');
+          showTempText('PHASE 3 — CORE UNSTABLE', '#ffb468', 980);
+          createShockwave('#ffffff', 34);
+          createShockwave('#ff9f1a', 45);
         }
+      }
 
-        targets.push(buildTarget(a, Math.PI / 10, {
+      const phase1Patterns = [
+        { offset: 0.02, size: Math.PI / 11.4, nodes: [{ slot: 0, echo: true }, { slot: 3, echo: true }, { slot: 6, echo: true }] },
+        { offset: 0.18, size: Math.PI / 11.6, nodes: [{ slot: 1, echo: true }, { slot: 4, echo: true }, { slot: 7, echo: true }] },
+        { offset: 0.34, size: Math.PI / 11.8, nodes: [{ slot: 0, echo: true }, { slot: 2, echo: true }, { slot: 5, echo: true }, { slot: 7, echo: true }] }
+      ];
+      const phase2Patterns = [
+        { offset: 0.09, size: Math.PI / 12, nodes: [{ slot: 0, echo: true }, { slot: 2, echo: false }, { slot: 4, echo: true }, { slot: 6, echo: false }] },
+        { offset: 0.24, size: Math.PI / 12.1, nodes: [{ slot: 1, echo: false }, { slot: 3, echo: true }, { slot: 5, echo: false }, { slot: 7, echo: true }] },
+        { offset: 0.32, size: Math.PI / 12.3, nodes: [{ slot: 0, echo: true }, { slot: 2, echo: false }, { slot: 3, echo: true }, { slot: 6, echo: false }] }
+      ];
+      const phase3Patterns = [
+        { offset: 0.11, size: Math.PI / 12.8, nodes: [{ slot: 0, echo: true }, { slot: 2, echo: false }, { slot: 3, echo: true, accent: true }, { slot: 5, echo: false }, { slot: 7, echo: true }] },
+        { offset: 0.21, size: Math.PI / 12.9, nodes: [{ slot: 1, echo: false }, { slot: 2, echo: true }, { slot: 4, echo: false, accent: true }, { slot: 6, echo: true }, { slot: 7, echo: false }] },
+        { offset: 0.35, size: Math.PI / 13.1, nodes: [{ slot: 0, echo: true }, { slot: 1, echo: false }, { slot: 3, echo: true }, { slot: 5, echo: false, accent: true }, { slot: 6, echo: true }] },
+        { offset: 0.46, size: Math.PI / 13.2, nodes: [{ slot: 1, echo: true }, { slot: 2, echo: false }, { slot: 4, echo: true, accent: true }, { slot: 6, echo: false }, { slot: 7, echo: true }] }
+      ];
+
+      const patterns = phase === 1 ? phase1Patterns : (phase === 2 ? phase2Patterns : phase3Patterns);
+      const patternIdx = phase === 1 ? waveIdx : (phase === 2 ? (waveIdx - 3) : (waveIdx - 6));
+      const pattern = patterns[patternIdx % patterns.length];
+      const slots = 8;
+      const spacing = (Math.PI * 2) / slots;
+      const patternOffset = pattern.offset + ((waveIdx % 2) * 0.02);
+
+      pattern.nodes.forEach((node) => {
+        const centerAngle = normalizeAngle(patternOffset + (node.slot * spacing));
+        const startAngle = normalizeAngle(centerAngle - (pattern.size / 2));
+        const isEcho = !!node.echo;
+        const pressureAccent = !!node.accent;
+        const target = buildTarget(startAngle, pattern.size, {
           active: true,
           hp: 1,
           color: isEcho ? '#66f0ff' : '#ff9f1a',
           isEchoTarget: isEcho,
-          drift: isEcho ? 0.003 : 0
-        }));
-      }
+          drift: isEcho ? (phase === 1 ? 0.0016 : 0.0022) : 0
+        });
+        target.isResonanceBossTarget = true;
+        target.isResonancePressureAccent = pressureAccent;
+        targets.push(target);
+      });
       return;
     }
     if (worldNum === 4 && levelData.id === '4-1') {
