@@ -68,7 +68,7 @@
         showWorldClearSequence({
           nextLevelIdx: nextLevelObj ? nextLevelIdx : null,
           nextWorld: nextWorld || currentWorld,
-          coinsEarned: Math.floor(runCents / 10),
+          coinsEarned: Math.floor(runCents / 3),
           isCampaignClear: campaignComplete
         });
       } else {

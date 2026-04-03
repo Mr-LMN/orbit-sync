@@ -146,7 +146,7 @@ function updatePersistentCoinUI() {
 }
 
 function getPendingRunCoins() {
-  return Math.floor(runCents / 10);
+  return Math.floor(runCents / 3);
 }
 
 function bankRunCoins() {
@@ -698,6 +698,7 @@ function forceHideOverlayExtras() {
   const shareBtn = document.getElementById('shareBtn');
   const pbStatsBlock = document.getElementById('pbStatsBlock');
   const newRecordBanner = document.getElementById('newRecordBanner');
+  const closeMissBanner = document.getElementById('closeMissBanner');
   if (reviveBtn) reviveBtn.style.display = 'none';
   if (coinReviveBtn) coinReviveBtn.style.display = 'none';
   if (runCoinsBox) runCoinsBox.style.display = 'none';
@@ -706,6 +707,7 @@ function forceHideOverlayExtras() {
   if (shareBtn) shareBtn.style.display = 'none';
   if (pbStatsBlock) pbStatsBlock.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
+  if (closeMissBanner) closeMissBanner.style.display = 'none';
 }
 function setCinematicOverlayMode() {
   ui.overlay.style.display = 'flex';
@@ -799,6 +801,7 @@ function createDirectionalShardBurst(x, y, axisAngle, config = {}) {
 function createPopup(x, y, text, color, hitQuality = null) { return OrbitGame.entities.effects.createPopup(x, y, text, color, hitQuality); }
 function showComboPopup(multiplierLevel) { return OrbitGame.entities.effects.showComboPopup(multiplierLevel); }
 function showNearMissReplay(reason, nearestEdgeDistance) { return OrbitGame.entities.effects.showNearMissReplay(reason, nearestEdgeDistance); }
+function triggerIntensity(level) { return OrbitGame.entities.effects.triggerIntensity(level); }
 function createShockwave(color, speed = 40) { return OrbitGame.entities.effects.createShockwave(color, speed); }
 function createTargetHitRipple(x, y, color = '#ffffff') { return OrbitGame.entities.effects.createTargetHitRipple(x, y, color); }
 function triggerTargetHitFeedback(target, x, y) { return OrbitGame.entities.effects.triggerTargetHitFeedback(target, x, y); }
@@ -2259,12 +2262,16 @@ function updatePBDisplay(newRecords) {
 
   // Show banner if any record was broken
   const anyNew = newRecords.score || newRecords.streak || newRecords.world;
-  document.getElementById('newRecordBanner').style.display =
-    anyNew ? 'block' : 'none';
+  const newRecordBanner = document.getElementById('newRecordBanner');
+  if (newRecordBanner) {
+    newRecordBanner.style.display = anyNew ? 'block' : 'none';
+    newRecordBanner.innerText = anyNew ? '★ NEW RECORD ★' : '';
+  }
 }
 
 function handleFail(reason) {
   const streakBeforeFail = streak;
+  const failEdgeDistance = nearestEdgeDistance;
   loseLife(reason);
   distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
   streak = 0; ui.streak.innerText = streak;
@@ -2283,19 +2290,33 @@ function handleFail(reason) {
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
+    const bestScore = personalBest.score || 0;
+    const scoreDiff = Math.max(0, bestScore - score);
     updatePBDisplay(newRecords);
-    glitchCanvas(400, () => {
+    glitchCanvas(200, () => {
       ui.overlay.style.display = 'flex';
       ui.title.style.color = '#ff3366';
-      ui.title.innerText = "OUT OF SYNC";
-      ui.subtitle.innerText = pendingCoins > 0
-        ? `Bank ${pendingCoins} coins or take one more try`
-        : 'Take one more try or restart the world';
-      scrambleText(ui.title, reason || "OUT OF SYNC", 600);
+      ui.title.classList.add('run-title');
+      ui.title.innerText = generateTitle(score, personalBest.world, streakBeforeFail, reviveCount);
+      ui.subtitle.innerText = "Tap to sync again";
+      ui.subtitle.classList.add('subtle-failure');
     });
-    ui.btn.innerText = pendingCoins > 0 ? "BANK COINS & RESTART WORLD" : `RESTART WORLD ${levelData.id.split('-')[0]}`;
+    const newRecordBanner = document.getElementById('newRecordBanner');
+    if (newRecordBanner) {
+      let pbMessage = '';
+      if (score > bestScore) pbMessage = '★ NEW RECORD ★';
+      else if (scoreDiff > 0 && scoreDiff <= (bestScore * 0.1)) pbMessage = `⚡ ${scoreDiff} away from your best`;
+      newRecordBanner.style.display = pbMessage ? 'block' : 'none';
+      newRecordBanner.innerText = pbMessage;
+    }
+    const closeMissBanner = document.getElementById('closeMissBanner');
+    if (closeMissBanner) {
+      const isCloseMiss = Number.isFinite(failEdgeDistance) && failEdgeDistance > 0 && failEdgeDistance < 0.08;
+      closeMissBanner.style.display = isCloseMiss ? 'block' : 'none';
+    }
+    ui.btn.innerText = "Retry";
     ui.btn.onclick = function () {
-      bankRunCoins();
+      ui.overlay.style.display = 'none';
       restartFromCheckpoint();
     };
     ui.runCoins.innerText = pendingCoins > 0 ? `+${pendingCoins} READY TO BANK` : '0 COINS';
@@ -2806,6 +2827,9 @@ function tap() {
     streak++;
     runBestStreak = Math.max(runBestStreak, streak);
     ui.streak.innerText = streak;
+    if (streak === 10) globalCoins += 5;
+    if (streak === 20) globalCoins += 15;
+    if (streak === 30) globalCoins += 30;
     if (streak % 5 === 0) {
       triggerScreenShake(4);
       if (audioCtx) playPop(10, true);
@@ -2915,6 +2939,10 @@ function startCampaign() { return OrbitGame.ui.menus.startCampaign(); }
 function restartFromCheckpoint() {
   glitchActive = false;
   ui.overlay.style.display = 'none';
+  ui.title.classList.remove('run-title');
+  ui.subtitle.classList.remove('subtle-failure');
+  const closeMissBanner = document.getElementById('closeMissBanner');
+  if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   ui.bigMultiplier.style.display = 'none';
