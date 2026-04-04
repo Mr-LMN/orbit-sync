@@ -2,12 +2,12 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 #gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100vw; height: 100vh; transition: box-shadow 220ms ease, filter 120ms ease; }
 
 @keyframes survivalNearMissShock {
-  0% { box-shadow: inset 0 0 0 rgba(255, 168, 64, 0); filter: brightness(1); }
-  20% { box-shadow: inset 0 0 24px rgba(255, 140, 44, 0.2); filter: brightness(1.08); }
-  100% { box-shadow: inset 0 0 0 rgba(255, 168, 64, 0); filter: brightness(1); }
+  0% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
+  28% { box-shadow: inset 0 0 38px rgba(255, 173, 64, 0.44), inset 0 0 74px rgba(255, 141, 38, 0.24); filter: brightness(1.13); }
+  100% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
 }
 body.near-miss-shock #gameCanvas {
-  animation: survivalNearMissShock 210ms ease-out;
+  animation: survivalNearMissShock 260ms ease-out;
 }
 
 /* Cleaned Top Bar */
@@ -29,11 +29,13 @@ body.near-miss-shock #gameCanvas {
 }
 body.last-life #livesCount,
 #livesCount.last-life-count {
-  color: #ff7f9f;
-  animation: lastLifePulse 0.95s ease-in-out infinite;
+  color: #ff6c92;
+  text-shadow: 0 0 12px rgba(255, 72, 126, 0.95), 0 0 26px rgba(255, 72, 126, 0.5);
+  animation: lastLifePulse 0.82s ease-in-out infinite;
 }
 body.last-life #gameCanvas {
-  animation: lastLifeArenaPulse 1.35s ease-in-out infinite;
+  animation: lastLifeArenaPulse 1.05s ease-in-out infinite;
+  box-shadow: inset 0 0 48px rgba(255, 72, 126, 0.24), inset 0 0 92px rgba(255, 72, 126, 0.14);
 }
 
 /* NEW: Massive Right-Side Multiplier */
@@ -70,14 +72,14 @@ body.last-life #gameCanvas {
 #ui h1 { margin: 0; font-size: clamp(2.3rem, 10vw, 4.1rem); color: rgba(255,255,255,0.9); line-height: 0.95; }
 #scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: clamp(3rem, 12vw, 4.4rem); color: #fff; text-shadow: none; }
 #comboDisplay {
-  margin: 4px 0 7px 0;
+  margin: 6px 0 10px 0;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(1.6rem, 6vw, 2.35rem);
-  letter-spacing: 1.5px;
+  font-size: clamp(2.1rem, 7.5vw, 3rem);
+  letter-spacing: 1.2px;
   line-height: 0.95;
-  color: #cbf8ff;
-  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
-  transition: color 0.16s ease, text-shadow 0.16s ease, transform 0.16s ease;
+  color: #d9fbff;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.5), 0 0 28px rgba(0, 229, 255, 0.18);
+  transition: color 0.14s ease, text-shadow 0.14s ease, transform 0.14s ease;
 }
 #comboDisplay.combo-milestone {
   color: #fff2bc;
@@ -366,13 +368,13 @@ body.intensity-1 { animation: bgPulse 2.2s ease-in-out infinite; }
 body.intensity-2 { animation: bgPulse 1.2s infinite; }
 body.intensity-3 { animation: bgPulse 0.6s infinite; }
 body.arena-charge-1 #gameCanvas {
-  box-shadow: inset 0 0 28px rgba(0, 229, 255, 0.12);
+  box-shadow: inset 0 0 38px rgba(0, 229, 255, 0.2);
 }
 body.arena-charge-2 #gameCanvas {
-  box-shadow: inset 0 0 34px rgba(0, 229, 255, 0.15), inset 0 0 62px rgba(255, 86, 233, 0.08);
+  box-shadow: inset 0 0 52px rgba(0, 229, 255, 0.26), inset 0 0 86px rgba(255, 86, 233, 0.16);
 }
 body.arena-charge-3 #gameCanvas {
-  box-shadow: inset 0 0 42px rgba(255, 214, 94, 0.18), inset 0 0 76px rgba(255, 86, 233, 0.12);
+  box-shadow: inset 0 0 66px rgba(255, 214, 94, 0.32), inset 0 0 108px rgba(255, 86, 233, 0.2);
 }
 @keyframes popIn {
   0% { transform: scale(0.8); opacity: 0; }

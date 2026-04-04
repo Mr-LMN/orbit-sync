@@ -26,9 +26,9 @@
     if (didChange && (multiplier === 5 || multiplier === 7 || multiplier === 8)) {
       showComboPopup(multiplier);
     }
-    if (multiplier >= 8) triggerIntensity(3);
-    else if (multiplier >= 6) triggerIntensity(2);
-    else if (multiplier >= 4) triggerIntensity(1);
+    if (multiplier >= 7) triggerIntensity(3);
+    else if (multiplier >= 5) triggerIntensity(2);
+    else if (multiplier >= 3) triggerIntensity(1);
     else if (typeof clearIntensity === 'function') clearIntensity();
 
     lastMultiplierDisplay = multiplier;

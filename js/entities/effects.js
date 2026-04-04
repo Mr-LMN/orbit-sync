@@ -77,10 +77,11 @@
   }
 
   function showSurvivalNearMissShock(nearestEdgeDistance) {
-    nearMissReplayUntil = Math.max(nearMissReplayUntil, performance.now() + 180);
-    ringHitFlash = Math.max(ringHitFlash, 0.1);
-    createShockwave('#ffb24a', 22);
-    createPopup(centerObj.x, centerObj.y - orbitRadius - 20, 'ALMOST', '#ffbe55');
+    nearMissReplayUntil = Math.max(nearMissReplayUntil, performance.now() + 240);
+    ringHitFlash = Math.max(ringHitFlash, 0.18);
+    createShockwave('#ffb24a', 28);
+    createPopup(centerObj.x, centerObj.y - orbitRadius - 20, 'ALMOST', '#ffd27a');
+    triggerScreenShake(8);
     document.body.classList.remove('near-miss-shock');
     void document.body.offsetWidth;
     document.body.classList.add('near-miss-shock');
@@ -88,7 +89,7 @@
     survivalNearMissClassTimeout = setTimeout(() => {
       document.body.classList.remove('near-miss-shock');
       survivalNearMissClassTimeout = null;
-    }, 220);
+    }, 260);
 
     if (navigator.vibrate) vibrate([8, 16, 8]);
     if (typeof playNoiseBurst === 'function' && typeof shouldThrottleAudio === 'function' && !shouldThrottleAudio(true)) {
