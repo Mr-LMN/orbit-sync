@@ -10,6 +10,7 @@
 
     if (multiplier <= 1) {
       ui.bigMultiplier.style.display = 'none';
+      ui.bigMultiplier.style.fontSize = '1.8rem';
       if (typeof clearIntensity === 'function') clearIntensity();
       lastMultiplierDisplay = multiplier;
       return;
@@ -18,9 +19,19 @@
     }
 
     let mColor = multiColors[Math.min(multiplier - 1, 7)];
+
+    const mSize = multiplier >= 8 ? '3.8rem'
+      : multiplier >= 7 ? '3.1rem'
+      : multiplier >= 5 ? '2.5rem'
+      : multiplier >= 3 ? '2.1rem'
+      : '1.8rem';
+    const mShadowSpread = multiplier >= 7 ? `0 0 36px ${mColor}, 0 0 64px ${mColor}` : `0 0 20px ${mColor}`;
+    const mScale = multiplier >= 8 ? 1.9 : multiplier >= 5 ? 1.7 : 1.6;
+
+    ui.bigMultiplier.style.fontSize = mSize;
     ui.bigMultiplier.style.color = mColor;
-    ui.bigMultiplier.style.textShadow = `0 0 20px ${mColor}`;
-    ui.bigMultiplier.style.transform = 'translateY(-50%) scale(1.6)';
+    ui.bigMultiplier.style.textShadow = mShadowSpread;
+    ui.bigMultiplier.style.transform = `translateY(-50%) scale(${mScale})`;
     setTimeout(() => ui.bigMultiplier.style.transform = 'translateY(-50%) scale(1)', 120);
 
     if (didChange && (multiplier === 5 || multiplier === 7 || multiplier === 8)) {

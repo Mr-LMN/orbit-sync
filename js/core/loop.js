@@ -176,7 +176,7 @@ const ECHO_HISTORY_MAX_MS = 1200;
 let world4FocusMode = 'none'; // 'main' | 'echo' | 'none'
 let world4TutorialStep = 0;
 const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
-const NEAR_MISS_SURVIVAL_THRESHOLD = NEAR_MISS_THRESHOLD * 0.34;
+const NEAR_MISS_SURVIVAL_THRESHOLD = NEAR_MISS_THRESHOLD * 0.72;
 const NEAR_MISS_COOLDOWN_MS = 700;
 let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
@@ -926,18 +926,31 @@ function updateStreakUI(applyPulse = false, milestone = false) {
   if (!ui.combo) return;
   ui.combo.innerText = streak > 0 ? `COMBO ${streak}` : 'COMBO 0';
 
-  if (streak >= 10) {
+  // Run-state ladder: body class drives global CSS responses
+  document.body.classList.remove('run-state-heat', 'run-state-locked', 'run-state-overdrive');
+  if (streak >= 20) {
+    document.body.classList.add('run-state-overdrive');
+    ui.combo.style.color = '#ffd84d';
+    ui.combo.style.textShadow = '0 0 28px rgba(255, 216, 77, 1), 0 0 56px rgba(255, 190, 40, 0.5)';
+    ui.combo.style.fontSize = 'clamp(2.6rem, 9.5vw, 3.8rem)';
+  } else if (streak >= 10) {
+    document.body.classList.add('run-state-locked');
     ui.combo.style.color = '#fff3cf';
-    ui.combo.style.textShadow = '0 0 20px rgba(255, 227, 150, 0.9), 0 0 36px rgba(255, 209, 110, 0.38)';
+    ui.combo.style.textShadow = '0 0 22px rgba(255, 227, 150, 0.95), 0 0 42px rgba(255, 209, 110, 0.5)';
+    ui.combo.style.fontSize = 'clamp(2.3rem, 8.5vw, 3.4rem)';
   } else if (streak >= 5) {
+    document.body.classList.add('run-state-heat');
     ui.combo.style.color = '#ecfdff';
-    ui.combo.style.textShadow = '0 0 18px rgba(0, 237, 255, 0.64), 0 0 30px rgba(0, 229, 255, 0.24)';
+    ui.combo.style.textShadow = '0 0 18px rgba(0, 237, 255, 0.7), 0 0 34px rgba(0, 229, 255, 0.3)';
+    ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
   } else if (streak === 0) {
     ui.combo.style.color = '#c5f6ff';
     ui.combo.style.textShadow = '0 0 10px rgba(0, 229, 255, 0.28), 0 0 18px rgba(0, 229, 255, 0.12)';
+    ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
   } else {
     ui.combo.style.color = '#d9fbff';
     ui.combo.style.textShadow = '0 0 16px rgba(0, 229, 255, 0.5), 0 0 28px rgba(0, 229, 255, 0.18)';
+    ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
   }
 
   if (applyPulse) {
