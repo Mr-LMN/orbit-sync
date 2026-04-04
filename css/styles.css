@@ -1,11 +1,12 @@
 body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: Orbitron, sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-#gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100vw; height: 100vh; }
+#gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100vw; height: 100vh; transition: box-shadow 220ms ease, filter 120ms ease; }
 
 /* Cleaned Top Bar */
 #topBar { position: absolute; top: 16px; width: 100%; display: flex; justify-content: center; gap: 25px; z-index: 5; flex-wrap: wrap; padding: 6px 0; }
 .top-stat { font-size: 0.7rem; color: #666; font-weight: bold; letter-spacing: 3px; }
 .top-stat span { color: #fff; margin-left: 5px; font-size: 0.85rem; }
-#streakBox span { color: #00e5ff; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
+#streakBox { opacity: 0.38; }
+#streakBox span { color: rgba(0,229,255,0.72); text-shadow: 0 0 6px rgba(0,229,255,0.3); }
 
 /* NEW: Massive Right-Side Multiplier */
 /* Scaled down font for mobile */
@@ -37,11 +38,36 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 .active-segment { background: linear-gradient(90deg, #ff3366, #ff7a59); box-shadow: 0 0 14px rgba(255,51,102,0.45); }
 
 /* Nudged higher up the screen */
-#ui { position: absolute; top: 14%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
+#ui { position: absolute; top: 13%; text-align: center; pointer-events: none; width: 100%; z-index: 5;}
 #ui h1 { margin: 0; font-size: clamp(2.3rem, 10vw, 4.1rem); color: rgba(255,255,255,0.9); line-height: 0.95; }
-#ui h2 { margin: 0; font-size: clamp(0.58rem, 2.2vw, 0.75rem); color: rgba(255,255,255,0.25); opacity: 1; letter-spacing: 2px; }
-#ui h3 { margin: 2px 0 0 0; font-size: clamp(0.58rem, 2.2vw, 0.75rem); letter-spacing: 2.4px; color: rgba(255,255,255,0.25); text-transform: uppercase; }
 #scoreDisplay { font-family: 'Bebas Neue', sans-serif; font-size: clamp(3rem, 12vw, 4.4rem); color: #fff; text-shadow: none; }
+#comboDisplay {
+  margin: 4px 0 7px 0;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.6rem, 6vw, 2.35rem);
+  letter-spacing: 1.5px;
+  line-height: 0.95;
+  color: #cbf8ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+  transition: color 0.16s ease, text-shadow 0.16s ease, transform 0.16s ease;
+}
+#comboDisplay.combo-milestone {
+  color: #fff2bc;
+  text-shadow: 0 0 18px rgba(255, 210, 122, 0.65);
+}
+#stageDisplay {
+  margin: 0;
+  font-size: clamp(0.56rem, 2vw, 0.72rem);
+  color: rgba(255,255,255,0.34);
+  letter-spacing: 1.9px;
+}
+#waveDisplay {
+  margin: 2px 0 0 0;
+  font-size: clamp(0.54rem, 1.95vw, 0.69rem);
+  letter-spacing: 2.3px;
+  color: rgba(255,255,255,0.24);
+  text-transform: uppercase;
+}
 #tutorialText { display: none; margin: 5px 0; color: #aaa; font-size: 1rem; }
 
 #mainMenu { position: absolute; text-align: center; z-index: 10; background: rgba(15,15,19,0.85); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
@@ -248,6 +274,15 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 body.intensity-1 { animation: bgPulse 2.2s ease-in-out infinite; }
 body.intensity-2 { animation: bgPulse 1.2s infinite; }
 body.intensity-3 { animation: bgPulse 0.6s infinite; }
+body.arena-charge-1 #gameCanvas {
+  box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.08);
+}
+body.arena-charge-2 #gameCanvas {
+  box-shadow: inset 0 0 30px rgba(0, 229, 255, 0.1), inset 0 0 56px rgba(255, 86, 233, 0.05);
+}
+body.arena-charge-3 #gameCanvas {
+  box-shadow: inset 0 0 36px rgba(255, 214, 94, 0.13), inset 0 0 68px rgba(255, 86, 233, 0.08);
+}
 @keyframes popIn {
   0% { transform: scale(0.8); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
@@ -257,7 +292,6 @@ body.intensity-3 { animation: bgPulse 0.6s infinite; }
   50% { filter: brightness(1.2); }
   100% { filter: brightness(1); }
 }
-
 @media (min-width: 900px) {
   #overlayMetaStack { width: min(86vw, 400px); padding: 12px 14px 10px; }
   #screenTitle { font-size: clamp(1.8rem, 3.8vw, 2.65rem); }

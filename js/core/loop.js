@@ -2,6 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const ui = {
   score: document.getElementById('scoreDisplay'), stage: document.getElementById('stageDisplay'),
+  combo: document.getElementById('comboDisplay'),
   text: document.getElementById('tutorialText'), lives: document.getElementById('livesCount'),
   bigMultiplier: document.getElementById('bigMultiplier'), multiplierCount: document.getElementById('multiplierCount'),
   coins: document.getElementById('coinCount'), overlay: document.getElementById('screenOverlay'),
@@ -204,6 +205,7 @@ let bossPauseTimeout = null;
 let worldClearDelayTimeout = null;
 let worldClearTallyInterval = null;
 let stageClearHoldUntil = 0;
+let comboPulseTimeout = null;
 let world2BossTransitionFrom25 = false;
 let world2BossArenaRotation = 0;
 let world2BossArenaRotationSpeed = 0;
@@ -738,6 +740,9 @@ function clearRunTransientTimers() {
   if (bossPauseTimeout) { clearTimeout(bossPauseTimeout); bossPauseTimeout = null; }
   if (worldClearDelayTimeout) { clearTimeout(worldClearDelayTimeout); worldClearDelayTimeout = null; }
   if (worldClearTallyInterval) { clearInterval(worldClearTallyInterval); worldClearTallyInterval = null; }
+  if (comboPulseTimeout) { clearTimeout(comboPulseTimeout); comboPulseTimeout = null; }
+  if (ui.comboPulseAnim) { ui.comboPulseAnim.cancel(); ui.comboPulseAnim = null; }
+  if (ui.combo) ui.combo.classList.remove('combo-milestone');
   world2BossArenaRotationSpeed = 0;
 }
 function resetRunState() {
@@ -886,6 +891,32 @@ function triggerBossIntro() { return OrbitGame.entities.boss.triggerBossIntro();
 
 function playBossCinematic() { return OrbitGame.entities.boss.playBossCinematic(); }
 
+function updateStreakUI(applyPulse = false, milestone = false) {
+  if (ui.streak) ui.streak.innerText = streak;
+  if (!ui.combo) return;
+  ui.combo.innerText = streak > 0 ? `STREAK ${streak}` : 'STREAK 0';
+  if (applyPulse) {
+    if (comboPulseTimeout) {
+      clearTimeout(comboPulseTimeout);
+      comboPulseTimeout = null;
+    }
+    ui.combo.classList.toggle('combo-milestone', milestone);
+    if (ui.comboPulseAnim) ui.comboPulseAnim.cancel();
+    ui.comboPulseAnim = ui.combo.animate(
+      [
+        { transform: `scale(${milestone ? 0.88 : 0.92})` },
+        { transform: `scale(${milestone ? 1.16 : 1.1})`, offset: milestone ? 0.62 : 0.7 },
+        { transform: 'scale(1)' }
+      ],
+      { duration: milestone ? 290 : 170, easing: 'ease-out' }
+    );
+    comboPulseTimeout = setTimeout(() => {
+      ui.combo.classList.remove('combo-milestone');
+      comboPulseTimeout = null;
+    }, milestone ? 320 : 190);
+  }
+}
+
 function loadLevel(idx) {
   if (idx < 0 || idx >= campaign.length) {
     console.warn('loadLevel ignored invalid index:', idx);
@@ -919,7 +950,8 @@ function loadLevel(idx) {
   resetSplitFamilyState();
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
-  ui.lives.innerText = lives; ui.streak.innerText = streak;
+  ui.lives.innerText = lives;
+  updateStreakUI();
   updateMultiplierUI();
   updateWaveUI();
 
@@ -2284,7 +2316,8 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   const streakBeforeFail = streak;
   loseLife(reason);
   distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
-  streak = 0; ui.streak.innerText = streak;
+  streak = 0;
+  updateStreakUI();
   triggerScreenShake(10);
   if (lives > 0) {
     soundLifeLost();
@@ -2513,7 +2546,7 @@ function tap() {
           world2BossSequenceProgress = 0;
           multiplier = 1;
           streak = 0;
-          ui.streak.innerText = streak;
+          updateStreakUI();
           updateMultiplierUI();
           triggerScreenShake(16);
           pulseBrightness(1.8, 180);
@@ -2721,7 +2754,7 @@ function tap() {
       if (hitQuality === "perfect" || hitQuality === "good" || hitQuality === "ok") {
         soundCoreDamage();
         if (bossPhase === 1) {
-          bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
+          bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; updateStreakUI(); updateMultiplierUI();
           createParticles(centerObj.x, centerObj.y, '#ff3366', 72);
           createShockwave('#ff3366', 44);
           pulseBrightness(1.7, 120);
@@ -2745,7 +2778,7 @@ function tap() {
           return;
         }
       } else {
-        multiplier = 1; streak = 0; ui.streak.innerText = streak; updateMultiplierUI();
+        multiplier = 1; streak = 0; updateStreakUI(); updateMultiplierUI();
         createPopup(centerObj.x, centerObj.y - 50, "REGENERATING...", "#ffaa00");
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment active-segment";
         else ui.bossPhase2.className = "boss-segment active-segment";
@@ -2778,12 +2811,6 @@ function tap() {
       const normalLen = Math.hypot(normalX, normalY) || 1;
       const outwardX = normalX / normalLen;
       const outwardY = normalY / normalLen;
-      const filthyPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "PERFECT", '#f5ffff', 'perfect');
-      filthyPopup.animType = 'perfect';
-      filthyPopup.life = 1.42;
-      filthyPopup.riseSpeed = 0.82;
-      filthyPopup.fadeSpeed = 0.024;
-      filthyPopup.shadow = 24;
       canvas.style.filter = 'brightness(2.1)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundPerfect(multiplier);
@@ -2809,12 +2836,6 @@ function tap() {
       const normalLen = Math.hypot(normalX, normalY) || 1;
       const outwardX = normalX / normalLen;
       const outwardY = normalY / normalLen;
-      const perfectPopup = createPopup(hitX + (outwardX * 24), hitY + (outwardY * 24), "PERFECT", '#fff36a', 'perfect');
-      perfectPopup.animType = 'perfect';
-      perfectPopup.life = 1.45;
-      perfectPopup.riseSpeed = 0.85;
-      perfectPopup.fadeSpeed = 0.024;
-      perfectPopup.shadow = 28;
       // Punchier but ultra-short flash to keep input feeling instant.
       canvas.style.filter = 'brightness(2.3)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 70);
@@ -2828,7 +2849,7 @@ function tap() {
     else if (hitTimingTier === 'good' || hitQuality === "good") {
       perfectLifeStreak = 0;
       ringHitFlash = Math.max(ringHitFlash, 0.26);
-      score += (2 * multiplier); createPopup(hitX, hitY - 20, "GOOD", "#fff");
+      score += (2 * multiplier);
       canvas.style.filter = 'brightness(1.4)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundGood(multiplier);
@@ -2837,14 +2858,15 @@ function tap() {
     else {
       perfectLifeStreak = 0;
       ringHitFlash = Math.max(ringHitFlash, 0.2);
-      multiplier = 1; score += 1; createPopup(hitX, hitY - 20, "OK", "#aaa");
+      multiplier = 1; score += 1;
       soundOk();
       vibrate(15);
     }
 
     streak++;
     runBestStreak = Math.max(runBestStreak, streak);
-    ui.streak.innerText = streak;
+    const isStreakMilestone = streak === 10 || streak === 20 || streak === 30;
+    updateStreakUI(true, isStreakMilestone);
     const streakMilestoneBonus = streak === 10 ? 5 : (streak === 20 ? 15 : (streak === 30 ? 30 : 0));
     if (streakMilestoneBonus > 0) {
       runCents += streakMilestoneBonus;
@@ -2865,7 +2887,7 @@ function tap() {
     markScoreCoinDirty();
     updateMultiplierUI();
     createParticles(hitX, hitY, t.color, 18 + Math.min(18, comboCount));
-    if (comboCount > 2 && comboCount % 3 === 0) {
+    if (comboCount > 2 && comboCount % 6 === 0) {
       createPopup(hitX, hitY - 36, `COMBO x${comboCount}`, '#ffd54a');
     }
     const shouldForceHudFlush = targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active)
@@ -2927,7 +2949,7 @@ function tap() {
       perfectLifeStreak = 0;
       multiplier = 1;
       streak = 0;
-      ui.streak.innerText = streak;
+      updateStreakUI();
       updateMultiplierUI();
 
       ringHitFlash = Math.max(ringHitFlash, 0.16);
@@ -2970,7 +2992,7 @@ function restartFromCheckpoint() {
 
   resetRunState();
   ui.score.innerText = 0;
-  ui.streak.innerText = 0;
+  updateStreakUI();
   updateMultiplierUI();
   markScoreCoinDirty(true);
   currentLevelIdx = getCheckpointIndex();
