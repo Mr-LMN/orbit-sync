@@ -702,6 +702,7 @@ function forceHideOverlayExtras() {
   const runStatsBlock = document.getElementById('runStatsBlock');
   const newRecordBanner = document.getElementById('newRecordBanner');
   const closeMissBanner = document.getElementById('closeMissBanner');
+  const overlayActionStack = document.getElementById('overlayActionStack');
   if (reviveBtn) reviveBtn.style.display = 'none';
   if (coinReviveBtn) coinReviveBtn.style.display = 'none';
   if (runCoinsBox) runCoinsBox.style.display = 'none';
@@ -712,6 +713,22 @@ function forceHideOverlayExtras() {
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
   if (closeMissBanner) closeMissBanner.style.display = 'none';
+  if (overlayActionStack) {
+    overlayActionStack.classList.remove('revive-available', 'no-revive');
+  }
+}
+function updateFailActionHierarchy(reviveAvailable) {
+  const overlayActionStack = document.getElementById('overlayActionStack');
+  if (!overlayActionStack || !ui.btn) return;
+  if (reviveAvailable) {
+    overlayActionStack.classList.add('revive-available');
+    overlayActionStack.classList.remove('no-revive');
+    ui.btn.classList.remove('primary');
+  } else {
+    overlayActionStack.classList.add('no-revive');
+    overlayActionStack.classList.remove('revive-available');
+    ui.btn.classList.add('primary');
+  }
 }
 function setCinematicOverlayMode() {
   ui.overlay.style.display = 'flex';
@@ -2399,16 +2416,20 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       if (runCoinsBox) runCoinsBox.style.display = 'none';
     }
     if (menuBtn) {
+      menuBtn.style.display = 'inline-block';
       menuBtn.onclick = function () {
         bankRunCoins();
         returnToMenu();
       };
     }
+    const shareBtn = document.getElementById('shareBtn');
+    if (shareBtn) shareBtn.style.display = 'inline-block';
     setOverlayState('gameOver');
     let reviveBtn = document.getElementById('reviveBtn');
     let coinReviveBtn = document.getElementById('coinReviveBtn');
     reviveBtn.style.display = 'block';
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
+    let reviveAvailable = false;
 
     if (!usedLastChance) {
       reviveBtn.innerText = "ONE MORE TRY";
@@ -2416,6 +2437,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
         usedLastChance = true;
         restartCurrentStageAfterRevive();
       };
+      reviveAvailable = true;
     } else {
       reviveBtn.style.display = 'none';
     }
@@ -2428,7 +2450,9 @@ function handleFail(reason, failEdgeDistance = Infinity) {
         if (audioCtx) soundUIClick();
         attemptCoinRevive();
       };
+      reviveAvailable = true;
     }
+    updateFailActionHierarchy(reviveAvailable);
   }
 }
 

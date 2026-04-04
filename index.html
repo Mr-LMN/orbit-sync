@@ -168,13 +168,15 @@
         </div>
       </div>
       <div id="overlayActionStack" class="overlay-action-stack">
-        <button id="shareBtn" class="btn" onclick="if(audioCtx) soundUIClick(); generateShareCard();">
-          SHARE SCORE
-        </button>
         <div id="overlayButtonGroup" class="overlay-button-group">
           <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">ONE MORE TRY</button>
           <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">REVIVE (🪙 50)</button>
           <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">SYNC AGAIN</button>
+        </div>
+        <div id="overlaySecondaryActions" class="overlay-secondary-actions">
+          <button id="shareBtn" class="btn" onclick="if(audioCtx) soundUIClick(); generateShareCard();">
+            SHARE SCORE
+          </button>
           <button id="menuBtn" class="btn btn-shop" onclick="if(audioCtx) soundUIClick();">Main Menu</button>
         </div>
       </div>
