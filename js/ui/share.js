@@ -98,11 +98,11 @@
       const file = new File([blob], 'orbitsync.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare({ files: [file] })) {
         const reviveText = reviveCount === 0
-          ? 'No revives used — clean run!'
-          : `Used ${reviveCount} revive${reviveCount > 1 ? 's' : ''}.`;
+          ? 'No revives.'
+          : `${reviveCount} revive${reviveCount > 1 ? 's' : ''}.`;
         navigator.share({
           title: 'Orbit Sync',
-          text: `I hit ${title} in World ${runWorld} with score ${score} (best streak ${runStreakBest}). ${reviveText} Can you beat it?`,
+          text: `${title} // World ${runWorld} // Score ${score} // Combo ${runStreakBest}. ${reviveText} Beat this.`,
           files: [file]
         }).catch(() => downloadCard(card));
       } else {
