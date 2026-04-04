@@ -189,10 +189,46 @@
 
   function soundLifeLost() {
     if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    playTone(160, 'sawtooth', 0.2, 0.005, 0.15, t);
-    playTone(120, 'sawtooth', 0.15, 0.01, 0.2, t + 0.1);
+    // Descending alarm: three falling tones
+    playTone(280, 'sawtooth', 0.22, 0.004, 0.09, t);
+    playTone(200, 'sawtooth', 0.20, 0.004, 0.12, t + 0.1);
+    playTone(130, 'sawtooth', 0.18, 0.006, 0.22, t + 0.22);
+    playNoiseBurst(0.08, 0.15, t, 'lowpass', 400, 0.6);
+  }
+
+  let _lastLifeDroneNode = null;
+  let _lastLifeDroneGain = null;
+
+  function startLastLifeDrone() {
+    if (!audio.audioCtx) return;
+    stopLastLifeDrone();
+    const t = audio.audioCtx.currentTime;
+    const osc = audio.audioCtx.createOscillator();
+    const gain = audio.audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(48, t);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.055, t + 0.6);
+    osc.connect(gain);
+    gain.connect(audio.audioCtx.destination);
+    osc.start(t);
+    _lastLifeDroneNode = osc;
+    _lastLifeDroneGain = gain;
+  }
+
+  function stopLastLifeDrone() {
+    if (_lastLifeDroneNode) {
+      try {
+        const t = audio.audioCtx ? audio.audioCtx.currentTime : 0;
+        _lastLifeDroneGain.gain.cancelScheduledValues(t);
+        _lastLifeDroneGain.gain.setValueAtTime(_lastLifeDroneGain.gain.value, t);
+        _lastLifeDroneGain.gain.linearRampToValueAtTime(0.001, t + 0.3);
+        _lastLifeDroneNode.stop(t + 0.35);
+      } catch (e) {}
+      _lastLifeDroneNode = null;
+      _lastLifeDroneGain = null;
+    }
   }
 
   function soundWaveClear() {
@@ -323,6 +359,8 @@
     soundMultiplierUp,
     soundFail,
     soundLifeLost,
+    startLastLifeDrone,
+    stopLastLifeDrone,
     soundWaveClear,
     soundWorldClear,
     soundShieldBreak,
@@ -349,6 +387,8 @@
     soundMultiplierUp,
     soundFail,
     soundLifeLost,
+    startLastLifeDrone,
+    stopLastLifeDrone,
     soundWaveClear,
     soundWorldClear,
     soundShieldBreak,
