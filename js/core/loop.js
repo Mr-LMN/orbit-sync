@@ -788,18 +788,27 @@ function resetRunState() {
   comboCount = 0; comboTimer = 0; comboGlow = 0; hitStopUntil = 0;
   lastMultiplierDisplay = 1;
   clearIntensity();
+  updateLastLifeState();
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
+}
+function updateLastLifeState() {
+  if (!document || !document.body) return;
+  const isLastLife = lives === 1;
+  document.body.classList.toggle('last-life', isLastLife);
+  if (ui.lives) ui.lives.classList.toggle('last-life-count', isLastLife);
 }
 function loseLife(reason) {
   lives--;
   ui.lives.innerText = lives;
+  updateLastLifeState();
   perfectLifeStreak = 0;
 }
 function gainLifeFromPerfectStreak() {
   if (lives < maxLives) {
     lives++;
     ui.lives.innerText = lives;
+    updateLastLifeState();
     perfectLifeStreak = 0;
     showTempText('+1 LIFE!', '#7dfffb', 1100);
     soundLifeGained();
@@ -970,6 +979,7 @@ function loadLevel(idx) {
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
   ui.lives.innerText = lives;
+  updateLastLifeState();
   updateStreakUI();
   updateMultiplierUI();
   updateWaveUI();
@@ -2496,6 +2506,7 @@ function restartCurrentStageAfterRevive() {
   reviveCount = reviveTotal;
   lives = 1;
   ui.lives.innerText = lives;
+  updateLastLifeState();
   isPlaying = true;
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
@@ -2591,7 +2602,8 @@ function tap() {
   if (hitIndex !== -1) {
     let t = targets[hitIndex];
     const targetCenterAngle = normalizeAngle(t.start + (t.size / 2));
-    const hitTimingAccuracy = Math.abs(signedAngularDistance(hitAngleForEffects, targetCenterAngle));
+    const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);
+    const hitTimingAccuracy = Math.abs(hitTimingOffset);
     const hitTimingTier = hitTimingAccuracy < 0.03
       ? 'filthy-perfect'
       : (hitTimingAccuracy < 0.08 ? 'perfect' : (hitTimingAccuracy < 0.14 ? 'good' : 'weak'));
@@ -2936,8 +2948,13 @@ function tap() {
     }
     else {
       perfectLifeStreak = 0;
-      ringHitFlash = Math.max(ringHitFlash, 0.2);
+      ringHitFlash = Math.max(ringHitFlash, 0.14);
       multiplier = 1; score += 1;
+      const okTimingLabel = hitTimingOffset < -0.012 ? 'EARLY' : (hitTimingOffset > 0.012 ? 'LATE' : null);
+      createPopup(hitX, hitY - 18, okTimingLabel ? `OK · ${okTimingLabel}` : 'OK', '#ff9da9', 'ok');
+      canvas.style.filter = 'brightness(0.94) saturate(0.84)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 75);
+      createParticles(hitX, hitY, '#ff8ea8', 7);
       soundOk();
       vibrate(15);
     }
