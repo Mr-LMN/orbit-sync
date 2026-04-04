@@ -2381,8 +2381,6 @@ function handleFail(reason, failEdgeDistance = Infinity) {
         else title = "KEEP GOING";
       }
       ui.title.innerText = title;
-      ui.subtitle.innerText = "Almost had it.";
-      ui.subtitle.classList.add('subtle-failure');
     });
     const newRecordBanner = document.getElementById('newRecordBanner');
     if (newRecordBanner) {
@@ -2395,52 +2393,54 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       newRecordBanner.innerText = pbMessage;
     }
     const closeMissBanner = document.getElementById('closeMissBanner');
+    const isCloseMiss = Number.isFinite(failEdgeDistance) && failEdgeDistance > 0 && failEdgeDistance < 0.08;
+    let nearBestBannerActive = false;
     if (closeMissBanner) {
-      const isCloseMiss = Number.isFinite(failEdgeDistance) && failEdgeDistance > 0 && failEdgeDistance < 0.08;
-      closeMissBanner.innerText = '⚠ JUST MISSED';
+      closeMissBanner.innerText = '⚠ ONE TAP OFF';
       closeMissBanner.style.display = isCloseMiss ? 'block' : 'none';
     }
+    if (newRecordBanner) nearBestBannerActive = !isCloseMiss && newRecordBanner.style.display === 'block' && !newRecords.score && !newRecords.streak && !newRecords.world;
     if (clearSummary) clearSummary.style.display = 'none';
     if (pbStatsBlock) pbStatsBlock.style.display = 'none';
-    if (runComboDisplay) runComboDisplay.innerText = `COMBO ${streakBeforeFail}`;
-    if (runScoreDisplay) runScoreDisplay.innerText = `Score ${score}`;
-    let nearMsg = '';
-    const bestScore = previousPB.score || 0;
-    if (streakBeforeFail >= 8) {
-      nearMsg = `⚡ x${streakBeforeFail} run broken`;
-    } else if (streakBeforeFail >= 5) {
-      nearMsg = '⚡ getting hot';
-    } else if (bestScore > 0 && score >= (bestScore * 0.8)) {
-      nearMsg = '⚡ almost a new best';
-    } else if (streakBeforeFail === 0) {
-      nearMsg = '⚡ timing was close';
-    } else {
-      nearMsg = '⚡ keep the rhythm';
+    const showComboHero = streakBeforeFail >= 3;
+    const bestCombo = Math.max(runBestStreak || 0, streakBeforeFail || 0);
+    if (runComboDisplay) runComboDisplay.innerText = showComboHero ? `COMBO ${streakBeforeFail}` : `SCORE ${score}`;
+    if (runScoreDisplay) {
+      if (showComboHero) runScoreDisplay.innerText = `Score ${score}`;
+      else if (bestCombo > 0) runScoreDisplay.innerText = `Best combo ${bestCombo}`;
+      else runScoreDisplay.innerText = '';
     }
-    if (nearMissEl) nearMissEl.innerText = nearMsg;
+    if (nearMissEl) {
+      nearMissEl.innerText = '';
+      nearMissEl.style.display = 'none';
+    }
+    let subtitleText = '';
+    if (isCloseMiss) subtitleText = 'ONE TAP OFF';
+    else if (nearBestBannerActive) subtitleText = '';
+    else if (streakBeforeFail >= 6) subtitleText = 'RUN BROKEN';
+    ui.subtitle.classList.add('subtle-failure');
+    ui.subtitle.innerText = subtitleText;
+    ui.subtitle.style.display = subtitleText ? 'block' : 'none';
     if (runStatsBlock) runStatsBlock.style.display = 'flex';
-    ui.btn.innerText = "SYNC AGAIN";
+    ui.btn.innerText = pendingCoins > 0 ? `BANK ${pendingCoins} + PLAY AGAIN` : 'PLAY AGAIN';
     ui.btn.onclick = function () {
       bankRunCoins();
       ui.overlay.style.display = 'none';
       restartFromCheckpoint();
     };
     if (pendingCoins > 0) {
-      ui.runCoins.innerText = `+${pendingCoins} ON THE LINE`;
-      if (runCoinsHint) {
-        runCoinsHint.innerText = 'banked on retry or menu';
-        runCoinsHint.style.display = 'block';
-      }
+      ui.runCoins.innerText = `+${pendingCoins} COINS`;
+      if (runCoinsHint) runCoinsHint.style.display = 'none';
       if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
     } else {
-      ui.runCoins.innerText = '0 COINS';
+      ui.runCoins.innerText = '';
       if (runCoinsHint) runCoinsHint.style.display = 'none';
       if (runCoinsBox) runCoinsBox.style.display = 'none';
     }
     if (menuBtn) {
       menuBtn.style.display = 'inline-block';
       menuBtn.onclick = function () {
-        bankRunCoins();
+        if (pendingCoins > 0) bankRunCoins();
         returnToMenu();
       };
     }
