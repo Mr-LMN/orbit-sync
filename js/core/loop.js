@@ -913,7 +913,7 @@ function playBossCinematic() { return OrbitGame.entities.boss.playBossCinematic(
 function updateStreakUI(applyPulse = false, milestone = false) {
   if (ui.streak) ui.streak.innerText = streak;
   if (!ui.combo) return;
-  ui.combo.innerText = streak > 0 ? `STREAK ${streak}` : 'STREAK 0';
+  ui.combo.innerText = streak > 0 ? `COMBO ${streak}` : 'COMBO 0';
   if (applyPulse) {
     if (comboPulseTimeout) {
       clearTimeout(comboPulseTimeout);
@@ -2373,7 +2373,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       ui.title.style.color = '#ff3366';
       ui.title.classList.add('run-title');
       ui.title.innerText = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
-      ui.subtitle.innerText = "Reset. Refocus. Sync again.";
+      ui.subtitle.innerText = "Close one. Go again.";
       ui.subtitle.classList.add('subtle-failure');
     });
     const newRecordBanner = document.getElementById('newRecordBanner');
@@ -2382,14 +2382,14 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       const scoreDiff = Math.max(0, previousPB.score - score);
       const closeMargin = Math.max(3, Math.floor(previousPB.score * 0.1));
       if (newRecords.score || newRecords.streak || newRecords.world) pbMessage = '★ NEW RECORD ★';
-      else if (previousPB.score > 0 && scoreDiff > 0 && scoreDiff <= closeMargin) pbMessage = `⚡ ${scoreDiff} from best`;
+      else if (previousPB.score > 0 && scoreDiff > 0 && scoreDiff <= closeMargin) pbMessage = `⚡ ${scoreDiff} off best`;
       newRecordBanner.style.display = pbMessage ? 'block' : 'none';
       newRecordBanner.innerText = pbMessage;
     }
     const closeMissBanner = document.getElementById('closeMissBanner');
     if (closeMissBanner) {
       const isCloseMiss = Number.isFinite(failEdgeDistance) && failEdgeDistance > 0 && failEdgeDistance < 0.08;
-      closeMissBanner.innerText = '⚠ CLOSE MISS';
+      closeMissBanner.innerText = '⚠ JUST MISSED';
       closeMissBanner.style.display = isCloseMiss ? 'block' : 'none';
     }
     if (clearSummary) clearSummary.style.display = 'none';
