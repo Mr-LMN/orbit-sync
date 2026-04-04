@@ -699,6 +699,7 @@ function forceHideOverlayExtras() {
   const clearSummary = document.getElementById('clearSummary');
   const shareBtn = document.getElementById('shareBtn');
   const pbStatsBlock = document.getElementById('pbStatsBlock');
+  const runStatsBlock = document.getElementById('runStatsBlock');
   const newRecordBanner = document.getElementById('newRecordBanner');
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (reviveBtn) reviveBtn.style.display = 'none';
@@ -708,6 +709,7 @@ function forceHideOverlayExtras() {
   if (clearSummary) clearSummary.style.display = 'none';
   if (shareBtn) shareBtn.style.display = 'none';
   if (pbStatsBlock) pbStatsBlock.style.display = 'none';
+  if (runStatsBlock) runStatsBlock.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
   if (closeMissBanner) closeMissBanner.style.display = 'none';
 }
@@ -2340,6 +2342,11 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
+    const pbStatsBlock = document.getElementById('pbStatsBlock');
+    const runStatsBlock = document.getElementById('runStatsBlock');
+    const runScoreDisplay = document.getElementById('runScoreDisplay');
+    const runStreakDisplay = document.getElementById('runStreakDisplay');
+    const clearSummary = document.getElementById('clearSummary');
     updatePBDisplay(newRecords);
     glitchCanvas(120, () => {
       ui.overlay.style.display = 'flex';
@@ -2365,6 +2372,11 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       closeMissBanner.innerText = '⚠ CLOSE MISS';
       closeMissBanner.style.display = isCloseMiss ? 'block' : 'none';
     }
+    if (clearSummary) clearSummary.style.display = 'none';
+    if (pbStatsBlock) pbStatsBlock.style.display = 'none';
+    if (runScoreDisplay) runScoreDisplay.innerText = score;
+    if (runStreakDisplay) runStreakDisplay.innerText = streakBeforeFail;
+    if (runStatsBlock) runStatsBlock.style.display = 'grid';
     ui.btn.innerText = "SYNC AGAIN";
     ui.btn.onclick = function () {
       ui.overlay.style.display = 'none';
@@ -2984,6 +2996,12 @@ function restartFromCheckpoint() {
   ui.overlay.style.display = 'none';
   ui.title.classList.remove('run-title');
   ui.subtitle.classList.remove('subtle-failure');
+  const runStatsBlock = document.getElementById('runStatsBlock');
+  const runScoreDisplay = document.getElementById('runScoreDisplay');
+  const runStreakDisplay = document.getElementById('runStreakDisplay');
+  if (runStatsBlock) runStatsBlock.style.display = 'none';
+  if (runScoreDisplay) runScoreDisplay.innerText = '0';
+  if (runStreakDisplay) runStreakDisplay.innerText = '0';
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
@@ -3009,6 +3027,8 @@ function returnToMenu() {
   setOverlayState('cinematic');
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+  const runStatsBlock = document.getElementById('runStatsBlock');
+  if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
   refreshMenuWorldPreview();
