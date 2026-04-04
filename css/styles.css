@@ -7,6 +7,25 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 .top-stat span { color: #fff; margin-left: 5px; font-size: 0.85rem; }
 #streakBox { opacity: 0.38; }
 #streakBox span { color: rgba(0,229,255,0.72); text-shadow: 0 0 6px rgba(0,229,255,0.3); }
+#livesCount {
+  transition: color 160ms ease, text-shadow 180ms ease, transform 180ms ease;
+}
+@keyframes lastLifePulse {
+  0%, 100% { transform: scale(1); text-shadow: 0 0 8px rgba(255, 132, 166, 0.35); }
+  50% { transform: scale(1.08); text-shadow: 0 0 16px rgba(255, 102, 146, 0.62); }
+}
+@keyframes lastLifeArenaPulse {
+  0%, 100% { box-shadow: inset 0 0 26px rgba(255, 85, 140, 0.12), inset 0 0 50px rgba(255, 72, 126, 0.08); }
+  50% { box-shadow: inset 0 0 34px rgba(255, 95, 152, 0.18), inset 0 0 64px rgba(255, 82, 136, 0.12); }
+}
+body.last-life #livesCount,
+#livesCount.last-life-count {
+  color: #ff7f9f;
+  animation: lastLifePulse 0.95s ease-in-out infinite;
+}
+body.last-life #gameCanvas {
+  animation: lastLifeArenaPulse 1.35s ease-in-out infinite;
+}
 
 /* NEW: Massive Right-Side Multiplier */
 /* Scaled down font for mobile */
@@ -338,13 +357,13 @@ body.intensity-1 { animation: bgPulse 2.2s ease-in-out infinite; }
 body.intensity-2 { animation: bgPulse 1.2s infinite; }
 body.intensity-3 { animation: bgPulse 0.6s infinite; }
 body.arena-charge-1 #gameCanvas {
-  box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.08);
+  box-shadow: inset 0 0 28px rgba(0, 229, 255, 0.12);
 }
 body.arena-charge-2 #gameCanvas {
-  box-shadow: inset 0 0 30px rgba(0, 229, 255, 0.1), inset 0 0 56px rgba(255, 86, 233, 0.05);
+  box-shadow: inset 0 0 34px rgba(0, 229, 255, 0.15), inset 0 0 62px rgba(255, 86, 233, 0.08);
 }
 body.arena-charge-3 #gameCanvas {
-  box-shadow: inset 0 0 36px rgba(255, 214, 94, 0.13), inset 0 0 68px rgba(255, 86, 233, 0.08);
+  box-shadow: inset 0 0 42px rgba(255, 214, 94, 0.18), inset 0 0 76px rgba(255, 86, 233, 0.12);
 }
 @keyframes popIn {
   0% { transform: scale(0.8); opacity: 0; }
