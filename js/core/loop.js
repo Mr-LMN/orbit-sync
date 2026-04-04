@@ -176,6 +176,7 @@ const ECHO_HISTORY_MAX_MS = 1200;
 let world4FocusMode = 'none'; // 'main' | 'echo' | 'none'
 let world4TutorialStep = 0;
 const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
+const NEAR_MISS_SURVIVAL_THRESHOLD = NEAR_MISS_THRESHOLD * 0.34;
 const NEAR_MISS_COOLDOWN_MS = 700;
 let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
@@ -836,6 +837,7 @@ function createDirectionalShardBurst(x, y, axisAngle, config = {}) {
 function createPopup(x, y, text, color, hitQuality = null) { return OrbitGame.entities.effects.createPopup(x, y, text, color, hitQuality); }
 function showComboPopup(multiplierLevel) { return OrbitGame.entities.effects.showComboPopup(multiplierLevel); }
 function showNearMissReplay(reason, nearestEdgeDistance) { return OrbitGame.entities.effects.showNearMissReplay(reason, nearestEdgeDistance); }
+function showSurvivalNearMissShock(nearestEdgeDistance) { return OrbitGame.entities.effects.showSurvivalNearMissShock(nearestEdgeDistance); }
 function triggerIntensity(level) { return OrbitGame.entities.effects.triggerIntensity(level); }
 function clearIntensity() { return OrbitGame.entities.effects.clearIntensity(); }
 function createShockwave(color, speed = 40) { return OrbitGame.entities.effects.createShockwave(color, speed); }
@@ -3039,6 +3041,9 @@ function tap() {
     const now = Date.now();
     const nearMissAvailable = (now - lastNearMissAt) >= NEAR_MISS_COOLDOWN_MS;
     const isNearMiss = streak > 0 && nearMissAvailable && nearestEdgeDistance <= NEAR_MISS_THRESHOLD;
+    const isSurvivalNearMissShock = lives > 1
+      && nearMissAvailable
+      && nearestEdgeDistance <= NEAR_MISS_SURVIVAL_THRESHOLD;
 
     if (isNearMiss) {
       lastNearMissAt = now;
@@ -3048,12 +3053,16 @@ function tap() {
       updateStreakUI();
       updateMultiplierUI();
 
-      ringHitFlash = Math.max(ringHitFlash, 0.16);
-      createShockwave('#ffaa00', 28);
-      createPopup(hitX, hitY - 24, nearestEdgeDistance <= (NEAR_MISS_THRESHOLD * 0.5) ? "SO CLOSE" : "CLOSE!", "#ffaa00");
-      canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
-      setTimeout(() => canvas.style.boxShadow = 'none', 100);
-      if (navigator.vibrate) vibrate(12);
+      if (isSurvivalNearMissShock) {
+        showSurvivalNearMissShock(nearestEdgeDistance);
+      } else {
+        ringHitFlash = Math.max(ringHitFlash, 0.16);
+        createShockwave('#ffaa00', 28);
+        createPopup(hitX, hitY - 24, nearestEdgeDistance <= (NEAR_MISS_THRESHOLD * 0.5) ? "SO CLOSE" : "CLOSE!", "#ffaa00");
+        canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
+        setTimeout(() => canvas.style.boxShadow = 'none', 100);
+        if (navigator.vibrate) vibrate(12);
+      }
       handleFail("MISSED", nearestEdgeDistance);
     } else {
       perfectLifeStreak = 0;
@@ -3065,6 +3074,10 @@ function tap() {
       if (lives <= 1 && nearestEdgeDistance <= NEAR_MISS_THRESHOLD) {
         showNearMissReplay("MISSED", nearestEdgeDistance);
       } else {
+        if (isSurvivalNearMissShock) {
+          lastNearMissAt = now;
+          showSurvivalNearMissShock(nearestEdgeDistance);
+        }
         handleFail("MISSED", nearestEdgeDistance);
       }
     }

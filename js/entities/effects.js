@@ -55,6 +55,8 @@
     createUpwardBurstParticles(centerObj.x, centerObj.y - 14, m.color, 28);
   }
 
+  let survivalNearMissClassTimeout = null;
+
   function showNearMissReplay(reason, nearestEdgeDistance) {
     nearMissReplayActive = true;
     nearMissReplayUntil = performance.now() + 420;
@@ -72,6 +74,27 @@
       handleFail(reason, nearestEdgeDistance);
       nearMissFailTimeout = null;
     }, 420);
+  }
+
+  function showSurvivalNearMissShock(nearestEdgeDistance) {
+    nearMissReplayUntil = Math.max(nearMissReplayUntil, performance.now() + 180);
+    ringHitFlash = Math.max(ringHitFlash, 0.1);
+    createShockwave('#ffb24a', 22);
+    createPopup(centerObj.x, centerObj.y - orbitRadius - 20, 'ALMOST', '#ffbe55');
+    document.body.classList.remove('near-miss-shock');
+    void document.body.offsetWidth;
+    document.body.classList.add('near-miss-shock');
+    if (survivalNearMissClassTimeout) clearTimeout(survivalNearMissClassTimeout);
+    survivalNearMissClassTimeout = setTimeout(() => {
+      document.body.classList.remove('near-miss-shock');
+      survivalNearMissClassTimeout = null;
+    }, 220);
+
+    if (navigator.vibrate) vibrate([8, 16, 8]);
+    if (typeof playNoiseBurst === 'function' && typeof shouldThrottleAudio === 'function' && !shouldThrottleAudio(true)) {
+      const now = (window.audioCtx && audioCtx.currentTime) ? audioCtx.currentTime : 0;
+      playNoiseBurst(0.034, 0.065, now, 'bandpass', 820, 0.95);
+    }
   }
 
   function createShockwave(color, speed = 40) {
@@ -150,6 +173,7 @@
   OG.entities.effects.createPopup = createPopup;
   OG.entities.effects.showComboPopup = showComboPopup;
   OG.entities.effects.showNearMissReplay = showNearMissReplay;
+  OG.entities.effects.showSurvivalNearMissShock = showSurvivalNearMissShock;
   OG.entities.effects.createShockwave = createShockwave;
   OG.entities.effects.createTargetHitRipple = createTargetHitRipple;
   OG.entities.effects.triggerTargetHitFeedback = triggerTargetHitFeedback;
