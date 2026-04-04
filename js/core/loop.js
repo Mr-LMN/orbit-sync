@@ -2346,6 +2346,9 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const runStatsBlock = document.getElementById('runStatsBlock');
     const runScoreDisplay = document.getElementById('runScoreDisplay');
     const runStreakDisplay = document.getElementById('runStreakDisplay');
+    const runCoinsBox = document.getElementById('runCoinsBox');
+    const runCoinsHint = document.getElementById('runCoinsHint');
+    const menuBtn = ui.menuBtn || document.getElementById('menuBtn');
     const clearSummary = document.getElementById('clearSummary');
     updatePBDisplay(newRecords);
     glitchCanvas(120, () => {
@@ -2379,10 +2382,28 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     if (runStatsBlock) runStatsBlock.style.display = 'grid';
     ui.btn.innerText = "SYNC AGAIN";
     ui.btn.onclick = function () {
+      bankRunCoins();
       ui.overlay.style.display = 'none';
       restartFromCheckpoint();
     };
-    ui.runCoins.innerText = pendingCoins > 0 ? `+${pendingCoins} READY TO BANK` : '0 COINS';
+    if (pendingCoins > 0) {
+      ui.runCoins.innerText = `+${pendingCoins} READY TO BANK`;
+      if (runCoinsHint) {
+        runCoinsHint.innerText = 'banked on retry or menu';
+        runCoinsHint.style.display = 'block';
+      }
+      if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
+    } else {
+      ui.runCoins.innerText = '0 COINS';
+      if (runCoinsHint) runCoinsHint.style.display = 'none';
+      if (runCoinsBox) runCoinsBox.style.display = 'none';
+    }
+    if (menuBtn) {
+      menuBtn.onclick = function () {
+        bankRunCoins();
+        returnToMenu();
+      };
+    }
     setOverlayState('gameOver');
     let reviveBtn = document.getElementById('reviveBtn');
     let coinReviveBtn = document.getElementById('coinReviveBtn');
