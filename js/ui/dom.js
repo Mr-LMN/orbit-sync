@@ -6,6 +6,7 @@
 
   const ui = {
     score: document.getElementById('scoreDisplay'),
+    combo: document.getElementById('comboDisplay'),
     stage: document.getElementById('stageDisplay'),
     text: document.getElementById('tutorialText'),
     lives: document.getElementById('livesCount'),

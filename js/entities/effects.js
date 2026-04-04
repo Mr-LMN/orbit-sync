@@ -33,8 +33,8 @@
 
   function showComboPopup(multiplierLevel) {
     const milestones = {
-      4: { label: 'x4 COMBO!', color: '#00f7ff' },
-      6: { label: 'x6 RAMPAGE!', color: '#ff67f3' },
+      5: { label: 'x5 OVERDRIVE', color: '#00f7ff' },
+      7: { label: 'x7 VOLTAGE', color: '#ff67f3' },
       8: { label: 'x8 GOD MODE!', color: '#ffd84d' }
     };
     const m = milestones[multiplierLevel];
@@ -119,14 +119,19 @@
   function triggerIntensity(level) {
     const root = document.documentElement;
     root.style.setProperty('--pulse', level === 1 ? '0.5' : level === 2 ? '1' : '1.5');
+    root.style.setProperty('--arena-charge', level === 1 ? '0.35' : level === 2 ? '0.6' : '0.85');
     document.body.classList.remove('intensity-1', 'intensity-2', 'intensity-3');
+    document.body.classList.remove('arena-charge-1', 'arena-charge-2', 'arena-charge-3');
     document.body.classList.add(`intensity-${Math.max(1, Math.min(3, level))}`);
+    document.body.classList.add(`arena-charge-${Math.max(1, Math.min(3, level))}`);
   }
 
   function clearIntensity() {
     const root = document.documentElement;
     root.style.setProperty('--pulse', '0');
+    root.style.setProperty('--arena-charge', '0');
     document.body.classList.remove('intensity-1', 'intensity-2', 'intensity-3');
+    document.body.classList.remove('arena-charge-1', 'arena-charge-2', 'arena-charge-3');
   }
 
   function showTempText(text, color, duration) {
