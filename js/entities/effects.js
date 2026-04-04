@@ -77,11 +77,21 @@
   }
 
   function showSurvivalNearMissShock(nearestEdgeDistance) {
-    nearMissReplayUntil = Math.max(nearMissReplayUntil, performance.now() + 240);
-    ringHitFlash = Math.max(ringHitFlash, 0.18);
-    createShockwave('#ffb24a', 28);
-    createPopup(centerObj.x, centerObj.y - orbitRadius - 20, 'ALMOST', '#ffd27a');
-    triggerScreenShake(8);
+    nearMissReplayUntil = Math.max(nearMissReplayUntil, performance.now() + 320);
+    ringHitFlash = Math.max(ringHitFlash, 0.38);
+    createShockwave('#ffb24a', 44);
+    createShockwave('#ffffff', 58);
+    createPopup(centerObj.x, centerObj.y - orbitRadius - 20, 'SURVIVED', '#ffcc44');
+    triggerScreenShake(14);
+
+    // Override canvas transition temporarily so flash hits instantly
+    canvas.style.transition = 'none';
+    canvas.style.filter = 'brightness(1.6) sepia(0.4)';
+    setTimeout(() => {
+      canvas.style.filter = 'brightness(1)';
+      setTimeout(() => { canvas.style.transition = ''; }, 80);
+    }, 80);
+
     document.body.classList.remove('near-miss-shock');
     void document.body.offsetWidth;
     document.body.classList.add('near-miss-shock');
@@ -89,12 +99,12 @@
     survivalNearMissClassTimeout = setTimeout(() => {
       document.body.classList.remove('near-miss-shock');
       survivalNearMissClassTimeout = null;
-    }, 260);
+    }, 340);
 
-    if (navigator.vibrate) vibrate([8, 16, 8]);
+    if (navigator.vibrate) vibrate([30, 20, 50]);
     if (typeof playNoiseBurst === 'function' && typeof shouldThrottleAudio === 'function' && !shouldThrottleAudio(true)) {
       const now = (window.audioCtx && audioCtx.currentTime) ? audioCtx.currentTime : 0;
-      playNoiseBurst(0.034, 0.065, now, 'bandpass', 820, 0.95);
+      playNoiseBurst(0.07, 0.12, now, 'bandpass', 640, 0.8);
     }
   }
 

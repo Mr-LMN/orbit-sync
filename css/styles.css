@@ -3,7 +3,7 @@ body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-fami
 
 @keyframes survivalNearMissShock {
   0% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
-  28% { box-shadow: inset 0 0 38px rgba(255, 173, 64, 0.44), inset 0 0 74px rgba(255, 141, 38, 0.24); filter: brightness(1.13); }
+  25% { box-shadow: inset 0 0 60px rgba(255, 173, 64, 0.68), inset 0 0 110px rgba(255, 141, 38, 0.42); filter: brightness(1.22); }
   100% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
 }
 body.near-miss-shock #gameCanvas {
@@ -436,4 +436,59 @@ body.last-life.arena-charge-3 #gameCanvas {
 @media (hover: hover) and (pointer: fine) {
   #overlayButtonGroup .btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
   #shareBtn:hover { background: rgba(255,255,255,0.07) !important; }
+}
+
+
+/* ── RUN STATE LADDER ─────────────────────────────────── */
+/* combo 5+ : heating up */
+body.run-state-heat #comboDisplay {
+  animation: comboHeatPulse 1.4s ease-in-out infinite;
+}
+@keyframes comboHeatPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.78; }
+}
+
+/* combo 10+ : locked in */
+body.run-state-locked #comboDisplay {
+  animation: comboLockedPulse 0.9s ease-in-out infinite;
+}
+@keyframes comboLockedPulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 22px rgba(255,227,150,0.95), 0 0 42px rgba(255,209,110,0.5); }
+  50% { opacity: 0.88; text-shadow: 0 0 36px rgba(255,220,120,1), 0 0 60px rgba(255,200,80,0.7); }
+}
+body.run-state-locked #scoreDisplay {
+  color: #fff3cf;
+  text-shadow: 0 0 16px rgba(255, 220, 140, 0.5);
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+/* combo 20+ : overdrive */
+body.run-state-overdrive #comboDisplay {
+  animation: comboOverdrivePulse 0.45s ease-in-out infinite;
+}
+@keyframes comboOverdrivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; transform: scale(1.03); }
+}
+body.run-state-overdrive #scoreDisplay {
+  color: #ffd84d;
+  text-shadow: 0 0 20px rgba(255,210,60,0.8), 0 0 40px rgba(255,190,40,0.4);
+  transition: color 0.2s, text-shadow 0.2s;
+}
+body.run-state-overdrive #gameCanvas {
+  box-shadow: inset 0 0 90px rgba(255, 214, 60, 0.28), inset 0 0 150px rgba(255, 140, 40, 0.16);
+}
+/* Overdrive cancels standard arena-charge to avoid box-shadow conflict */
+body.run-state-overdrive.arena-charge-1 #gameCanvas,
+body.run-state-overdrive.arena-charge-2 #gameCanvas,
+body.run-state-overdrive.arena-charge-3 #gameCanvas {
+  box-shadow: inset 0 0 90px rgba(255, 214, 60, 0.36), inset 0 0 150px rgba(255, 140, 40, 0.22);
+}
+
+/* Survival near-miss shock bumped */
+@keyframes survivalNearMissShock {
+  0% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
+  25% { box-shadow: inset 0 0 60px rgba(255, 173, 64, 0.68), inset 0 0 110px rgba(255, 141, 38, 0.42); filter: brightness(1.22); }
+  100% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
 }
