@@ -154,6 +154,16 @@
 
       <div id="newRecordBanner" style="display:none; color:#ffaa00; font-family:'Orbitron',sans-serif;"></div>
       <div id="closeMissBanner" style="display:none; color:#ffd27a; font-family:'Orbitron',sans-serif;">⚠ SO CLOSE</div>
+      <div id="runStatsBlock" class="run-stats-block" style="display:none;">
+        <div class="run-stat">
+          <div class="run-label">RUN SCORE</div>
+          <div class="run-value" id="runScoreDisplay">0</div>
+        </div>
+        <div class="run-stat">
+          <div class="run-label">RUN STREAK</div>
+          <div class="run-value" id="runStreakDisplay">0</div>
+        </div>
+      </div>
       <div id="overlayActionStack" class="overlay-action-stack">
         <button id="shareBtn" class="btn" onclick="if(audioCtx) soundUIClick(); generateShareCard();">
           SHARE SCORE
