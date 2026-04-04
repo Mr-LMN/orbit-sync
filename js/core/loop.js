@@ -925,6 +925,21 @@ function updateStreakUI(applyPulse = false, milestone = false) {
   if (ui.streak) ui.streak.innerText = streak;
   if (!ui.combo) return;
   ui.combo.innerText = streak > 0 ? `COMBO ${streak}` : 'COMBO 0';
+
+  if (streak >= 10) {
+    ui.combo.style.color = '#fff3cf';
+    ui.combo.style.textShadow = '0 0 20px rgba(255, 227, 150, 0.9), 0 0 36px rgba(255, 209, 110, 0.38)';
+  } else if (streak >= 5) {
+    ui.combo.style.color = '#ecfdff';
+    ui.combo.style.textShadow = '0 0 18px rgba(0, 237, 255, 0.64), 0 0 30px rgba(0, 229, 255, 0.24)';
+  } else if (streak === 0) {
+    ui.combo.style.color = '#c5f6ff';
+    ui.combo.style.textShadow = '0 0 10px rgba(0, 229, 255, 0.28), 0 0 18px rgba(0, 229, 255, 0.12)';
+  } else {
+    ui.combo.style.color = '#d9fbff';
+    ui.combo.style.textShadow = '0 0 16px rgba(0, 229, 255, 0.5), 0 0 28px rgba(0, 229, 255, 0.18)';
+  }
+
   if (applyPulse) {
     if (comboPulseTimeout) {
       clearTimeout(comboPulseTimeout);
@@ -2952,7 +2967,7 @@ function tap() {
       perfectLifeStreak = 0;
       ringHitFlash = Math.max(ringHitFlash, 0.14);
       multiplier = 1; score += 1;
-      const okTimingLabel = hitTimingOffset < -0.012 ? 'EARLY' : (hitTimingOffset > 0.012 ? 'LATE' : null);
+      const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
       createPopup(hitX, hitY - 18, okTimingLabel ? `OK · ${okTimingLabel}` : 'OK', '#ff9da9', 'ok');
       canvas.style.filter = 'brightness(0.94) saturate(0.84)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 75);
