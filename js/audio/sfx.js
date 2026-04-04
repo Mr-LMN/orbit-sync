@@ -127,8 +127,10 @@
     if (!audio.audioCtx) return;
     if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    playTone(180, 'triangle', 0.18, 0.005, 0.12, t);
-    playTone(90, 'sine', 0.1, 0.005, 0.15, t);
+    // Flat buzz: feels like a warning klaxon, not a reward
+    playTone(160, 'square', 0.14, 0.002, 0.07, t);
+    playTone(110, 'sawtooth', 0.12, 0.003, 0.10, t + 0.01);
+    playNoiseBurst(0.04, 0.06, t, 'bandpass', 380, 0.7);
   }
 
   function soundGood(multiplier) {
