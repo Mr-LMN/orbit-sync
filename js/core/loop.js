@@ -924,7 +924,15 @@ function playBossCinematic() { return OrbitGame.entities.boss.playBossCinematic(
 function updateStreakUI(applyPulse = false, milestone = false) {
   if (ui.streak) ui.streak.innerText = streak;
   if (!ui.combo) return;
+  const _prevText = ui.combo.innerText;
+  const _wasHighCombo = _prevText && parseInt(_prevText.replace('COMBO ', ''), 10) >= 5;
   ui.combo.innerText = streak > 0 ? `COMBO ${streak}` : 'COMBO 0';
+  if (streak === 0 && _wasHighCombo) {
+    ui.combo.animate(
+      [{ transform: 'scale(1.2)', color: '#ff3366', opacity: 0.6 }, { transform: 'scale(0.85)', opacity: 1 }, { transform: 'scale(1)' }],
+      { duration: 260, easing: 'ease-out' }
+    );
+  }
 
   // Run-state ladder: body class drives global CSS responses
   document.body.classList.remove('run-state-heat', 'run-state-locked', 'run-state-overdrive');
@@ -2981,12 +2989,14 @@ function tap() {
       ringHitFlash = Math.max(ringHitFlash, 0.14);
       multiplier = 1; score += 1;
       const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
-      createPopup(hitX, hitY - 18, okTimingLabel ? `OK · ${okTimingLabel}` : 'OK', '#ff9da9', 'ok');
-      canvas.style.filter = 'brightness(0.94) saturate(0.84)';
-      setTimeout(() => canvas.style.filter = 'brightness(1)', 75);
-      createParticles(hitX, hitY, '#ff8ea8', 7);
+      createPopup(hitX, hitY - 24, okTimingLabel ? `${okTimingLabel}` : 'SLOPPY', '#ff6677', 'ok');
+      canvas.style.filter = 'brightness(1.5) hue-rotate(320deg) saturate(1.4)';
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 55);
+      createShockwave('#ff6677', 20);
+      createParticles(hitX, hitY, '#ff7788', 12);
+      triggerScreenShake(5);
       soundOk();
-      vibrate(15);
+      vibrate([20, 10, 20]);
     }
 
     streak++;
@@ -3076,10 +3086,17 @@ function tap() {
     if (isNearMiss) {
       lastNearMissAt = now;
       perfectLifeStreak = 0;
+      const _wasComboing = streak >= 5;
       multiplier = 1;
       streak = 0;
       updateStreakUI();
       updateMultiplierUI();
+      if (_wasComboing && ui.combo) {
+        ui.combo.animate(
+          [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.3)', opacity: 0.2, color: '#ff3366' }, { transform: 'scale(0.9)', opacity: 1 }],
+          { duration: 220, easing: 'ease-out' }
+        );
+      }
 
       if (isSurvivalNearMissShock) {
         showSurvivalNearMissShock(nearestEdgeDistance);
