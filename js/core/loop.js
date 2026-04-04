@@ -2363,6 +2363,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const runStatsBlock = document.getElementById('runStatsBlock');
     const runScoreDisplay = document.getElementById('runScoreDisplay');
     const runComboDisplay = document.getElementById('runComboDisplay');
+    const nearMissEl = document.getElementById('nearMissMsg');
     const runCoinsBox = document.getElementById('runCoinsBox');
     const runCoinsHint = document.getElementById('runCoinsHint');
     const menuBtn = ui.menuBtn || document.getElementById('menuBtn');
@@ -2372,7 +2373,14 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       ui.overlay.style.display = 'flex';
       ui.title.style.color = '#ff3366';
       ui.title.classList.add('run-title');
-      ui.title.innerText = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
+      const wonRun = false;
+      let title = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
+      if (!wonRun) {
+        if (streakBeforeFail >= 8) title = "SO CLOSE";
+        else if (streakBeforeFail >= 5) title = "ALMOST THERE";
+        else title = "KEEP GOING";
+      }
+      ui.title.innerText = title;
       ui.subtitle.innerText = "Almost had it.";
       ui.subtitle.classList.add('subtle-failure');
     });
@@ -2396,6 +2404,20 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     if (pbStatsBlock) pbStatsBlock.style.display = 'none';
     if (runComboDisplay) runComboDisplay.innerText = `COMBO ${streakBeforeFail}`;
     if (runScoreDisplay) runScoreDisplay.innerText = `Score ${score}`;
+    let nearMsg = '';
+    const bestScore = previousPB.score || 0;
+    if (streakBeforeFail >= 8) {
+      nearMsg = `⚡ x${streakBeforeFail} run broken`;
+    } else if (streakBeforeFail >= 5) {
+      nearMsg = '⚡ getting hot';
+    } else if (bestScore > 0 && score >= (bestScore * 0.8)) {
+      nearMsg = '⚡ almost a new best';
+    } else if (streakBeforeFail === 0) {
+      nearMsg = '⚡ timing was close';
+    } else {
+      nearMsg = '⚡ keep the rhythm';
+    }
+    if (nearMissEl) nearMissEl.innerText = nearMsg;
     if (runStatsBlock) runStatsBlock.style.display = 'flex';
     ui.btn.innerText = "SYNC AGAIN";
     ui.btn.onclick = function () {
@@ -3044,9 +3066,11 @@ function restartFromCheckpoint() {
   const runStatsBlock = document.getElementById('runStatsBlock');
   const runScoreDisplay = document.getElementById('runScoreDisplay');
   const runComboDisplay = document.getElementById('runComboDisplay');
+  const nearMissEl = document.getElementById('nearMissMsg');
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   if (runScoreDisplay) runScoreDisplay.innerText = 'Score 0';
   if (runComboDisplay) runComboDisplay.innerText = 'COMBO 0';
+  if (nearMissEl) nearMissEl.innerText = '';
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
