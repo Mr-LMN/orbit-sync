@@ -2362,7 +2362,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const pbStatsBlock = document.getElementById('pbStatsBlock');
     const runStatsBlock = document.getElementById('runStatsBlock');
     const runScoreDisplay = document.getElementById('runScoreDisplay');
-    const runStreakDisplay = document.getElementById('runStreakDisplay');
+    const runComboDisplay = document.getElementById('runComboDisplay');
     const runCoinsBox = document.getElementById('runCoinsBox');
     const runCoinsHint = document.getElementById('runCoinsHint');
     const menuBtn = ui.menuBtn || document.getElementById('menuBtn');
@@ -2373,7 +2373,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       ui.title.style.color = '#ff3366';
       ui.title.classList.add('run-title');
       ui.title.innerText = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
-      ui.subtitle.innerText = "Close one. Go again.";
+      ui.subtitle.innerText = "Almost had it.";
       ui.subtitle.classList.add('subtle-failure');
     });
     const newRecordBanner = document.getElementById('newRecordBanner');
@@ -2394,9 +2394,9 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     }
     if (clearSummary) clearSummary.style.display = 'none';
     if (pbStatsBlock) pbStatsBlock.style.display = 'none';
-    if (runScoreDisplay) runScoreDisplay.innerText = score;
-    if (runStreakDisplay) runStreakDisplay.innerText = streakBeforeFail;
-    if (runStatsBlock) runStatsBlock.style.display = 'grid';
+    if (runComboDisplay) runComboDisplay.innerText = `COMBO ${streakBeforeFail}`;
+    if (runScoreDisplay) runScoreDisplay.innerText = `Score ${score}`;
+    if (runStatsBlock) runStatsBlock.style.display = 'flex';
     ui.btn.innerText = "SYNC AGAIN";
     ui.btn.onclick = function () {
       bankRunCoins();
@@ -2404,7 +2404,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       restartFromCheckpoint();
     };
     if (pendingCoins > 0) {
-      ui.runCoins.innerText = `+${pendingCoins} READY TO BANK`;
+      ui.runCoins.innerText = `+${pendingCoins} ON THE LINE`;
       if (runCoinsHint) {
         runCoinsHint.innerText = 'banked on retry or menu';
         runCoinsHint.style.display = 'block';
@@ -3043,10 +3043,10 @@ function restartFromCheckpoint() {
   ui.subtitle.classList.remove('subtle-failure');
   const runStatsBlock = document.getElementById('runStatsBlock');
   const runScoreDisplay = document.getElementById('runScoreDisplay');
-  const runStreakDisplay = document.getElementById('runStreakDisplay');
+  const runComboDisplay = document.getElementById('runComboDisplay');
   if (runStatsBlock) runStatsBlock.style.display = 'none';
-  if (runScoreDisplay) runScoreDisplay.innerText = '0';
-  if (runStreakDisplay) runStreakDisplay.innerText = '0';
+  if (runScoreDisplay) runScoreDisplay.innerText = 'Score 0';
+  if (runComboDisplay) runComboDisplay.innerText = 'COMBO 0';
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
