@@ -29,6 +29,8 @@ function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFr
 function startBossDrone() { return OrbitGame.audio.startBossDrone(); }
 function stopBossDrone() { return OrbitGame.audio.stopBossDrone(); }
 function escalateBossDrone() { return OrbitGame.audio.escalateBossDrone(); }
+function startLastLifeDrone() { return OrbitGame.audio.startLastLifeDrone(); }
+function stopLastLifeDrone() { return OrbitGame.audio.stopLastLifeDrone(); }
 function soundOk() { return OrbitGame.audio.soundOk(); }
 function soundGood(multiplier) { return OrbitGame.audio.soundGood(multiplier); }
 function soundPerfect(multiplier) { return OrbitGame.audio.soundPerfect(multiplier); }
@@ -790,6 +792,7 @@ function resetRunState() {
   comboCount = 0; comboTimer = 0; comboGlow = 0; hitStopUntil = 0;
   lastMultiplierDisplay = 1;
   clearIntensity();
+  if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
   updateLastLifeState();
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
@@ -799,6 +802,11 @@ function updateLastLifeState() {
   const isLastLife = lives === 1;
   document.body.classList.toggle('last-life', isLastLife);
   if (ui.lives) ui.lives.classList.toggle('last-life-count', isLastLife);
+  if (isLastLife) {
+    if (typeof startLastLifeDrone === 'function' && audioCtx) startLastLifeDrone();
+  } else {
+    if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+  }
 }
 function loseLife(reason) {
   lives--;
@@ -1187,6 +1195,13 @@ function draw() {
   ctx.fillStyle = '#07070a';
   ctx.fillRect(0, 0, viewportWidth, viewportHeight);
 
+  // Last-life background bleed — very subtle warm red tint over the whole arena
+  if (lives === 1 && !inMenu && isPlaying) {
+    const _llTint = (Math.sin(now * 0.0072) + 1) * 0.5;
+    ctx.fillStyle = `rgba(180, 10, 40, ${0.04 + _llTint * 0.06})`;
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+  }
+
   // Ambient background dust
   bgDust.forEach(d => {
     ctx.beginPath();
@@ -1226,6 +1241,20 @@ function draw() {
   ctx.stroke();
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
+
+  // LAST-LIFE RING PULSE — drawn directly on the rail, pulses in canvas space
+  if (lives === 1 && !inMenu && isPlaying) {
+    const _llPhase = (Math.sin(now * 0.0072) + 1) * 0.5; // ~0.92Hz
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 3 + _llPhase * 8;
+    ctx.strokeStyle = '#ff2255';
+    ctx.globalAlpha = 0.22 + _llPhase * 0.42;
+    setShadowBlur(18 + _llPhase * 38);
+    ctx.shadowColor = '#ff2255';
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
 
   if (worldShape === 'diamond' && !isBoss) {
     ctx.save();
@@ -2400,6 +2429,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   if (lives <= 0) {
     if (audioCtx) updateMusicState(multiplier, false);
     clearIntensity();
+    if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
     const previousPB = {
       score: personalBest.score || 0,
       streak: personalBest.streak || 0,
