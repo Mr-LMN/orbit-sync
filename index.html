@@ -47,8 +47,8 @@
 
   <div id="mainMenu">
     <button id="menuSettingsBtn" class="settings-btn menu-settings-btn" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙</button>
-    <h1 class="title" id="orbitTitle" onclick="handleOrbitTitleTap()" style="cursor:default; user-select:none;">ORBIT</h1>
-    <h1 class="title" id="syncTitle" onclick="handleOrbitTitleTap()" style="color:#fff; text-shadow:none; margin-bottom: 20px; cursor:default; user-select:none;">SYNC</h1>
+    <h1 class="title" id="orbitTitle" style="cursor:default; touch-action:manipulation;">ORBIT</h1>
+    <h1 class="title" id="syncTitle" style="color:#fff; text-shadow:none; margin-bottom: 20px; cursor:default; touch-action:manipulation;">SYNC</h1>
 
     <div id="worldSelector" style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 8px;">
       <button class="arrow-btn" onclick="if(audioCtx) soundUIClick(); changeWorld(-1)">◀</button>

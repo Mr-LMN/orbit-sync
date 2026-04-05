@@ -357,7 +357,7 @@ function getWorldVisualTheme(level) {
       targetColor: '#2ff6ff',
       targetGlowColor: '#27dfff',
       targetCoreColor: '#f8ffff',
-      railGlowScale: 0.76
+      railGlowScale: 0.95
     };
   }
   if (worldNum === 3) {
@@ -1450,9 +1450,9 @@ function draw() {
       // Deep space — cold blue-teal nebula, very faint
       _atmColor = `rgba(0, 80, 180, ${0.04 + _atmPulse * 0.02})`;
     } else if (worldNum === 2 && !isBoss) {
-      // Crystal — faint cyan-magenta shimmer
-      const _w2shift = (Math.sin(now * 0.0003) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(30 + _w2shift * 60)}, ${Math.round(180 + _w2shift * 40)}, 220, ${0.05 + _atmPulse * 0.025})`;
+      // Crystal — cyan-to-magenta shifting shimmer, more visible
+      const _w2shift = (Math.sin(now * 0.0004) + 1) * 0.5;
+      _atmColor = `rgba(${Math.round(20 + _w2shift * 180)}, ${Math.round(100 + _w2shift * 60)}, 220, ${0.07 + _atmPulse * 0.04})`;
     } else if (worldNum === 3 && !isBoss) {
       // Echo/resonance — amber-orange warmth
       _atmColor = `rgba(180, 80, 10, ${0.04 + _atmPulse * 0.02})`;
@@ -1470,6 +1470,19 @@ function draw() {
       _atmGrad.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = _atmGrad;
       ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+
+      // W2 only: add a corner-offset magenta counter-glow for crystal feel
+      if (worldNum === 2 && !isBoss) {
+        const _w2MagPulse = (Math.sin(now * 0.0006 + 1.8) + 1) * 0.5;
+        const _magGrad = ctx.createRadialGradient(
+          viewportWidth * 0.8, viewportHeight * 0.2, 0,
+          viewportWidth * 0.8, viewportHeight * 0.2, viewportWidth * 0.55
+        );
+        _magGrad.addColorStop(0, `rgba(200, 40, 180, ${0.04 + _w2MagPulse * 0.03})`);
+        _magGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = _magGrad;
+        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+      }
     }
   }
 
