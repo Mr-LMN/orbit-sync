@@ -886,3 +886,13 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
   font-size: 1.4rem; opacity: 0.6;
 }
 .item-preview-locked { position: relative; }
+
+/* World selector arrows — navigability hints */
+.arrow-btn {
+  transition: opacity 0.2s ease;
+}
+.arrow-btn:disabled {
+  opacity: 0.18 !important;
+  cursor: not-allowed;
+}
+

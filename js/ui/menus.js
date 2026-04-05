@@ -72,6 +72,12 @@
       playBtn.style.cursor = isUnlocked ? 'pointer' : 'not-allowed';
       playBtn.innerText = isUnlocked ? 'Play' : 'LOCKED';
     }
+
+    // Dim arrows at boundaries
+    const leftArrow = document.querySelector('#worldSelector .arrow-btn:first-child');
+    const rightArrow = document.querySelector('#worldSelector .arrow-btn:last-child');
+    if (leftArrow) leftArrow.disabled = menuSelectedWorld <= 1;
+    if (rightArrow) rightArrow.disabled = menuSelectedWorld >= 3;
   }
 
   function startBestScoreRun() {
@@ -93,6 +99,8 @@
     resetRunState();
     ui.score.innerText = '0';
     updateStreakUI();
+    markScoreCoinDirty(true);
+    if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
     OrbitGame.core.loop.startMainLoop();
