@@ -172,10 +172,9 @@
           <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">PLAY AGAIN</button>
         </div>
         <div id="overlaySecondaryActions" class="overlay-secondary-actions">
-          <button id="shareBtn" class="btn" onclick="if(audioCtx) soundUIClick(); generateShareCard();">
-            SHARE SCORE
-          </button>
-          <button id="menuBtn" class="btn btn-shop" onclick="if(audioCtx) soundUIClick();">Main Menu</button>
+          <button id="shareBtn" onclick="if(audioCtx) soundUIClick(); generateShareCard();">SHARE</button>
+          <span class="overlay-sep">·</span>
+          <button id="menuBtn" onclick="if(audioCtx) soundUIClick();">MENU</button>
         </div>
       </div>
     </div>
