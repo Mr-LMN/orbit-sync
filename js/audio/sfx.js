@@ -190,37 +190,33 @@
   }
 
   function soundLifeLost() {
-    if (!audio.audioCtx) return;
+    if (!audio.audioCtx || !audio.sfxEnabled) return;
     const t = audio.audioCtx.currentTime;
-    // Descending alarm: three falling tones
+    // Descending alarm — three falling tones, distinct from soundFail
     playTone(280, 'sawtooth', 0.22, 0.004, 0.09, t);
-    playTone(200, 'sawtooth', 0.20, 0.004, 0.12, t + 0.1);
-    playTone(130, 'sawtooth', 0.18, 0.006, 0.22, t + 0.22);
-    playNoiseBurst(0.08, 0.15, t, 'lowpass', 400, 0.6);
+    playTone(200, 'sawtooth', 0.18, 0.004, 0.13, t + 0.11);
+    playTone(130, 'sawtooth', 0.16, 0.006, 0.22, t + 0.24);
+    playNoiseBurst(0.07, 0.14, t, 'lowpass', 380, 0.55);
   }
 
   // ── LAST-LIFE HEARTBEAT ──────────────────────────────
-  // lub-dub pattern: two sub-bass thumps per 1400ms cycle
-  // Must match the CSS animation timing exactly.
-  let _heartbeatOsc = null;
-  let _heartbeatGain = null;
   let _heartbeatInterval = null;
 
   function _playHeartThump(freq, vol, delay) {
-    if (!audio.audioCtx) return;
+    if (!audio.audioCtx || !audio.sfxEnabled) return;
     const t = audio.audioCtx.currentTime + delay;
     const osc = audio.audioCtx.createOscillator();
     const gain = audio.audioCtx.createGain();
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, t);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.55, t + 0.11);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.12);
     gain.gain.setValueAtTime(0.001, t);
     gain.gain.linearRampToValueAtTime(vol, t + 0.018);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
     osc.connect(gain);
     gain.connect(audio.audioCtx.destination);
     osc.start(t);
-    osc.stop(t + 0.18);
+    osc.stop(t + 0.2);
   }
 
   function startLastLifeDrone() {
@@ -228,14 +224,11 @@
     stopLastLifeDrone();
 
     function beatCycle() {
-      // lub — stronger, lower
-      _playHeartThump(52, 0.28, 0);
-      // dub — softer, slightly higher, 260ms after lub
-      _playHeartThump(62, 0.18, 0.26);
+      _playHeartThump(50, 0.22, 0);       // lub — low, heavier
+      _playHeartThump(60, 0.14, 0.26);    // dub — slightly higher, softer
     }
-
-    beatCycle(); // play immediately
-    _heartbeatInterval = setInterval(beatCycle, 1400); // 1400ms = CSS cycle
+    beatCycle();
+    _heartbeatInterval = setInterval(beatCycle, 1400); // matches CSS 1.4s cycle
   }
 
   function stopLastLifeDrone() {
@@ -243,10 +236,6 @@
       clearInterval(_heartbeatInterval);
       _heartbeatInterval = null;
     }
-    try {
-      if (_heartbeatOsc) { _heartbeatOsc.stop(); _heartbeatOsc = null; }
-      if (_heartbeatGain) { _heartbeatGain.disconnect(); _heartbeatGain = null; }
-    } catch(e) {}
   }
   // ── END LAST-LIFE HEARTBEAT ──────────────────────────
 
