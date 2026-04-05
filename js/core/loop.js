@@ -874,6 +874,7 @@ function clearRunTransientTimers() {
 function resetRunState() {
   clearRunTransientTimers();
   score = 0; stageHits = 0; lives = maxLives; multiplier = 1; streak = 0;
+  if (ui.combo) { ui.combo.innerText = ''; ui.combo.style.opacity = '0'; }
   distanceTraveled = 0; runCents = 0;
   angle = 0; direction = 1;
   perfectLifeStreak = 0; runBestStreak = 0;
@@ -1046,7 +1047,13 @@ function updateStreakUI(applyPulse = false, milestone = false) {
   if (!ui.combo) return;
   const _prevText = ui.combo.innerText;
   const _wasHighCombo = _prevText && parseInt(_prevText.replace('COMBO ', ''), 10) >= 5;
-  ui.combo.innerText = streak > 0 ? `COMBO ${streak}` : 'COMBO 0';
+  if (streak === 0) {
+    ui.combo.innerText = '';
+    ui.combo.style.opacity = '0';
+  } else {
+    ui.combo.innerText = `COMBO ${streak}`;
+    ui.combo.style.opacity = '1';
+  }
   if (streak === 0 && _wasHighCombo) {
     ui.combo.animate(
       [{ transform: 'scale(1.2)', color: '#ff3366', opacity: 0.6 }, { transform: 'scale(0.85)', opacity: 1 }, { transform: 'scale(1)' }],
@@ -2233,6 +2240,21 @@ function draw() {
     }
   }
 
+  // Vignette — dark edges deepen with multiplier for tunnel-vision focus
+  if (!inMenu) {
+    const _vigMult = Math.min(multiplier, 8);
+    const _vigAlpha = 0.28 + (_vigMult * 0.025); // 0.28 at x1, 0.48 at x8
+    const _vigGrad = ctx.createRadialGradient(
+      centerObj.x, centerObj.y, orbitRadius * 0.8,
+      centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight) * 0.75
+    );
+    _vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    _vigGrad.addColorStop(1, `rgba(0,0,0,${_vigAlpha})`);
+    ctx.fillStyle = _vigGrad;
+    ctx.globalAlpha = 1.0;
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+  }
+
   // Ensure drawing state is clean for the next frame
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
@@ -3182,6 +3204,16 @@ function tap() {
       createParticles(hitX, hitY, '#ffffff', 20);
       if (perfectLifeStreak >= 6) {
         gainLifeFromPerfectStreak();
+      } else if (perfectLifeStreak >= 2) {
+        // Show streak build-up — small, rises above the ring
+        const _psAngle = angle;
+        const _psPt = getPointOnShape(_psAngle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius - 28);
+        const _psPopup = createPopup(_psPt.x, _psPt.y - 20, `✦ ${perfectLifeStreak} / 6`, '#7dfffb');
+        _psPopup.life = 0.7;
+        _psPopup.riseSpeed = 0.4;
+        _psPopup.fadeSpeed = 0.04;
+        _psPopup.shadow = 10;
+        _psPopup.scale = 0.72;
       }
     }
     else if (hitTimingTier === 'perfect' || hitQuality === "perfect") {
@@ -3206,6 +3238,16 @@ function tap() {
       createUpwardBurstParticles(hitX, hitY - 10, '#fff36a', 42);
       if (perfectLifeStreak >= 6) {
         gainLifeFromPerfectStreak();
+      } else if (perfectLifeStreak >= 2) {
+        // Show streak build-up — small, rises above the ring
+        const _psAngle = angle;
+        const _psPt = getPointOnShape(_psAngle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius - 28);
+        const _psPopup = createPopup(_psPt.x, _psPt.y - 20, `✦ ${perfectLifeStreak} / 6`, '#7dfffb');
+        _psPopup.life = 0.7;
+        _psPopup.riseSpeed = 0.4;
+        _psPopup.fadeSpeed = 0.04;
+        _psPopup.shadow = 10;
+        _psPopup.scale = 0.72;
       }
     }
     else if (hitTimingTier === 'good' || hitQuality === "good") {
