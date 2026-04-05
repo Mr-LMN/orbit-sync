@@ -1413,6 +1413,26 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
+  // Ambient breath ring — syncs intensity to multiplier state
+  if (!inMenu && isPlaying) {
+    const _brSpeed = 0.0006 + (Math.min(multiplier, 8) * 0.00018);
+    const _brPhase = (Math.sin(now * _brSpeed) + 1) * 0.5;
+    const _brRadius = orbitRadius + 18 + _brPhase * 28;
+    const _brAlpha = (0.03 + (Math.min(multiplier, 8) * 0.006)) * _brPhase;
+    const _brColor = currentWorldPalette.primary || '#00e5ff';
+
+    ctx.beginPath();
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, _brRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = _brColor;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = _brAlpha;
+    setShadowBlur(8 + multiplier * 2);
+    ctx.shadowColor = _brColor;
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
+
   if (worldShape === 'diamond' && !isBoss) {
     ctx.save();
 
@@ -1988,21 +2008,24 @@ function draw() {
   if (!inMenu && trail.length > 0) {
     const currentWorldNum = getWorldNum();
     const isEchoWorld = currentWorldNum === 3;
+    const _trailMult = Math.min(multiplier, 8);
+    const _trailRadiusMult = 1 + (_trailMult * 0.12); // x8 = 1.96x wider trail
+    const _trailOpacityMult = 1 + (_trailMult * 0.08); // x8 = 1.64x brighter
 
     for (let i = 0; i < trail.length; i++) {
       const p = trail[i];
       const life = i / trail.length;
 
       const radius = isEchoWorld
-        ? Math.max(1.2, 6.2 * life)
-        : Math.max(1.8, 9.5 * life);
+        ? Math.max(1.2, 6.2 * life * _trailRadiusMult)
+        : Math.max(1.8, 9.5 * life * _trailRadiusMult);
 
       const opacity = isEchoWorld
-        ? life * 0.18
-        : life * 0.42;
+        ? Math.min(0.35, life * 0.18 * _trailOpacityMult)
+        : Math.min(0.72, life * 0.42 * _trailOpacityMult);
 
       const trailColor = isEchoWorld ? '#dffcff' : orbColor;
-      const glowAmount = isEchoWorld ? (4 * life) : (10 * life);
+      const glowAmount = isEchoWorld ? (4 * life) : (10 * life * _trailRadiusMult);
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
