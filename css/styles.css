@@ -275,105 +275,267 @@ body.last-life #arenaInfo { opacity: 0.15; }
   color: rgba(255,255,255,0.7);
 }
 
-#screenOverlay { position: absolute; display: none; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(circle at center, rgba(18, 22, 36, 0.46) 0%, rgba(5, 6, 12, 0.9) 74%); width: 100%; height: 100%; z-index: 15; backdrop-filter: blur(9px); padding: 18px 0; }
-#overlayMetaStack { display: flex; flex-direction: column; align-items: center; width: min(92vw, 430px); margin: 0 auto; padding: 14px 16px 16px; border-radius: 24px; background: linear-gradient(160deg, rgba(12, 16, 28, 0.72), rgba(8, 10, 18, 0.78)); border: none; box-shadow: 0 22px 56px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.04); gap: 0; }
-#screenTitle { font-size: clamp(1.95rem, 7.6vw, 3.1rem); margin: 0 0 6px; text-shadow: 0 0 18px currentColor; text-align: center; line-height: 0.9; padding: 0 10px; }
-#screenSubtitle { font-size: clamp(0.82rem, 2.9vw, 1.03rem); color: rgba(219, 224, 235, 0.85); margin: 0 0 10px; text-align: center; padding: 0 12px; max-width: 90vw; line-height: 1.28; letter-spacing: 0.2px; }
+/* ══════════════════════════════════════════════
+   RESULTS / FAIL SCREEN — AAA ARCADE STYLE
+   No cards. No boxes. Typography leads.
+   ═══════════════════════════════════════════════ */
+
+#screenOverlay {
+  position: absolute; display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 50% 28%, rgba(28,12,48,0.65) 0%, rgba(4,5,12,0.96) 68%);
+  width: 100%; height: 100%; z-index: 15;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  padding: 0;
+}
+
+/* Card becomes frameless — just a layout container */
+#overlayMetaStack {
+  display: flex; flex-direction: column; align-items: center;
+  width: min(92vw, 400px); margin: 0 auto;
+  padding: 0 20px 32px;
+  background: transparent; border: none;
+  box-shadow: none; border-radius: 0; gap: 0;
+}
+
+/* ── TITLE ─────────────────────────────────── */
+#screenTitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.8rem, 11.5vw, 4.4rem);
+  font-weight: 900; letter-spacing: 3px;
+  margin: 0 0 5px; line-height: 0.88;
+  text-shadow: 0 0 36px currentColor, 0 0 80px currentColor;
+  text-align: center; padding: 0 8px;
+}
 .run-title {
-  font-size: clamp(2.55rem, 9.8vw, 3.6rem) !important;
-  font-weight: 900;
-  letter-spacing: 2.4px;
-  text-align: center;
-  line-height: 0.86;
-  margin-bottom: 2px !important;
-  text-shadow: 0 0 21px rgba(255, 74, 74, 0.38), 0 0 8px rgba(255,255,255,0.08);
-  animation: popIn 0.4s ease;
+  font-size: clamp(2.8rem, 11.5vw, 4.4rem) !important;
+  font-weight: 900; letter-spacing: 3px;
+  line-height: 0.88; margin-bottom: 5px !important;
+  animation: popIn 0.36s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.subtle-failure {
-  opacity: 0.74;
-  font-size: 0.9rem !important;
-}
-.run-coins-box { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: auto; max-width: 100%; margin: 6px auto 14px; padding: 10px 18px; border: none; outline: none; border-radius: 999px; font-size: clamp(1rem, 2.2vw, 1.28rem); letter-spacing: 1px; color: #ffc65d; font-weight: 700; background: rgba(255, 190, 60, 0.09); text-align: center; text-shadow: 0 0 12px rgba(255, 198, 93, 0.24); box-shadow: 0 0 18px rgba(255, 190, 60, 0.18), inset 0 0 20px rgba(255, 190, 60, 0.05); animation: coin-chip-pulse 3.2s ease-in-out infinite; order: 5; }
-.run-coins-hint { margin-top: 3px; font-family: 'Orbitron', sans-serif; font-size: 0.62rem; letter-spacing: 1px; text-transform: lowercase; color: rgba(255, 226, 171, 0.75); text-shadow: none; }
-.overlay-action-stack { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
-.overlay-button-group { width: 100%; display: flex; flex-direction: column; gap: 9px; }
-.overlay-secondary-actions { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 2px; }
-#pbStatsBlock, #clearSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 6px 0 10px; width: 100%; order: 2; }
-.run-focus-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  margin: 4px 0 14px;
-  padding: 8px 8px 4px;
-  text-align: center;
-  order: 4;
-}
-
-.run-focus-combo {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(2.8rem, 11vw, 4.4rem);
-  line-height: 0.95;
-  letter-spacing: 2px;
-  color: #ffffff;
-  text-shadow: 0 0 18px rgba(255, 78, 142, 0.22);
-}
-
-.run-focus-score {
-  margin-top: 4px;
+#screenSubtitle {
   font-family: 'Orbitron', sans-serif;
-  font-size: clamp(0.85rem, 2.6vw, 1rem);
-  letter-spacing: 1.5px;
-  color: rgba(220, 232, 245, 0.78);
-  text-transform: none;
+  font-size: clamp(0.6rem, 2vw, 0.74rem);
+  letter-spacing: 4.5px; text-transform: uppercase;
+  color: rgba(190,210,235,0.38);
+  margin: 0 0 16px; text-align: center;
+  padding: 0; line-height: 1.4;
 }
-.near-miss-msg {
-  margin-top: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.75rem;
-  letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.65);
-  text-align: center;
-  min-height: 18px;
-}
+.subtle-failure { opacity: 1; font-size: clamp(0.6rem, 2vw, 0.74rem) !important; }
 
-.clear-stat, .pb-stat { text-align: center; min-height: 76px; padding: 8px 8px 10px; border-radius: 16px; background: rgba(255,255,255,0.03); border: none; backdrop-filter: blur(6px); box-shadow: none; display: flex; flex-direction: column; justify-content: center; position: relative; }
-.clear-stat:not(:last-child)::after, .pb-stat:not(:last-child)::after { content: ""; position: absolute; right: -4px; top: 20%; width: 1px; height: 60%; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.2), transparent); }
-.clear-label, .pb-label { font-family: 'Orbitron', sans-serif; font-size: 0.58rem; letter-spacing: 2px; color: rgba(255,255,255,0.62); margin-bottom: 7px; line-height: 1.2; }
-.clear-value, .pb-value { font-family: 'Bebas Neue', sans-serif; font-size: clamp(1.45rem, 3.5vw, 2rem); line-height: 1; color: #fff; transition: color 0.3s; }
-.pb-value.new-record {
-  color: #ffaa00;
-  text-shadow: 0 0 15px rgba(255,170,0,0.6);
-}
+/* ── RECORD / CLOSE BADGE — text only, no box ─ */
 #newRecordBanner, #closeMissBanner {
-  margin: 0 0 8px;
-  min-height: 22px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  font-size: clamp(0.76rem, 2.3vw, 0.94rem);
-  letter-spacing: 1.8px;
-  text-align: center;
-  text-transform: uppercase;
-  background: linear-gradient(90deg, rgba(255,170,0,0.08), rgba(255,140,35,0.16), rgba(255,170,0,0.08));
-  border: 1px solid rgba(255,199,112,0.24);
-  box-shadow: inset 0 1px 0 rgba(255,236,190,0.22), 0 6px 14px rgba(0,0,0,0.18);
-  order: 3;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.68rem, 2.1vw, 0.82rem);
+  letter-spacing: 3px; text-transform: uppercase;
+  text-align: center; margin: 0 0 12px; padding: 0;
+  background: none !important; border: none !important;
+  box-shadow: none !important; border-radius: 0 !important;
+  order: 1;
+}
+#newRecordBanner {
+  color: #ffb830;
+  text-shadow: 0 0 18px rgba(255,184,48,0.95), 0 0 36px rgba(255,140,0,0.45);
+  display: none;
 }
 #closeMissBanner {
-  background: linear-gradient(90deg, rgba(255,210,122,0.08), rgba(255,170,92,0.16), rgba(255,210,122,0.08));
-  border-color: rgba(255,212,138,0.2);
+  color: #ffd27a;
+  text-shadow: 0 0 14px rgba(255,210,122,0.8);
+  display: none;
 }
-#overlayActionStack { order: 6; margin-top: 2px; padding-top: 2px; }
-#overlayActionStack .btn, #overlayButtonGroup .btn { width: 100%; min-height: 50px; padding: 11px 18px; border-radius: 18px; border: 1px solid rgba(141, 165, 206, 0.22); font-size: clamp(0.98rem, 2vw, 1.12rem); line-height: 1.05; letter-spacing: 0.3px; color: #e9f7ff; background: linear-gradient(180deg, rgba(38, 51, 80, 0.26) 0%, rgba(11, 18, 34, 0.92) 64%, rgba(8, 13, 24, 0.95) 100%); box-shadow: 0 10px 22px rgba(0,0,0,0.34), inset 0 1px 0 rgba(190,220,255,0.16), inset 0 -1px 0 rgba(5, 8, 18, 0.75); transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.2s ease; }
-#overlayButtonGroup .btn.primary { border-color: rgba(56, 255, 217, 0.45); box-shadow: 0 0 0 1px rgba(40, 248, 195, 0.24), 0 0 24px rgba(40, 248, 195, 0.24), 0 12px 24px rgba(0,0,0,0.38), inset 0 1px 0 rgba(204,255,246,0.2); }
-#shareBtn { width: 48% !important; min-height: 40px !important; padding: 9px 13px !important; border-radius: 999px !important; font-size: 0.76rem !important; opacity: 0.86; color: rgba(215,224,237,0.74) !important; border: 1px solid rgba(161, 178, 218, 0.16) !important; background: linear-gradient(180deg, rgba(45, 56, 82, 0.2) 0%, rgba(14, 19, 32, 0.86) 100%) !important; box-shadow: inset 0 1px 0 rgba(216,228,255,0.08), 0 4px 10px rgba(0,0,0,0.18) !important; }
-#actionBtn { color: #e8ffff; border-color: rgba(69, 255, 209, 0.58); background: linear-gradient(180deg, rgba(43, 78, 92, 0.72) 0%, rgba(9, 31, 37, 0.96) 100%); box-shadow: 0 0 0 1px rgba(60, 255, 214, 0.24), 0 0 28px rgba(21, 228, 189, 0.28), 0 10px 20px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(182, 255, 241, 0.24); }
-#reviveBtn { color: #fff5e3 !important; border-color: rgba(255, 199, 99, 0.64) !important; background: linear-gradient(180deg, rgba(92, 63, 23, 0.84) 0%, rgba(39, 24, 8, 0.97) 100%) !important; box-shadow: 0 0 0 1px rgba(255, 189, 93, 0.24), 0 0 30px rgba(255, 175, 67, 0.34), 0 12px 22px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255,239,201,0.24) !important; min-height: 58px !important; }
-#coinReviveBtn { color: #ffe1b9 !important; border-color: rgba(255, 176, 88, 0.44) !important; background: linear-gradient(180deg, rgba(84, 52, 21, 0.66) 0%, rgba(29, 18, 8, 0.96) 100%) !important; box-shadow: 0 0 18px rgba(255, 157, 40, 0.2), 0 8px 16px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255,215,164,0.14) !important; }
-#menuBtn { width: 48%; min-height: 40px; padding: 9px 13px; border-radius: 999px; font-size: 0.76rem; color: rgba(171, 191, 229, 0.76); border: 1px solid rgba(132, 153, 194, 0.24); background: linear-gradient(180deg, rgba(38, 49, 72, 0.2) 0%, rgba(13, 18, 30, 0.9) 100%); box-shadow: inset 0 1px 0 rgba(195, 211, 244, 0.08), 0 5px 10px rgba(0,0,0,0.2); }
-#overlayActionStack.revive-available #actionBtn { opacity: 0.95; filter: saturate(0.92); }
-#overlayActionStack.no-revive #actionBtn { min-height: 58px; box-shadow: 0 0 0 1px rgba(60, 255, 214, 0.26), 0 0 30px rgba(21, 228, 189, 0.34), 0 10px 20px rgba(0,0,0,0.34), inset 0 1px 0 rgba(182, 255, 241, 0.26); }
+
+/* ── RUN STATS (fail screen) — floating, no cells ─ */
+.run-focus-block {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  width: 100%; margin: 0 0 12px; padding: 0;
+  text-align: center; order: 2;
+}
+.run-focus-combo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.4rem, 14vw, 5.2rem);
+  line-height: 0.92; letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow: 0 0 24px rgba(255,255,255,0.35);
+}
+.run-focus-score {
+  margin-top: 2px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+  letter-spacing: 2px; color: rgba(200,220,245,0.5);
+  text-transform: uppercase;
+}
+.near-miss-msg {
+  margin-top: 5px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.68rem; letter-spacing: 1.5px;
+  color: rgba(255,210,140,0.55);
+  min-height: 14px;
+}
+
+/* ── WORLD CLEAR STATS — no cells ─────────── */
+#pbStatsBlock, #clearSummary {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0; margin: 0 0 12px; width: 100%; order: 2;
+  background: transparent;
+}
+.clear-stat, .pb-stat {
+  text-align: center; padding: 6px 4px 8px;
+  background: none !important; border: none !important;
+  box-shadow: none !important; backdrop-filter: none !important;
+  border-radius: 0 !important; min-height: auto;
+  display: flex; flex-direction: column; justify-content: center;
+  position: relative;
+}
+.clear-stat:not(:last-child)::after, .pb-stat:not(:last-child)::after {
+  content: ''; position: absolute; right: 0; top: 15%;
+  width: 1px; height: 70%;
+  background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.07), transparent);
+}
+.clear-label, .pb-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.48rem; letter-spacing: 2px;
+  color: rgba(255,255,255,0.28); margin-bottom: 5px; line-height: 1.2;
+}
+.clear-value, .pb-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(1.7rem, 5.5vw, 2.4rem);
+  line-height: 1; color: rgba(255,255,255,0.88);
+  transition: color 0.3s, text-shadow 0.3s;
+}
+.pb-value.new-record {
+  color: #ffb830;
+  text-shadow: 0 0 16px rgba(255,184,48,0.7);
+}
+
+/* ── COINS — pure glowing text, no pill ────── */
+.run-coins-box {
+  background: none !important; border: none !important;
+  box-shadow: none !important; animation: none !important;
+  padding: 0; margin: 0 auto 18px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1rem, 3.2vw, 1.2rem);
+  font-weight: 700; letter-spacing: 2px;
+  color: #ffb830;
+  text-shadow: 0 0 22px rgba(255,184,48,0.9), 0 0 44px rgba(255,130,0,0.35);
+  order: 3;
+}
+.run-coins-hint {
+  margin-top: 3px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.56rem; letter-spacing: 1px;
+  color: rgba(255,210,140,0.5); text-shadow: none;
+  text-transform: lowercase;
+}
+
+/* ── ACTION BUTTONS ─────────────────────────
+   Primary: solid colour pill with glow
+   Ghost: bare text, no background at all
+   ─────────────────────────────────────────── */
+#overlayActionStack { order: 4; margin-top: 4px; width: 100%; }
+.overlay-action-stack {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px; width: 100%;
+}
+.overlay-button-group {
+  width: 100%; display: flex; flex-direction: column; gap: 10px;
+}
+
+/* Base reset for all overlay buttons */
+#overlayActionStack button, #overlayButtonGroup button {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900; text-transform: uppercase;
+  letter-spacing: 1.5px; cursor: pointer;
+  transition: transform 0.1s ease, filter 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+#overlayActionStack button:active { transform: scale(0.96); }
+
+/* ONE MORE TRY — dominant amber glow pill */
+#reviveBtn {
+  width: 100% !important; min-height: 60px !important;
+  border-radius: 999px !important; border: none !important;
+  font-size: clamp(0.88rem, 2.6vw, 1rem) !important;
+  padding: 14px 24px !important;
+  background: linear-gradient(135deg, #ffbe28 0%, #e08000 100%) !important;
+  color: #1a0800 !important;
+  text-shadow: none !important;
+  box-shadow: 0 0 32px rgba(255,168,32,0.68), 0 0 68px rgba(255,100,0,0.28), 0 10px 24px rgba(0,0,0,0.5) !important;
+}
+#reviveBtn:active { filter: brightness(1.14) !important; }
+
+/* COIN REVIVE — softer amber ghost pill */
+#coinReviveBtn {
+  width: 100% !important; min-height: 48px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(255,175,48,0.24) !important;
+  font-size: clamp(0.8rem, 2.2vw, 0.9rem) !important;
+  padding: 11px 20px !important;
+  background: rgba(255,160,32,0.08) !important;
+  color: #ffc864 !important;
+  text-shadow: 0 0 14px rgba(255,190,80,0.5) !important;
+  box-shadow: 0 0 18px rgba(255,150,40,0.18) !important;
+}
+
+/* PLAY AGAIN / BANK + PLAY — solid teal glow pill */
+#actionBtn {
+  width: 100%; min-height: 60px;
+  border-radius: 999px; border: none;
+  font-size: clamp(0.88rem, 2.6vw, 1rem);
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #00e8aa 0%, #00a878 100%);
+  color: #001a0e; text-shadow: none;
+  box-shadow: 0 0 32px rgba(0,232,170,0.64), 0 0 68px rgba(0,180,120,0.26), 0 10px 24px rgba(0,0,0,0.5);
+}
+#actionBtn:active { filter: brightness(1.12); }
+
+/* When revive is available, dim play-again slightly */
+#overlayActionStack.revive-available #actionBtn {
+  background: linear-gradient(135deg, rgba(0,200,150,0.7) 0%, rgba(0,140,100,0.8) 100%);
+  box-shadow: 0 0 20px rgba(0,200,150,0.36), 0 8px 20px rgba(0,0,0,0.4);
+}
+#overlayActionStack.no-revive #actionBtn {
+  box-shadow: 0 0 40px rgba(0,232,170,0.72), 0 0 80px rgba(0,180,120,0.3), 0 10px 24px rgba(0,0,0,0.5);
+}
+
+/* SHARE + MENU — pure text links, no buttons */
+.overlay-secondary-actions {
+  display: flex; align-items: center;
+  justify-content: center; gap: 0;
+  margin-top: 6px; width: 100%;
+}
+#shareBtn {
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 0.66rem !important; font-weight: 700 !important;
+  letter-spacing: 2.5px !important; text-transform: uppercase !important;
+  color: rgba(170, 195, 230, 0.38) !important;
+  background: none !important; border: none !important;
+  box-shadow: none !important; border-radius: 0 !important;
+  padding: 12px 16px !important;
+  width: auto !important; min-height: auto !important;
+  cursor: pointer !important; opacity: 1 !important;
+  transition: color 0.15s ease !important;
+}
+#shareBtn:active { color: rgba(200,220,250,0.7) !important; }
+#menuBtn {
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 0.66rem !important; font-weight: 700 !important;
+  letter-spacing: 2.5px !important; text-transform: uppercase !important;
+  color: rgba(170, 195, 230, 0.38) !important;
+  background: none !important; border: none !important;
+  box-shadow: none !important; border-radius: 0 !important;
+  padding: 12px 16px !important;
+  width: auto !important; min-height: auto !important;
+  cursor: pointer !important; opacity: 1 !important;
+  transition: color 0.15s ease !important;
+}
+#menuBtn:active { color: rgba(200, 220, 250, 0.7) !important; }
+.overlay-sep {
+  font-family: 'Orbitron', sans-serif;
+  color: rgba(150,170,210,0.2);
+  font-size: 0.7rem; line-height: 1;
+  pointer-events: none; user-select: none;
+}
 
 @keyframes coin-chip-pulse {
   0%, 100% { box-shadow: 0 0 14px rgba(255, 190, 60, 0.14), inset 0 0 18px rgba(255, 190, 60, 0.04); }
@@ -406,9 +568,8 @@ body.last-life.arena-charge-3 #gameCanvas {
   100% { filter: brightness(1); }
 }
 @media (min-width: 900px) {
-  #overlayMetaStack { width: min(86vw, 400px); padding: 12px 14px 10px; }
-  #screenTitle { font-size: clamp(1.8rem, 3.8vw, 2.65rem); }
-  #overlayActionStack .btn, #overlayButtonGroup .btn { min-height: 48px; }
+  #overlayMetaStack { width: min(88vw, 400px); }
+  #screenTitle { font-size: clamp(2.4rem, 4.5vw, 3.6rem); }
 }
 
 /* World Selector Main Menu */
@@ -440,18 +601,11 @@ body.last-life.arena-charge-3 #gameCanvas {
   .clear-stat { min-height: 80px; padding: 9px 10px 11px; }
   #overlayMetaStack { width: min(94vw, 420px); padding: 13px 12px 14px; }
   .run-title { font-size: clamp(2.2rem, 11.2vw, 3rem) !important; letter-spacing: 1.8px; }
-  #newRecordBanner, #closeMissBanner { font-size: clamp(0.72rem, 2.8vw, 0.85rem); letter-spacing: 1.5px; padding: 4px 10px; margin-bottom: 7px; }
-  #overlayActionStack .btn, #overlayButtonGroup .btn { min-height: 52px; font-size: 1.03rem; }
+  #newRecordBanner, #closeMissBanner { font-size: clamp(0.66rem, 2.6vw, 0.8rem); }
+  #reviveBtn { min-height: 62px !important; }
+  #actionBtn { min-height: 62px; }
   .overlay-secondary-actions { gap: 7px; }
-  #shareBtn, #menuBtn { min-height: 42px !important; font-size: 0.72rem !important; }
-  .run-coins-box { font-size: 1rem; padding: 10px 16px; margin: 5px auto 11px; }
   .run-stats-block { gap: 7px; margin: 5px 0 9px; }
-  #pbStatsBlock, #clearSummary { gap: 7px; margin: 7px 0 10px; }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  #overlayButtonGroup .btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
-  #shareBtn:hover { background: rgba(255,255,255,0.07) !important; }
 }
 
 
