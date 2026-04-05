@@ -137,19 +137,48 @@
     if (!audio.audioCtx) return;
     if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
+    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
+      ? parseInt(levelData.id.split('-')[0], 10) : 1;
     const baseFreq = 300 + (multiplier * 30);
-    playTone(baseFreq, 'triangle', 0.22, 0.004, 0.1, t);
-    playTone(baseFreq * 1.5, 'sine', 0.1, 0.004, 0.14, t);
+    if (worldNum === 2) {
+      // Crystal — bright, glassy, short
+      playTone(baseFreq * 1.5, 'sine', 0.18, 0.002, 0.07, t);
+      playTone(baseFreq * 2.25, 'sine', 0.08, 0.002, 0.09, t);
+      playNoiseBurst(0.02, 0.04, t, 'highpass', 2800, 2.5);
+    } else if (worldNum === 3) {
+      // Echo/resonance — warm, slightly padded
+      playTone(baseFreq * 0.75, 'sine', 0.2, 0.006, 0.18, t);
+      playTone(baseFreq, 'triangle', 0.12, 0.004, 0.14, t);
+    } else {
+      playTone(baseFreq, 'triangle', 0.22, 0.004, 0.1, t);
+      playTone(baseFreq * 1.5, 'sine', 0.1, 0.004, 0.14, t);
+    }
   }
 
   function soundPerfect(multiplier) {
     if (!audio.audioCtx) return;
     if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
+    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
+      ? parseInt(levelData.id.split('-')[0], 10) : 1;
     const baseFreq = 520 + (multiplier * 40);
-    playTone(baseFreq, 'sine', 0.25, 0.002, 0.08, t);
-    playTone(baseFreq * 2, 'sine', 0.12, 0.002, 0.18, t);
-    playTone(baseFreq * 3, 'sine', 0.06, 0.005, 0.35, t);
+    if (worldNum === 2) {
+      // Crystal — high shimmer, crisp transient
+      playNoiseBurst(0.08, 0.06, t, 'bandpass', 3200, 3.0);
+      playTone(baseFreq * 1.5, 'sine', 0.22, 0.001, 0.07, t);
+      playTone(baseFreq * 3, 'sine', 0.1, 0.001, 0.14, t);
+      playTone(baseFreq * 4.5, 'sine', 0.05, 0.002, 0.22, t + 0.02);
+    } else if (worldNum === 3) {
+      // Echo — warm tone with slight reverb tail
+      playTone(baseFreq * 0.5, 'sine', 0.18, 0.005, 0.28, t);
+      playTone(baseFreq, 'sine', 0.22, 0.002, 0.12, t);
+      playTone(baseFreq * 2, 'sine', 0.1, 0.002, 0.22, t + 0.04);
+      playTone(baseFreq * 2, 'sine', 0.04, 0.002, 0.32, t + 0.18); // echo tail
+    } else {
+      playTone(baseFreq, 'sine', 0.25, 0.002, 0.08, t);
+      playTone(baseFreq * 2, 'sine', 0.12, 0.002, 0.18, t);
+      playTone(baseFreq * 3, 'sine', 0.06, 0.005, 0.35, t);
+    }
   }
 
   function soundCornerBonus(worldNum = 1) {
@@ -168,8 +197,17 @@
     if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
     const freq = multiNotes[Math.min(multiplier, 8)];
-    playTone(freq, 'sine', 0.2, 0.005, 0.2, t);
-    playTone(freq * 1.5, 'sine', 0.08, 0.005, 0.25, t);
+    const vol = 0.16 + (Math.min(multiplier, 8) * 0.012); // louder at high mult
+    playTone(freq, 'sine', vol, 0.003, 0.18, t);
+    playTone(freq * 1.5, 'sine', vol * 0.45, 0.003, 0.22, t);
+    if (multiplier >= 6) {
+      // Extra shimmer layer at x6+
+      playTone(freq * 2, 'sine', vol * 0.25, 0.002, 0.28, t + 0.02);
+    }
+    if (multiplier === 8) {
+      // God mode — brief harmonic burst
+      playNoiseBurst(0.04, 0.08, t, 'bandpass', freq * 3, 1.5);
+    }
   }
 
   function soundFail() {
@@ -241,24 +279,37 @@
 
   function soundWaveClear() {
     if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    [330, 415, 523].forEach((freq, i) => {
-      playTone(freq, 'sine', 0.2, 0.005, 0.15, t + i * 0.1);
-      playTone(freq * 2, 'sine', 0.06, 0.005, 0.2, t + i * 0.1);
+    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
+      ? parseInt(levelData.id.split('-')[0], 10) : 1;
+    const baseNotes = worldNum === 2 ? [370, 466, 587] : worldNum === 3 ? [294, 370, 466] : [330, 415, 523];
+    baseNotes.forEach((freq, i) => {
+      playTone(freq, 'sine', 0.18, 0.003, 0.18, t + i * 0.09);
+      playTone(freq * 2, 'sine', 0.07, 0.003, 0.22, t + i * 0.09);
+      playTone(freq * 0.5, 'sine', 0.06, 0.008, 0.28, t + i * 0.09);
     });
+    // Final resonance
+    playTone(baseNotes[2] * 2, 'sine', 0.1, 0.002, 0.4, t + 0.28);
   }
 
   function soundWorldClear() {
     if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    const melody = [262, 330, 392, 330, 523];
+    // Rising arpeggio with a punch at the end
+    const melody = [262, 330, 392, 494, 523, 659];
     melody.forEach((freq, i) => {
-      playTone(freq, 'sine', 0.25, 0.01, 0.2, t + i * 0.13);
-      playTone(freq * 1.5, 'sine', 0.08, 0.01, 0.25, t + i * 0.13);
+      const delay = i * 0.11;
+      playTone(freq, 'sine', 0.22, 0.004, 0.22, t + delay);
+      playTone(freq * 2, 'sine', 0.06, 0.004, 0.3, t + delay);
     });
-    playTone(65, 'sine', 0.3, 0.01, 0.5, t);
+    // Sub bass hit
+    playTone(55, 'sine', 0.28, 0.005, 0.45, t);
+    playTone(82, 'sine', 0.18, 0.005, 0.35, t + 0.06);
+    // Final chord swell
+    [523, 659, 784].forEach((freq, i) => {
+      playTone(freq, 'sine', 0.14, 0.02, 0.6, t + 0.66 + i * 0.04);
+    });
+    playNoiseBurst(0.06, 0.3, t + 0.66, 'lowpass', 800, 0.6);
   }
 
   function soundShieldBreak() {
