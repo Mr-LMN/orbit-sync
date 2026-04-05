@@ -10,7 +10,7 @@
 
   function updateShopUI() {
     updatePersistentCoinUI();
-    const items = ['classic', 'skull', 'prism'];
+    const items = ['classic', 'skull', 'prism', 'echo', 'crimson'];
     items.forEach(id => {
       let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
       let preview = card ? card.querySelector('.item-preview') : null;
@@ -22,6 +22,20 @@
       else if (unlockedSkins.includes(id)) { btn.className = 'buy-btn btn-owned'; btn.innerText = 'Equip'; card.classList.remove('equipped'); btn.onclick = () => equipSkin(id); }
       else { card.classList.remove('equipped'); }
     });
+    const goalEl = document.getElementById('shopNextGoal');
+    if (goalEl) {
+      const goals = [
+        { id: 'skull', cost: 50 }, { id: 'prism', cost: 150 },
+        { id: 'crimson', cost: 150 }, { id: 'echo', cost: 200 }
+      ];
+      const nextGoal = goals.find(g => !unlockedSkins.includes(g.id));
+      if (nextGoal) {
+        const needed = Math.max(0, nextGoal.cost - Math.floor(globalCoins));
+        goalEl.innerText = needed > 0 ? `NEXT UNLOCK: ${needed} COINS AWAY` : 'READY TO UNLOCK';
+      } else {
+        goalEl.innerText = 'ALL CURRENT ITEMS UNLOCKED';
+      }
+    }
   }
 
   function buyItem(id, cost) {

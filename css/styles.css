@@ -870,3 +870,19 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
   25% { box-shadow: inset 0 0 60px rgba(255, 173, 64, 0.68), inset 0 0 110px rgba(255, 141, 38, 0.42); filter: brightness(1.22); }
   100% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
 }
+
+
+@keyframes tutorialFade {
+  0% { opacity:0; transform:translateY(6px); }
+  100% { opacity:1; transform:translateY(0); }
+}
+#tutorialOverlay { animation: tutorialFade 0.4s ease forwards; }
+
+.shop-locked { opacity: 0.45; pointer-events: none; }
+.item-preview-locked::after {
+  content: '🔒';
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-size: 1.4rem; opacity: 0.6;
+}
+.item-preview-locked { position: relative; }

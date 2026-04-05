@@ -184,6 +184,14 @@
     if (show) {
       applySettingsUI();
       updateSelectedStageStatus();
+      const hardModeRow = document.getElementById('hardModeRow');
+      const hardModeStatus = document.getElementById('hardModeStatus');
+      if (hardModeRow && hardModeStatus) {
+        const unlocked = (typeof maxWorldUnlocked !== 'undefined' && maxWorldUnlocked >= 2);
+        hardModeRow.style.opacity = unlocked ? '1' : '0.45';
+        hardModeStatus.innerText = unlocked ? 'COMING SOON' : 'CLEAR WORLD 1';
+        hardModeStatus.style.color = unlocked ? 'rgba(255,200,80,0.7)' : 'rgba(255,80,100,0.7)';
+      }
     }
   }
 

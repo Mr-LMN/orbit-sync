@@ -94,6 +94,12 @@
     c.textAlign = 'right';
     c.fillText('CAN YOU BEAT THIS?', 760, 415);
 
+    c.fillStyle = 'rgba(255,255,255,0.22)';
+    c.font = '400 11px Orbitron, sans-serif';
+    c.letterSpacing = '2px';
+    c.textAlign = 'left';
+    c.fillText('orbitsync.app', 40, 435);
+
     card.toBlob(blob => {
       const file = new File([blob], 'orbitsync.png', { type: 'image/png' });
       if (navigator.share && navigator.canShare({ files: [file] })) {
@@ -102,7 +108,7 @@
           : `${reviveCount} revive${reviveCount > 1 ? 's' : ''}.`;
         navigator.share({
           title: 'Orbit Sync',
-          text: `${title} // World ${runWorld} // Score ${score} // Combo ${runStreakBest}. ${reviveText} Beat this.`,
+          text: `I got "${title}" with a score of ${score}. ${reviveText} Can you beat it? Play free at orbitsync.app`,
           files: [file]
         }).catch(() => downloadCard(card));
       } else {
