@@ -15,21 +15,25 @@
         ui.text.innerText = bossPhase === 1 ? 'BOSS: Break the shields!' : 'BOSS ENRAGED: Faster & Sharper!';
         ui.text.style.color = bossPhase === 1 ? '#00e5ff' : '#ff3366';
         let offset = Math.random() * Math.PI * 2;
-        const shieldCount = bossPhase === 1 ? 3 : 2;
+        const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
+        const shieldCount = bossPhase === 1 ? (_hmActive ? 4 : 3) : (_hmActive ? 3 : 2);
         for (let i = 0; i < shieldCount; i++) {
           targets.push(buildTarget(
             offset + (i * (Math.PI * 2 / shieldCount)),
             bossPhase === 1 ? Math.PI / 4 : Math.PI / 6,
             {
               color: bossPhase === 1 ? '#00e5ff' : '#ff3366', active: true, hp: 3, isBossShield: true,
-              moveSpeed: bossPhase === 1 ? undefined : 0.038 * (i % 2 === 0 ? 1 : -1),
+              moveSpeed: bossPhase === 1
+                ? (typeof isHardModeActive === 'function' && isHardModeActive() ? 0.022 * (i % 2 === 0 ? 1 : -1) : undefined)
+                : (typeof isHardModeActive === 'function' && isHardModeActive() ? 0.058 * (i % 2 === 0 ? 1 : -1) : 0.038 * (i % 2 === 0 ? 1 : -1)),
               nextDirectionSwapAt: bossPhase === 1 ? 0 : (performance.now() + 1100 + Math.random() * 900)
             }
           ));
         }
       } else {
         ui.text.innerText = 'CORE EXPOSED! Need PERFECT hit!'; ui.text.style.color = '#ffffff';
-        targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 10, { color: '#ffffff', active: true, hp: 1 }));
+        const _hmCore = typeof isHardModeActive === 'function' && isHardModeActive();
+        targets.push(buildTarget(Math.random() * Math.PI * 2, _hmCore ? Math.PI / 14 : Math.PI / 10, { color: '#ffffff', active: true, hp: 1 }));
       }
       return;
     }
@@ -301,6 +305,10 @@
 
     let baseSize = Math.max(Math.PI / 10, (Math.PI / 3) - (currentLevelIdx * 0.02)) * sizeModifier;
     baseSize *= (1 - (0.12 * progressionFactor));
+    // Hard Mode: tighter windows
+    if (typeof isHardModeActive === 'function' && isHardModeActive()) {
+      baseSize *= 0.78;
+    }
     let offset = Math.random() * Math.PI * 2;
     const isDual = levelData.mechanics && levelData.mechanics.includes('dual');
 
