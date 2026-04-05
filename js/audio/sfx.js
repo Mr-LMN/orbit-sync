@@ -199,39 +199,56 @@
     playNoiseBurst(0.08, 0.15, t, 'lowpass', 400, 0.6);
   }
 
-  let _lastLifeDroneNode = null;
-  let _lastLifeDroneGain = null;
+  // ── LAST-LIFE HEARTBEAT ──────────────────────────────
+  // lub-dub pattern: two sub-bass thumps per 1400ms cycle
+  // Must match the CSS animation timing exactly.
+  let _heartbeatOsc = null;
+  let _heartbeatGain = null;
+  let _heartbeatInterval = null;
+
+  function _playHeartThump(freq, vol, delay) {
+    if (!audio.audioCtx) return;
+    const t = audio.audioCtx.currentTime + delay;
+    const osc = audio.audioCtx.createOscillator();
+    const gain = audio.audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    osc.frequency.exponentialRampToValueAtTime(freq * 0.55, t + 0.11);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.018);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    osc.connect(gain);
+    gain.connect(audio.audioCtx.destination);
+    osc.start(t);
+    osc.stop(t + 0.18);
+  }
 
   function startLastLifeDrone() {
     if (!audio.audioCtx) return;
     stopLastLifeDrone();
-    const t = audio.audioCtx.currentTime;
-    const osc = audio.audioCtx.createOscillator();
-    const gain = audio.audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(48, t);
-    gain.gain.setValueAtTime(0.001, t);
-    gain.gain.linearRampToValueAtTime(0.055, t + 0.6);
-    osc.connect(gain);
-    gain.connect(audio.audioCtx.destination);
-    osc.start(t);
-    _lastLifeDroneNode = osc;
-    _lastLifeDroneGain = gain;
+
+    function beatCycle() {
+      // lub — stronger, lower
+      _playHeartThump(52, 0.28, 0);
+      // dub — softer, slightly higher, 260ms after lub
+      _playHeartThump(62, 0.18, 0.26);
+    }
+
+    beatCycle(); // play immediately
+    _heartbeatInterval = setInterval(beatCycle, 1400); // 1400ms = CSS cycle
   }
 
   function stopLastLifeDrone() {
-    if (_lastLifeDroneNode) {
-      try {
-        const t = audio.audioCtx ? audio.audioCtx.currentTime : 0;
-        _lastLifeDroneGain.gain.cancelScheduledValues(t);
-        _lastLifeDroneGain.gain.setValueAtTime(_lastLifeDroneGain.gain.value, t);
-        _lastLifeDroneGain.gain.linearRampToValueAtTime(0.001, t + 0.3);
-        _lastLifeDroneNode.stop(t + 0.35);
-      } catch (e) {}
-      _lastLifeDroneNode = null;
-      _lastLifeDroneGain = null;
+    if (_heartbeatInterval) {
+      clearInterval(_heartbeatInterval);
+      _heartbeatInterval = null;
     }
+    try {
+      if (_heartbeatOsc) { _heartbeatOsc.stop(); _heartbeatOsc = null; }
+      if (_heartbeatGain) { _heartbeatGain.disconnect(); _heartbeatGain = null; }
+    } catch(e) {}
   }
+  // ── END LAST-LIFE HEARTBEAT ──────────────────────────
 
   function soundWaveClear() {
     if (!audio.audioCtx) return;
