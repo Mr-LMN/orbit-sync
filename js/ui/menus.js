@@ -3,6 +3,8 @@
   OG.ui = OG.ui || {};
   OG.ui.menus = OG.ui.menus || {};
 
+  let _pendingRunType = null;
+
   function toggleShop(show) {
     return OG.ui.shop.toggleShop(show);
   }
@@ -11,7 +13,7 @@
     return OG.ui.settings.toggleSettings(show);
   }
 
-  function startCampaign() {
+  function _launchCampaign() {
     let startLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
     const stageOverrideId = OG.debug && OG.debug.stageOverrideId;
     if (stageOverrideId && Array.isArray(campaign)) {
@@ -36,6 +38,17 @@
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
     OrbitGame.core.loop.startMainLoop();
+  }
+
+  function startCampaign() {
+    // Show augment select overlay — actual game start happens in selectAugment()
+    _pendingRunType = 'campaign';
+    const augOverlay = document.getElementById('augmentSelect');
+    if (augOverlay) {
+      augOverlay.style.display = 'flex';
+      return; // actual launch happens in selectAugment
+    }
+    _launchCampaign();
   }
 
   function changeWorld(dir) {
@@ -96,7 +109,7 @@
     if (rightArrow) rightArrow.disabled = menuSelectedWorld >= 3;
   }
 
-  function startBestScoreRun() {
+  function _launchBestScore() {
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
     initAudio();
@@ -122,7 +135,17 @@
     OrbitGame.core.loop.startMainLoop();
   }
 
-  function startHardModeRun() {
+  function startBestScoreRun() {
+    _pendingRunType = 'best';
+    const augOverlay = document.getElementById('augmentSelect');
+    if (augOverlay) {
+      augOverlay.style.display = 'flex';
+      return;
+    }
+    _launchBestScore();
+  }
+
+  function _launchHardMode() {
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
     if (typeof OrbitGame !== 'undefined') OrbitGame.state.legacy.hardMode = true;
@@ -149,6 +172,27 @@
     OrbitGame.core.loop.startMainLoop();
   }
 
+  function startHardModeRun() {
+    _pendingRunType = 'hard';
+    const augOverlay = document.getElementById('augmentSelect');
+    if (augOverlay) {
+      augOverlay.style.display = 'flex';
+      return;
+    }
+    _launchHardMode();
+  }
+
+
+  function selectAugment(augmentId) {
+    const augOverlay = document.getElementById('augmentSelect');
+    if (augOverlay) augOverlay.style.display = 'none';
+    if (typeof window.setActiveAugment === 'function') window.setActiveAugment(augmentId);
+    if (_pendingRunType === 'campaign') _launchCampaign();
+    else if (_pendingRunType === 'best') _launchBestScore();
+    else if (_pendingRunType === 'hard') _launchHardMode();
+    _pendingRunType = null;
+  }
+
   function showChallengePreview() {
     const el = document.getElementById('challengePreview');
     if (!el) return;
@@ -173,8 +217,10 @@
   OG.ui.menus.updateWorldSelectorUI = updateWorldSelectorUI;
   OG.ui.menus.startBestScoreRun = startBestScoreRun;
   OG.ui.menus.startHardModeRun = startHardModeRun;
+  OG.ui.menus.selectAugment = selectAugment;
   window.startBestScoreRun = startBestScoreRun;
   window.startHardModeRun = startHardModeRun;
+  window.selectAugment = selectAugment;
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
 })(window);

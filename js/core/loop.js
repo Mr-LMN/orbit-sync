@@ -61,6 +61,8 @@ function ensureCorrectMusicForLevel() { return OrbitGame.audio.ensureCorrectMusi
 function updateMusicState(currentMultiplier, isBossActive) { return OrbitGame.audio.updateMusicState(currentMultiplier, isBossActive); }
 function isHardModeActive() { return hardModeActive; }
 window.isHardModeActive = isHardModeActive;
+window.setActiveAugment = function(id) { activeAugment = id; };
+window.getActiveAugment = function() { return activeAugment; };
 // Only aegis and prism are real boss music stages. 3-6/spectre uses echo mechanics — base track only.
 function _isMusicBossStage(ld) {
   if (!ld || !ld.boss) return false;
@@ -81,6 +83,7 @@ let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1
 let menuSelectedWorld = 1;
 let tutorialComplete = localStorage.getItem('orbitSync_tutorialDone') === '1';
 let hardModeActive = false;
+let activeAugment = null; // 'wide_sync' | 'coin_surge' | 'iron_shield' | null
 let tutorialHitCount = 0;
 let tutorialPhase = 0; // 0=idle, 1=first tap prompt, 2=perfect prompt, 3=done
 function defaultPlayerProgress() {
@@ -199,6 +202,10 @@ let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let
 let perfectLifeStreak = 0;
 let runBestStreak = 0;
 let runPerfectHitsOnly = true; // set false on any good/ok/miss this run
+let runLastLifeHits = 0;   // hits landed while on last life
+let runOkCount = 0;        // total ok/sloppy hits this run
+let runGoodCount = 0;      // total good hits this run
+let runPerfectCount = 0;   // total perfect/filthy-perfect hits this run
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 let reviveCount = 0;
@@ -292,6 +299,7 @@ Object.defineProperties(stateBridge, {
   world2: { get: () => ({ nearMissReplayUntil, nearMissReplayActive }) },
   combo: { get: () => ({ comboCount, comboTimer }) },
   runPerfectHitsOnly: { get: () => runPerfectHitsOnly },
+  runStats: { get: () => ({ runLastLifeHits, runOkCount, runGoodCount, runPerfectCount }) },
   hardMode: { get: () => hardModeActive, set: (v) => { hardModeActive = !!v; } }
 });
 
@@ -896,7 +904,14 @@ function resetRunState() {
   angle = 0; direction = 1;
   perfectLifeStreak = 0; runBestStreak = 0;
   runPerfectHitsOnly = true;
+  runLastLifeHits = 0;
+  runOkCount = 0;
+  runGoodCount = 0;
+  runPerfectCount = 0;
   currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
+  // Iron Shield augment: reset extra revive eligibility
+  if (activeAugment === 'iron_shield') usedLastChance = false;
+  // (usedLastChance is already false, but this makes the intent explicit)
   scoreAtCheckpoint = 0; scoreAtLevelStart = 0;
   isBossPhaseTwo = false; bossPhase = 1;
   bossPauseUntil = 0; bossTransitionLock = false; stageClearHoldUntil = 0;
@@ -1041,16 +1056,46 @@ function getTargetApproachIntensity(target, playerAngle, playerDirection) {
 }
 
 function generateTitle(score, world, streak, revives) {
-  if (revives === 0 && world >= 3 && score > 200) return "SYNC GOD";
-  if (revives === 0 && streak >= 20) return "GHOST RUN";
+  const totalHits = runPerfectCount + runGoodCount + runOkCount;
+  const perfectRate = totalHits > 0 ? runPerfectCount / totalHits : 0;
+  const isHM = hardModeActive;
+
+  // Hard Mode specific titles
+  if (isHM && revives === 0 && world >= 3) return "IRON SYNC";
+  if (isHM && revives === 0 && world >= 2) return "HARD CLEARED";
+  if (isHM && runLastLifeHits >= 6) return "LAST LIFE CLUTCH";
+  if (isHM) return "HARD RUNNER";
+
+  // Perfect accuracy titles
+  if (revives === 0 && perfectRate >= 0.95 && totalHits >= 8 && world >= 3) return "SYNC GOD";
+  if (revives === 0 && perfectRate >= 0.9 && totalHits >= 6) return "GHOST RUN";
+  if (revives === 0 && perfectRate >= 0.85 && totalHits >= 5) return "FILTHY ACCURACY";
+
+  // World clear titles
+  if (revives === 0 && world >= 3) return "WORLD BREAKER";
   if (revives === 0 && world >= 2) return "CLEAN SWEEP";
-  if (world >= 3 && score > 200) return "WORLD BREAKER";
+
+  // Comeback / survival titles
+  if (runLastLifeHits >= 8) return "LAST LIFE CLUTCH";
+  if (runLastLifeHits >= 4) return "CLUTCH SURVIVOR";
+  if (revives >= 3 && world >= 2) return "NEVER SAY DIE";
+
+  // Combo titles
   if (streak >= 20) return "CHAIN MASTER";
-  if (streak >= 10) return "COMBO KING";
+  if (streak >= 12) return "COMBO KING";
+  if (streak >= 8) return "ON A ROLL";
+
+  // Score titles
+  if (world >= 3 && score > 150) return "RESONANCE LOCKED";
+  if (world >= 3) return "ECHO RUNNER";
+  if (world >= 2 && score > 100) return "PRISM SHREDDER";
   if (score >= 150) return "ORBIT ELITE";
   if (score >= 75) return "SYNC RUNNER";
+
+  // Progress titles
   if (world >= 2) return "WORLD JUMPER";
   if (revives >= 3) return "NEVER GIVE UP";
+  if (perfectRate >= 0.7 && totalHits >= 3) return "SHARP";
   return "SYNC ROOKIE";
 }
 
@@ -1854,11 +1899,23 @@ function draw() {
       ctx.shadowColor = '#66f0ff';
       ctx.stroke();
 
+      // Core dot
       ctx.beginPath();
       ctx.arc(markerPt.x, markerPt.y, Math.max(3.2, orbitRadius * 0.01), 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(200,255,255,0.72)';
-      ctx.lineWidth = 1.4;
-      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(180,255,255,0.9)';
+      ctx.shadowBlur = 6;
+      ctx.shadowColor = '#66f0ff';
+      ctx.fill();
+
+      // Ghost ripple ring — unique to echo targets
+      const _echoRingR = Math.max(6, orbitRadius * 0.022);
+      const _echoRingPulse = (Math.sin(Date.now() / 400) + 1) * 0.5;
+      ctx.beginPath();
+      ctx.arc(markerPt.x, markerPt.y, _echoRingR + _echoRingPulse * 2.5, 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(100,240,255,${0.28 + _echoRingPulse * 0.22})`;
+      ctx.lineWidth = 1.2;
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = '#66f0ff';
       ctx.stroke();
 
       ctx.restore();
@@ -2075,6 +2132,35 @@ function draw() {
     if (shouldDrawTargetMarkers && worldShape === 'circle') {
       drawBracketTick(t.start);
       drawBracketTick(t.start + t.size);
+    }
+
+    // World 3 real target: diamond marker at midpoint for instant ID
+    if (worldNum === 3 && !t.isEchoTarget && !t.isBossShield && !t.isPhantom && !isBoss) {
+      const _midAngle = normalizeAngle(t.start + t.size / 2);
+      const _midPt = getPointOnShape(_midAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      const _radX = _midPt.x - centerObj.x;
+      const _radY = _midPt.y - centerObj.y;
+      const _radLen = Math.hypot(_radX, _radY) || 1;
+      const _nx = _radX / _radLen;
+      const _ny = _radY / _radLen;
+      const _ds = 5 + approach * 2.5;  // diamond size
+      const _dpulse = 1 + Math.sin(Date.now() / 280) * 0.08;
+
+      ctx.save();
+      ctx.translate(_midPt.x, _midPt.y);
+      // Rotate so diamond points outward from ring
+      ctx.rotate(Math.atan2(_ny, _nx));
+      ctx.beginPath();
+      ctx.moveTo(_ds * _dpulse, 0);
+      ctx.lineTo(0, _ds * 0.6 * _dpulse);
+      ctx.lineTo(-_ds * _dpulse, 0);
+      ctx.lineTo(0, -_ds * 0.6 * _dpulse);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,160,80,0.88)';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#ff9a6b';
+      ctx.fill();
+      ctx.restore();
     }
     ctx.restore();
   });
@@ -2405,7 +2491,7 @@ function update() {
   angle += moveStep;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
-  const tPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
+  const tPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
   trail.push({ x: Math.round(tPt.x), y: Math.round(tPt.y) });
   const maxTrailMultiplier = isMobile ? 3 : 4;
   if (trail.length > multiplier * maxTrailMultiplier) trail.shift();
@@ -2749,13 +2835,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       ui.overlay.style.display = 'flex';
       ui.title.style.color = '#ff3366';
       ui.title.classList.add('run-title');
-      const wonRun = false;
       let title = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
-      if (!wonRun) {
-        if (streakBeforeFail >= 8) title = "SO CLOSE";
-        else if (streakBeforeFail >= 5) title = "ALMOST THERE";
-        else title = "KEEP GOING";
-      }
       ui.title.innerText = title;
     });
     const newRecordBanner = document.getElementById('newRecordBanner');
@@ -2852,8 +2932,11 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
     let reviveAvailable = false;
 
-    if (!usedLastChance) {
-      reviveBtn.innerText = "ONE MORE TRY";
+    const _ironShieldBonus = (activeAugment === 'iron_shield') && reviveCount === 0 && usedLastChance;
+    if (!usedLastChance || _ironShieldBonus) {
+      if (_ironShieldBonus) usedLastChance = false; // reset for the iron shield bonus
+      reviveBtn.innerText = activeAugment === 'iron_shield' && reviveCount === 0
+        ? "SHIELD REVIVE" : "ONE MORE TRY";
       reviveBtn.onclick = function () {
         usedLastChance = true;
         restartCurrentStageAfterRevive();
@@ -2958,6 +3041,7 @@ function tap() {
       if (!echoHit) {
         if (typeof createPopup === 'function') {
           createPopup(centerObj.x, centerObj.y - 40, 'ECHO NOT IN RANGE', '#78eeff');
+          createPopup(centerObj.x, centerObj.y - orbitRadius - 20, 'TAP ECHO ◌', '#66f0ff');
         }
         return;
       }
@@ -2994,9 +3078,13 @@ function tap() {
     const targetCenterAngle = normalizeAngle(t.start + (t.size / 2));
     const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);
     const hitTimingAccuracy = Math.abs(hitTimingOffset);
-    const hitTimingTier = hitTimingAccuracy < 0.03
+    const _augWideMult = (activeAugment === 'wide_sync') ? 1.2 : 1.0;
+    const filthyWindow = 0.03 * _augWideMult;
+    const perfectWindow = 0.08 * _augWideMult;
+    const goodWindow = 0.14 * _augWideMult;
+    const hitTimingTier = hitTimingAccuracy < filthyWindow
       ? 'filthy-perfect'
-      : (hitTimingAccuracy < 0.08 ? 'perfect' : (hitTimingAccuracy < 0.14 ? 'good' : 'weak'));
+      : (hitTimingAccuracy < perfectWindow ? 'perfect' : (hitTimingAccuracy < goodWindow ? 'good' : 'weak'));
 
     triggerTargetHitFeedback(t, hitX, hitY);
     if (t.isEchoTarget) {
@@ -3285,6 +3373,8 @@ function tap() {
 
     if (hitTimingTier === 'filthy-perfect') {
       perfectLifeStreak++;
+      runPerfectCount++;
+      if (lives === 1) runLastLifeHits++;
       if (currentLevelIdx >= 2) {
         perfectFlash = Math.max(perfectFlash, 0.34);
       }
@@ -3336,6 +3426,8 @@ function tap() {
     }
     else if (hitTimingTier === 'perfect' || hitQuality === "perfect") {
       perfectLifeStreak++;
+      runPerfectCount++;
+      if (lives === 1) runLastLifeHits++;
       if (currentLevelIdx >= 2) {
         perfectFlash = Math.max(perfectFlash, 0.34);
       }
@@ -3385,6 +3477,8 @@ function tap() {
     }
     else if (hitTimingTier === 'good' || hitQuality === "good") {
       perfectLifeStreak = 0;
+      runGoodCount++;
+      if (lives === 1) runLastLifeHits++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.28 + Math.min(multiplier, 8) * 0.025);
       score += (2 * multiplier);
@@ -3395,6 +3489,7 @@ function tap() {
     }
     else {
       perfectLifeStreak = 0;
+      runOkCount++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.08);
       multiplier = 1; score += 1;
@@ -3454,6 +3549,7 @@ function tap() {
     let centsEarned = (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect' || hitQuality === "perfect"
       ? 3
       : (hitTimingTier === 'good' || hitQuality === "good" ? 2 : 1)) * multiplier;
+    if (activeAugment === 'coin_surge') centsEarned = Math.ceil(centsEarned * 1.5);
     runCents += centsEarned;
     markScoreCoinDirty();
     updateMultiplierUI();
@@ -3490,6 +3586,13 @@ function tap() {
   } else {
     const touchingEchoOnlyTarget = targets.some((t) => t.active && t.isEchoTarget && isInsideTarget(angle, t));
     if (touchingEchoOnlyTarget) {
+      // Player tapped inside an echo target — wrong type
+      const _mixedStage = targets.some(t => t.active && !t.isEchoTarget) &&
+                        targets.some(t => t.active && t.isEchoTarget);
+      if (_mixedStage) {
+        const _echoPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+        createPopup(_echoPt.x, _echoPt.y - 22, 'TAP REAL ◆', '#ff9a6b');
+      }
       return;
     }
     comboCount = 0;
@@ -3601,6 +3704,7 @@ function restartFromCheckpoint() {
 
 function returnToMenu() {
   hardModeActive = false;
+  activeAugment = null;
   document.body.classList.remove('hard-mode');
   clearRunTransientTimers();
   clearIntensity();
@@ -3656,9 +3760,11 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   ui.bossUI.style.display = 'none';
   ui.bigMultiplier.style.display = 'none';
 
-  ui.title.innerText = "WORLD CLEARED";
-  if (isCampaignClear) ui.title.innerText = "CAMPAIGN CLEARED";
-  ui.title.style.color = '#00ff88';
+  const _clearTitle = isCampaignClear
+    ? "CAMPAIGN CLEARED"
+    : generateTitle(score, nextWorld - 1, runBestStreak, reviveCount);
+  ui.title.innerText = _clearTitle;
+  ui.title.style.color = isCampaignClear ? '#ffd84d' : '#00ff88';
   ui.subtitle.innerText = "Decrypting rewards...";
 
   // Hide buttons during tally
