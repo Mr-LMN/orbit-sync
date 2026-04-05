@@ -199,10 +199,25 @@
       const hardModeRow = document.getElementById('hardModeRow');
       const hardModeStatus = document.getElementById('hardModeStatus');
       if (hardModeRow && hardModeStatus) {
-        const unlocked = (typeof maxWorldUnlocked !== 'undefined' && maxWorldUnlocked >= 2);
-        hardModeRow.style.opacity = unlocked ? '1' : '0.45';
-        hardModeStatus.innerText = unlocked ? 'COMING SOON' : 'CLEAR WORLD 1';
-        hardModeStatus.style.color = unlocked ? 'rgba(255,200,80,0.7)' : 'rgba(255,80,100,0.7)';
+        const _getWorldStars = (worldNum) => {
+          if (typeof playerProgress === 'undefined' || !playerProgress.stageStars) return 0;
+          const _stageIds = ['1','2','3','4','5'].map(n => `${worldNum}-${n}`);
+          return _stageIds.reduce((acc, id) => acc + (playerProgress.stageStars[id] || 0), 0);
+        };
+        const _w1Stars = _getWorldStars(1);
+        const _w1Unlocked = _w1Stars >= 10;
+        const _hasAnyWorld = typeof maxWorldUnlocked !== 'undefined' && maxWorldUnlocked >= 1;
+        hardModeRow.style.opacity = _hasAnyWorld ? '1' : '0.45';
+        if (!_hasAnyWorld) {
+          hardModeStatus.innerText = 'CLEAR WORLD 1';
+          hardModeStatus.style.color = 'rgba(255,80,100,0.7)';
+        } else if (_w1Unlocked) {
+          hardModeStatus.innerText = 'COMING SOON';
+          hardModeStatus.style.color = 'rgba(255,200,80,0.7)';
+        } else {
+          hardModeStatus.innerText = `${_w1Stars} / 10 ★ NEEDED`;
+          hardModeStatus.style.color = 'rgba(255,150,80,0.6)';
+        }
       }
     }
   }

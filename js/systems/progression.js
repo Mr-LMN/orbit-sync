@@ -48,6 +48,28 @@
             if (typeof saveData === 'function') saveData();
           }
         }
+        // Star rating
+        const PAR_SCORES = {
+          '1-1':8,'1-2':12,'1-3':16,'1-4':22,'1-5':30,
+          '2-1':14,'2-2':16,'2-3':18,'2-4':20,'2-5':28,
+          '3-1':8,'3-2':12,'3-3':18,'3-4':22,'3-5':30
+        };
+        if (!levelData.boss && typeof reviveCount !== 'undefined') {
+          const _par = PAR_SCORES[levelData.id] || 10;
+          const _noRevive = reviveCount === 0;
+          const _abovePar = _stageScore >= _par;
+          const _perfectOnly = typeof OrbitGame !== 'undefined' &&
+            OrbitGame.state && OrbitGame.state.runPerfectHitsOnly;
+          let _stars = 1;
+          if (_noRevive && _abovePar) _stars = 2;
+          if (_stars === 2 && _perfectOnly) _stars = 3;
+          if (!playerProgress.stageStars) playerProgress.stageStars = {};
+          const _prevStars = playerProgress.stageStars[levelData.id] || 0;
+          if (_stars > _prevStars) {
+            playerProgress.stageStars[levelData.id] = _stars;
+            if (typeof saveData === 'function') saveData();
+          }
+        }
       }
 
       let unlockedNextWorldId = null;
@@ -87,6 +109,26 @@
         const waveClearColor = worldNum === 2 ? '#ff4fd8' : '#00ff88';
         const waveClearAftershockColor = worldNum === 2 ? '#c68cff' : '#ffffff';
         const wavePopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 28, 'WAVE CLEARED!', waveClearColor);
+        // Star earned popup
+        const _earnedStars = (typeof playerProgress !== 'undefined' &&
+          playerProgress.stageStars && playerProgress.stageStars[levelData.id]) || 0;
+        if (_earnedStars > 0) {
+          const _starDisplay = '★'.repeat(_earnedStars) + '☆'.repeat(3 - _earnedStars);
+          const _starPopup = createPopup(
+            centerObj.x,
+            centerObj.y + orbitRadius + 32,
+            _starDisplay,
+            _earnedStars === 3 ? '#ffd84d' : (_earnedStars === 2 ? '#00e5ff' : 'rgba(255,255,255,0.5)')
+          );
+          _starPopup.life = 2.2;
+          _starPopup.riseSpeed = 0.25;
+          _starPopup.fadeSpeed = 0.012;
+          _starPopup.shadow = _earnedStars === 3 ? 28 : 14;
+          if (_earnedStars === 3) {
+            createShockwave('#ffd84d', 24);
+            pulseBrightness(1.4, 100);
+          }
+        }
         wavePopup.animType = 'combo';
         wavePopup.life = 1.85;
         wavePopup.riseSpeed = 0.8;
