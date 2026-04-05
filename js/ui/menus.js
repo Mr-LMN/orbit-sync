@@ -64,7 +64,14 @@
     const wd = worldData[menuSelectedWorld] || worldData[1];
 
     if (label) { label.innerText = wd.name; label.style.color = isUnlocked ? wd.color : 'rgba(255,255,255,0.25)'; }
-    if (sub) { sub.innerText = wd.sub; sub.style.display = 'block'; }
+    let _subText = wd.sub;
+    if (isUnlocked && typeof playerProgress !== 'undefined' && playerProgress.stageStars) {
+      const _wStarIds = ['1','2','3','4','5'].map(n => `${menuSelectedWorld}-${n}`);
+      const _wStars = _wStarIds.reduce((acc, id) => acc + (playerProgress.stageStars[id] || 0), 0);
+      const _wMax = 15;
+      if (_wStars > 0) _subText = `${wd.sub}  ${_wStars}/${_wMax}★`;
+    }
+    if (sub) { sub.innerText = _subText; sub.style.display = 'block'; }
     if (lock) { lock.style.display = isUnlocked ? 'none' : 'block'; }
     if (playBtn) {
       playBtn.disabled = !isUnlocked;

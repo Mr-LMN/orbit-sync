@@ -195,6 +195,7 @@ let isCinematicIntro = false;
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let perfectLifeStreak = 0;
 let runBestStreak = 0;
+let runPerfectHitsOnly = true; // set false on any good/ok/miss this run
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 let reviveCount = 0;
@@ -286,7 +287,8 @@ Object.defineProperties(stateBridge, {
   bossFight: { get: () => ({ isBossPhaseTwo, bossPhase, bossIntroPlaying, bossTransitionLock }) },
   revive: { get: () => ({ currentReviveCost, reviveCount, usedLastChance }) },
   world2: { get: () => ({ nearMissReplayUntil, nearMissReplayActive }) },
-  combo: { get: () => ({ comboCount, comboTimer }) }
+  combo: { get: () => ({ comboCount, comboTimer }) },
+  runPerfectHitsOnly: { get: () => runPerfectHitsOnly }
 });
 
 
@@ -889,6 +891,7 @@ function resetRunState() {
   distanceTraveled = 0; runCents = 0;
   angle = 0; direction = 1;
   perfectLifeStreak = 0; runBestStreak = 0;
+  runPerfectHitsOnly = true;
   currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
   scoreAtCheckpoint = 0; scoreAtLevelStart = 0;
   isBossPhaseTwo = false; bossPhase = 1;
@@ -2646,6 +2649,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   updateStreakUI();
   triggerScreenShake(10);
   if (lives > 0) {
+    runPerfectHitsOnly = false;
     soundLifeLost();
     vibrate([30, 20, 30]);
   } else {
@@ -3313,6 +3317,7 @@ function tap() {
     }
     else if (hitTimingTier === 'good' || hitQuality === "good") {
       perfectLifeStreak = 0;
+      runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.28 + Math.min(multiplier, 8) * 0.025);
       score += (2 * multiplier);
       canvas.style.filter = 'brightness(1.4)';
@@ -3322,6 +3327,7 @@ function tap() {
     }
     else {
       perfectLifeStreak = 0;
+      runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.08);
       multiplier = 1; score += 1;
       const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
@@ -3637,11 +3643,27 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           const _clearedWorldPrefix = nextWorld > 1 ? String(nextWorld - 1) + '-' : '1-';
           const _worldStages = campaign.filter(s => s && s.id && s.id.startsWith(_clearedWorldPrefix) && !s.boss);
           _replayBtns.innerHTML = '';
+          const _totalStars = _worldStages.reduce((acc, s) => {
+            return acc + ((playerProgress.stageStars && playerProgress.stageStars[s.id]) || 0);
+          }, 0);
+          const _maxStars = _worldStages.length * 3;
+          const _summaryEl = document.createElement('div');
+          _summaryEl.style.cssText = 'width:100%; text-align:center; font-family:Orbitron,sans-serif; font-size:0.62rem; letter-spacing:2px; color:rgba(255,210,80,0.65); margin-bottom:10px;';
+          _summaryEl.innerText = `${_totalStars} / ${_maxStars} ★`;
+          _replayBtns.appendChild(_summaryEl);
           _worldStages.forEach(s => {
             const _pb = (playerProgress.bestScores && playerProgress.bestScores[s.id]) || 0;
             const _btn = document.createElement('button');
             _btn.style.cssText = 'font-family:Orbitron,sans-serif; font-size:0.58rem; letter-spacing:1.5px; padding:7px 12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.55); border-radius:6px; cursor:pointer;';
-            _btn.innerText = s.id + (_pb > 0 ? `  ${_pb}` : '');
+            const _stars = (playerProgress.stageStars && playerProgress.stageStars[s.id]) || 0;
+            const _starStr = '★'.repeat(_stars) + '☆'.repeat(3 - _stars);
+            const _pbStr = _pb > 0 ? `  ${_pb}` : '';
+            _btn.innerText = `${s.id}  ${_starStr}${_pbStr}`;
+            // Highlight 3-star stages
+            if (_stars === 3) {
+              _btn.style.borderColor = 'rgba(255,210,60,0.4)';
+              _btn.style.color = 'rgba(255,210,100,0.8)';
+            }
             _btn.onclick = function() {
               ui.overlay.style.display = 'none';
               const _idx = campaign.findIndex(c => c && c.id === s.id);
