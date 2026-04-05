@@ -76,6 +76,9 @@ unlockedSkins = [...new Set(unlockedSkins)];
 if (activeSkin === 'fire') activeSkin = 'prism';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = 1;
+let tutorialComplete = localStorage.getItem('orbitSync_tutorialDone') === '1';
+let tutorialHitCount = 0;
+let tutorialPhase = 0; // 0=idle, 1=first tap prompt, 2=perfect prompt, 3=done
 function defaultPlayerProgress() {
   return {
     unlockedWorlds: ['world1'],
@@ -501,6 +504,39 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     ctx.restore();
     return;
   }
+  if (skin === 'echo') {
+    // Cyan ghost echo trail orb - same shape as classic, cyan-tinted glow
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#00eaff';
+    ctx.shadowColor = '#00eaff';
+    ctx.shadowBlur = 18 + pulse * 8;
+    ctx.fill();
+    // Inner bright core
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+  if (skin === 'crimson') {
+    // Deep red orb - same shape as classic, crimson glow
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff2244';
+    ctx.shadowColor = '#ff2244';
+    ctx.shadowBlur = 18 + pulse * 8;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffaaaa';
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
 
   ctx.beginPath();
   ctx.arc(x, y, (radius * 2) + pulse, 0, Math.PI * 2);
@@ -719,7 +755,16 @@ function forceHideOverlayExtras() {
   if (runCoinsBox) runCoinsBox.style.display = 'none';
   if (menuBtn) menuBtn.style.display = 'none';
   if (clearSummary) clearSummary.style.display = 'none';
-  if (shareBtn) { shareBtn.style.display = 'none'; shareBtn.classList.remove('pb-share'); }
+  if (shareBtn) {
+    shareBtn.style.display = 'none';
+    shareBtn.classList.remove('pb-share');
+    // Always restore to secondary actions on reset
+    const sec = document.getElementById('overlaySecondaryActions');
+    if (sec && !sec.contains(shareBtn)) sec.prepend(shareBtn);
+    shareBtn.style.width = '';
+    shareBtn.style.minHeight = '';
+    shareBtn.style.marginBottom = '';
+  }
   if (pbStatsBlock) pbStatsBlock.style.display = 'none';
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
@@ -1036,6 +1081,18 @@ function loadLevel(idx) {
   resetSplitFamilyState();
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
+  // Tutorial: only on first ever play of 1-1
+  const tutOverlay = document.getElementById('tutorialOverlay');
+  const tutMsg = document.getElementById('tutorialMsg');
+  if (levelData.id === '1-1' && !tutorialComplete && tutOverlay && tutMsg) {
+    tutorialPhase = 1;
+    tutorialHitCount = 0;
+    tutMsg.innerText = 'TAP WHEN THE ORB ENTERS THE ZONE';
+    tutOverlay.style.display = 'block';
+  } else if (tutOverlay) {
+    tutOverlay.style.display = 'none';
+    tutorialPhase = 0;
+  }
   ui.lives.innerText = lives;
   updateLastLifeState();
   updateStreakUI();
@@ -1233,6 +1290,10 @@ function draw() {
   });
 
   // ENERGY LANE
+  const effectiveRailColor = (activeSkin === 'crimson')
+    ? '#cc1133'
+    : (theme.railColor || palette.primary);
+
   // Dark groove
   buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 8;
@@ -1245,10 +1306,10 @@ function draw() {
   buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
   ctx.lineWidth = 2;
   ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = theme.railColor || palette.primary;
+  ctx.strokeStyle = effectiveRailColor;
   ctx.globalAlpha = 0.9 * railGlowScale;
   setShadowBlur((worldNum === 2 && !isBoss) ? (12 * railGlowScale) : (15 * railGlowScale));
-  ctx.shadowColor = theme.railColor || palette.primary;
+  ctx.shadowColor = effectiveRailColor;
   ctx.stroke();
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
@@ -1273,21 +1334,21 @@ function draw() {
     // Outer soft aura — wide, very faint, gives the shape presence
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
-    ctx.strokeStyle = theme.railColor || palette.primary;
+    ctx.strokeStyle = effectiveRailColor;
     ctx.lineWidth = 12;
     ctx.globalAlpha = (0.045 + Math.abs(Math.sin(now / 1800)) * 0.02) * railGlowScale;
     ctx.shadowBlur = 20 * railGlowScale;
-    ctx.shadowColor = theme.railColor || palette.primary;
+    ctx.shadowColor = effectiveRailColor;
     ctx.stroke();
 
     // Mid glow — tighter, slightly brighter
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
-    ctx.strokeStyle = theme.railColor || palette.primary;
+    ctx.strokeStyle = effectiveRailColor;
     ctx.lineWidth = 4;
     ctx.globalAlpha = (0.11 + Math.abs(Math.sin(now / 1600)) * 0.02) * railGlowScale;
     ctx.shadowBlur = 11 * railGlowScale;
-    ctx.shadowColor = theme.railColor || palette.primary;
+    ctx.shadowColor = effectiveRailColor;
     ctx.stroke();
 
     // Corner hot spots — tiny bright dots at each diamond point,
@@ -1301,7 +1362,7 @@ function draw() {
       ctx.lineWidth = 2.1;
       ctx.globalAlpha = 0.2 + Math.abs(Math.sin(now / 1100 + idx)) * 0.06;
       ctx.shadowBlur = 9;
-      ctx.shadowColor = theme.railColor || palette.primary;
+      ctx.shadowColor = effectiveRailColor;
       ctx.stroke();
     });
 
@@ -2533,10 +2594,29 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       };
     }
     const shareBtn = document.getElementById('shareBtn');
+    const overlayButtonGroup = document.getElementById('overlayButtonGroup');
+    const overlaySecondaryActions = document.getElementById('overlaySecondaryActions');
+    const isNewPB = !!(newRecords.score || newRecords.streak || newRecords.world);
     if (shareBtn) {
       shareBtn.style.display = 'inline-block';
-      const isNewPB = newRecords.score || newRecords.streak || newRecords.world;
-      shareBtn.classList.toggle('pb-share', !!isNewPB);
+      shareBtn.classList.toggle('pb-share', isNewPB);
+      if (isNewPB && overlayButtonGroup && !overlayButtonGroup.contains(shareBtn)) {
+        // On PB: insert share as first button above the play button
+        overlayButtonGroup.insertBefore(shareBtn, overlayButtonGroup.firstChild);
+        shareBtn.style.width = '100%';
+        shareBtn.style.minHeight = '44px';
+        shareBtn.style.marginBottom = '4px';
+        shareBtn.style.fontSize = '0.72rem';
+        shareBtn.style.letterSpacing = '3px';
+      } else if (!isNewPB && overlaySecondaryActions && !overlaySecondaryActions.contains(shareBtn)) {
+        // Non-PB: return to secondary row
+        overlaySecondaryActions.prepend(shareBtn);
+        shareBtn.style.width = '';
+        shareBtn.style.minHeight = '';
+        shareBtn.style.marginBottom = '';
+        shareBtn.style.fontSize = '';
+        shareBtn.style.letterSpacing = '';
+      }
     }
     setOverlayState('gameOver');
     let reviveBtn = document.getElementById('reviveBtn');
@@ -3042,6 +3122,31 @@ function tap() {
       triggerScreenShake(5);
       soundOk();
       vibrate([20, 10, 20]);
+    }
+
+    // Tutorial phase progression
+    if (tutorialPhase > 0 && levelData && levelData.id === '1-1') {
+      tutorialHitCount++;
+      const tutMsg = document.getElementById('tutorialMsg');
+      const tutOverlay = document.getElementById('tutorialOverlay');
+      if (tutorialPhase === 1 && tutMsg) {
+        tutorialPhase = 2;
+        tutMsg.innerText = 'GOOD — NOW TAP DEAD CENTRE FOR PERFECT';
+      } else if (tutorialPhase === 2 && (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect') && tutMsg) {
+        tutorialPhase = 3;
+        tutMsg.innerText = '✦ PERFECT ✦';
+        setTimeout(() => {
+          if (tutOverlay) tutOverlay.style.display = 'none';
+          tutorialPhase = 0;
+          tutorialComplete = true;
+          localStorage.setItem('orbitSync_tutorialDone', '1');
+        }, 1400);
+      } else if (tutorialHitCount >= 4 && tutOverlay) {
+        tutOverlay.style.display = 'none';
+        tutorialPhase = 0;
+        tutorialComplete = true;
+        localStorage.setItem('orbitSync_tutorialDone', '1');
+      }
     }
 
     streak++;
