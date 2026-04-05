@@ -427,7 +427,10 @@ for (let i = 0; i < 50; i++) {
     speed: Math.random() * 0.2 + 0.05,
     opacity: Math.random() * 0.4 + 0.1,
     driftPhase: Math.random() * Math.PI * 2,
-    driftAmp: Math.random() * 0.25 + 0.08
+    driftAmp: Math.random() * 0.25 + 0.08,
+    rotation: Math.random() * Math.PI,
+    rotationSpeed: (Math.random() - 0.5) * 0.008,
+    shardLen: Math.random() * 6 + 3
   });
 }
 

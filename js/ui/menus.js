@@ -51,7 +51,7 @@
     let label = document.getElementById('menuWorldLabel');
     if (label) {
       label.innerText = 'WORLD ' + menuSelectedWorld;
-      label.style.color = (menuSelectedWorld === 2) ? '#ff00cc' : '#00ff88';
+      label.style.color = (menuSelectedWorld === 2) ? '#2ff6ff' : (menuSelectedWorld === 3) ? '#ffaa00' : '#00ff88';
     }
   }
 
