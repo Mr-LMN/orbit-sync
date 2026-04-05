@@ -173,13 +173,11 @@
   }
 
   function bindAdminControls() {
-    const openBtn = document.getElementById('adminToolsBtn');
     const submitBtn = document.getElementById('adminCodeSubmit');
     const applyBtn = document.getElementById('adminStageApply');
     const clearBtn = document.getElementById('adminStageClear');
     const worldSelect = document.getElementById('adminWorldSelect');
     const input = document.getElementById('adminCodeInput');
-    if (openBtn) openBtn.addEventListener('click', toggleAdminPanel);
     if (submitBtn) submitBtn.addEventListener('click', validateAdminCodeEntry);
     if (applyBtn) applyBtn.addEventListener('click', applyStageOverrideSelection);
     if (clearBtn) clearBtn.addEventListener('click', clearStageOverrideSelection);
@@ -188,6 +186,32 @@
       input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') validateAdminCodeEntry();
       });
+    }
+  }
+
+  let _orbitTapCount = 0;
+  let _orbitTapTimer = null;
+  function handleOrbitTitleTap() {
+    _orbitTapCount++;
+    if (_orbitTapTimer) clearTimeout(_orbitTapTimer);
+    _orbitTapTimer = setTimeout(() => { _orbitTapCount = 0; }, 1200);
+    if (_orbitTapCount >= 5) {
+      _orbitTapCount = 0;
+      clearTimeout(_orbitTapTimer);
+      // Open settings then show admin panel
+      if (typeof toggleSettings === 'function') toggleSettings(true);
+      setTimeout(() => {
+        const panel = document.getElementById('adminToolsPanel');
+        if (panel) {
+          panel.style.display = 'block';
+          adminPanelVisible = true;
+          populateAdminWorldOptions();
+          populateAdminStageOptions();
+          updateSelectedStageStatus();
+        }
+        const input = document.getElementById('adminCodeInput');
+        if (input) input.focus();
+      }, 200);
     }
   }
 
@@ -263,7 +287,9 @@
   OG.ui.settings.toggleHapticsSetting = toggleHapticsSetting;
   OG.ui.settings.bindAdminControls = bindAdminControls;
   OG.ui.settings.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
+  OG.ui.settings.handleOrbitTitleTap = handleOrbitTitleTap;
   window.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
+  window.handleOrbitTitleTap = handleOrbitTitleTap;
 
   bindAdminControls();
 })(window);

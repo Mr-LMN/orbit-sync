@@ -1197,6 +1197,12 @@ function loadLevel(idx) {
     tutOverlay.style.display = 'none';
     tutorialPhase = 0;
   }
+  // Restore lives to full on boss entry — you earned it getting here
+  if (levelData.boss && (levelData.boss === 'aegis' || levelData.boss === 'prism')) {
+    lives = hardModeActive ? 2 : maxLives;
+    ui.lives.innerText = lives;
+  }
+
   ui.lives.innerText = lives;
   updateLastLifeState();
   updateStreakUI();
@@ -1469,7 +1475,7 @@ function draw() {
   ctx.shadowBlur = 0;
 
   // LAST-LIFE RING PULSE — drawn directly on the rail, pulses in canvas space
-  if (lives === 1 && !inMenu && isPlaying) {
+  if (lives === 1 && !inMenu && isPlaying && !levelData.boss) {
     const _llPhase = (Math.sin(now * 0.0072) + 1) * 0.5; // ~0.92Hz
     buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
     ctx.lineWidth = 3 + _llPhase * 8;
@@ -2196,8 +2202,8 @@ function draw() {
   if (ringHitFlash > 0.01) {
     buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
     ctx.strokeStyle = hitFlashColor;
-    ctx.globalAlpha = Math.min(0.65, ringHitFlash);
-    ctx.lineWidth = 5 + (ringHitFlash * 10) + (Math.min(multiplier - 1, 7) * 0.6);
+    ctx.globalAlpha = Math.min(0.45, ringHitFlash);
+    ctx.lineWidth = Math.min(7, 2.5 + (ringHitFlash * 4) + (Math.min(multiplier - 1, 7) * 0.18));
     setShadowBlur(16);
     ctx.shadowColor = hitFlashColor;
     ctx.stroke();

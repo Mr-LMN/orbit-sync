@@ -47,8 +47,8 @@
 
   <div id="mainMenu">
     <button id="menuSettingsBtn" class="settings-btn menu-settings-btn" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙</button>
-    <h1 class="title">ORBIT</h1>
-    <h1 class="title" style="color:#fff; text-shadow:none; margin-bottom: 20px;">SYNC</h1>
+    <h1 class="title" id="orbitTitle" onclick="handleOrbitTitleTap()" style="cursor:default; user-select:none;">ORBIT</h1>
+    <h1 class="title" id="syncTitle" onclick="handleOrbitTitleTap()" style="color:#fff; text-shadow:none; margin-bottom: 20px; cursor:default; user-select:none;">SYNC</h1>
 
     <div id="worldSelector" style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 8px;">
       <button class="arrow-btn" onclick="if(audioCtx) soundUIClick(); changeWorld(-1)">◀</button>
@@ -94,10 +94,6 @@
       <div class="settings-row">
         <span>Haptics</span>
         <button id="hapticsToggleBtn" class="settings-toggle" onclick="toggleHapticsSetting()"></button>
-      </div>
-      <div class="settings-row settings-admin-row">
-        <span>Diagnostics</span>
-        <button id="adminToolsBtn" class="settings-toggle">Open</button>
       </div>
       <div class="settings-row" id="hardModeRow" style="opacity:0.45;">
         <span style="font-family:'Orbitron',sans-serif; font-size:0.65rem; letter-spacing:1px;">Hard Mode</span>
