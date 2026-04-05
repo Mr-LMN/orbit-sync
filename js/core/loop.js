@@ -14,7 +14,8 @@ const ui = {
   shopCoinCount: document.getElementById('shopCoinCount'), streak: document.getElementById('streakCount'),
   wave: document.getElementById('waveDisplay'), bossUI: document.getElementById('bossUI'),
   arenaInfo: document.getElementById('arenaInfo'),
-  bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2')
+  bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2'),
+  scorePunchAnim: null
 };
 
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
@@ -2126,8 +2127,8 @@ function draw() {
   if (ringHitFlash > 0.01) {
     buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
     ctx.strokeStyle = hitFlashColor;
-    ctx.globalAlpha = Math.min(0.4, ringHitFlash);
-    ctx.lineWidth = 7 + (ringHitFlash * 6);
+    ctx.globalAlpha = Math.min(0.65, ringHitFlash);
+    ctx.lineWidth = 5 + (ringHitFlash * 10) + (Math.min(multiplier - 1, 7) * 0.6);
     setShadowBlur(16);
     ctx.shadowColor = hitFlashColor;
     ctx.stroke();
@@ -3164,7 +3165,7 @@ function tap() {
       if (currentLevelIdx >= 2) {
         perfectFlash = Math.max(perfectFlash, 0.34);
       }
-      ringHitFlash = Math.max(ringHitFlash, 0.38);
+      ringHitFlash = Math.max(ringHitFlash, 0.55 + Math.min(multiplier, 8) * 0.055);
       multiplier = Math.min(multiplier + 1, 8);
       soundMultiplierUp(multiplier);
       score += (4 * multiplier);
@@ -3177,6 +3178,22 @@ function tap() {
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundPerfect(multiplier);
       if (audioCtx) playPop(10, true);
+      // Score punch — scale + colour flash
+      if (ui.score) {
+        const _sPunchColor = multiColors[Math.min(multiplier - 1, 7)];
+        ui.score.style.color = _sPunchColor;
+        ui.score.style.textShadow = `0 0 22px ${_sPunchColor}`;
+        if (ui.scorePunchAnim) ui.scorePunchAnim.cancel();
+        ui.scorePunchAnim = ui.score.animate(
+          [{ transform: 'scale(1)' }, { transform: 'scale(1.22)', offset: 0.4 }, { transform: 'scale(1)' }],
+          { duration: 200, easing: 'ease-out' }
+        );
+        ui.scorePunchAnim.onfinish = () => {
+          ui.score.style.color = '';
+          ui.score.style.textShadow = '';
+          ui.scorePunchAnim = null;
+        };
+      }
       vibrate([12, 28, 12]);
       createUpwardBurstParticles(hitX, hitY - 10, '#ffffff', 52);
       createParticles(hitX, hitY, '#ffffff', 20);
@@ -3189,7 +3206,7 @@ function tap() {
       if (currentLevelIdx >= 2) {
         perfectFlash = Math.max(perfectFlash, 0.34);
       }
-      ringHitFlash = Math.max(ringHitFlash, 0.34);
+      ringHitFlash = Math.max(ringHitFlash, 0.45 + Math.min(multiplier, 8) * 0.04);
       multiplier = Math.min(multiplier + 1, 8);
       soundMultiplierUp(multiplier);
       score += (3 * multiplier);
@@ -3202,6 +3219,21 @@ function tap() {
       canvas.style.filter = 'brightness(2.3)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 70);
       soundPerfect(multiplier);
+      if (ui.score) {
+        const _sPunchColor = multiColors[Math.min(multiplier - 1, 7)];
+        ui.score.style.color = _sPunchColor;
+        ui.score.style.textShadow = `0 0 16px ${_sPunchColor}`;
+        if (ui.scorePunchAnim) ui.scorePunchAnim.cancel();
+        ui.scorePunchAnim = ui.score.animate(
+          [{ transform: 'scale(1)' }, { transform: 'scale(1.14)', offset: 0.4 }, { transform: 'scale(1)' }],
+          { duration: 160, easing: 'ease-out' }
+        );
+        ui.scorePunchAnim.onfinish = () => {
+          ui.score.style.color = '';
+          ui.score.style.textShadow = '';
+          ui.scorePunchAnim = null;
+        };
+      }
       vibrate([12, 28, 12]);
       createUpwardBurstParticles(hitX, hitY - 10, '#fff36a', 42);
       if (perfectLifeStreak >= 6) {
@@ -3210,7 +3242,7 @@ function tap() {
     }
     else if (hitTimingTier === 'good' || hitQuality === "good") {
       perfectLifeStreak = 0;
-      ringHitFlash = Math.max(ringHitFlash, 0.26);
+      ringHitFlash = Math.max(ringHitFlash, 0.28 + Math.min(multiplier, 8) * 0.025);
       score += (2 * multiplier);
       canvas.style.filter = 'brightness(1.4)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
@@ -3219,7 +3251,7 @@ function tap() {
     }
     else {
       perfectLifeStreak = 0;
-      ringHitFlash = Math.max(ringHitFlash, 0.14);
+      ringHitFlash = Math.max(ringHitFlash, 0.08);
       multiplier = 1; score += 1;
       const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
       createPopup(hitX, hitY - 24, okTimingLabel ? `${okTimingLabel}` : 'SLOPPY', '#ff6677', 'ok');
