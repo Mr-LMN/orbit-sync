@@ -420,19 +420,44 @@ function getDelayedEchoAngle(nowMs, fallbackAngle) {
   return fallbackAngle;
 }
 
-// Generate subtle background dust for depth
-for (let i = 0; i < 50; i++) {
+// Generate 3-layer parallax dust for depth
+// Far layer: 30 tiny slow particles
+for (let i = 0; i < 30; i++) {
   bgDust.push({
     x: Math.random() * window.innerWidth,
     y: Math.random() * window.innerHeight,
-    size: Math.random() * 1.5 + 0.5,
-    speed: Math.random() * 0.2 + 0.05,
-    opacity: Math.random() * 0.4 + 0.1,
+    size: Math.random() * 0.8 + 0.2,
+    speed: Math.random() * 0.06 + 0.02,
+    opacity: Math.random() * 0.18 + 0.04,
     driftPhase: Math.random() * Math.PI * 2,
-    driftAmp: Math.random() * 0.25 + 0.08,
-    rotation: Math.random() * Math.PI,
-    rotationSpeed: (Math.random() - 0.5) * 0.008,
-    shardLen: Math.random() * 6 + 3
+    driftAmp: Math.random() * 0.06 + 0.02,
+    layer: 0
+  });
+}
+// Mid layer: 25 standard particles (similar to original)
+for (let i = 0; i < 25; i++) {
+  bgDust.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    size: Math.random() * 1.2 + 0.5,
+    speed: Math.random() * 0.18 + 0.06,
+    opacity: Math.random() * 0.28 + 0.08,
+    driftPhase: Math.random() * Math.PI * 2,
+    driftAmp: Math.random() * 0.18 + 0.06,
+    layer: 1
+  });
+}
+// Near layer: 8 larger, faster, brighter particles
+for (let i = 0; i < 8; i++) {
+  bgDust.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    size: Math.random() * 2.2 + 1.2,
+    speed: Math.random() * 0.38 + 0.18,
+    opacity: Math.random() * 0.22 + 0.1,
+    driftPhase: Math.random() * Math.PI * 2,
+    driftAmp: Math.random() * 0.35 + 0.12,
+    layer: 2
   });
 }
 
@@ -1294,6 +1319,40 @@ function draw() {
     const _llTint = (Math.sin(now * 0.0072) + 1) * 0.5;
     ctx.fillStyle = `rgba(180, 10, 40, ${0.04 + _llTint * 0.06})`;
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+  }
+
+  // World atmosphere glow — faint radial wash behind everything
+  if (!inMenu) {
+    const _atmTime = now * 0.0004;
+    const _atmPulse = (Math.sin(_atmTime) + 1) * 0.5;
+    let _atmColor = null;
+    let _atmR = viewportWidth * 0.7;
+
+    if (worldNum === 1 && !isBoss) {
+      // Deep space — cold blue-teal nebula, very faint
+      _atmColor = `rgba(0, 80, 180, ${0.04 + _atmPulse * 0.02})`;
+    } else if (worldNum === 2 && !isBoss) {
+      // Crystal — faint cyan-magenta shimmer
+      const _w2shift = (Math.sin(now * 0.0003) + 1) * 0.5;
+      _atmColor = `rgba(${Math.round(30 + _w2shift * 60)}, ${Math.round(180 + _w2shift * 40)}, 220, ${0.05 + _atmPulse * 0.025})`;
+    } else if (worldNum === 3 && !isBoss) {
+      // Echo/resonance — amber-orange warmth
+      _atmColor = `rgba(180, 80, 10, ${0.04 + _atmPulse * 0.02})`;
+    } else if (isBoss) {
+      // Boss — deep red threat, steady
+      _atmColor = `rgba(120, 0, 20, ${0.06 + _atmPulse * 0.03})`;
+    }
+
+    if (_atmColor) {
+      const _atmGrad = ctx.createRadialGradient(
+        centerObj.x, centerObj.y, 0,
+        centerObj.x, centerObj.y, _atmR
+      );
+      _atmGrad.addColorStop(0, _atmColor);
+      _atmGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = _atmGrad;
+      ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+    }
   }
 
   // Ambient background dust

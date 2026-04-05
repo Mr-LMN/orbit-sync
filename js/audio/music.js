@@ -74,7 +74,7 @@
 
         audio.bossGain.gain.value = 0;
         audio.baseGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
-        audio.baseGain.gain.linearRampToValueAtTime(0.6, audio.audioCtx.currentTime + 2.5);
+        audio.baseGain.gain.linearRampToValueAtTime(0.32, audio.audioCtx.currentTime + 2.5);
 
         audio.baseSource.connect(audio.baseGain);
         audio.baseGain.connect(audio.audioCtx.destination);
@@ -146,15 +146,15 @@
   }
 
   function baseVolumeForMultiplier(currentMultiplier) {
-    return Math.min(0.8, 0.56 + (Math.max(1, currentMultiplier) - 1) * 0.02);
+    return Math.min(0.46, 0.28 + (Math.max(1, currentMultiplier) - 1) * 0.015);
   }
 
   function setMusicLayer(layer) {
     if (!audio.audioCtx || !audio.baseGain || !audio.bossGain) return;
     const now = audio.audioCtx.currentTime;
     const clamped = Math.max(1, Math.min(3, layer));
-    const baseTargets = { 1: 0.56, 2: 0.7, 3: 0.8 };
-    const bossTargets = { 1: 0.0, 2: 0.18, 3: 0.26 };
+    const baseTargets = { 1: 0.28, 2: 0.36, 3: 0.46 };
+    const bossTargets = { 1: 0.0, 2: 0.08, 3: 0.14 };
     audio.baseGain.gain.cancelScheduledValues(now);
     audio.bossGain.gain.cancelScheduledValues(now);
     audio.baseGain.gain.linearRampToValueAtTime(baseTargets[clamped], now + 0.3);
@@ -184,8 +184,8 @@
     if (isBossActive) {
       audio.baseGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.cancelScheduledValues(now);
-      audio.baseGain.gain.linearRampToValueAtTime(0.03, now + 0.5);
-      audio.bossGain.gain.linearRampToValueAtTime(0.85, now + 0.5);
+      audio.baseGain.gain.linearRampToValueAtTime(0.08, now + 0.5);
+      audio.bossGain.gain.linearRampToValueAtTime(0.48, now + 0.5);
     } else {
       audio.baseGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.cancelScheduledValues(now);
@@ -194,7 +194,7 @@
       if (currentMultiplier >= 8) layer = 3;
       else if (currentMultiplier >= 7) layer = 2;
       audio.baseGain.gain.linearRampToValueAtTime(
-        Math.max(baseVolumeForMultiplier(currentMultiplier), layer === 3 ? 0.8 : (layer === 2 ? 0.7 : 0.56)),
+        Math.max(baseVolumeForMultiplier(currentMultiplier), layer === 3 ? 0.46 : (layer === 2 ? 0.36 : 0.28)),
         now + 0.5
       );
     }
