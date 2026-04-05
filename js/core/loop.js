@@ -181,8 +181,7 @@ let echoAngle = 0;
 let echoHistory = [];
 const ECHO_DELAY_MS = 450;
 const ECHO_HISTORY_MAX_MS = 1200;
-let world4FocusMode = 'none'; // 'main' | 'echo' | 'none'
-let world4TutorialStep = 0;
+
 const NEAR_MISS_THRESHOLD = 0.12; // radians (~6.9deg)
 const NEAR_MISS_SURVIVAL_THRESHOLD = NEAR_MISS_THRESHOLD * 0.72;
 const NEAR_MISS_COOLDOWN_MS = 700;
@@ -427,7 +426,10 @@ for (let i = 0; i < 50; i++) {
     speed: Math.random() * 0.2 + 0.05,
     opacity: Math.random() * 0.4 + 0.1,
     driftPhase: Math.random() * Math.PI * 2,
-    driftAmp: Math.random() * 0.25 + 0.08
+    driftAmp: Math.random() * 0.25 + 0.08,
+    rotation: Math.random() * Math.PI,
+    rotationSpeed: (Math.random() - 0.5) * 0.008,
+    shardLen: Math.random() * 6 + 3
   });
 }
 
@@ -1030,10 +1032,6 @@ function loadLevel(idx) {
   world3BossLastAnnouncedPhase = 0;
   world3BossIntroDone = false;
   world3BossCollapseTriggered = false;
-  world4TutorialStep = 0;
-  if (getWorldNum() !== 4 || levelData.id !== '4-1') {
-    world4FocusMode = 'none';
-  }
   if (levelData.id !== '2-6') world2BossTransitionFrom25 = false;
   resetSplitFamilyState();
 
@@ -1917,21 +1915,17 @@ function draw() {
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
 
-  // WORLD 3 + WORLD 4 RENDER GUARDRAIL:
-  // If either world uses echo mechanics or focus-mode dimming, the echo orb MUST be rendered here too.
-  // Never add world-specific dimming for main/echo without updating both the main-orb and echo-orb draw paths together.
+  // WORLD 3 RENDER GUARDRAIL:
+  // World 3 uses echo mechanics — the echo orb MUST be rendered here alongside the main orb.
+  // Never add world-specific dimming for main/echo without updating both draw paths together.
   // Breaking this causes the player orb to appear "missing" even when logic is correct.
   // PLAYER ORB
   const currentWorldNum = getWorldNum();
   const isWorld3 = currentWorldNum === 3;
-  const isWorld4 = currentWorldNum === 4;
 
-  drawOrb(ctx, angle, worldShape, {
-    opacity: (isWorld4 && world4FocusMode === 'echo') ? 0.45 : 1,
-    glowScale: (isWorld4 && world4FocusMode === 'main') ? 1.18 : 1
-  });
+  drawOrb(ctx, angle, worldShape);
 
-  if (isWorld3 || isWorld4) {
+  if (isWorld3) {
     if (echoHistory.length > 0) {
       ctx.save();
       const step = Math.max(1, Math.floor(echoHistory.length / 8));
@@ -1951,8 +1945,8 @@ function draw() {
 
     drawOrb(ctx, echoAngle, worldShape, {
       colorOverride: '#66f0ff',
-      opacity: (isWorld4 && world4FocusMode === 'main') ? 0.22 : ((isWorld4 && world4FocusMode === 'echo') ? 0.88 : 0.58),
-      glowScale: (isWorld4 && world4FocusMode === 'echo') ? 1.05 : 0.78,
+      opacity: 0.58,
+      glowScale: 0.78,
       isEcho: true
     });
   }

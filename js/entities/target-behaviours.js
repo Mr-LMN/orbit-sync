@@ -60,36 +60,30 @@
     const nextDepth = (t.splitDepth || 0) + 1;
     if (t.splitOnHit && splitGeneration < 2 && nextDepth <= 2) {
       const isSplitTutorialStage = hitCtx.levelData && hitCtx.levelData.id === '2-3';
-      const isWorld4Deterministic = !!t.deterministicWorld4 || (hitCtx.levelData && hitCtx.levelData.id === '4-5');
       const parentCenter = hitCtx.normalizeAngle(t.start + (t.size / 2));
-      const childSize = Math.max(Math.PI / 40, t.size * (isSplitTutorialStage ? (nextDepth === 1 ? 0.62 : 0.56) : (isWorld4Deterministic ? 0.76 : 0.8)));
+      const childSize = Math.max(Math.PI / 40, t.size * (isSplitTutorialStage ? (nextDepth === 1 ? 0.62 : 0.56) : 0.8));
       const launchBase = nextDepth === 1 ? 0.95 : 1.2;
       const leftOffset = isSplitTutorialStage
         ? (nextDepth === 1 ? 1.22 : 0.82)
-        : (isWorld4Deterministic ? (nextDepth === 1 ? 1.08 : 0.86) : (launchBase + (Math.random() * 0.42)));
+        : (launchBase + (Math.random() * 0.42));
       const rightOffset = isSplitTutorialStage
         ? (nextDepth === 1 ? 1.22 : 0.82)
-        : (isWorld4Deterministic ? (nextDepth === 1 ? 1.08 : 0.86) : (launchBase + (Math.random() * 0.42)));
+        : (launchBase + (Math.random() * 0.42));
       const leftTargetStart = hitCtx.normalizeAngle(parentCenter - leftOffset - (childSize / 2));
       const rightTargetStart = hitCtx.normalizeAngle(parentCenter + rightOffset - (childSize / 2));
       const spawnStart = hitCtx.normalizeAngle(parentCenter - (childSize / 2));
 
       const leftColor = isWorld2Split
         ? (nextDepth === 1 ? '#c8e8ff' : '#e8f2ff')
-        : (isWorld4Deterministic
-          ? (nextDepth === 1 ? '#ff9f1a' : '#ffd54a')
-          : (nextDepth === 1 ? '#ff9b54' : '#ffd54a'));
+        : (nextDepth === 1 ? '#ff9b54' : '#ffd54a');
       const rightColor = isWorld2Split
         ? (nextDepth === 1 ? '#f0f8ff' : '#d6e9ff')
-        : (isWorld4Deterministic
-          ? (nextDepth === 1 ? '#66f0ff' : '#7cf7ff')
-          : (nextDepth === 1 ? '#ff4fd8' : '#7cf7ff'));
+        : (nextDepth === 1 ? '#ff4fd8' : '#7cf7ff');
 
       const leftChild = hitCtx.buildTarget(spawnStart, childSize, {
-        color: leftColor, active: true, hp: 1, mechanic: 'splitChild', type: 'shard', splitOnHit: isWorld4Deterministic ? false : nextDepth < 2,
+        color: leftColor, active: true, hp: 1, mechanic: 'splitChild', type: 'shard', splitOnHit: nextDepth < 2,
         splitDepth: nextDepth, splitFamilyId, splitGeneration: nextDepth
       });
-      if (isWorld4Deterministic) leftChild.isEchoTarget = false;
       leftChild.size = childSize;
       leftChild.baseSize = childSize;
       leftChild.state = nextDepth >= 2 ? 'final' : 'split';
@@ -105,10 +99,9 @@
       leftChild.hitFlash = 1;
 
       const rightChild = hitCtx.buildTarget(spawnStart, childSize, {
-        color: rightColor, active: true, hp: 1, mechanic: 'splitChild', type: 'shard', splitOnHit: isWorld4Deterministic ? false : nextDepth < 2,
+        color: rightColor, active: true, hp: 1, mechanic: 'splitChild', type: 'shard', splitOnHit: nextDepth < 2,
         splitDepth: nextDepth, splitFamilyId, splitGeneration: nextDepth
       });
-      if (isWorld4Deterministic) rightChild.isEchoTarget = true;
       rightChild.size = childSize;
       rightChild.baseSize = childSize;
       rightChild.state = nextDepth >= 2 ? 'final' : 'split';
