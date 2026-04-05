@@ -451,51 +451,94 @@ body.last-life #arenaInfo { opacity: 0.15; }
 }
 #overlayActionStack button:active { transform: scale(0.96); }
 
-/* ONE MORE TRY — dominant amber glow pill */
+/* ── GAME BUTTONS — angular, lit from above, not flat ── */
+
+/* Shared base for primary CTAs */
+#reviveBtn, #actionBtn {
+  border-radius: 10px !important;
+  min-height: 58px; width: 100%;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: clamp(0.82rem, 2.4vw, 0.96rem) !important;
+  font-weight: 900 !important; letter-spacing: 2px !important;
+  text-transform: uppercase; border: none !important;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.08s ease;
+  position: relative; overflow: hidden;
+}
+#reviveBtn:active, #actionBtn:active { transform: scale(0.97) !important; filter: brightness(1.1); }
+
+/* Inner top highlight — the "lit surface" that makes it feel 3D */
+#reviveBtn::before, #actionBtn::before {
+  content: '';
+  position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  border-radius: 0;
+}
+
+/* ONE MORE TRY — amber */
 #reviveBtn {
-  width: 100% !important; min-height: 60px !important;
-  border-radius: 999px !important; border: none !important;
-  font-size: clamp(0.88rem, 2.6vw, 1rem) !important;
-  padding: 14px 24px !important;
-  background: linear-gradient(135deg, #ffbe28 0%, #e08000 100%) !important;
-  color: #1a0800 !important;
-  text-shadow: none !important;
-  box-shadow: 0 0 32px rgba(255,168,32,0.68), 0 0 68px rgba(255,100,0,0.28), 0 10px 24px rgba(0,0,0,0.5) !important;
+  color: #1c0a00 !important;
+  background: linear-gradient(180deg, #ffca3a 0%, #e07800 55%, #b55a00 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,160,30,0.3),
+    0 0 28px rgba(255,140,0,0.52),
+    0 0 64px rgba(255,100,0,0.2),
+    0 6px 18px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(255,240,160,0.4),
+    inset 0 -2px 0 rgba(0,0,0,0.3) !important;
+  min-height: 60px !important;
+  text-shadow: 0 1px 2px rgba(255,200,60,0.3) !important;
 }
-#reviveBtn:active { filter: brightness(1.14) !important; }
 
-/* COIN REVIVE — softer amber ghost pill */
+/* COIN REVIVE — dim amber outline */
 #coinReviveBtn {
-  width: 100% !important; min-height: 48px !important;
-  border-radius: 999px !important;
-  border: 1px solid rgba(255,175,48,0.24) !important;
-  font-size: clamp(0.8rem, 2.2vw, 0.9rem) !important;
-  padding: 11px 20px !important;
-  background: rgba(255,160,32,0.08) !important;
-  color: #ffc864 !important;
-  text-shadow: 0 0 14px rgba(255,190,80,0.5) !important;
-  box-shadow: 0 0 18px rgba(255,150,40,0.18) !important;
+  width: 100%; min-height: 46px;
+  border-radius: 10px !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: clamp(0.74rem, 2vw, 0.86rem) !important;
+  font-weight: 700 !important; letter-spacing: 1.5px !important;
+  text-transform: uppercase; cursor: pointer;
+  color: #ffc060 !important;
+  background: rgba(0,0,0,0.0) !important;
+  border: 1px solid rgba(255,165,40,0.3) !important;
+  box-shadow: inset 0 1px 0 rgba(255,210,100,0.1), 0 0 14px rgba(255,140,0,0.12) !important;
+  transition: transform 0.08s ease;
 }
+#coinReviveBtn:active { transform: scale(0.97); }
 
-/* PLAY AGAIN / BANK + PLAY — solid teal glow pill */
+/* PLAY AGAIN / BANK + PLAY — teal */
 #actionBtn {
-  width: 100%; min-height: 60px;
-  border-radius: 999px; border: none;
-  font-size: clamp(0.88rem, 2.6vw, 1rem);
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #00e8aa 0%, #00a878 100%);
-  color: #001a0e; text-shadow: none;
-  box-shadow: 0 0 32px rgba(0,232,170,0.64), 0 0 68px rgba(0,180,120,0.26), 0 10px 24px rgba(0,0,0,0.5);
+  color: #001810 !important;
+  background: linear-gradient(180deg, #00e8aa 0%, #00a06a 55%, #007550 100%) !important;
+  box-shadow:
+    0 0 0 1px rgba(0,200,140,0.3),
+    0 0 28px rgba(0,220,150,0.50),
+    0 0 64px rgba(0,180,110,0.18),
+    0 6px 18px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(180,255,220,0.4),
+    inset 0 -2px 0 rgba(0,0,0,0.28) !important;
+  min-height: 60px !important;
+  text-shadow: 0 1px 2px rgba(0,220,140,0.3) !important;
 }
-#actionBtn:active { filter: brightness(1.12); }
 
-/* When revive is available, dim play-again slightly */
+/* When revive is above it, dim play-again */
 #overlayActionStack.revive-available #actionBtn {
-  background: linear-gradient(135deg, rgba(0,200,150,0.7) 0%, rgba(0,140,100,0.8) 100%);
-  box-shadow: 0 0 20px rgba(0,200,150,0.36), 0 8px 20px rgba(0,0,0,0.4);
+  background: linear-gradient(180deg, #009970 0%, #006844 55%, #004830 100%) !important;
+  box-shadow:
+    0 0 16px rgba(0,180,110,0.3),
+    0 6px 16px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(140,255,200,0.25),
+    inset 0 -2px 0 rgba(0,0,0,0.28) !important;
+  color: rgba(0,30,18,0.9) !important;
 }
 #overlayActionStack.no-revive #actionBtn {
-  box-shadow: 0 0 40px rgba(0,232,170,0.72), 0 0 80px rgba(0,180,120,0.3), 0 10px 24px rgba(0,0,0,0.5);
+  box-shadow:
+    0 0 0 1px rgba(0,220,150,0.36),
+    0 0 36px rgba(0,230,155,0.60),
+    0 0 72px rgba(0,180,110,0.24),
+    0 8px 20px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(180,255,220,0.44),
+    inset 0 -2px 0 rgba(0,0,0,0.28) !important;
 }
 
 /* SHARE + MENU — pure text links, no buttons */
@@ -504,32 +547,46 @@ body.last-life #arenaInfo { opacity: 0.15; }
   justify-content: center; gap: 0;
   margin-top: 6px; width: 100%;
 }
+/* SHARE — ghost text by default */
 #shareBtn {
-  font-family: 'Orbitron', sans-serif !important;
-  font-size: 0.66rem !important; font-weight: 700 !important;
-  letter-spacing: 2.5px !important; text-transform: uppercase !important;
-  color: rgba(170, 195, 230, 0.38) !important;
   background: none !important; border: none !important;
   box-shadow: none !important; border-radius: 0 !important;
-  padding: 12px 16px !important;
+  padding: 12px 18px !important;
   width: auto !important; min-height: auto !important;
-  cursor: pointer !important; opacity: 1 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 0.62rem !important; font-weight: 700 !important;
+  letter-spacing: 2.5px !important; text-transform: uppercase !important;
+  color: rgba(160, 185, 225, 0.3) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
   transition: color 0.15s ease !important;
 }
-#shareBtn:active { color: rgba(200,220,250,0.7) !important; }
+#shareBtn:active { color: rgba(200, 220, 255, 0.65) !important; }
+
+/* SHARE — PB state: becomes a real CTA */
+#shareBtn.pb-share {
+  color: #ffb830 !important;
+  text-shadow: 0 0 18px rgba(255,184,48,0.9), 0 0 40px rgba(255,120,0,0.35) !important;
+  animation: pbSharePulse 1.8s ease-in-out infinite !important;
+}
+@keyframes pbSharePulse {
+  0%, 100% { text-shadow: 0 0 14px rgba(255,184,48,0.7), 0 0 30px rgba(255,120,0,0.25); }
+  50% { text-shadow: 0 0 26px rgba(255,200,60,1), 0 0 52px rgba(255,130,0,0.5); }
+}
+
 #menuBtn {
-  font-family: 'Orbitron', sans-serif !important;
-  font-size: 0.66rem !important; font-weight: 700 !important;
-  letter-spacing: 2.5px !important; text-transform: uppercase !important;
-  color: rgba(170, 195, 230, 0.38) !important;
   background: none !important; border: none !important;
   box-shadow: none !important; border-radius: 0 !important;
-  padding: 12px 16px !important;
+  padding: 12px 18px !important;
   width: auto !important; min-height: auto !important;
-  cursor: pointer !important; opacity: 1 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 0.62rem !important; font-weight: 700 !important;
+  letter-spacing: 2.5px !important; text-transform: uppercase !important;
+  color: rgba(160, 185, 225, 0.3) !important;
+  cursor: pointer !important;
   transition: color 0.15s ease !important;
 }
-#menuBtn:active { color: rgba(200, 220, 250, 0.7) !important; }
+#menuBtn:active { color: rgba(200, 220, 255, 0.6) !important; }
 .overlay-sep {
   font-family: 'Orbitron', sans-serif;
   color: rgba(150,170,210,0.2);

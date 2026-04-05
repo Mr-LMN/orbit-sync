@@ -712,7 +712,7 @@ function forceHideOverlayExtras() {
   if (runCoinsBox) runCoinsBox.style.display = 'none';
   if (menuBtn) menuBtn.style.display = 'none';
   if (clearSummary) clearSummary.style.display = 'none';
-  if (shareBtn) shareBtn.style.display = 'none';
+  if (shareBtn) { shareBtn.style.display = 'none'; shareBtn.classList.remove('pb-share'); }
   if (pbStatsBlock) pbStatsBlock.style.display = 'none';
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
@@ -2525,7 +2525,11 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       };
     }
     const shareBtn = document.getElementById('shareBtn');
-    if (shareBtn) shareBtn.style.display = 'inline-block';
+    if (shareBtn) {
+      shareBtn.style.display = 'inline-block';
+      const isNewPB = newRecords.score || newRecords.streak || newRecords.world;
+      shareBtn.classList.toggle('pb-share', !!isNewPB);
+    }
     setOverlayState('gameOver');
     let reviveBtn = document.getElementById('reviveBtn');
     let coinReviveBtn = document.getElementById('coinReviveBtn');
