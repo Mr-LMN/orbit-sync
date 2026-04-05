@@ -187,42 +187,74 @@
         if (event.key === 'Enter') validateAdminCodeEntry();
       });
     }
+    _bindOrbitTitles();
   }
 
   let _orbitTapCount = 0;
   let _orbitTapTimer = null;
-  function handleOrbitTitleTap() {
+
+  function _bindOrbitTitles() {
+    ['orbitTitle', 'syncTitle'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      // Use touchend for mobile reliability, click as fallback
+      el.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        _handleOrbitTap();
+      }, { passive: false });
+      el.addEventListener('click', _handleOrbitTap);
+    });
+  }
+
+  function _handleOrbitTap() {
     _orbitTapCount++;
     if (_orbitTapTimer) clearTimeout(_orbitTapTimer);
-    _orbitTapTimer = setTimeout(() => { _orbitTapCount = 0; }, 1200);
+    _orbitTapTimer = setTimeout(() => { _orbitTapCount = 0; }, 1400);
     if (_orbitTapCount >= 5) {
       _orbitTapCount = 0;
       clearTimeout(_orbitTapTimer);
-      // Open settings then show admin panel
-      if (typeof toggleSettings === 'function') toggleSettings(true);
-      setTimeout(() => {
-        const panel = document.getElementById('adminToolsPanel');
-        if (panel) {
-          panel.style.display = 'block';
-          adminPanelVisible = true;
-          populateAdminWorldOptions();
-          populateAdminStageOptions();
-          updateSelectedStageStatus();
-        }
-        const input = document.getElementById('adminCodeInput');
-        if (input) input.focus();
-      }, 200);
+      _openAdminPanel();
     }
+  }
+
+  function _openAdminPanel() {
+    // Open settings modal first
+    ui.settingsModal.style.bottom = '0';
+    applySettingsUI();
+    updateSelectedStageStatus();
+    // Then force admin panel open after animation settles
+    setTimeout(() => {
+      const panel = document.getElementById('adminToolsPanel');
+      if (panel) {
+        panel.style.display = 'block';
+        adminPanelVisible = true;
+        populateAdminWorldOptions();
+        populateAdminStageOptions();
+        updateSelectedStageStatus();
+      }
+      const hardRow = document.getElementById('hardModeRow');
+      if (hardRow) hardRow.style.display = 'none'; // clean up space for admin
+      const input = document.getElementById('adminCodeInput');
+      if (input) setTimeout(() => input.focus(), 100);
+    }, 350);
   }
 
   function toggleSettings(show) {
     ui.settingsModal.style.bottom = show ? '0' : '-100%';
+    if (!show) {
+      const panel = document.getElementById('adminToolsPanel');
+      if (panel) panel.style.display = 'none';
+      const hardModeRow = document.getElementById('hardModeRow');
+      if (hardModeRow) hardModeRow.style.display = '';
+      adminPanelVisible = false;
+    }
     if (show) {
       applySettingsUI();
       updateSelectedStageStatus();
       const hardModeRow = document.getElementById('hardModeRow');
       const hardModeStatus = document.getElementById('hardModeStatus');
       if (hardModeRow && hardModeStatus) {
+        if (!adminPanelVisible) hardModeRow.style.display = '';
         const _getWorldStars = (worldNum) => {
           if (typeof playerProgress === 'undefined' || !playerProgress.stageStars) return 0;
           const _stageIds = ['1','2','3','4','5'].map(n => `${worldNum}-${n}`);
@@ -287,9 +319,8 @@
   OG.ui.settings.toggleHapticsSetting = toggleHapticsSetting;
   OG.ui.settings.bindAdminControls = bindAdminControls;
   OG.ui.settings.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
-  OG.ui.settings.handleOrbitTitleTap = handleOrbitTitleTap;
+  OG.ui.settings._openAdminPanel = _openAdminPanel;
   window.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
-  window.handleOrbitTitleTap = handleOrbitTitleTap;
 
   bindAdminControls();
 })(window);
