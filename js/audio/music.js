@@ -219,10 +219,10 @@
     if (!audio.audioCtx || !audio.baseGain) return;
     const now = audio.audioCtx.currentTime;
     audio.baseGain.gain.cancelScheduledValues(now);
-    audio.baseGain.gain.linearRampToValueAtTime(0.28, now + 0.9);
+    audio.baseGain.gain.linearRampToValueAtTime(0.09, now + 0.9);
     if (audio.bossGain) {
       audio.bossGain.gain.cancelScheduledValues(now);
-      audio.bossGain.gain.linearRampToValueAtTime(0.05, now + 0.9);
+      audio.bossGain.gain.linearRampToValueAtTime(0.02, now + 0.9);
     }
   }
 
