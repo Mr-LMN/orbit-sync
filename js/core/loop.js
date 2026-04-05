@@ -58,6 +58,11 @@ function stopDynamicMusic() { return OrbitGame.audio.stopDynamicMusic(); }
 function baseVolumeForMultiplier(currentMultiplier) { return OrbitGame.audio.baseVolumeForMultiplier(currentMultiplier); }
 function ensureCorrectMusicForLevel() { return OrbitGame.audio.ensureCorrectMusicForLevel(); }
 function updateMusicState(currentMultiplier, isBossActive) { return OrbitGame.audio.updateMusicState(currentMultiplier, isBossActive); }
+// Only aegis and prism are real boss music stages. 3-6/spectre uses echo mechanics — base track only.
+function _isMusicBossStage(ld) {
+  if (!ld || !ld.boss) return false;
+  return ld.boss === 'aegis' || ld.boss === 'prism';
+}
 function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 
 // --- SAVE SYSTEM ---
@@ -794,6 +799,7 @@ function resetRunState() {
   clearIntensity();
   if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
   if (typeof unduckMusic === 'function') unduckMusic();
+  document.body.classList.remove('last-life');
   updateLastLifeState();
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
@@ -822,11 +828,11 @@ function loseLife(reason) {
   perfectLifeStreak = 0;
 }
 function gainLifeFromPerfectStreak() {
+  perfectLifeStreak = 0; // always reset — prevents infinite re-trigger at max lives
   if (lives < maxLives) {
     lives++;
     ui.lives.innerText = lives;
     updateLastLifeState();
-    perfectLifeStreak = 0;
     showTempText('+1 LIFE!', '#7dfffb', 1100);
     soundLifeGained();
     vibrate([18, 24, 18]);
@@ -2325,7 +2331,7 @@ function update() {
     flushScoreCoinUI();
   }
 
-  updateMusicState(multiplier, (levelData && levelData.boss));
+  updateMusicState(multiplier, _isMusicBossStage(levelData));
   draw(); queueNextMainLoopFrame();
 }
 

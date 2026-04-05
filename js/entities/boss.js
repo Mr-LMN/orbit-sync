@@ -212,6 +212,7 @@
     createShockwave('#ff3366', 42);
     createParticles(centerObj.x, centerObj.y, '#ff3366', 42);
 
+    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism';
     if (bossCinematicTimeout) clearTimeout(bossCinematicTimeout);
     bossCinematicTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';
@@ -220,12 +221,19 @@
       isCinematicIntro = false;
       isPlaying = true;
       if (ui.gameUI) ui.gameUI.style.display = 'block';
-      if (ui.bossUI) ui.bossUI.style.display = 'flex';
-      ui.bossPhase1.className = 'boss-segment active-segment';
-      ui.bossPhase2.className = 'boss-segment active-segment';
+      if (_isRealBoss) {
+        if (ui.bossUI) ui.bossUI.style.display = 'flex';
+        ui.bossPhase1.className = 'boss-segment active-segment';
+        ui.bossPhase2.className = 'boss-segment active-segment';
+        startBossDrone();
+        if (audioCtx) updateMusicState(multiplier, true);
+      } else {
+        // Non-standard boss stage (e.g. spectre/echo climax) — no boss UI, no drone, base track only
+        if (ui.bossUI) ui.bossUI.style.display = 'none';
+        stopBossDrone();
+        if (audioCtx) updateMusicState(multiplier, false);
+      }
       spawnTargets();
-      startBossDrone();
-      if (audioCtx) updateMusicState(multiplier, true);
       bossCinematicTimeout = null;
     }, 1800);
   }

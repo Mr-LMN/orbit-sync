@@ -167,7 +167,8 @@
     const wantedTrack = getBaseTrackForLevel(currentLevelIdx);
     await startDynamicMusic(wantedTrack);
     if (token !== audio.musicLoadToken) return;
-    updateMusicState(multiplier, !!(levelData && levelData.boss));
+    const isMusicBoss = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+    updateMusicState(multiplier, !!isMusicBoss);
   }
 
   function updateMusicState(currentMultiplier, isBossActive) {
@@ -218,20 +219,17 @@
     if (!audio.audioCtx || !audio.baseGain) return;
     const now = audio.audioCtx.currentTime;
     audio.baseGain.gain.cancelScheduledValues(now);
-    audio.baseGain.gain.linearRampToValueAtTime(0.28, now + 0.8);
+    audio.baseGain.gain.linearRampToValueAtTime(0.28, now + 0.9);
     if (audio.bossGain) {
       audio.bossGain.gain.cancelScheduledValues(now);
-      audio.bossGain.gain.linearRampToValueAtTime(0.06, now + 0.8);
+      audio.bossGain.gain.linearRampToValueAtTime(0.05, now + 0.9);
     }
   }
 
   function unduckMusic() {
-    if (!audio.audioCtx || !audio.baseGain) return;
-    // Let updateMusicState re-set the correct level naturally
-    updateMusicState(
-      (window.multiplier != null ? window.multiplier : 1),
-      !!(window.levelData && window.levelData.boss)
-    );
+    if (!audio.audioCtx) return;
+    const isMusicBoss = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+    updateMusicState(multiplier, !!isMusicBoss);
   }
 
   audio.updateMusicState = updateMusicState;
