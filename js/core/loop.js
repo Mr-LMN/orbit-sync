@@ -1200,6 +1200,17 @@ function loadLevel(idx) {
     }
   } else {
     stopBossDrone();
+    // Also ensure music is in correct non-boss state on every non-boss load
+    if (audioCtx) {
+      const _mb = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+      if (!_mb) {
+        // Force clear the cached boss state so updateMusicState actually fires
+        if (typeof OrbitGame !== 'undefined' && OrbitGame.audio) {
+          OrbitGame.audio.currentMusicState = { mult: -1, boss: null };
+        }
+        updateMusicState(multiplier, false);
+      }
+    }
     spawnTargets();
   }
   return true;
@@ -2382,7 +2393,8 @@ function update() {
     echoAngle = angle;
   }
 
-  if (!inMenu && levelData.boss && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
+  const _isRealBossStage = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+  if (!inMenu && _isRealBossStage && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
   if (!inMenu && comboCount > 0) {
     comboTimer = Math.max(0, comboTimer - (delta * 16.6667));
     if (comboTimer === 0) comboCount = 0;

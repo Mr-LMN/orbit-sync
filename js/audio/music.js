@@ -190,20 +190,23 @@
       audio.baseGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.linearRampToValueAtTime(0, now + 0.5);
-      let layer = 1;
-      if (currentMultiplier >= 8) layer = 3;
-      else if (currentMultiplier >= 7) layer = 2;
+      // Escalate with multiplier but stay subtle — music underlies gameplay
+      const baseVol = 0.28 + (Math.min(currentMultiplier, 8) * 0.018);
       audio.baseGain.gain.linearRampToValueAtTime(
-        Math.max(baseVolumeForMultiplier(currentMultiplier), layer === 3 ? 0.46 : (layer === 2 ? 0.36 : 0.28)),
+        Math.min(0.48, baseVol),
         now + 0.5
       );
     }
 
-    const targetSpeed = 1.0 + (currentMultiplier * 0.015);
+    // World-aware playback rate — W2 stages faster, base rate reflects world tempo
+    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
+      ? parseInt(levelData.id.split('-')[0], 10) : 1;
+    const worldBaseRate = worldNum === 2 ? 1.06 : worldNum === 3 ? 1.03 : 1.0;
+    const targetSpeed = worldBaseRate + (Math.min(currentMultiplier, 8) * 0.012);
     audio.baseSource.playbackRate.cancelScheduledValues(now);
     audio.bossSource.playbackRate.cancelScheduledValues(now);
-    audio.baseSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
-    audio.bossSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.0);
+    audio.baseSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.2);
+    audio.bossSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.2);
   }
 
   audio.loadAudioFile = loadAudioFile;
