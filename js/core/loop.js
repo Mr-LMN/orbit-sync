@@ -793,6 +793,7 @@ function resetRunState() {
   lastMultiplierDisplay = 1;
   clearIntensity();
   if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+  if (typeof unduckMusic === 'function') unduckMusic();
   updateLastLifeState();
   particles = []; popups = []; shockwaves = []; targetHitRipples = []; trail = [];
   resetSplitFamilyState();
@@ -800,12 +801,18 @@ function resetRunState() {
 function updateLastLifeState() {
   if (!document || !document.body) return;
   const isLastLife = lives === 1;
+  const wasLastLife = document.body.classList.contains('last-life');
   document.body.classList.toggle('last-life', isLastLife);
   if (ui.lives) ui.lives.classList.toggle('last-life-count', isLastLife);
-  if (isLastLife) {
+
+  if (isLastLife && !wasLastLife) {
+    // Entering last-life state
     if (typeof startLastLifeDrone === 'function' && audioCtx) startLastLifeDrone();
-  } else {
+    if (typeof duckMusicForLastLife === 'function') duckMusicForLastLife();
+  } else if (!isLastLife && wasLastLife) {
+    // Leaving last-life state (gained life or died)
     if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+    if (typeof unduckMusic === 'function') unduckMusic();
   }
 }
 function loseLife(reason) {
@@ -2430,6 +2437,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     if (audioCtx) updateMusicState(multiplier, false);
     clearIntensity();
     if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+    if (typeof unduckMusic === 'function') unduckMusic();
     const previousPB = {
       score: personalBest.score || 0,
       streak: personalBest.streak || 0,

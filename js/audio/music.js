@@ -214,8 +214,30 @@
   audio.baseVolumeForMultiplier = baseVolumeForMultiplier;
   audio.setMusicLayer = setMusicLayer;
   audio.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
+  function duckMusicForLastLife() {
+    if (!audio.audioCtx || !audio.baseGain) return;
+    const now = audio.audioCtx.currentTime;
+    audio.baseGain.gain.cancelScheduledValues(now);
+    audio.baseGain.gain.linearRampToValueAtTime(0.28, now + 0.8);
+    if (audio.bossGain) {
+      audio.bossGain.gain.cancelScheduledValues(now);
+      audio.bossGain.gain.linearRampToValueAtTime(0.06, now + 0.8);
+    }
+  }
+
+  function unduckMusic() {
+    if (!audio.audioCtx || !audio.baseGain) return;
+    // Let updateMusicState re-set the correct level naturally
+    updateMusicState(
+      (window.multiplier != null ? window.multiplier : 1),
+      !!(window.levelData && window.levelData.boss)
+    );
+  }
+
   audio.updateMusicState = updateMusicState;
   audio.hasActiveMusicGraph = hasActiveMusicGraph;
+  audio.duckMusicForLastLife = duckMusicForLastLife;
+  audio.unduckMusic = unduckMusic;
 
   window.loadAudioFile = loadAudioFile;
   window.getBaseTrackForLevel = getBaseTrackForLevel;
@@ -228,4 +250,6 @@
   window.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
   window.updateMusicState = updateMusicState;
   window.hasActiveMusicGraph = hasActiveMusicGraph;
+  window.duckMusicForLastLife = duckMusicForLastLife;
+  window.unduckMusic = unduckMusic;
 })(window);
