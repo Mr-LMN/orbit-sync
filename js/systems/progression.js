@@ -38,6 +38,16 @@
 
       if (typeof playerProgress === 'object' && playerProgress) {
         playerProgress.completedStages[levelData.id] = true;
+        // Save per-stage best score
+        const _stageScore = (typeof score !== 'undefined' ? score : 0) - (typeof scoreAtLevelStart !== 'undefined' ? scoreAtLevelStart : 0);
+        if (_stageScore > 0) {
+          if (!playerProgress.bestScores) playerProgress.bestScores = {};
+          const _prevBest = playerProgress.bestScores[levelData.id] || 0;
+          if (_stageScore > _prevBest) {
+            playerProgress.bestScores[levelData.id] = _stageScore;
+            if (typeof saveData === 'function') saveData();
+          }
+        }
       }
 
       let unlockedNextWorldId = null;

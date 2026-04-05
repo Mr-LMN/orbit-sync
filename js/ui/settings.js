@@ -118,6 +118,15 @@
     updateSelectedStageStatus();
   }
 
+  function toggleAdminInfiniteLives() {
+    OG.debug.infiniteLives = !OG.debug.infiniteLives;
+    const btn = document.getElementById('adminInfiniteToggle');
+    if (btn) {
+      btn.innerText = OG.debug.infiniteLives ? 'On' : 'Off';
+      btn.className = OG.debug.infiniteLives ? 'settings-toggle' : 'settings-toggle off';
+    }
+  }
+
   function clearStageOverrideSelection() {
     OG.debug.stageOverrideId = null;
     updateSelectedStageStatus();
@@ -136,6 +145,9 @@
     if (!isValid) {
       adminUnlocked = false;
       controls.style.display = 'none';
+      OG.debug.infiniteLives = false;
+      const infBtn = document.getElementById('adminInfiniteToggle');
+      if (infBtn) { infBtn.innerText = 'Off'; infBtn.className = 'settings-toggle off'; }
       setAdminStatus('Code invalid.');
       input.value = '';
       return;
@@ -235,6 +247,8 @@
   OG.ui.settings.toggleSfxSetting = toggleSfxSetting;
   OG.ui.settings.toggleHapticsSetting = toggleHapticsSetting;
   OG.ui.settings.bindAdminControls = bindAdminControls;
+  OG.ui.settings.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
+  window.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
 
   bindAdminControls();
 })(window);

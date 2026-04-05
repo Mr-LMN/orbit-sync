@@ -30,6 +30,7 @@
 
   <div id="ui" style="display: none;">
     <h1 id="scoreDisplay">0</h1>
+    <div id="stagePBDisplay" style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:2.5px; color:rgba(255,255,255,0.22); margin:-4px 0 4px; display:none;">BEST —</div>
     <h2 id="comboDisplay">COMBO 0</h2>
     <p id="tutorialText">Tap when inside the zone.</p>
   </div>
@@ -115,6 +116,10 @@
             <button id="adminStageClear" class="settings-toggle off">Clear</button>
           </div>
           <p id="adminStageStatus" class="admin-stage-status">No test stage selected.</p>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
+            <span style="font-size:0.7rem; letter-spacing:1px;">Infinite Lives</span>
+            <button id="adminInfiniteToggle" class="settings-toggle off" onclick="toggleAdminInfiniteLives()">Off</button>
+          </div>
         </div>
       </div>
     </div>
@@ -214,6 +219,10 @@
         <div class="run-focus-combo" id="runComboDisplay">COMBO 0</div>
         <div class="run-focus-score" id="runScoreDisplay">Score 0</div>
         <p id="nearMissMsg" class="near-miss-msg"></p>
+      </div>
+      <div id="stageReplayRow" style="display:none; width:100%; margin-bottom:8px;">
+        <div style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:2px; color:rgba(255,255,255,0.3); text-align:center; margin-bottom:8px;">REPLAY A STAGE</div>
+        <div id="stageReplayBtns" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;"></div>
       </div>
       <div id="overlayActionStack" class="overlay-action-stack">
         <div id="overlayButtonGroup" class="overlay-button-group">
