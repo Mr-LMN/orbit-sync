@@ -79,6 +79,15 @@
       playBtn.style.cursor = isUnlocked ? 'pointer' : 'not-allowed';
       playBtn.innerText = isUnlocked ? 'Play' : 'LOCKED';
     }
+    const _hardBtn = document.getElementById('menuHardModeBtn');
+    if (_hardBtn) {
+      const _wStarIds = ['1','2','3','4','5'].map(n => `${menuSelectedWorld}-${n}`);
+      const _wStarsTotal = typeof playerProgress !== 'undefined' && playerProgress.stageStars
+        ? _wStarIds.reduce((acc, id) => acc + (playerProgress.stageStars[id] || 0), 0)
+        : 0;
+      const _hardUnlocked = isUnlocked && _wStarsTotal >= 10;
+      _hardBtn.style.display = _hardUnlocked ? 'inline-block' : 'none';
+    }
 
     // Dim arrows at boundaries
     const leftArrow = document.querySelector('#worldSelector .arrow-btn:first-child');
@@ -113,6 +122,33 @@
     OrbitGame.core.loop.startMainLoop();
   }
 
+  function startHardModeRun() {
+    const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
+    if (menuSelectedWorld > maxUnlocked) return;
+    if (typeof OrbitGame !== 'undefined') OrbitGame.state.legacy.hardMode = true;
+    initAudio();
+    toggleSettings(false);
+    ui.mainMenu.style.display = 'none';
+    ui.topBar.style.display = 'flex';
+    ui.gameUI.style.display = 'block';
+    ui.bigMultiplier.style.display = 'block';
+    ui.text.style.display = 'none';
+    inMenu = false;
+    isPlaying = true;
+    const worldPrefix = menuSelectedWorld + '-';
+    const freshIdx = campaign.findIndex(s => s && s.id && s.id.startsWith(worldPrefix));
+    currentLevelIdx = freshIdx >= 0 ? freshIdx : 0;
+    resetRunState();
+    ui.score.innerText = '0';
+    updateStreakUI();
+    markScoreCoinDirty(true);
+    if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
+    document.body.classList.add('hard-mode');
+    setOverlayState('cinematic');
+    loadLevel(currentLevelIdx);
+    OrbitGame.core.loop.startMainLoop();
+  }
+
   function showChallengePreview() {
     const el = document.getElementById('challengePreview');
     if (!el) return;
@@ -136,7 +172,9 @@
   OG.ui.menus.changeWorld = changeWorld;
   OG.ui.menus.updateWorldSelectorUI = updateWorldSelectorUI;
   OG.ui.menus.startBestScoreRun = startBestScoreRun;
+  OG.ui.menus.startHardModeRun = startHardModeRun;
   window.startBestScoreRun = startBestScoreRun;
+  window.startHardModeRun = startHardModeRun;
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
 })(window);

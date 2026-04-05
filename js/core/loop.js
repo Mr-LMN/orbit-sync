@@ -59,6 +59,8 @@ function stopDynamicMusic() { return OrbitGame.audio.stopDynamicMusic(); }
 function baseVolumeForMultiplier(currentMultiplier) { return OrbitGame.audio.baseVolumeForMultiplier(currentMultiplier); }
 function ensureCorrectMusicForLevel() { return OrbitGame.audio.ensureCorrectMusicForLevel(); }
 function updateMusicState(currentMultiplier, isBossActive) { return OrbitGame.audio.updateMusicState(currentMultiplier, isBossActive); }
+function isHardModeActive() { return hardModeActive; }
+window.isHardModeActive = isHardModeActive;
 // Only aegis and prism are real boss music stages. 3-6/spectre uses echo mechanics — base track only.
 function _isMusicBossStage(ld) {
   if (!ld || !ld.boss) return false;
@@ -78,6 +80,7 @@ if (activeSkin === 'fire') activeSkin = 'prism';
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = 1;
 let tutorialComplete = localStorage.getItem('orbitSync_tutorialDone') === '1';
+let hardModeActive = false;
 let tutorialHitCount = 0;
 let tutorialPhase = 0; // 0=idle, 1=first tap prompt, 2=perfect prompt, 3=done
 function defaultPlayerProgress() {
@@ -288,7 +291,8 @@ Object.defineProperties(stateBridge, {
   revive: { get: () => ({ currentReviveCost, reviveCount, usedLastChance }) },
   world2: { get: () => ({ nearMissReplayUntil, nearMissReplayActive }) },
   combo: { get: () => ({ comboCount, comboTimer }) },
-  runPerfectHitsOnly: { get: () => runPerfectHitsOnly }
+  runPerfectHitsOnly: { get: () => runPerfectHitsOnly },
+  hardMode: { get: () => hardModeActive, set: (v) => { hardModeActive = !!v; } }
 });
 
 
@@ -886,7 +890,7 @@ function clearRunTransientTimers() {
 }
 function resetRunState() {
   clearRunTransientTimers();
-  score = 0; stageHits = 0; lives = maxLives; multiplier = 1; streak = 0;
+  score = 0; stageHits = 0; lives = (hardModeActive ? 2 : maxLives); multiplier = 1; streak = 0;
   if (ui.combo) { ui.combo.innerText = ''; ui.combo.style.opacity = '0'; }
   distanceTraveled = 0; runCents = 0;
   angle = 0; direction = 1;
@@ -1076,10 +1080,20 @@ function updateStreakUI(applyPulse = false, milestone = false) {
     ui.combo.style.opacity = '1';
   }
   if (streak === 0 && _wasHighCombo) {
+    const _hmCrash = hardModeActive;
     ui.combo.animate(
-      [{ transform: 'scale(1.2)', color: '#ff3366', opacity: 0.6 }, { transform: 'scale(0.85)', opacity: 1 }, { transform: 'scale(1)' }],
-      { duration: 260, easing: 'ease-out' }
+      [
+        { transform: `scale(${_hmCrash ? 1.4 : 1.2})`, color: _hmCrash ? '#ff0000' : '#ff3366', opacity: 0.6 },
+        { transform: `scale(${_hmCrash ? 0.75 : 0.85})`, opacity: _hmCrash ? 0.3 : 1 },
+        { transform: 'scale(1)', opacity: 1 }
+      ],
+      { duration: _hmCrash ? 380 : 260, easing: 'ease-out' }
     );
+    if (_hmCrash) {
+      triggerScreenShake(10);
+      canvas.style.filter = 'brightness(1.8) hue-rotate(320deg)';
+      setTimeout(() => canvas.style.filter = 'brightness(1)', 80);
+    }
   }
 
   // Run-state ladder: body class drives global CSS responses
@@ -1174,7 +1188,7 @@ function loadLevel(idx) {
   // Tutorial: only on first ever play of 1-1
   const tutOverlay = document.getElementById('tutorialOverlay');
   const tutMsg = document.getElementById('tutorialMsg');
-  if (levelData.id === '1-1' && !tutorialComplete && tutOverlay && tutMsg) {
+  if (levelData.id === '1-1' && !tutorialComplete && !hardModeActive && tutOverlay && tutMsg) {
     tutorialPhase = 1;
     tutorialHitCount = 0;
     tutMsg.innerText = 'TAP WHEN THE ORB ENTERS THE ZONE';
@@ -1378,7 +1392,10 @@ function draw() {
     let _atmColor = null;
     let _atmR = viewportWidth * 0.7;
 
-    if (worldNum === 1 && !isBoss) {
+    if (hardModeActive && !isBoss) {
+      // Hard Mode override — red threat atmosphere regardless of world
+      _atmColor = `rgba(160, 10, 30, ${0.07 + _atmPulse * 0.04})`;
+    } else if (worldNum === 1 && !isBoss) {
       // Deep space — cold blue-teal nebula, very faint
       _atmColor = `rgba(0, 80, 180, ${0.04 + _atmPulse * 0.02})`;
     } else if (worldNum === 2 && !isBoss) {
@@ -1425,9 +1442,11 @@ function draw() {
   });
 
   // ENERGY LANE
-  const effectiveRailColor = (activeSkin === 'crimson')
+  const effectiveRailColor = hardModeActive
     ? '#cc1133'
-    : (theme.railColor || palette.primary);
+    : (activeSkin === 'crimson')
+      ? '#cc1133'
+      : (theme.railColor || palette.primary);
 
   // Dark groove
   buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
@@ -2287,7 +2306,9 @@ function draw() {
   // Vignette — dark edges deepen with multiplier for tunnel-vision focus
   if (!inMenu) {
     const _vigMult = Math.min(multiplier, 8);
-    const _vigAlpha = 0.28 + (_vigMult * 0.025); // 0.28 at x1, 0.48 at x8
+    const _vigAlpha = hardModeActive
+      ? 0.42 + (_vigMult * 0.032)
+      : 0.28 + (_vigMult * 0.025);
     const _vigGrad = ctx.createRadialGradient(
       centerObj.x, centerObj.y, orbitRadius * 0.8,
       centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight) * 0.75
@@ -2351,7 +2372,8 @@ function update() {
   const worldShape = currentWorldShape;
   const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
 
-  let moveStep = (inMenu ? 0.02 : levelData.speed) * direction;
+  const _hmSpeedMult = hardModeActive ? 1.35 : 1.0;
+  let moveStep = (inMenu ? 0.02 : levelData.speed * _hmSpeedMult) * direction;
   if (!inMenu) {
     moveStep *= (1 + Math.min(0.2, totalStageDistance / (Math.PI * 48)));
   }
@@ -2432,7 +2454,8 @@ function update() {
       createParticles(expPt.x, expPt.y, '#555', 10);
       return;
     }
-    let currentMoveSpeed = t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed);
+    const _hmMoveMult = hardModeActive ? 1.5 : 1.0;
+    let currentMoveSpeed = (t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed)) * _hmMoveMult;
     const isWorld2PrismSequenceNode = levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex);
     if (!inMenu && t.isBossShield && bossPhase === 2 && !isWorld2PrismSequenceNode && frameNow >= (t.nextDirectionSwapAt || 0)) {
       if (Math.random() < 0.42) t.moveSpeed *= -1;
@@ -2496,6 +2519,28 @@ function update() {
       }
       if (t._wasMissable && !isInsideTarget(normAngle, t)) {
         t.active = false; // life zone missed — just disappears silently
+      }
+    }
+
+    // Hard Mode pass-through penalty
+    if (hardModeActive && t.active && !t.isLifeZone && !t.isPhantom && !t.isBossShield && !t.isCornerBonus) {
+      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const insideNow = isInsideTarget(normAngle, t);
+      if (!t._hmWasInside && insideNow) {
+        t._hmWasInside = true;
+        t._hmPassCount = (t._hmPassCount || 0);
+      }
+      if (t._hmWasInside && !insideNow) {
+        t._hmWasInside = false;
+        t._hmPassCount = (t._hmPassCount || 0) + 1;
+        if (t._hmPassCount >= 2) {
+          // Second pass without tap — penalty
+          t.active = false;
+          createPopup(centerObj.x, (centerObj.y - orbitRadius) - 30, 'MISSED WINDOW', '#ff3366');
+          createShockwave('#ff3366', 28);
+          triggerScreenShake(8);
+          handleFail('MISSED WINDOW');
+        }
       }
     }
 
@@ -3188,7 +3233,12 @@ function tap() {
           createParticles(centerObj.x, centerObj.y, '#ff3366', 72);
           createShockwave('#ff3366', 44);
           pulseBrightness(1.7, 120);
-          createPopup(centerObj.x, centerObj.y - 50, "ENRAGED", "#ff3366");
+          const _hmEnraged = typeof isHardModeActive === 'function' && isHardModeActive();
+          createPopup(centerObj.x, centerObj.y - 50, _hmEnraged ? "MAXIMUM THREAT" : "ENRAGED", "#ff3366");
+          if (_hmEnraged) {
+            createShockwave('#ff3366', 48);
+            createShockwave('#ff0000', 64);
+          }
           escalateBossDrone();
           triggerScreenShake(24); scheduleBossSpawn(700); return;
         } else {
@@ -3401,7 +3451,8 @@ function tap() {
     runCents += centsEarned;
     markScoreCoinDirty();
     updateMultiplierUI();
-    createParticles(hitX, hitY, t.color, 18 + Math.min(18, comboCount));
+    const _hmParticleColor = hardModeActive ? '#ff3344' : t.color;
+    createParticles(hitX, hitY, _hmParticleColor, 18 + Math.min(18, comboCount));
     if (comboCount > 2 && comboCount % 6 === 0) {
       createPopup(hitX, hitY - 36, `COMBO x${comboCount}`, '#ffd54a');
     }
@@ -3543,6 +3594,8 @@ function restartFromCheckpoint() {
 }
 
 function returnToMenu() {
+  hardModeActive = false;
+  document.body.classList.remove('hard-mode');
   clearRunTransientTimers();
   clearIntensity();
   stopBossDrone();
