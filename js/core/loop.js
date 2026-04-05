@@ -690,6 +690,32 @@ function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
       ctx.fillStyle = fallbackGrad;
       ctx.fill();
     }
+  } else if (skin === 'echo') {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#00eaff';
+    ctx.shadowColor = '#00eaff';
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    return;
+  } else if (skin === 'crimson') {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff2244';
+    ctx.shadowColor = '#ff2244';
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffaaaa';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    return;
   }
 
   ctx.restore();
@@ -3129,9 +3155,9 @@ function tap() {
       tutorialHitCount++;
       const tutMsg = document.getElementById('tutorialMsg');
       const tutOverlay = document.getElementById('tutorialOverlay');
-      if (tutorialPhase === 1 && tutMsg) {
+      if (tutorialPhase === 1 && (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect' || hitTimingTier === 'good') && tutMsg) {
         tutorialPhase = 2;
-        tutMsg.innerText = 'GOOD — NOW TAP DEAD CENTRE FOR PERFECT';
+        tutMsg.innerText = 'NOW TAP DEAD CENTRE FOR PERFECT';
       } else if (tutorialPhase === 2 && (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect') && tutMsg) {
         tutorialPhase = 3;
         tutMsg.innerText = '✦ PERFECT ✦';
