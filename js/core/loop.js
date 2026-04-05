@@ -782,6 +782,16 @@ function flushScoreCoinUI() {
   hudScoreCoinDirty = false;
   pendingHudUpdates = 0;
   hudLastFlushAt = performance.now();
+  // Update stage PB display live
+  const _livePBEl = document.getElementById('stagePBDisplay');
+  if (_livePBEl && _livePBEl.style.display !== 'none' && levelData && levelData.id) {
+    const _currentStageScore = score - (scoreAtLevelStart || 0);
+    const _storedBest = (playerProgress.bestScores && playerProgress.bestScores[levelData.id]) || 0;
+    if (_currentStageScore > _storedBest && _storedBest > 0) {
+      _livePBEl.innerText = `NEW BEST!`;
+      _livePBEl.style.color = 'rgba(255,210,60,0.8)';
+    }
+  }
 }
 function setOverlayState(type) {
   overlayState = type;
@@ -922,6 +932,13 @@ function updateLastLifeState() {
   }
 }
 function loseLife(reason) {
+  if (typeof OrbitGame !== 'undefined' && OrbitGame.debug && OrbitGame.debug.infiniteLives) {
+    // Infinite lives mode — still show visual feedback but don't decrement
+    triggerScreenShake(6);
+    canvas.style.boxShadow = 'inset 0 0 40px rgba(0,255,150,0.3)';
+    setTimeout(() => canvas.style.boxShadow = 'none', 200);
+    return;
+  }
   lives--;
   ui.lives.innerText = lives;
   updateLastLifeState();
@@ -1140,6 +1157,17 @@ function loadLevel(idx) {
   resetSplitFamilyState();
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
+  // Per-stage personal best display
+  const _stagePBEl = document.getElementById('stagePBDisplay');
+  if (_stagePBEl && levelData && levelData.id) {
+    const _stagePBVal = (playerProgress.bestScores && playerProgress.bestScores[levelData.id]) || 0;
+    if (_stagePBVal > 0) {
+      _stagePBEl.innerText = `BEST  ${_stagePBVal}`;
+      _stagePBEl.style.display = 'block';
+    } else {
+      _stagePBEl.style.display = 'none';
+    }
+  }
   // Tutorial: only on first ever play of 1-1
   const tutOverlay = document.getElementById('tutorialOverlay');
   const tutMsg = document.getElementById('tutorialMsg');
@@ -2120,10 +2148,11 @@ function draw() {
       ctx.restore();
     }
 
+    const _echoIntroStage = levelData && (levelData.id === '3-1' || levelData.id === '3-2');
     drawOrb(ctx, echoAngle, worldShape, {
       colorOverride: '#66f0ff',
-      opacity: 0.58,
-      glowScale: 0.78,
+      opacity: _echoIntroStage ? 0.82 : 0.58,
+      glowScale: _echoIntroStage ? 0.95 : 0.78,
       isEcho: true
     });
   }
@@ -3597,6 +3626,38 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           : (nextWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.");
         ui.btn.innerText = isCampaignClear ? "RETURN TO MENU" : `ENTER WORLD ${nextWorld}`;
         setOverlayState('worldClearReady');
+        // Populate stage replay buttons
+        const _replayRow = document.getElementById('stageReplayRow');
+        const _replayBtns = document.getElementById('stageReplayBtns');
+        if (_replayRow && _replayBtns && !isCampaignClear) {
+          const _worldPrefix = String(currentLevelIdx >= 0 && campaign[currentLevelIdx]
+            ? campaign[currentLevelIdx].id.split('-')[0]
+            : '1') + '-';
+          // Find the world that was just cleared (one before nextWorld)
+          const _clearedWorldPrefix = nextWorld > 1 ? String(nextWorld - 1) + '-' : '1-';
+          const _worldStages = campaign.filter(s => s && s.id && s.id.startsWith(_clearedWorldPrefix) && !s.boss);
+          _replayBtns.innerHTML = '';
+          _worldStages.forEach(s => {
+            const _pb = (playerProgress.bestScores && playerProgress.bestScores[s.id]) || 0;
+            const _btn = document.createElement('button');
+            _btn.style.cssText = 'font-family:Orbitron,sans-serif; font-size:0.58rem; letter-spacing:1.5px; padding:7px 12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.55); border-radius:6px; cursor:pointer;';
+            _btn.innerText = s.id + (_pb > 0 ? `  ${_pb}` : '');
+            _btn.onclick = function() {
+              ui.overlay.style.display = 'none';
+              const _idx = campaign.findIndex(c => c && c.id === s.id);
+              if (_idx >= 0) {
+                currentLevelIdx = _idx;
+                ui.topBar.style.display = 'flex';
+                ui.gameUI.style.display = 'block';
+                if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
+                isPlaying = true;
+                loadLevel(currentLevelIdx);
+              }
+            };
+            _replayBtns.appendChild(_btn);
+          });
+          _replayRow.style.display = _worldStages.length > 0 ? 'block' : 'none';
+        }
 
         // Wire up the button
         ui.btn.onclick = function () {
