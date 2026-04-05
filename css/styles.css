@@ -298,6 +298,14 @@ body.last-life #arenaInfo { opacity: 0.15; }
   box-shadow: none; border-radius: 0; gap: 0;
 }
 
+#overlayActionStack .btn,
+#overlayButtonGroup .btn {
+  width: 100%; min-height: unset; padding: unset;
+  border-radius: 0; border: none;
+  background: none; box-shadow: none;
+}
+
+
 /* ── TITLE ─────────────────────────────────── */
 #screenTitle {
   font-family: 'Orbitron', sans-serif;
@@ -428,170 +436,171 @@ body.last-life #arenaInfo { opacity: 0.15; }
   text-transform: lowercase;
 }
 
-/* ── ACTION BUTTONS ─────────────────────────
-   Primary: solid colour pill with glow
-   Ghost: bare text, no background at all
-   ─────────────────────────────────────────── */
-#overlayActionStack { order: 4; margin-top: 4px; width: 100%; }
-.overlay-action-stack {
+/* ══════════════════════════════════════════
+   ACTION SYSTEM — text-only, arcade style
+   No boxes. No fills. Glow + rule = button.
+   ═══════════════════════════════════════════ */
+
+#overlayActionStack {
+  order: 4; margin-top: 8px; width: 100%;
   display: flex; flex-direction: column;
-  align-items: center; gap: 10px; width: 100%;
+  align-items: center; gap: 0;
 }
 .overlay-button-group {
-  width: 100%; display: flex; flex-direction: column; gap: 10px;
+  width: 100%; display: flex; flex-direction: column;
+  align-items: center; gap: 0;
 }
 
-/* Base reset for all overlay buttons */
-#overlayActionStack button, #overlayButtonGroup button {
+/* All action text */
+#overlayActionStack button,
+#overlayButtonGroup button {
   font-family: 'Orbitron', sans-serif;
   font-weight: 900; text-transform: uppercase;
-  letter-spacing: 1.5px; cursor: pointer;
-  transition: transform 0.1s ease, filter 0.1s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-#overlayActionStack button:active { transform: scale(0.96); }
-
-/* ── GAME BUTTONS — angular, lit from above, not flat ── */
-
-/* Shared base for primary CTAs */
-#reviveBtn, #actionBtn {
-  border-radius: 10px !important;
-  min-height: 58px; width: 100%;
-  font-family: 'Orbitron', sans-serif !important;
-  font-size: clamp(0.82rem, 2.4vw, 0.96rem) !important;
-  font-weight: 900 !important; letter-spacing: 2px !important;
-  text-transform: uppercase; border: none !important;
-  cursor: pointer;
-  transition: transform 0.08s ease, filter 0.08s ease;
-  position: relative; overflow: hidden;
-}
-#reviveBtn:active, #actionBtn:active { transform: scale(0.97) !important; filter: brightness(1.1); }
-
-/* Inner top highlight — the "lit surface" that makes it feel 3D */
-#reviveBtn::before, #actionBtn::before {
-  content: '';
-  position: absolute; top: 0; left: 8%; right: 8%; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
-  border-radius: 0;
-}
-
-/* ONE MORE TRY — amber */
-#reviveBtn {
-  color: #1c0a00 !important;
-  background: linear-gradient(180deg, #ffca3a 0%, #e07800 55%, #b55a00 100%) !important;
-  box-shadow:
-    0 0 0 1px rgba(255,160,30,0.3),
-    0 0 28px rgba(255,140,0,0.52),
-    0 0 64px rgba(255,100,0,0.2),
-    0 6px 18px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(255,240,160,0.4),
-    inset 0 -2px 0 rgba(0,0,0,0.3) !important;
-  min-height: 60px !important;
-  text-shadow: 0 1px 2px rgba(255,200,60,0.3) !important;
-}
-
-/* COIN REVIVE — dim amber outline */
-#coinReviveBtn {
-  width: 100%; min-height: 46px;
-  border-radius: 10px !important;
-  font-family: 'Orbitron', sans-serif !important;
-  font-size: clamp(0.74rem, 2vw, 0.86rem) !important;
-  font-weight: 700 !important; letter-spacing: 1.5px !important;
-  text-transform: uppercase; cursor: pointer;
-  color: #ffc060 !important;
-  background: rgba(0,0,0,0.0) !important;
-  border: 1px solid rgba(255,165,40,0.3) !important;
-  box-shadow: inset 0 1px 0 rgba(255,210,100,0.1), 0 0 14px rgba(255,140,0,0.12) !important;
-  transition: transform 0.08s ease;
-}
-#coinReviveBtn:active { transform: scale(0.97); }
-
-/* PLAY AGAIN / BANK + PLAY — teal */
-#actionBtn {
-  color: #001810 !important;
-  background: linear-gradient(180deg, #00e8aa 0%, #00a06a 55%, #007550 100%) !important;
-  box-shadow:
-    0 0 0 1px rgba(0,200,140,0.3),
-    0 0 28px rgba(0,220,150,0.50),
-    0 0 64px rgba(0,180,110,0.18),
-    0 6px 18px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(180,255,220,0.4),
-    inset 0 -2px 0 rgba(0,0,0,0.28) !important;
-  min-height: 60px !important;
-  text-shadow: 0 1px 2px rgba(0,220,140,0.3) !important;
-}
-
-/* When revive is above it, dim play-again */
-#overlayActionStack.revive-available #actionBtn {
-  background: linear-gradient(180deg, #009970 0%, #006844 55%, #004830 100%) !important;
-  box-shadow:
-    0 0 16px rgba(0,180,110,0.3),
-    0 6px 16px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(140,255,200,0.25),
-    inset 0 -2px 0 rgba(0,0,0,0.28) !important;
-  color: rgba(0,30,18,0.9) !important;
-}
-#overlayActionStack.no-revive #actionBtn {
-  box-shadow:
-    0 0 0 1px rgba(0,220,150,0.36),
-    0 0 36px rgba(0,230,155,0.60),
-    0 0 72px rgba(0,180,110,0.24),
-    0 8px 20px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(180,255,220,0.44),
-    inset 0 -2px 0 rgba(0,0,0,0.28) !important;
-}
-
-/* SHARE + MENU — pure text links, no buttons */
-.overlay-secondary-actions {
-  display: flex; align-items: center;
-  justify-content: center; gap: 0;
-  margin-top: 6px; width: 100%;
-}
-/* SHARE — ghost text by default */
-#shareBtn {
+  letter-spacing: 2.5px; text-align: center;
   background: none !important; border: none !important;
   box-shadow: none !important; border-radius: 0 !important;
-  padding: 12px 18px !important;
-  width: auto !important; min-height: auto !important;
-  font-family: 'Orbitron', sans-serif !important;
-  font-size: 0.62rem !important; font-weight: 700 !important;
-  letter-spacing: 2.5px !important; text-transform: uppercase !important;
-  color: rgba(160, 185, 225, 0.3) !important;
-  opacity: 1 !important;
-  cursor: pointer !important;
-  transition: color 0.15s ease !important;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: filter 0.1s ease, transform 0.08s ease;
+  display: block; width: 100%;
+  padding: 0 20px;
 }
-#shareBtn:active { color: rgba(200, 220, 255, 0.65) !important; }
+#overlayActionStack button:active { transform: scale(0.97); }
 
-/* SHARE — PB state: becomes a real CTA */
+/* ── PRIMARY: ONE MORE TRY ─────────────────
+   Largest. Amber glow. Glowing rule above + below.  */
+#reviveBtn {
+  font-size: clamp(1.1rem, 3.8vw, 1.4rem) !important;
+  color: #ffbe30 !important;
+  text-shadow:
+    0 0 18px rgba(255,185,40,1),
+    0 0 44px rgba(255,130,0,0.5),
+    0 0 80px rgba(255,80,0,0.2) !important;
+  padding-top: 28px !important; padding-bottom: 12px !important;
+  min-height: auto !important; position: relative !important;
+}
+#reviveBtn::before {
+  content: '';
+  position: absolute; top: 14px; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,185,40,0.25) 20%,
+    rgba(255,185,40,0.7) 50%,
+    rgba(255,185,40,0.25) 80%,
+    transparent 100%);
+  box-shadow: 0 0 8px rgba(255,160,30,0.6);
+}
+#reviveBtn::after {
+  content: '';
+  position: absolute; bottom: 0; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,185,40,0.15) 20%,
+    rgba(255,185,40,0.45) 50%,
+    rgba(255,185,40,0.15) 80%,
+    transparent 100%);
+}
+
+/* ── COIN REVIVE ────────────────────────────
+   Small. Same line. Much dimmer.              */
+#coinReviveBtn {
+  font-size: clamp(0.7rem, 2.2vw, 0.82rem) !important;
+  color: rgba(255,185,100,0.55) !important;
+  text-shadow: 0 0 10px rgba(255,160,60,0.3) !important;
+  letter-spacing: 2px !important;
+  padding-top: 16px !important; padding-bottom: 16px !important;
+  min-height: auto !important;
+}
+
+/* ── PRIMARY: PLAY AGAIN / BANK + PLAY ──────
+   Teal. Same size as revive. Own rules.       */
+#actionBtn {
+  font-size: clamp(1.1rem, 3.8vw, 1.4rem) !important;
+  color: #00e8a8 !important;
+  text-shadow:
+    0 0 18px rgba(0,232,168,1),
+    0 0 44px rgba(0,200,130,0.45),
+    0 0 80px rgba(0,160,100,0.18) !important;
+  padding-top: 28px !important; padding-bottom: 12px !important;
+  min-height: auto !important; position: relative !important;
+}
+#actionBtn::before {
+  content: '';
+  position: absolute; top: 14px; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0,220,160,0.25) 20%,
+    rgba(0,220,160,0.65) 50%,
+    rgba(0,220,160,0.25) 80%,
+    transparent 100%);
+  box-shadow: 0 0 8px rgba(0,200,140,0.55);
+}
+#actionBtn::after {
+  content: '';
+  position: absolute; bottom: 0; left: 15%; right: 15%; height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0,200,140,0.12) 20%,
+    rgba(0,200,140,0.38) 50%,
+    rgba(0,200,140,0.12) 80%,
+    transparent 100%);
+}
+
+/* Dim play-again when revive is the primary choice */
+#overlayActionStack.revive-available #actionBtn {
+  color: rgba(0,200,140,0.45) !important;
+  text-shadow: 0 0 12px rgba(0,180,120,0.3) !important;
+  font-size: clamp(0.88rem, 2.8vw, 1.06rem) !important;
+  padding-top: 18px !important;
+}
+#overlayActionStack.revive-available #actionBtn::before,
+#overlayActionStack.revive-available #actionBtn::after { display: none; }
+
+#overlayActionStack.no-revive #actionBtn {
+  text-shadow:
+    0 0 22px rgba(0,240,170,1),
+    0 0 52px rgba(0,210,140,0.55),
+    0 0 96px rgba(0,170,110,0.22) !important;
+}
+
+/* ── SHARE + MENU — ghost text tap targets ── */
+.overlay-secondary-actions {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-top: 20px; width: 100%; padding-bottom: 4px;
+}
+#shareBtn, #menuBtn {
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 0.6rem !important; font-weight: 700 !important;
+  letter-spacing: 3px !important; text-transform: uppercase !important;
+  background: none !important; border: none !important;
+  box-shadow: none !important; border-radius: 0 !important;
+  padding: 14px 20px !important;
+  width: auto !important; min-height: auto !important;
+  cursor: pointer !important; -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease, text-shadow 0.15s ease !important;
+  color: rgba(150, 175, 220, 0.28) !important;
+  text-shadow: none !important; opacity: 1 !important;
+}
+#shareBtn:active, #menuBtn:active {
+  color: rgba(190, 210, 245, 0.6) !important;
+}
+
+/* PB state: share lights up amber */
 #shareBtn.pb-share {
   color: #ffb830 !important;
-  text-shadow: 0 0 18px rgba(255,184,48,0.9), 0 0 40px rgba(255,120,0,0.35) !important;
-  animation: pbSharePulse 1.8s ease-in-out infinite !important;
+  text-shadow:
+    0 0 14px rgba(255,184,48,0.9),
+    0 0 32px rgba(255,120,0,0.4) !important;
+  animation: pbSharePulse 2s ease-in-out infinite !important;
 }
 @keyframes pbSharePulse {
-  0%, 100% { text-shadow: 0 0 14px rgba(255,184,48,0.7), 0 0 30px rgba(255,120,0,0.25); }
-  50% { text-shadow: 0 0 26px rgba(255,200,60,1), 0 0 52px rgba(255,130,0,0.5); }
+  0%, 100% { text-shadow: 0 0 12px rgba(255,184,48,0.7), 0 0 28px rgba(255,100,0,0.3); }
+  50% { text-shadow: 0 0 24px rgba(255,200,60,1), 0 0 50px rgba(255,130,0,0.55); }
 }
 
-#menuBtn {
-  background: none !important; border: none !important;
-  box-shadow: none !important; border-radius: 0 !important;
-  padding: 12px 18px !important;
-  width: auto !important; min-height: auto !important;
-  font-family: 'Orbitron', sans-serif !important;
-  font-size: 0.62rem !important; font-weight: 700 !important;
-  letter-spacing: 2.5px !important; text-transform: uppercase !important;
-  color: rgba(160, 185, 225, 0.3) !important;
-  cursor: pointer !important;
-  transition: color 0.15s ease !important;
-}
-#menuBtn:active { color: rgba(200, 220, 255, 0.6) !important; }
 .overlay-sep {
-  font-family: 'Orbitron', sans-serif;
-  color: rgba(150,170,210,0.2);
-  font-size: 0.7rem; line-height: 1;
-  pointer-events: none; user-select: none;
+  color: rgba(130, 155, 200, 0.16); font-size: 0.65rem;
+  line-height: 1; pointer-events: none; user-select: none;
+  font-family: sans-serif;
 }
 
 @keyframes coin-chip-pulse {
@@ -659,8 +668,130 @@ body.last-life.arena-charge-3 #gameCanvas {
   #overlayMetaStack { width: min(94vw, 420px); padding: 13px 12px 14px; }
   .run-title { font-size: clamp(2.2rem, 11.2vw, 3rem) !important; letter-spacing: 1.8px; }
   #newRecordBanner, #closeMissBanner { font-size: clamp(0.66rem, 2.6vw, 0.8rem); }
-  #reviveBtn { min-height: 62px !important; }
-  #actionBtn { min-height: 62px; }
+  .overlay-secondary-actions { gap: 7px; }
+  .run-stats-block { gap: 7px; margin: 5px 0 9px; }
+}
+
+
+/* ── RUN STATE LADDER ─────────────────────────────────── */
+/* combo 5+ : heating up */
+body.run-state-heat #comboDisplay {
+  animation: comboHeatPulse 1.4s ease-in-out infinite;
+}
+@keyframes comboHeatPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.78; }
+}
+
+/* combo 10+ : locked in */
+body.run-state-locked #comboDisplay {
+  animation: comboLockedPulse 0.9s ease-in-out infinite;
+}
+@keyframes comboLockedPulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 22px rgba(255,227,150,0.95), 0 0 42px rgba(255,209,110,0.5); }
+  50% { opacity: 0.88; text-shadow: 0 0 36px rgba(255,220,120,1), 0 0 60px rgba(255,200,80,0.7); }
+}
+body.run-state-locked #scoreDisplay {
+  color: #fff3cf;
+  text-shadow: 0 0 16px rgba(255, 220, 140, 0.5);
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+/* combo 20+ : overdrive */
+body.run-state-overdrive #comboDisplay {
+  animation: comboOverdrivePulse 0.45s ease-in-out infinite;
+}
+@keyframes comboOverdrivePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; transform: scale(1.03); }
+}
+body.run-state-overdrive #scoreDisplay {
+  color: #ffd84d;
+  text-shadow: 0 0 20px rgba(255,210,60,0.8), 0 0 40px rgba(255,190,40,0.4);
+  transition: color 0.2s, text-shadow 0.2s;
+}
+body.run-state-overdrive #gameCanvas {
+  box-shadow: inset 0 0 90px rgba(255, 214, 60, 0.28), inset 0 0 150px rgba(255, 140, 40, 0.16);
+}
+/* Overdrive cancels standard arena-charge to avoid box-shadow conflict */
+body.run-state-overdrive.arena-charge-1 #gameCanvas,
+body.run-state-overdrive.arena-charge-2 #gameCanvas,
+body.run-state-overdrive.arena-charge-3 #gameCanvas {
+  box-shadow: inset 0 0 90px rgba(255, 214, 60, 0.36), inset 0 0 150px rgba(255, 140, 40, 0.22);
+}
+
+/* Survival near-miss shock bumped */
+@keyframes survivalNearMissShock {
+  0% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
+  25% { box-shadow: inset 0 0 60px rgba(255, 173, 64, 0.68), inset 0 0 110px rgba(255, 141, 38, 0.42); filter: brightness(1.22); }
+  100% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
+}
+
+@keyframes coin-chip-pulse {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 190, 60, 0.14), inset 0 0 18px rgba(255, 190, 60, 0.04); }
+  50% { box-shadow: 0 0 22px rgba(255, 190, 60, 0.24), inset 0 0 22px rgba(255, 190, 60, 0.08); }
+}
+body.intensity-1 { animation: bgPulse 2.2s ease-in-out infinite; }
+body.intensity-2 { animation: bgPulse 1.2s infinite; }
+body.intensity-3 { animation: bgPulse 0.6s infinite; }
+body.arena-charge-1:not(.last-life) #gameCanvas {
+  box-shadow: inset 0 0 48px rgba(0, 229, 255, 0.28);
+}
+body.arena-charge-2:not(.last-life) #gameCanvas {
+  box-shadow: inset 0 0 64px rgba(0, 229, 255, 0.36), inset 0 0 100px rgba(255, 86, 233, 0.22);
+}
+body.arena-charge-3:not(.last-life) #gameCanvas {
+  box-shadow: inset 0 0 80px rgba(255, 214, 94, 0.44), inset 0 0 130px rgba(255, 86, 233, 0.28);
+}
+body.last-life.arena-charge-1 #gameCanvas,
+body.last-life.arena-charge-2 #gameCanvas,
+body.last-life.arena-charge-3 #gameCanvas {
+  box-shadow: inset 0 0 80px rgba(255, 40, 100, 0.5), inset 0 0 130px rgba(255, 86, 233, 0.2);
+}
+@keyframes popIn {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes bgPulse {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.2); }
+  100% { filter: brightness(1); }
+}
+@media (min-width: 900px) {
+  #overlayMetaStack { width: min(88vw, 400px); }
+  #screenTitle { font-size: clamp(2.4rem, 4.5vw, 3.6rem); }
+}
+
+/* World Selector Main Menu */
+.arrow-btn {
+  background: transparent;
+  border: 2px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 1.2rem;
+  border-radius: 50%;
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.arrow-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.1); }
+
+@media (max-width: 768px) {
+  #ui { top: 16%; }
+  #scoreDisplay { font-size: clamp(2.6rem, 12vw, 4rem); }
+  #ui h2, #ui h3 { font-size: clamp(0.55rem, 2.8vw, 0.75rem); letter-spacing: 1.5px; }
+  .btn { width: min(88vw, 280px); font-size: 1.1rem; padding: 14px 22px; }
+  #bossUI { top: 48px; width: min(84vw, 360px); }
+  .boss-title { font-size: 0.62rem; letter-spacing: 2px; }
+  .boss-segment { height: 8px; }
+  .clear-summary { gap: 8px; }
+  .clear-stat { min-height: 80px; padding: 9px 10px 11px; }
+  #overlayMetaStack { width: min(94vw, 420px); padding: 13px 12px 14px; }
+  .run-title { font-size: clamp(2.2rem, 11.2vw, 3rem) !important; letter-spacing: 1.8px; }
+  #newRecordBanner, #closeMissBanner { font-size: clamp(0.66rem, 2.6vw, 0.8rem); }
   .overlay-secondary-actions { gap: 7px; }
   .run-stats-block { gap: 7px; margin: 5px 0 9px; }
 }
