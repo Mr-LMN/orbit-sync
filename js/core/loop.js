@@ -325,6 +325,7 @@ function computeWorldPalette(level) {
     case 1: return { primary: '#00e5ff', secondary: '#00ff88', bg: '#050508' };
     case 2: return { primary: '#2ff6ff', secondary: '#ff4fd8', bg: '#07070a' };
     case 3: return { primary: '#ffaa00', secondary: '#ff6600', bg: '#080500' };
+    case 4: return { primary: '#b157ff', secondary: '#00ff41', bg: '#06040a' };
     default: return { primary: '#00ff88', secondary: '#00e5ff', bg: '#050508' };
   }
 }
@@ -336,6 +337,7 @@ function computeWorldShape(level) {
     case 1: return 'circle';
     case 2: return 'diamond';
     case 3: return 'triangle';
+    case 4: return 'square';
     default: return 'circle';
   }
 }
@@ -367,6 +369,15 @@ function getWorldVisualTheme(level) {
       targetGlowColor: '#ff9a6b',
       targetCoreColor: '#fff3de',
       railGlowScale: 0.95
+    };
+  }
+  if (worldNum === 4) {
+    return {
+      railColor: '#b157ff',
+      targetColor: '#b157ff',
+      targetGlowColor: '#cc88ff',
+      targetCoreColor: '#f0e8ff',
+      railGlowScale: 1.0
     };
   }
   return {
@@ -1456,6 +1467,10 @@ function draw() {
     } else if (worldNum === 3 && !isBoss) {
       // Echo/resonance — amber-orange warmth
       _atmColor = `rgba(180, 80, 10, ${0.04 + _atmPulse * 0.02})`;
+    } else if (worldNum === 4 && !isBoss) {
+      // Glitch Protocol — deep purple with green pulse
+      const _w4glitch = (Math.sin(now * 0.0008) + 1) * 0.5;
+      _atmColor = `rgba(${Math.round(80 + _w4glitch * 40)}, ${Math.round(20 + _w4glitch * 10)}, ${Math.round(140 + _w4glitch * 60)}, ${0.08 + _atmPulse * 0.04})`;
     } else if (isBoss) {
       // Boss — deep red threat, steady
       _atmColor = `rgba(120, 0, 20, ${0.06 + _atmPulse * 0.03})`;
@@ -1481,6 +1496,18 @@ function draw() {
         _magGrad.addColorStop(0, `rgba(200, 40, 180, ${0.04 + _w2MagPulse * 0.03})`);
         _magGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = _magGrad;
+        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+      }
+      if (worldNum === 4 && !isBoss) {
+        // Glitch Protocol: opposing corner green signal flare
+        const _w4GreenPulse = (Math.sin(now * 0.0009 + 2.4) + 1) * 0.5;
+        const _gGrad = ctx.createRadialGradient(
+          viewportWidth * 0.15, viewportHeight * 0.82, 0,
+          viewportWidth * 0.15, viewportHeight * 0.82, viewportWidth * 0.48
+        );
+        _gGrad.addColorStop(0, `rgba(0, 200, 50, ${0.04 + _w4GreenPulse * 0.035})`);
+        _gGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = _gGrad;
         ctx.fillRect(0, 0, viewportWidth, viewportHeight);
       }
     }
@@ -1604,6 +1631,43 @@ function draw() {
       ctx.stroke();
     });
 
+    ctx.restore();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
+
+  if (worldShape === 'square' && !isBoss) {
+    ctx.save();
+    // Glitch corner flash — brief green spark at each corner in sequence
+    const _squareCorners = [
+      { x: centerObj.x + orbitRadius, y: centerObj.y - orbitRadius },
+      { x: centerObj.x + orbitRadius, y: centerObj.y + orbitRadius },
+      { x: centerObj.x - orbitRadius, y: centerObj.y + orbitRadius },
+      { x: centerObj.x - orbitRadius, y: centerObj.y - orbitRadius }
+    ];
+    // Outer glow on sides — faint purple aura
+    buildShapePath(ctx, 'square', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#b157ff';
+    ctx.lineWidth = 10;
+    ctx.globalAlpha = (0.04 + Math.abs(Math.sin(now / 1900)) * 0.025) * railGlowScale;
+    ctx.shadowBlur = 18 * railGlowScale;
+    ctx.shadowColor = '#b157ff';
+    ctx.stroke();
+    // Corner spark — cycles through 4 corners sequentially
+    const _cornerCycleMs = 800;
+    const _activeCorner = Math.floor((now / _cornerCycleMs) % 4);
+    const _cornerPhase = ((now % _cornerCycleMs) / _cornerCycleMs);
+    const _cornerAlpha = _cornerPhase < 0.3
+      ? (_cornerPhase / 0.3) * 0.7
+      : (1 - (_cornerPhase - 0.3) / 0.7) * 0.7;
+    const ac = _squareCorners[_activeCorner];
+    ctx.beginPath();
+    ctx.arc(ac.x, ac.y, 3.5 + _cornerAlpha * 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#00ff41';
+    ctx.globalAlpha = _cornerAlpha;
+    ctx.shadowBlur = 14;
+    ctx.shadowColor = '#00ff41';
+    ctx.fill();
     ctx.restore();
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
