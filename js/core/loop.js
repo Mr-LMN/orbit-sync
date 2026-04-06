@@ -2168,19 +2168,174 @@ function draw() {
       }
     }
 
-    // --- MIDPOINT MARKER (ideal precision hit cue) ---
-    if (shouldDrawTargetMarkers) {
-      const markerSpan = Math.min(t.size * 0.25, 0.055);
-      ctx.beginPath();
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, tCenter - markerSpan, tCenter + markerSpan);
-      ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = Math.min(1, 0.82 + (approach * 0.15) + (hitFlash * 0.2));
-      ctx.lineWidth = bodyWidth + 1 + (approach * 0.5);
+    // --- SYNC GATE (universal perfect timing marker) ---
+    // Skip for: echo targets (have ripple ring), boss shields, phantoms, life zones
+    const _showSyncGate = shouldDrawTargetMarkers
+      && !t.isEchoTarget
+      && !t.isBossShield
+      && !t.isPhantom
+      && !t.isLifeZone
+      && !t.isCornerBonus;
+
+    if (_showSyncGate) {
+      // Gate position: midpoint of target arc, on the rail
+      const _gMidAngle = normalizeAngle(tCenter);
+      const _gMidPt = getPointOnShape(_gMidAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+
+      // Outward normal from ring center
+      const _gRadX = _gMidPt.x - centerObj.x;
+      const _gRadY = _gMidPt.y - centerObj.y;
+      const _gRadLen = Math.hypot(_gRadX, _gRadY) || 1;
+      const _gNx = _gRadX / _gRadLen; // outward normal
+      const _gNy = _gRadY / _gRadLen;
+      const _gTx = -_gNy; // tangent along rail
+      const _gTy = _gNx;
+
+      // Gate visibility: approach-driven opacity, pulse in good window
+      // Check if orb is within the good timing window (0.14 rad)
+      const _orbToGate = Math.abs(
+        ((angle - _gMidAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+      );
+      const _inGoodWindow = _orbToGate < 0.14;
+      const _inPerfectWindow = _orbToGate < 0.08;
+      const _inFilthyWindow = _orbToGate < 0.03;
+
+      const _gatePulse = _inGoodWindow
+        ? (0.65 + Math.sin(now * 0.028) * 0.35)
+        : (0.35 + approach * 0.45);
+      const _gateAlpha = Math.min(0.92,
+        (_inFilthyWindow ? 1.0 : _inPerfectWindow ? 0.85 : _inGoodWindow ? 0.65 : 0.4 + approach * 0.3)
+        * _gatePulse
+        + hitFlash * 0.4
+      );
+
+      // Gate arm length — proportional to radius, subtle
+      const _armLen = Math.max(5, orbitRadius * 0.055);
+      const _armGap = Math.max(3.5, orbitRadius * 0.035); // gap = half of visible slot
+      const _gateColor = _inFilthyWindow ? '#ffffff'
+        : _inPerfectWindow ? targetGlowColor
+        : _inGoodWindow ? targetGlowColor
+        : targetCoreColor;
+
+      ctx.save();
+      ctx.globalAlpha = _gateAlpha;
+      ctx.strokeStyle = _gateColor;
       ctx.lineCap = 'round';
-      setShadowBlur(14);
-      ctx.shadowColor = targetGlowColor;
-      ctx.stroke();
+      setShadowBlur(_inFilthyWindow ? 18 : _inPerfectWindow ? 12 : 6);
+      ctx.shadowColor = _gateColor;
+
+      if (worldShape === 'circle' || worldShape === 'triangle') {
+        // ── W1 / W3: Classic vertical gate arms ──
+        // Two lines perpendicular to rail (outward), bracketing the midpoint
+        const _lineW = Math.max(1.4, bodyWidth * 0.38);
+        ctx.lineWidth = _lineW + (_inPerfectWindow ? 0.8 : 0) + (hitFlash * 0.6);
+
+        // Left arm: tangent-offset from midpoint then outward
+        ctx.beginPath();
+        ctx.moveTo(
+          _gMidPt.x + _gTx * _armGap,
+          _gMidPt.y + _gTy * _armGap
+        );
+        ctx.lineTo(
+          _gMidPt.x + _gTx * _armGap + _gNx * _armLen,
+          _gMidPt.y + _gTy * _armGap + _gNy * _armLen
+        );
+        ctx.stroke();
+
+        // Right arm
+        ctx.beginPath();
+        ctx.moveTo(
+          _gMidPt.x - _gTx * _armGap,
+          _gMidPt.y - _gTy * _armGap
+        );
+        ctx.lineTo(
+          _gMidPt.x - _gTx * _armGap + _gNx * _armLen,
+          _gMidPt.y - _gTy * _armGap + _gNy * _armLen
+        );
+        ctx.stroke();
+
+        // Centre dot — active zone indicator
+        ctx.beginPath();
+        ctx.arc(
+          _gMidPt.x + _gNx * (_armLen * 0.5),
+          _gMidPt.y + _gNy * (_armLen * 0.5),
+          _inFilthyWindow ? 3.2 : 1.8, 0, Math.PI * 2
+        );
+        ctx.fillStyle = _gateColor;
+        ctx.fill();
+
+      } else if (worldShape === 'diamond') {
+        // ── W2: Chevron gate — V pointing outward ──
+        const _chevSize = Math.max(5, orbitRadius * 0.052);
+        const _chevDepth = _chevSize * 0.55;
+        ctx.lineWidth = Math.max(1.4, bodyWidth * 0.35) + (hitFlash * 0.5);
+
+        // Outer V (wide)
+        ctx.beginPath();
+        ctx.moveTo(
+          _gMidPt.x + _gTx * _chevSize + _gNx * _chevDepth,
+          _gMidPt.y + _gTy * _chevSize + _gNy * _chevDepth
+        );
+        ctx.lineTo(
+          _gMidPt.x + _gNx * (_chevDepth * 1.8),
+          _gMidPt.y + _gNy * (_chevDepth * 1.8)
+        );
+        ctx.lineTo(
+          _gMidPt.x - _gTx * _chevSize + _gNx * _chevDepth,
+          _gMidPt.y - _gTy * _chevSize + _gNy * _chevDepth
+        );
+        ctx.stroke();
+
+        // Inner dot at V tip
+        if (_inPerfectWindow || _inGoodWindow) {
+          ctx.beginPath();
+          ctx.arc(
+            _gMidPt.x + _gNx * (_chevDepth * 1.8),
+            _gMidPt.y + _gNy * (_chevDepth * 1.8),
+            _inFilthyWindow ? 3.0 : 1.6, 0, Math.PI * 2
+          );
+          ctx.fillStyle = _gateColor;
+          ctx.fill();
+        }
+
+      } else if (worldShape === 'square') {
+        // ── W4: Double-bar gate — parallel bars outward ──
+        const _barLen = Math.max(5, orbitRadius * 0.058);
+        const _barSep = Math.max(2.5, orbitRadius * 0.022);
+        ctx.lineWidth = Math.max(1.6, bodyWidth * 0.36) + (hitFlash * 0.5);
+        ctx.strokeStyle = _inFilthyWindow ? '#00ff41' : _gateColor;
+        ctx.shadowColor = _inFilthyWindow ? '#00ff41' : _gateColor;
+
+        // Near bar
+        ctx.beginPath();
+        ctx.moveTo(
+          _gMidPt.x + _gTx * _barLen * 0.5 + _gNx * _barSep,
+          _gMidPt.y + _gTy * _barLen * 0.5 + _gNy * _barSep
+        );
+        ctx.lineTo(
+          _gMidPt.x - _gTx * _barLen * 0.5 + _gNx * _barSep,
+          _gMidPt.y - _gTy * _barLen * 0.5 + _gNy * _barSep
+        );
+        ctx.stroke();
+
+        // Far bar
+        ctx.beginPath();
+        ctx.moveTo(
+          _gMidPt.x + _gTx * _barLen * 0.4 + _gNx * (_barSep + _armLen * 0.6),
+          _gMidPt.y + _gTy * _barLen * 0.4 + _gNy * (_barSep + _armLen * 0.6)
+        );
+        ctx.lineTo(
+          _gMidPt.x - _gTx * _barLen * 0.4 + _gNx * (_barSep + _armLen * 0.6),
+          _gMidPt.y - _gTy * _barLen * 0.4 + _gNy * (_barSep + _armLen * 0.6)
+        );
+        ctx.stroke();
+      }
+
+      ctx.restore();
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
     }
+    // --- END SYNC GATE ---
 
     // --- EDGE BRACKETS (small inward ticks framing the timing zone) ---
     const drawBracketTick = (angle) => {
