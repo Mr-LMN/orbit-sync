@@ -132,6 +132,133 @@
       spawnWorld2MechanicTargets();
       return;
     }
+    // ═══════════════════════════════════════
+    // WORLD 4 — GLITCH PROTOCOL STAGE SPAWNER
+    // ═══════════════════════════════════════
+    if (worldNum === 4 && !levelData.boss) {
+      const w4Color = '#b157ff';       // Electric purple — real targets
+      const w4PhantomColor = '#b157ff'; // Same colour — deliberate deception
+      const w4GlowColor = '#cc88ff';
+
+      // ─── 4-1: Corrupt Signal ───────────────
+      // One real target, one phantom. Intro to deception.
+      if (levelData.id === '4-1') {
+        ui.text.innerText = 'One zone is real. One is corrupted. Read the signal.';
+        ui.text.style.color = w4Color;
+        const realAngle = Math.random() * Math.PI * 2;
+        targets.push(buildTarget(realAngle, Math.PI / 8.5, {
+          color: w4Color, active: true, hp: 1
+        }));
+        const phantomAngle = normalizeAngle(realAngle + Math.PI * 0.55 + (Math.random() * 0.4 - 0.2));
+        targets.push(buildTarget(phantomAngle, Math.PI / 8.8, {
+          color: w4PhantomColor, active: true, isPhantom: true, hp: 1
+        }));
+        return;
+      }
+
+      // ─── 4-2: Static Burst ─────────────────
+      // Two real targets moving in opposite directions + one phantom.
+      // Phantom offset from the real targets by ~third of the rail.
+      if (levelData.id === '4-2') {
+        ui.text.innerText = 'Two live zones. One ghost. All moving.';
+        ui.text.style.color = w4Color;
+        const baseAngle = Math.random() * Math.PI * 2;
+        // Real targets: opposite sides, drifting toward each other
+        targets.push(buildTarget(baseAngle, Math.PI / 9, {
+          color: w4Color, active: true, hp: 1, moveSpeed: 0.007
+        }));
+        targets.push(buildTarget(normalizeAngle(baseAngle + Math.PI), Math.PI / 9, {
+          color: w4Color, active: true, hp: 1, moveSpeed: -0.007
+        }));
+        // Phantom: offset at 90° from real ones
+        targets.push(buildTarget(normalizeAngle(baseAngle + Math.PI * 0.5), Math.PI / 9.2, {
+          color: w4PhantomColor, active: true, isPhantom: true, hp: 1, moveSpeed: 0.004
+        }));
+        return;
+      }
+
+      // ─── 4-3: Fragment Storm ───────────────
+      // Single target that splits on hit + phantom appears after split.
+      // Uses the existing split system but W4-coloured.
+      if (levelData.id === '4-3') {
+        ui.text.innerText = 'Hit the zone. Fragments scatter. One is a ghost.';
+        ui.text.style.color = w4Color;
+        const splitAngle = Math.random() * Math.PI * 2;
+        const splitTarget = buildTarget(splitAngle, Math.PI / 8, {
+          color: w4Color, active: true, hp: 1
+        });
+        splitTarget.type = 'fracture';
+        splitTarget.state = 'intact';
+        splitTarget.mechanic = 'split';
+        splitTarget.splitOnHit = true;
+        splitTarget.splitGeneration = 0;
+        splitTarget.splitDepth = 0;
+        targets.push(splitTarget);
+        // Phantom decoy always present alongside split root
+        const phantomOffset = normalizeAngle(splitAngle + Math.PI * 0.45 + (Math.random() * 0.3));
+        targets.push(buildTarget(phantomOffset, Math.PI / 9, {
+          color: w4PhantomColor, active: true, isPhantom: true, hp: 1
+        }));
+        return;
+      }
+
+      // ─── 4-4: Phase Shift ──────────────────
+      // Two shrinking targets that reverse + one phantom.
+      // Hardest regular stage — tests everything learned.
+      if (levelData.id === '4-4') {
+        ui.text.innerText = 'Shrinking. Reversing. One is a ghost. Precision is survival.';
+        ui.text.style.color = w4Color;
+        const progressionFactor = Math.min(1, (stageHits || 0) / Math.max(1, levelData.hitsNeeded || 8));
+        const shrinkScale = 1.0 - (0.28 * progressionFactor);
+        const baseSize = (Math.PI / 8.5) * shrinkScale;
+        const realAngle = Math.random() * Math.PI * 2;
+        // Real target A
+        const tA = buildTarget(realAngle, baseSize, {
+          color: w4Color, active: true, hp: 1, moveSpeed: 0.006
+        });
+        targets.push(tA);
+        // Real target B — opposite direction
+        const tB = buildTarget(normalizeAngle(realAngle + Math.PI * 1.1), baseSize, {
+          color: w4Color, active: true, hp: 1, moveSpeed: -0.006
+        });
+        targets.push(tB);
+        // Phantom — slightly different position
+        const tP = buildTarget(normalizeAngle(realAngle + Math.PI * 0.55), baseSize * 0.96, {
+          color: w4PhantomColor, active: true, isPhantom: true, hp: 1, moveSpeed: 0.003
+        });
+        targets.push(tP);
+        return;
+      }
+
+      // ─── 4-5: System Overload ──────────────
+      // Four real targets, no phantom — pure speed and multi-target overload.
+      // Reward: players who mastered phantom detection now face honest chaos.
+      if (levelData.id === '4-5') {
+        ui.text.innerText = 'Four live zones. No tricks. Just speed.';
+        ui.text.style.color = w4Color;
+        const count = 4;
+        const spacing = (Math.PI * 2) / count;
+        const offset = Math.random() * Math.PI * 2;
+        for (let i = 0; i < count; i++) {
+          const a = normalizeAngle(offset + (i * spacing));
+          targets.push(buildTarget(a, Math.PI / 10, {
+            color: w4Color, active: true, hp: 1,
+            moveSpeed: 0.009 * (i % 2 === 0 ? 1 : -1)
+          }));
+        }
+        return;
+      }
+
+      // Fallback for any other W4 non-boss stages
+      const realAngle = Math.random() * Math.PI * 2;
+      targets.push(buildTarget(realAngle, Math.PI / 9, {
+        color: w4Color, active: true, hp: 1
+      }));
+      return;
+    }
+    // ═══════════════════════════════════════
+    // END WORLD 4 STAGE SPAWNER
+    // ═══════════════════════════════════════
     if (worldNum === 3 && levelData.id === '3-1') {
       targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 7.5, {
         isEchoTarget: true,
