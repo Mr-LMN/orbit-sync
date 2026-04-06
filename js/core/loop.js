@@ -79,6 +79,60 @@ unlockedSkins = unlockedSkins.map((skinId) => skinId === 'fire' ? 'prism' : skin
 if (!unlockedSkins.includes('classic')) unlockedSkins.unshift('classic');
 unlockedSkins = [...new Set(unlockedSkins)];
 if (activeSkin === 'fire') activeSkin = 'prism';
+
+// ── DAILY LOGIN STREAK ───────────────────────
+const _todayStr = new Date().toDateString();
+const _lastLoginStr = localStorage.getItem('orbitSync_lastLogin') || '';
+const _lastStreakDay = localStorage.getItem('orbitSync_streakDay') || '0';
+let dailyLoginStreak = parseInt(_lastStreakDay, 10) || 0;
+let _dailyBonusToShow = 0;
+
+if (_lastLoginStr !== _todayStr) {
+  const _yesterday = new Date();
+  _yesterday.setDate(_yesterday.getDate() - 1);
+  const _wasYesterday = _lastLoginStr === _yesterday.toDateString();
+
+  if (_wasYesterday) {
+    dailyLoginStreak = Math.min(dailyLoginStreak + 1, 99);
+  } else if (_lastLoginStr === '') {
+    dailyLoginStreak = 1; // First ever login
+  } else {
+    dailyLoginStreak = 1; // Streak broken — reset
+  }
+
+  const _bonusTable = [0, 10, 15, 20, 25, 25, 25, 35];
+  _dailyBonusToShow = _bonusTable[Math.min(dailyLoginStreak, 7)];
+  globalCoins += _dailyBonusToShow;
+  localStorage.setItem('orbitSync_lastLogin', _todayStr);
+  localStorage.setItem('orbitSync_streakDay', String(dailyLoginStreak));
+  localStorage.setItem('orbitSync_coins', Math.floor(globalCoins));
+}
+// ── END DAILY LOGIN STREAK ───────────────────
+
+// Queue bonus display for when menu renders
+if (_dailyBonusToShow > 0) {
+  setTimeout(() => {
+    const badge = document.getElementById('dailyStreakBadge');
+    if (badge) {
+      const em = dailyLoginStreak >= 7 ? '🔥🔥' : dailyLoginStreak >= 3 ? '🔥' : '✦';
+      badge.innerText = `${em} DAY ${dailyLoginStreak} STREAK`;
+      badge.style.display = 'block';
+    }
+    // Show bonus notification
+    const notif = document.createElement('div');
+    notif.style.cssText = `
+      position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+      font-family:'Orbitron',sans-serif; font-size:0.72rem; letter-spacing:2px;
+      color:#ffaa00; text-align:center; pointer-events:none; z-index:99;
+      text-shadow:0 0 20px rgba(255,170,0,0.8);
+      animation:streakFadeOut 2.8s ease forwards;
+    `;
+    notif.innerHTML = `+${_dailyBonusToShow} COINS<br><span style="font-size:0.5rem;opacity:0.6">DAY ${dailyLoginStreak} LOGIN BONUS</span>`;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 3000);
+  }, 600);
+}
+
 let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = 1;
 let tutorialComplete = localStorage.getItem('orbitSync_tutorialDone') === '1';
@@ -606,6 +660,99 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     return;
   }
 
+  if (skin === 'pulse') {
+    // Orb pulses in size with multiplier — bigger at x8
+    const _pulseScale = 1 + (Math.sin(Date.now() / 160) * 0.5 + 0.5) * 0.18
+      + (Math.min(multiplier, 8) * 0.04);
+    const _pulseR = radius * _pulseScale;
+    const orbColor2 = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+    // Outer glow ring
+    ctx.beginPath();
+    ctx.arc(x, y, _pulseR * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = orbColor2;
+    ctx.globalAlpha = 0.12;
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = orbColor2;
+    ctx.fill();
+    // Core
+    ctx.beginPath();
+    ctx.arc(x, y, _pulseR, 0, Math.PI * 2);
+    ctx.fillStyle = orbColor2;
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 16 + Math.sin(Date.now() / 120) * 8;
+    ctx.shadowColor = orbColor2;
+    ctx.fill();
+    // White hot centre
+    ctx.beginPath();
+    ctx.arc(x, y, _pulseR * 0.38, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (skin === 'ghost') {
+    // Nearly invisible — just a faint outline + inner glow
+    const orbColor3 = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+    const _ghostAlpha = 0.08 + (Math.sin(Date.now() / 800) + 1) * 0.06;
+    // Very faint fill
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = orbColor3;
+    ctx.globalAlpha = _ghostAlpha;
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = orbColor3;
+    ctx.fill();
+    // Crisp outline — the only clear indicator
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = orbColor3;
+    ctx.globalAlpha = 0.55 + _ghostAlpha;
+    ctx.lineWidth = 1.2;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    // Tiny bright core dot so it's not completely invisible
+    ctx.beginPath();
+    ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.7;
+    ctx.shadowBlur = 6;
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  if (skin === 'storm') {
+    // Electric yellow — bright with crackle shadow
+    const _stormPulse = (Math.sin(Date.now() / 90) + 1) * 0.5;
+    // Outer electric field
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffee00';
+    ctx.globalAlpha = 0.06 + _stormPulse * 0.08;
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = '#ffee00';
+    ctx.fill();
+    // Main orb
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffe400';
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 18 + _stormPulse * 12;
+    ctx.shadowColor = '#ffee00';
+    ctx.fill();
+    // White-yellow inner core
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.42, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 0.9;
+    ctx.shadowBlur = 10;
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
   ctx.beginPath();
   ctx.arc(x, y, (radius * 2) + pulse, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
@@ -783,6 +930,17 @@ function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
     ctx.fillStyle = '#ffaaaa';
     ctx.shadowBlur = 8;
     ctx.fill();
+    return;
+  }
+
+  else if (skin === 'pulse') {
+    drawOrbSkin(ctx, x, y, 'pulse', radius, 0, '#00e5ff');
+    return;
+  } else if (skin === 'ghost') {
+    drawOrbSkin(ctx, x, y, 'ghost', radius, 0, '#a8f0ff');
+    return;
+  } else if (skin === 'storm') {
+    drawOrbSkin(ctx, x, y, 'storm', radius, 0, '#ffee00');
     return;
   }
 
@@ -3418,9 +3576,8 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
       }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
-        // ─── CORRUPTOR PHASE TRANSITIONS ───────────────
+        // ─── CORRUPTOR ──────────────────────────
         if (levelData.boss === 'corruptor' && bossPhase === 1) {
-          // Phase 1 cleared → Phase 2: ENRAGED with phantom decoys
           bossPhase = 2;
           ui.bossPhase1.className = 'boss-segment';
           ui.bossPhase2.className = 'boss-segment active-segment';
@@ -3440,9 +3597,7 @@ function tap() {
           scheduleBossSpawn(1200);
           return;
         }
-
         if (levelData.boss === 'corruptor' && bossPhase === 2) {
-          // Phase 2 cleared → Core exposed
           isBossPhaseTwo = true;
           ui.bossPhase2.className = 'boss-segment';
           pauseGameplayBriefly(820);
@@ -3458,8 +3613,7 @@ function tap() {
           scheduleBossSpawn(820);
           return;
         }
-        // ─── END CORRUPTOR ──────────────────────────────
-
+        // ─── END CORRUPTOR ──────────────────────
         if (isWorld2PrismBoss && bossPhase === 1) {
           bossPhase = 2;
           ui.bossPhase1.className = "boss-segment";
@@ -3493,7 +3647,6 @@ function tap() {
       } return;
     }
 
-    // ─── CORRUPTOR CORE DEFEAT ──────────────
     if (
       levelData &&
       levelData.boss === 'corruptor' &&
@@ -3502,49 +3655,31 @@ function tap() {
     ) {
       t.active = false;
       ui.bossPhase2.className = 'boss-segment';
-
-      // Glitch-out defeat sequence
       triggerScreenShake(38);
       pulseBrightness(2.6, 280);
-
-      // Green corruption burst
       createShockwave('#00ff41', 36);
       createShockwave('#b157ff', 52);
       createShockwave('#ffffff', 70);
       createShockwave('#00ff41', 88);
-
-      // Particle storm
       createParticles(centerObj.x, centerObj.y, '#00ff41', 60);
       createParticles(centerObj.x, centerObj.y, '#b157ff', 40);
       createUpwardBurstParticles(centerObj.x, centerObj.y - 8, '#ffffff', 56);
       createUpwardBurstParticles(centerObj.x, centerObj.y + 4, '#00ff41', 44);
-
-      // Defeat text
       createPopup(centerObj.x, centerObj.y - 70, 'CORRUPTION', '#b157ff');
       createPopup(centerObj.x, centerObj.y - 36, 'TERMINATED', '#00ff41');
       createPopup(centerObj.x, centerObj.y, 'SIGNAL RESTORED', '#ffffff');
-
       soundBossDefeated();
       stopBossDrone();
       vibrate([80, 40, 100, 40, 120, 40, 80]);
-
       stageHits = 999;
       isPlaying = false;
-
-      // Brief glitch effect before clear
       canvas.style.filter = 'brightness(2.8) saturate(2) hue-rotate(260deg)';
       setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 120);
-      setTimeout(() => {
-        canvas.style.filter = 'brightness(2.2) hue-rotate(120deg)';
-      }, 240);
+      setTimeout(() => { canvas.style.filter = 'brightness(2.2) hue-rotate(120deg)'; }, 240);
       setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 380);
-
-      setTimeout(() => {
-        triggerStageClear();
-      }, 1800);
+      setTimeout(() => { triggerStageClear(); }, 1800);
       return;
     }
-    // ─── END CORRUPTOR CORE DEFEAT ──────────
 
     if (
       levelData &&
@@ -3607,18 +3742,33 @@ function tap() {
       // Player hit a phantom — punish without the usual hit flow
       const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
       const isDiamondWorld = worldNum === 2;
+      const isGlitchWorld = worldNum === 4;
       comboCount = 0;
       comboTimer = 0;
       comboGlow = 0;
       t.active = false;
-      triggerScreenShake(isDiamondWorld ? 11 : 8);
-      canvas.style.filter = 'brightness(2)';
-      setTimeout(() => canvas.style.filter = 'brightness(1)', 100);
-      createShockwave('#ff3366', isDiamondWorld ? 36 : 30);
-      createPopup(hitX, hitY - 20, "TRAP!", "#ff3366");
-      createParticles(hitX, hitY, '#ff3366', isDiamondWorld ? 28 : 20);
-      if (isDiamondWorld) {
-        createUpwardBurstParticles(hitX, hitY - 8, '#ff96f0', 22);
+
+      if (isGlitchWorld) {
+        // W4: corrupted signal feedback — purple + green
+        triggerScreenShake(14);
+        canvas.style.filter = 'brightness(2.2) hue-rotate(260deg) saturate(1.8)';
+        setTimeout(() => canvas.style.filter = 'brightness(1)', 110);
+        createShockwave('#b157ff', 34);
+        createShockwave('#00ff41', 20);
+        createPopup(hitX, hitY - 20, 'CORRUPTED', '#b157ff');
+        createParticles(hitX, hitY, '#b157ff', 24);
+        createParticles(hitX, hitY, '#00ff41', 12);
+        createUpwardBurstParticles(hitX, hitY - 6, '#cc88ff', 18);
+      } else {
+        triggerScreenShake(isDiamondWorld ? 11 : 8);
+        canvas.style.filter = 'brightness(2)';
+        setTimeout(() => canvas.style.filter = 'brightness(1)', 100);
+        createShockwave('#ff3366', isDiamondWorld ? 36 : 30);
+        createPopup(hitX, hitY - 20, 'TRAP!', '#ff3366');
+        createParticles(hitX, hitY, '#ff3366', isDiamondWorld ? 28 : 20);
+        if (isDiamondWorld) {
+          createUpwardBurstParticles(hitX, hitY - 8, '#ff96f0', 22);
+        }
       }
       soundFail();
       vibrate([40, 20, 40]);
@@ -4053,6 +4203,14 @@ function returnToMenu() {
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
   refreshMenuWorldPreview();
+
+  // Daily streak badge
+  const _streakBadge = document.getElementById('dailyStreakBadge');
+  if (_streakBadge && dailyLoginStreak > 0) {
+    const _streakEmoji = dailyLoginStreak >= 7 ? '🔥🔥' : dailyLoginStreak >= 3 ? '🔥' : '✦';
+    _streakBadge.innerText = `${_streakEmoji} DAY ${dailyLoginStreak} STREAK`;
+    _streakBadge.style.display = 'block';
+  }
 }
 
 function changeWorld(dir) { return OrbitGame.ui.menus.changeWorld(dir); }
