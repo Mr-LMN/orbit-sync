@@ -28,6 +28,8 @@
     ui.gameUI.style.display = 'block';
     ui.bigMultiplier.style.display = 'block';
     ui.text.style.display = 'none';
+    const lockedOverlay = document.getElementById('lockedWorldOverlay');
+    if (lockedOverlay) lockedOverlay.style.display = 'none';
     inMenu = false;
     isPlaying = true;
     currentLevelIdx = startLevelIdx;
@@ -58,7 +60,11 @@
     if (menuSelectedWorld > totalWorlds) menuSelectedWorld = totalWorlds;
     updateWorldSelectorUI();
     const isUnlocked = menuSelectedWorld <= (Number(maxWorldUnlocked) || 1);
-    if (isUnlocked) refreshMenuWorldPreview();
+    if (isUnlocked) {
+      refreshMenuWorldPreview();
+    } else {
+      showLockedWorldPreview(menuSelectedWorld);
+    }
   }
 
   function updateWorldSelectorUI() {
@@ -73,7 +79,7 @@
       1: { name: 'WORLD 1', sub: 'ORBIT INIT', color: '#00ff88' },
       2: { name: 'WORLD 2', sub: 'PRISM BREAK', color: '#2ff6ff' },
       3: { name: 'WORLD 3', sub: isUnlocked ? 'RESONANCE' : '???', color: '#ffaa00' },
-      4: { name: 'WORLD 4', sub: isUnlocked ? 'GLITCH PROTOCOL' : '???', color: '#b157ff' }
+      4: { name: isUnlocked ? 'WORLD 4' : '? ? ? ?', sub: isUnlocked ? 'GLITCH PROTOCOL' : 'COMPLETE WORLD 3 TO UNLOCK', color: isUnlocked ? '#b157ff' : 'rgba(255,255,255,0.2)' }
     };
     const wd = worldData[menuSelectedWorld] || worldData[1];
 
@@ -92,6 +98,10 @@
       playBtn.style.opacity = isUnlocked ? '1' : '0.35';
       playBtn.style.cursor = isUnlocked ? 'pointer' : 'not-allowed';
       playBtn.innerText = isUnlocked ? 'Play' : 'LOCKED';
+    }
+    const lockedOverlay = document.getElementById('lockedWorldOverlay');
+    if (lockedOverlay) {
+      lockedOverlay.style.display = isUnlocked ? 'none' : 'flex';
     }
     const _hardBtn = document.getElementById('menuHardModeBtn');
     if (_hardBtn) {
@@ -211,6 +221,18 @@
     }
   }
 
+
+  function showLockedWorldPreview(worldNum) {
+    // Load world 1 data as base so canvas isn't blank
+    const w1Idx = getStartingIndexForWorld(1);
+    levelData = campaign[w1Idx] || campaign[0];
+    currentWorldPalette = computeWorldPalette(levelData);
+    currentWorldShape = computeWorldShape(levelData);
+    currentWorldVisualTheme = getWorldVisualTheme(levelData);
+    // Clear targets — locked world shows empty ring
+    if (typeof targets !== 'undefined') targets = [];
+  }
+
   OG.ui.menus.toggleShop = toggleShop;
   OG.ui.menus.toggleSettings = toggleSettings;
   OG.ui.menus.startCampaign = startCampaign;
@@ -219,6 +241,7 @@
   OG.ui.menus.startBestScoreRun = startBestScoreRun;
   OG.ui.menus.startHardModeRun = startHardModeRun;
   OG.ui.menus.selectAugment = selectAugment;
+  OG.ui.menus.showLockedWorldPreview = showLockedWorldPreview;
   window.startBestScoreRun = startBestScoreRun;
   window.startHardModeRun = startHardModeRun;
   window.selectAugment = selectAugment;

@@ -5,7 +5,7 @@
   OG.ui.settings = OG.ui.settings || {};
   OG.debug = OG.debug || {};
 
-  const ADMIN_HASH_TARGET = 040425;
+  const ADMIN_HASH_TARGET = 3138968151; // hash of '040404'
   let adminPanelVisible = false;
   let adminUnlocked = false;
 
