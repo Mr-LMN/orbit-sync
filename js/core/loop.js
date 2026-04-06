@@ -3418,6 +3418,48 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
       }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
+        // ─── CORRUPTOR PHASE TRANSITIONS ───────────────
+        if (levelData.boss === 'corruptor' && bossPhase === 1) {
+          // Phase 1 cleared → Phase 2: ENRAGED with phantom decoys
+          bossPhase = 2;
+          ui.bossPhase1.className = 'boss-segment';
+          ui.bossPhase2.className = 'boss-segment active-segment';
+          pauseGameplayBriefly(1200);
+          triggerScreenShake(32);
+          pulseBrightness(2.4, 220);
+          createShockwave('#b157ff', 38);
+          createShockwave('#ff3366', 56);
+          createShockwave('#00ff41', 72);
+          createParticles(centerObj.x, centerObj.y, '#b157ff', 40);
+          createParticles(centerObj.x, centerObj.y, '#ff3366', 24);
+          createPopup(centerObj.x, centerObj.y - 62, 'CORRUPTOR', '#b157ff');
+          createPopup(centerObj.x, centerObj.y - 28, 'ENRAGED', '#ff3366');
+          createPopup(centerObj.x, centerObj.y + 8, 'FIND THE SIGNAL', '#ffffff');
+          escalateBossDrone();
+          vibrate([60, 30, 80, 30, 100]);
+          scheduleBossSpawn(1200);
+          return;
+        }
+
+        if (levelData.boss === 'corruptor' && bossPhase === 2) {
+          // Phase 2 cleared → Core exposed
+          isBossPhaseTwo = true;
+          ui.bossPhase2.className = 'boss-segment';
+          pauseGameplayBriefly(820);
+          triggerScreenShake(28);
+          pulseBrightness(2.2, 180);
+          createShockwave('#00ff41', 44);
+          createShockwave('#ffffff', 62);
+          createParticles(centerObj.x, centerObj.y, '#00ff41', 48);
+          createPopup(centerObj.x, centerObj.y - 56, 'CORRUPT CORE', '#00ff41');
+          createPopup(centerObj.x, centerObj.y - 22, 'EXPOSED', '#ffffff');
+          soundCoreExposed();
+          vibrate([80, 40, 80]);
+          scheduleBossSpawn(820);
+          return;
+        }
+        // ─── END CORRUPTOR ──────────────────────────────
+
         if (isWorld2PrismBoss && bossPhase === 1) {
           bossPhase = 2;
           ui.bossPhase1.className = "boss-segment";
@@ -3450,6 +3492,59 @@ function tap() {
         }
       } return;
     }
+
+    // ─── CORRUPTOR CORE DEFEAT ──────────────
+    if (
+      levelData &&
+      levelData.boss === 'corruptor' &&
+      isBossPhaseTwo &&
+      t.isCorruptorCore
+    ) {
+      t.active = false;
+      ui.bossPhase2.className = 'boss-segment';
+
+      // Glitch-out defeat sequence
+      triggerScreenShake(38);
+      pulseBrightness(2.6, 280);
+
+      // Green corruption burst
+      createShockwave('#00ff41', 36);
+      createShockwave('#b157ff', 52);
+      createShockwave('#ffffff', 70);
+      createShockwave('#00ff41', 88);
+
+      // Particle storm
+      createParticles(centerObj.x, centerObj.y, '#00ff41', 60);
+      createParticles(centerObj.x, centerObj.y, '#b157ff', 40);
+      createUpwardBurstParticles(centerObj.x, centerObj.y - 8, '#ffffff', 56);
+      createUpwardBurstParticles(centerObj.x, centerObj.y + 4, '#00ff41', 44);
+
+      // Defeat text
+      createPopup(centerObj.x, centerObj.y - 70, 'CORRUPTION', '#b157ff');
+      createPopup(centerObj.x, centerObj.y - 36, 'TERMINATED', '#00ff41');
+      createPopup(centerObj.x, centerObj.y, 'SIGNAL RESTORED', '#ffffff');
+
+      soundBossDefeated();
+      stopBossDrone();
+      vibrate([80, 40, 100, 40, 120, 40, 80]);
+
+      stageHits = 999;
+      isPlaying = false;
+
+      // Brief glitch effect before clear
+      canvas.style.filter = 'brightness(2.8) saturate(2) hue-rotate(260deg)';
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 120);
+      setTimeout(() => {
+        canvas.style.filter = 'brightness(2.2) hue-rotate(120deg)';
+      }, 240);
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 380);
+
+      setTimeout(() => {
+        triggerStageClear();
+      }, 1800);
+      return;
+    }
+    // ─── END CORRUPTOR CORE DEFEAT ──────────
 
     if (
       levelData &&
