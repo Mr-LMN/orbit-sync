@@ -12,7 +12,7 @@
     const level = campaign[levelIdx];
     if (!level) return 'assets/Base.mp3';
     const worldNum = parseInt(level.id.split('-')[0], 10);
-    return worldNum === 2 ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
+    return (worldNum === 2 || worldNum === 4) ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
   }
 
   function getBossTrackForLevel(levelIdx) {
@@ -201,7 +201,10 @@
     // World-aware playback rate — W2 stages faster, base rate reflects world tempo
     const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
       ? parseInt(levelData.id.split('-')[0], 10) : 1;
-    const worldBaseRate = worldNum === 2 ? 1.06 : worldNum === 3 ? 1.03 : 1.0;
+    const worldBaseRate = worldNum === 2 ? 1.06
+      : worldNum === 3 ? 1.03
+      : worldNum === 4 ? 1.09
+      : 1.0;
     const targetSpeed = worldBaseRate + (Math.min(currentMultiplier, 8) * 0.012);
     audio.baseSource.playbackRate.cancelScheduledValues(now);
     audio.bossSource.playbackRate.cancelScheduledValues(now);
