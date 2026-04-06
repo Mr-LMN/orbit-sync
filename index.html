@@ -82,33 +82,42 @@
     <button onclick="document.getElementById('challengePreview').style.display='none';" style="margin-top:32px; font-family:'Orbitron',sans-serif; font-size:0.6rem; letter-spacing:3px; color:rgba(200,220,255,0.3); background:none; border:none; cursor:pointer; padding:12px 24px;">CLOSE</button>
   </div>
 
-  <div id="augmentSelect" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:13; background:rgba(4,5,12,0.97); backdrop-filter:blur(14px); flex-direction:column; align-items:center; justify-content:center; gap:0;">
-    <div style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:4px; color:rgba(255,255,255,0.3); margin-bottom:6px;">CHOOSE YOUR AUGMENT</div>
-    <div style="font-family:'Orbitron',sans-serif; font-size:0.42rem; letter-spacing:2px; color:rgba(255,255,255,0.18); margin-bottom:28px;">ONE PER RUN · RESETS ON MENU</div>
+  <div id="augmentSelect" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:14; background:rgba(4,5,12,0.96); backdrop-filter:blur(16px); flex-direction:column; align-items:center; justify-content:center;">
+    <div style="font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:4px; color:rgba(255,255,255,0.25); margin-bottom:4px;">WORLD CLEARED</div>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:2.2rem; color:rgba(255,255,255,0.85); letter-spacing:3px; margin-bottom:4px;">CHOOSE YOUR BOOST</div>
+    <div style="font-family:'Orbitron',sans-serif; font-size:0.4rem; letter-spacing:2px; color:rgba(255,200,80,0.5); margin-bottom:24px;">ONE PER RUN · SPEND COINS TO ACTIVATE</div>
+    <div style="font-family:'Orbitron',sans-serif; font-size:0.58rem; letter-spacing:2px; color:#ffaa00; margin-bottom:16px;">🪙 <span id="augmentCoinDisplay">0</span> AVAILABLE</div>
     <div id="augmentCards" style="display:flex; flex-direction:column; gap:10px; width:min(88vw,340px);">
-      <button class="augment-card" onclick="selectAugment('wide_sync')" data-id="wide_sync">
+
+      <button class="augment-card" id="aug-wide_sync" onclick="selectAugment('wide_sync', 25)">
         <span class="aug-icon">◎</span>
         <div class="aug-info">
           <div class="aug-name">WIDE SYNC</div>
           <div class="aug-desc">Perfect window +20% wider</div>
         </div>
+        <div class="aug-cost">🪙 25</div>
       </button>
-      <button class="augment-card" onclick="selectAugment('coin_surge')" data-id="coin_surge">
-        <span class="aug-icon">🪙</span>
+
+      <button class="augment-card" id="aug-coin_surge" onclick="selectAugment('coin_surge', 35)">
+        <span class="aug-icon">⚡</span>
         <div class="aug-info">
           <div class="aug-name">COIN SURGE</div>
           <div class="aug-desc">Coins earned ×1.5 per hit</div>
         </div>
+        <div class="aug-cost">🪙 35</div>
       </button>
-      <button class="augment-card" onclick="selectAugment('iron_shield')" data-id="iron_shield">
+
+      <button class="augment-card" id="aug-iron_shield" onclick="selectAugment('iron_shield', 50)">
         <span class="aug-icon">⬡</span>
         <div class="aug-info">
           <div class="aug-name">IRON SHIELD</div>
           <div class="aug-desc">One free shield revive</div>
         </div>
+        <div class="aug-cost">🪙 50</div>
       </button>
+
     </div>
-    <button onclick="selectAugment(null)" style="margin-top:20px; font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:2px; color:rgba(255,255,255,0.2); background:none; border:none; cursor:pointer; padding:12px 24px;">SKIP — NO AUGMENT</button>
+    <button onclick="selectAugment(null, 0)" style="margin-top:20px; font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:2px; color:rgba(255,255,255,0.2); background:none; border:none; cursor:pointer; padding:14px 28px;">NO BOOST — CONTINUE FREE</button>
   </div>
 
   <div id="settingsModal">

@@ -1001,3 +1001,20 @@ body.hard-mode #hardModeBadge { display: block; }
   letter-spacing: 1px;
   color: rgba(255,255,255,0.35);
 }
+.aug-cost {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  color: rgba(255,200,80,0.7);
+  white-space: nowrap;
+  margin-left: auto;
+  padding-left: 12px;
+}
+.augment-card:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.augment-card:disabled .aug-cost {
+  color: rgba(255,80,80,0.5);
+}
