@@ -51,7 +51,7 @@
     const worldSelect = document.getElementById('adminWorldSelect');
     if (!select || !Array.isArray(campaign)) return;
     const previousValue = OG.debug.stageOverrideId || '';
-    const selectedWorld = worldSelect ? String(worldSelect.value || '').trim() : '';
+    const selectedWorld = String(_adminSelectedWorld || '');
     select.innerHTML = '';
     for (let i = 0; i < campaign.length; i++) {
       const stage = campaign[i];
@@ -70,9 +70,13 @@
     }
   }
 
+  let _adminSelectedWorld = 1;
+
   function populateAdminWorldOptions() {
-    const worldSelect = document.getElementById('adminWorldSelect');
-    if (!worldSelect || !Array.isArray(campaign)) return;
+    const btnContainer = document.getElementById('adminWorldBtns');
+    const hiddenSelect = document.getElementById('adminWorldSelect');
+    if (!btnContainer || !Array.isArray(campaign)) return;
+
     const worldValues = [];
     for (let i = 0; i < campaign.length; i++) {
       const stage = campaign[i];
@@ -82,20 +86,46 @@
       worldValues.push(worldNum);
     }
     worldValues.sort((a, b) => a - b);
-    worldSelect.innerHTML = '';
-    for (let i = 0; i < worldValues.length; i++) {
-      const worldNum = worldValues[i];
-      const option = document.createElement('option');
-      option.value = String(worldNum);
-      option.innerText = `WORLD ${worldNum}`;
-      worldSelect.appendChild(option);
-    }
+
+    // Set default selected world
     const overrideWorld = parseInt(String(OG.debug.stageOverrideId || '').split('-')[0], 10);
-    const fallbackWorld = Number.isFinite(menuSelectedWorld) ? menuSelectedWorld : 1;
-    const preferred = Number.isFinite(overrideWorld) ? overrideWorld : fallbackWorld;
-    if (worldValues.includes(preferred)) {
-      worldSelect.value = String(preferred);
+    const fallback = Number.isFinite(menuSelectedWorld) ? menuSelectedWorld : 1;
+    _adminSelectedWorld = Number.isFinite(overrideWorld) && worldValues.includes(overrideWorld)
+      ? overrideWorld : fallback;
+
+    // Build button grid
+    btnContainer.innerHTML = '';
+    worldValues.forEach(worldNum => {
+      const btn = document.createElement('button');
+      btn.className = 'admin-world-btn' + (worldNum === _adminSelectedWorld ? ' active' : '');
+      btn.innerText = `W${worldNum}`;
+      btn.setAttribute('data-world', worldNum);
+      btn.addEventListener('click', () => {
+        _adminSelectedWorld = worldNum;
+        // Update active state
+        btnContainer.querySelectorAll('.admin-world-btn').forEach(b => {
+          b.classList.toggle('active', parseInt(b.getAttribute('data-world'), 10) === worldNum);
+        });
+        // Sync hidden select
+        if (hiddenSelect) hiddenSelect.value = String(worldNum);
+        // Repopulate stages
+        populateAdminStageOptions();
+      });
+      btnContainer.appendChild(btn);
+    });
+
+    // Sync hidden select for backward compat
+    if (hiddenSelect) {
+      hiddenSelect.innerHTML = '';
+      worldValues.forEach(w => {
+        const opt = document.createElement('option');
+        opt.value = String(w);
+        hiddenSelect.appendChild(opt);
+      });
+      hiddenSelect.value = String(_adminSelectedWorld);
     }
+
+    populateAdminStageOptions();
   }
 
   function applyStageOverrideSelection() {
