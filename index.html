@@ -150,15 +150,15 @@
           <button id="adminCodeSubmit" class="settings-toggle">Unlock</button>
         </div>
         <div id="adminStageControls" class="admin-stage-controls" style="display: none;">
-          <label for="adminWorldSelect">Temporary world selector</label>
+          <label for="adminWorldSelect">WORLD</label>
           <select id="adminWorldSelect"></select>
-          <label for="adminStageSelect">Temporary stage selector</label>
+          <label for="adminStageSelect">STAGE</label>
           <select id="adminStageSelect"></select>
           <div class="admin-stage-actions">
-            <button id="adminStageApply" class="settings-toggle">Set</button>
-            <button id="adminStageClear" class="settings-toggle off">Clear</button>
+            <button id="adminStageApply" class="settings-toggle" style="background:linear-gradient(135deg,#b157ff,#7c2fe0); color:#fff; font-weight:bold; letter-spacing:1.5px;">▶ LAUNCH</button>
+            <button id="adminStageClear" class="settings-toggle off">CLEAR</button>
           </div>
-          <p id="adminStageStatus" class="admin-stage-status">No test stage selected.</p>
+          <p id="adminStageStatus" class="admin-stage-status">No stage selected.</p>
           <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
             <span style="font-size:0.7rem; letter-spacing:1px;">Infinite Lives</span>
             <button id="adminInfiniteToggle" class="settings-toggle off" onclick="toggleAdminInfiniteLives()">Off</button>
