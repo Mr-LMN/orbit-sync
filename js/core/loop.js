@@ -3886,6 +3886,10 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           : (nextWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.");
         ui.btn.innerText = isCampaignClear ? "RETURN TO MENU" : `ENTER WORLD ${nextWorld}`;
         setOverlayState('worldClearReady');
+        // Show augment picker after brief delay (let player see their score first)
+        if (!isCampaignClear && typeof showAugmentPicker === 'function') {
+          setTimeout(() => showAugmentPicker(), 1200);
+        }
         // Populate stage replay buttons
         const _replayRow = document.getElementById('stageReplayRow');
         const _replayBtns = document.getElementById('stageReplayBtns');

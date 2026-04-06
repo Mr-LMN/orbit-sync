@@ -43,13 +43,6 @@
   }
 
   function startCampaign() {
-    // Show augment select overlay — actual game start happens in selectAugment()
-    _pendingRunType = 'campaign';
-    const augOverlay = document.getElementById('augmentSelect');
-    if (augOverlay) {
-      augOverlay.style.display = 'flex';
-      return; // actual launch happens in selectAugment
-    }
     _launchCampaign();
   }
 
@@ -147,12 +140,6 @@
   }
 
   function startBestScoreRun() {
-    _pendingRunType = 'best';
-    const augOverlay = document.getElementById('augmentSelect');
-    if (augOverlay) {
-      augOverlay.style.display = 'flex';
-      return;
-    }
     _launchBestScore();
   }
 
@@ -184,24 +171,41 @@
   }
 
   function startHardModeRun() {
-    _pendingRunType = 'hard';
-    const augOverlay = document.getElementById('augmentSelect');
-    if (augOverlay) {
-      augOverlay.style.display = 'flex';
-      return;
-    }
     _launchHardMode();
   }
 
 
-  function selectAugment(augmentId) {
+  function selectAugment(augmentId, cost = 0) {
+    // Check if player can afford it
+    if (augmentId && cost > 0) {
+      const currentCoins = typeof globalCoins !== 'undefined' ? Math.floor(globalCoins) : 0;
+      if (currentCoins < cost) return; // Can't afford — button should be disabled anyway
+      // Deduct coins
+      if (typeof globalCoins !== 'undefined') {
+        globalCoins -= cost;
+        if (typeof saveData === 'function') saveData();
+        if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
+      }
+    }
     const augOverlay = document.getElementById('augmentSelect');
     if (augOverlay) augOverlay.style.display = 'none';
-    if (typeof window.setActiveAugment === 'function') window.setActiveAugment(augmentId);
-    if (_pendingRunType === 'campaign') _launchCampaign();
-    else if (_pendingRunType === 'best') _launchBestScore();
-    else if (_pendingRunType === 'hard') _launchHardMode();
-    _pendingRunType = null;
+    if (typeof window.setActiveAugment === 'function') window.setActiveAugment(augmentId || null);
+  }
+
+  function showAugmentPicker() {
+    const augOverlay = document.getElementById('augmentSelect');
+    if (!augOverlay) return;
+    // Update coin display
+    const coinDisplay = document.getElementById('augmentCoinDisplay');
+    const currentCoins = typeof globalCoins !== 'undefined' ? Math.floor(globalCoins) : 0;
+    if (coinDisplay) coinDisplay.innerText = currentCoins;
+    // Disable cards player can't afford
+    const costs = { 'wide_sync': 25, 'coin_surge': 35, 'iron_shield': 50 };
+    Object.entries(costs).forEach(([id, cost]) => {
+      const btn = document.getElementById('aug-' + id);
+      if (btn) btn.disabled = currentCoins < cost;
+    });
+    augOverlay.style.display = 'flex';
   }
 
   function showChallengePreview() {
@@ -240,10 +244,12 @@
   OG.ui.menus.updateWorldSelectorUI = updateWorldSelectorUI;
   OG.ui.menus.startBestScoreRun = startBestScoreRun;
   OG.ui.menus.startHardModeRun = startHardModeRun;
+  OG.ui.menus.showAugmentPicker = showAugmentPicker;
   OG.ui.menus.selectAugment = selectAugment;
   OG.ui.menus.showLockedWorldPreview = showLockedWorldPreview;
   window.startBestScoreRun = startBestScoreRun;
   window.startHardModeRun = startHardModeRun;
+  window.showAugmentPicker = showAugmentPicker;
   window.selectAugment = selectAugment;
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
