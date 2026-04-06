@@ -18,11 +18,12 @@
 
   <div id="hardModeBadge">⚠ HARD MODE</div>
   <div id="topBar" style="display: none;">
-    <div class="top-stat">COINS <span id="coinCount">0</span></div>
+    <div class="top-stat">🪙 <span id="coinCount">0</span></div>
     <div class="top-stat">LIVES <span id="livesCount">3</span></div>
-    <div class="top-stat" id="streakBox">STREAK <span id="streakCount">0</span></div>
-    <button id="topSettingsBtn" class="settings-btn" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙</button>
+    <div class="top-stat top-stat-crystals">💎 <span id="crystalCount">0</span></div>
   </div>
+  <span id="streakCount" style="display:none;">0</span>
+  <button id="topSettingsBtn" class="settings-fab" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙ MENU</button>
 
   <div id="bigMultiplier" style="display: none;">x<span id="multiplierCount">1</span></div>
 
@@ -127,13 +128,19 @@
       <button class="close-btn" onclick="toggleSettings(false)">×</button>
     </div>
     <div class="settings-content">
-      <div class="settings-row">
-        <span>Music</span>
-        <button id="musicToggleBtn" class="settings-toggle" onclick="toggleMusicSetting()"></button>
+      <div class="settings-row settings-row-slider">
+        <button id="musicMuteBtn" class="vol-mute-btn" onclick="toggleMusicSetting()" title="Mute music">♪</button>
+        <div class="vol-slider-wrap">
+          <span class="vol-label">MUSIC</span>
+          <input type="range" id="musicVolumeSlider" class="vol-slider" min="0" max="100" value="60" oninput="setMusicVolume(this.value)">
+        </div>
       </div>
-      <div class="settings-row">
-        <span>Sound Effects</span>
-        <button id="sfxToggleBtn" class="settings-toggle" onclick="toggleSfxSetting()"></button>
+      <div class="settings-row settings-row-slider">
+        <button id="sfxMuteBtn" class="vol-mute-btn" onclick="toggleSfxSetting()" title="Mute SFX">♬</button>
+        <div class="vol-slider-wrap">
+          <span class="vol-label">SFX</span>
+          <input type="range" id="sfxVolumeSlider" class="vol-slider" min="0" max="100" value="80" oninput="setSfxVolume(this.value)">
+        </div>
       </div>
       <div class="settings-row">
         <span>Haptics</span>

@@ -2178,6 +2178,63 @@ function draw() {
     ctx.save();
 
     if (!isLiteTargetRender) {
+      // ── TARGET FILL: gives physical depth/weight ──────────
+      if (!t.isLifeZone && !t.isCornerBonus && !isLiteTargetRender) {
+        // Inner filled region within the target arc
+        // Use a canvas clip to contain fill to the arc segment
+        ctx.save();
+        ctx.beginPath();
+        // Build a filled "wedge" from center through the arc
+        const _fillStart = t.start;
+        const _fillEnd = t.start + t.size;
+        const _fillMid = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        // Radial gradient centered at the arc midpoint
+        const _fillGrad = ctx.createRadialGradient(
+          _fillMid.x, _fillMid.y, 0,
+          _fillMid.x, _fillMid.y, Math.max(8, orbitRadius * 0.08)
+        );
+        const _fillColor = t.color || '#ffffff';
+        _fillGrad.addColorStop(0, _fillColor.replace(')', ', 0.22)').replace('rgb(', 'rgba(').replace('#', 'rgba(').length > 20
+          ? _fillColor
+          : _fillColor + '38');
+        // Simpler approach: just use rgba manually per world color
+        const _wn4fill = worldNum === 4 ? 'rgba(177,87,255,0.14)'
+          : worldNum === 3 ? 'rgba(255,170,0,0.12)'
+          : worldNum === 2 ? 'rgba(47,246,255,0.12)'
+          : 'rgba(0,229,255,0.12)';
+        const _fillInner = isBossShield ? 'rgba(255,80,100,0.18)' : _wn4fill;
+        const _fillOuter = 'rgba(0,0,0,0)';
+        const _fg = ctx.createRadialGradient(
+          _fillMid.x, _fillMid.y, 0,
+          _fillMid.x, _fillMid.y, Math.max(10, orbitRadius * 0.1)
+        );
+        _fg.addColorStop(0, _fillInner);
+        _fg.addColorStop(1, _fillOuter);
+
+        // Draw steps along the arc to create a filled band
+        const _steps = 8;
+        const _innerR = dynamicRadius - (bodyWidth * 2.5);
+        const _outerR = dynamicRadius + (bodyWidth * 2.5);
+        ctx.beginPath();
+        for (let _si = 0; _si <= _steps; _si++) {
+          const _sa = _fillStart + (_si / _steps) * (t.size);
+          const _op = getPointOnShape(_sa, worldShape, centerObj.x, centerObj.y, _outerR);
+          if (_si === 0) ctx.moveTo(_op.x, _op.y);
+          else ctx.lineTo(_op.x, _op.y);
+        }
+        for (let _si = _steps; _si >= 0; _si--) {
+          const _sa = _fillStart + (_si / _steps) * (t.size);
+          const _ip = getPointOnShape(_sa, worldShape, centerObj.x, centerObj.y, _innerR);
+          ctx.lineTo(_ip.x, _ip.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = _fg;
+        ctx.globalAlpha = 0.85 + (approach * 0.15);
+        ctx.fill();
+        ctx.restore();
+      }
+      // ── END TARGET FILL ───────────────────────────
+
       // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
@@ -3195,7 +3252,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     };
     const currentRunWorld = getCurrentRunWorld();
     const newRecords = checkAndSavePB(score, streakBeforeFail);
-    isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+    isPlaying = false; ui.topBar.style.display = 'none'; const _settingsFab2 = document.getElementById('topSettingsBtn'); if (_settingsFab2) _settingsFab2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
     const pbStatsBlock = document.getElementById('pbStatsBlock');
     const runStatsBlock = document.getElementById('runStatsBlock');
@@ -3358,6 +3415,8 @@ function restartCurrentStageAfterRevive() {
   isPlaying = true;
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
+  const _settingsFab = document.getElementById('topSettingsBtn');
+  if (_settingsFab) _settingsFab.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
   ui.bigMultiplier.style.display = 'none';
@@ -4168,6 +4227,8 @@ function restartFromCheckpoint() {
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
+  const _settingsFab = document.getElementById('topSettingsBtn');
+  if (_settingsFab) _settingsFab.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
   ui.bigMultiplier.style.display = 'none';
@@ -4197,7 +4258,7 @@ function returnToMenu() {
   toggleSettings(false);
   setOverlayState('cinematic');
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
-  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _settingsFab2 = document.getElementById('topSettingsBtn'); if (_settingsFab2) _settingsFab2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   const runStatsBlock = document.getElementById('runStatsBlock');
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
@@ -4247,6 +4308,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   ui.overlay.style.display = 'flex';
   ui.overlay.style.background = 'rgba(5, 5, 10, 0.95)'; // Darker, cleaner focus
   ui.topBar.style.display = 'none';
+  const _settingsFab2 = document.getElementById('topSettingsBtn');
+  if (_settingsFab2) _settingsFab2.style.display = 'none';
   ui.gameUI.style.display = 'none';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'none';
   ui.bossUI.style.display = 'none';
@@ -4342,11 +4405,22 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
               const _idx = campaign.findIndex(c => c && c.id === s.id);
               if (_idx >= 0) {
                 currentLevelIdx = _idx;
+                inMenu = false;
+                isPlaying = false;
+                resetRunState();
+                ui.score.innerText = '0';
                 ui.topBar.style.display = 'flex';
+                const _settingsFab = document.getElementById('topSettingsBtn');
+                if (_settingsFab) _settingsFab.style.display = 'flex';
                 ui.gameUI.style.display = 'block';
+                ui.bigMultiplier.style.display = 'block';
+                ui.text.style.display = 'none';
                 if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
-                isPlaying = true;
+                if (ui.bossUI) ui.bossUI.style.display = 'none';
+                markScoreCoinDirty(true);
                 loadLevel(currentLevelIdx);
+                isPlaying = true;
+                OrbitGame.core.loop.startMainLoop();
               }
             };
             _replayBtns.appendChild(_btn);
@@ -4363,6 +4437,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
             return;
           }
           ui.topBar.style.display = 'flex';
+          const _settingsFab = document.getElementById('topSettingsBtn');
+          if (_settingsFab) _settingsFab.style.display = 'flex';
           ui.gameUI.style.display = 'block';
           if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
           ui.bigMultiplier.style.display = 'none';
