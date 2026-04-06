@@ -124,11 +124,13 @@
         <span>Haptics</span>
         <button id="hapticsToggleBtn" class="settings-toggle" onclick="toggleHapticsSetting()"></button>
       </div>
+      <div style="height:1px; background:linear-gradient(90deg, transparent, rgba(255,40,60,0.25), transparent); margin:8px 0;"></div>
       <div class="settings-row" id="hardModeRow" style="opacity:0.45;">
-        <span style="font-family:'Orbitron',sans-serif; font-size:0.65rem; letter-spacing:1px;">Hard Mode</span>
+        <span>Hard Mode</span>
         <span id="hardModeStatus" style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:2px; color:rgba(255,80,100,0.7);">LOCKED</span>
       </div>
       <div id="adminToolsPanel" class="admin-tools-panel" style="display: none;">
+        <div style="font-family:'Orbitron',sans-serif; font-size:0.5rem; letter-spacing:3px; color:rgba(255,60,80,0.6); text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(255,40,60,0.15);">⚠ DEVELOPER ACCESS ⚠</div>
         <div id="adminCodeEntry" class="admin-code-entry">
           <input id="adminCodeInput" type="password" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="Admin code">
           <button id="adminCodeSubmit" class="settings-toggle">Unlock</button>
