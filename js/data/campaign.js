@@ -97,6 +97,80 @@
       reverse: false,
       mechanics: ['echo', 'mixed', 'drift', 'boss'],
       text: 'BOSS: Resonance Core phases through echo patterns. Stay composed.'
+    },
+    {
+      id: '4-1',
+      title: 'Corrupt Signal',
+      hitsNeeded: 6,
+      speed: 0.052,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      hasPhantom: true,
+      text: 'One zone is real. One is corrupted. Read the signal.'
+    },
+    {
+      id: '4-2',
+      title: 'Static Burst',
+      hitsNeeded: 7,
+      speed: 0.054,
+      lives: 3,
+      targets: 2,
+      moveSpeed: 0.007,
+      reverse: true,
+      hasPhantom: true,
+      text: 'Two zones in static. They reverse. One will corrupt you.'
+    },
+    {
+      id: '4-3',
+      title: 'Fragment Storm',
+      hitsNeeded: 5,
+      speed: 0.056,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      mechanics: ['split'],
+      hasPhantom: true,
+      text: 'Zones splinter on impact. Chase every fragment — avoid the ghost.'
+    },
+    {
+      id: '4-4',
+      title: 'Phase Shift',
+      hitsNeeded: 8,
+      speed: 0.058,
+      lives: 3,
+      targets: 2,
+      moveSpeed: 0.006,
+      reverse: true,
+      hasPhantom: true,
+      shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 5.0 },
+      text: 'Shrinking. Reversing. One is real. Precision is survival.'
+    },
+    {
+      id: '4-5',
+      title: 'System Overload',
+      hitsNeeded: 10,
+      speed: 0.060,
+      lives: 3,
+      targets: 4,
+      fixedTargetCount: true,
+      moveSpeed: 0.009,
+      reverse: false,
+      hasPhantom: false,
+      text: 'Four zones. Maximum throughput. No room for error.'
+    },
+    {
+      id: '4-6',
+      title: 'The Corruptor',
+      hitsNeeded: 99,
+      speed: 0.056,
+      lives: 3,
+      boss: 'corruptor',
+      moveSpeed: 0.028,
+      reverse: true,
+      text: 'BOSS: Destroy the nodes. Expose the corrupt core.'
     }
   ];
 

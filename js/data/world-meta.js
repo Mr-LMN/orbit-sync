@@ -1,7 +1,7 @@
 (function initWorldMeta(window) {
   const OG = window.OrbitGame;
 
-  const WORLD_ORDER = ['world1', 'world2', 'world3'];
+  const WORLD_ORDER = ['world1', 'world2', 'world3', 'world4'];
   const DEFAULT_WORLDS = {
     world1: {
       id: 'world1',
@@ -22,6 +22,14 @@
     world3: {
       id: 'world3',
       title: 'RESONANCE',
+      unlocked: false,
+      stages: [],
+      bossStageId: null,
+      hardUnlocked: false
+    },
+    world4: {
+      id: 'world4',
+      title: 'GLITCH PROTOCOL',
       unlocked: false,
       stages: [],
       bossStageId: null,
@@ -96,7 +104,8 @@
   OG.data.worldMeta = [
     { id: 1, label: 'WORLD 1' },
     { id: 2, label: 'WORLD 2' },
-    { id: 3, label: 'WORLD 3' }
+    { id: 3, label: 'WORLD 3' },
+    { id: 4, label: 'WORLD 4' }
   ];
   OG.data.worldOrder = WORLD_ORDER.slice();
   OG.data.worldIdFromStageId = worldIdFromStageId;
