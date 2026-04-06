@@ -405,7 +405,24 @@ function updateCanvasSize() {
 }
 
 updateCanvasSize();
-window.addEventListener('resize', updateCanvasSize);
+
+// Debounced resize — Android fires resize on scroll/address bar
+// collapse mid-frame. Never resize during active gameplay.
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  if (_resizeTimer) clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    _resizeTimer = null;
+    // Only resize if not actively playing — prevents mid-frame corruption
+    if (!isPlaying || inMenu) {
+      updateCanvasSize();
+    } else {
+      // Queue resize for next time player returns to menu
+      _pendingResize = true;
+    }
+  }, 180);
+});
+let _pendingResize = false;
 
 function getArenaAngleOffset() {
   return (levelData && levelData.id === '2-6' && levelData.boss === 'prism') ? world2BossArenaRotation : 0;
@@ -3921,6 +3938,10 @@ function restartFromCheckpoint() {
 }
 
 function returnToMenu() {
+  if (_pendingResize) {
+    _pendingResize = false;
+    updateCanvasSize();
+  }
   hardModeActive = false;
   activeAugment = null;
   document.body.classList.remove('hard-mode');
