@@ -131,9 +131,8 @@
       targets: 1,
       moveSpeed: 0,
       reverse: false,
-      mechanics: ['split'],
       hasPhantom: true,
-      text: 'Zones splinter on impact. Chase every fragment — avoid the ghost.'
+      text: 'Hit the zone. Fragments scatter. One is a ghost.'
     },
     {
       id: '4-4',
