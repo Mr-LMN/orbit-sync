@@ -275,18 +275,27 @@
       if (levelData.id === '4-3') {
         ui.text.innerText = 'Hit the zone. Fragments scatter. One is a ghost.';
         ui.text.style.color = w4Color;
-        const splitAngle = Math.random() * Math.PI * 2;
-        const splitTarget = buildTarget(splitAngle, Math.PI / 8, {
-          color: w4Color, active: true, hp: 1
-        });
-        splitTarget.type = 'fracture';
-        splitTarget.state = 'intact';
-        splitTarget.mechanic = 'split';
-        splitTarget.splitOnHit = true;
-        splitTarget.splitGeneration = 0;
-        splitTarget.splitDepth = 0;
-        targets.push(splitTarget);
-        // Phantom decoy always present alongside split root
+        // Use spawnControlledSplitRoot so the split family system
+        // tracks this target properly — prevents ghost-clear bug
+        const splitRoot = typeof spawnControlledSplitRoot === 'function'
+          ? spawnControlledSplitRoot({
+              color: w4Color,
+              size: Math.PI / 8
+            })
+          : null;
+        if (!splitRoot) {
+          // Fallback if split system unavailable
+          const splitAngle = Math.random() * Math.PI * 2;
+          const fallback = buildTarget(splitAngle, Math.PI / 8, {
+            color: w4Color, active: true, hp: 1
+          });
+          fallback.splitOnHit = true;
+          fallback.splitGeneration = 0;
+          fallback.splitDepth = 0;
+          targets.push(fallback);
+        }
+        // Phantom decoy — offset ~quarter ring from the real target
+        const splitAngle = splitRoot ? splitRoot.start : Math.random() * Math.PI * 2;
         const phantomOffset = normalizeAngle(splitAngle + Math.PI * 0.45 + (Math.random() * 0.3));
         targets.push(buildTarget(phantomOffset, Math.PI / 9, {
           color: w4PhantomColor, active: true, isPhantom: true, hp: 1
