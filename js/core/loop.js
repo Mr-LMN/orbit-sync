@@ -2196,9 +2196,16 @@ function draw() {
       const _orbToGate = Math.abs(
         ((angle - _gMidAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
       );
-      const _inGoodWindow = _orbToGate < 0.14;
-      const _inPerfectWindow = _orbToGate < 0.08;
-      const _inFilthyWindow = _orbToGate < 0.03;
+      // Local window approximation for gate visuals (matches tap() logic)
+      const _gWn = parseInt((levelData && levelData.id || '1-1').split('-')[0], 10);
+      const _gSn = parseInt((levelData && levelData.id || '1-1').split('-')[1], 10);
+      const _gStage = ((_gWn - 1) * 6) + _gSn;
+      const _gGrace = _gStage <= 3 ? 1.25 : _gStage <= 6 ? 1.12 : _gStage <= 12 ? 1.0 : _gStage <= 18 ? 0.92 : 0.88;
+      const _gHM = hardModeActive ? 0.82 : 1.0;
+      const _gMult = _gGrace * _gHM;
+      const _inGoodWindow = _orbToGate < (0.14 * _gMult);
+      const _inPerfectWindow = _orbToGate < (0.08 * _gMult);
+      const _inFilthyWindow = _orbToGate < (0.03 * _gMult);
 
       const _gatePulse = _inGoodWindow
         ? (0.65 + Math.sin(now * 0.028) * 0.35)
@@ -3311,9 +3318,26 @@ function tap() {
     const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);
     const hitTimingAccuracy = Math.abs(hitTimingOffset);
     const _augWideMult = (activeAugment === 'wide_sync') ? 1.2 : 1.0;
-    const filthyWindow = 0.03 * _augWideMult;
-    const perfectWindow = 0.08 * _augWideMult;
-    const goodWindow = 0.14 * _augWideMult;
+    const _hmTightMult = (hardModeActive) ? 0.82 : 1.0;
+
+    // Grace scale: 1-1 starts at 1.25x (25% more forgiving),
+    // tapers to 1.0x by stage 12 (end of W2), then 0.92x for W3+,
+    // W4+ gets 0.88x — tightest before Hard Mode kicks in.
+    const _stageGrace = (() => {
+      const wn = parseInt((levelData && levelData.id || '1-1').split('-')[0], 10);
+      const sn = parseInt((levelData && levelData.id || '1-1').split('-')[1], 10);
+      const globalStage = ((wn - 1) * 6) + sn; // 1–24 across 4 worlds
+      if (globalStage <= 3) return 1.25;       // 1-1 to 1-3: very forgiving
+      if (globalStage <= 6) return 1.12;       // 1-4 to 1-6: slightly forgiving
+      if (globalStage <= 12) return 1.0;       // 2-1 to 2-6: standard
+      if (globalStage <= 18) return 0.92;      // 3-1 to 3-6: tighter
+      return 0.88;                             // 4-1+: tight
+    })();
+
+    const _windowMult = _augWideMult * _hmTightMult * _stageGrace;
+    const filthyWindow = 0.03 * _windowMult;
+    const perfectWindow = 0.08 * _windowMult;
+    const goodWindow = 0.14 * _windowMult;
     const hitTimingTier = hitTimingAccuracy < filthyWindow
       ? 'filthy-perfect'
       : (hitTimingAccuracy < perfectWindow ? 'perfect' : (hitTimingAccuracy < goodWindow ? 'good' : 'weak'));
