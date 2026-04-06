@@ -1404,6 +1404,11 @@ function loadLevel(idx) {
   if (levelData.id !== '2-6') world2BossTransitionFrom25 = false;
   resetSplitFamilyState();
 
+  // Save checkpoint — so retries resume from this stage, not world start
+  if (!levelData.boss) {
+    localStorage.setItem('orbitSync_checkpointIdx', String(idx));
+  }
+
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
   // Per-stage personal best display
   const _stagePBEl = document.getElementById('stagePBDisplay');
@@ -2305,181 +2310,74 @@ function draw() {
       }
     }
 
-    // --- SYNC GATE (universal perfect timing marker) ---
-    // Skip for: echo targets (have ripple ring), boss shields, phantoms, life zones
-    const _showSyncGate = shouldDrawTargetMarkers
-      && !t.isEchoTarget
-      && !t.isBossShield
-      && !t.isPhantom
-      && !t.isLifeZone
-      && !t.isCornerBonus;
-
-    if (_showSyncGate) {
-      // Gate position: midpoint of target arc, on the rail
-      const _gMidAngle = normalizeAngle(tCenter);
-      const _gMidPt = getPointOnShape(_gMidAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-
-      // Outward normal from ring center
-      const _gRadX = _gMidPt.x - centerObj.x;
-      const _gRadY = _gMidPt.y - centerObj.y;
-      const _gRadLen = Math.hypot(_gRadX, _gRadY) || 1;
-      const _gNx = _gRadX / _gRadLen; // outward normal
-      const _gNy = _gRadY / _gRadLen;
-      const _gTx = -_gNy; // tangent along rail
-      const _gTy = _gNx;
-
-      // Gate visibility: approach-driven opacity, pulse in good window
-      // Check if orb is within the good timing window (0.14 rad)
-      const _orbToGate = Math.abs(
-        ((angle - _gMidAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
-      );
-      // Local window approximation for gate visuals (matches tap() logic)
-      const _gWn = parseInt((levelData && levelData.id || '1-1').split('-')[0], 10);
-      const _gSn = parseInt((levelData && levelData.id || '1-1').split('-')[1], 10);
-      const _gStage = ((_gWn - 1) * 6) + _gSn;
-      const _gGrace = _gStage <= 3 ? 1.25 : _gStage <= 6 ? 1.12 : _gStage <= 12 ? 1.0 : _gStage <= 18 ? 0.92 : 0.88;
-      const _gHM = hardModeActive ? 0.82 : 1.0;
-      const _gMult = _gGrace * _gHM;
-      const _inGoodWindow = _orbToGate < (0.14 * _gMult);
-      const _inPerfectWindow = _orbToGate < (0.08 * _gMult);
-      const _inFilthyWindow = _orbToGate < (0.03 * _gMult);
-
-      const _gatePulse = _inGoodWindow
-        ? (0.65 + Math.sin(now * 0.028) * 0.35)
-        : (0.35 + approach * 0.45);
-      const _gateAlpha = Math.min(0.92,
-        (_inFilthyWindow ? 1.0 : _inPerfectWindow ? 0.85 : _inGoodWindow ? 0.65 : 0.4 + approach * 0.3)
-        * _gatePulse
-        + hitFlash * 0.4
-      );
-
-      // Gate arm length — proportional to radius, subtle
-      const _armLen = Math.max(5, orbitRadius * 0.055);
-      const _armGap = Math.max(3.5, orbitRadius * 0.035); // gap = half of visible slot
-      const _gateColor = _inFilthyWindow ? '#ffffff'
-        : _inPerfectWindow ? targetGlowColor
-        : _inGoodWindow ? targetGlowColor
-        : targetCoreColor;
+    // ── CORRUPTOR CORE special render ─────────────
+    if (t.isCorruptorCore) {
+      const _ccMidAngle = normalizeAngle(t.start + t.size / 2);
+      const _ccPt = getPointOnShape(_ccMidAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      const _ccPulse = (Math.sin(now * 0.008) + 1) * 0.5;
+      const _ccR = Math.max(7, orbitRadius * 0.055) * (1 + _ccPulse * 0.22);
+      const _ccApproach = approach;
 
       ctx.save();
-      ctx.globalAlpha = _gateAlpha;
-      ctx.strokeStyle = _gateColor;
-      ctx.lineCap = 'round';
-      setShadowBlur(_inFilthyWindow ? 18 : _inPerfectWindow ? 12 : 6);
-      ctx.shadowColor = _gateColor;
 
-      if (worldShape === 'circle' || worldShape === 'triangle') {
-        // ── W1 / W3: Classic vertical gate arms ──
-        // Two lines perpendicular to rail (outward), bracketing the midpoint
-        const _lineW = Math.max(1.4, bodyWidth * 0.38);
-        ctx.lineWidth = _lineW + (_inPerfectWindow ? 0.8 : 0) + (hitFlash * 0.6);
+      // Outer halo — pulsing green ring
+      ctx.beginPath();
+      ctx.arc(_ccPt.x, _ccPt.y, _ccR * 1.9, 0, Math.PI * 2);
+      ctx.strokeStyle = '#00ff41';
+      ctx.globalAlpha = 0.15 + _ccPulse * 0.2;
+      ctx.lineWidth = 2.5;
+      ctx.shadowBlur = 22;
+      ctx.shadowColor = '#00ff41';
+      ctx.stroke();
 
-        // Left arm: tangent-offset from midpoint then outward
+      // Spinning outer ring
+      const _ccSpin = (now * 0.003) % (Math.PI * 2);
+      for (let i = 0; i < 4; i++) {
+        const _spinA = _ccSpin + (i * Math.PI / 2);
+        const _sx = _ccPt.x + Math.cos(_spinA) * _ccR * 1.5;
+        const _sy = _ccPt.y + Math.sin(_spinA) * _ccR * 1.5;
         ctx.beginPath();
-        ctx.moveTo(
-          _gMidPt.x + _gTx * _armGap,
-          _gMidPt.y + _gTy * _armGap
-        );
-        ctx.lineTo(
-          _gMidPt.x + _gTx * _armGap + _gNx * _armLen,
-          _gMidPt.y + _gTy * _armGap + _gNy * _armLen
-        );
-        ctx.stroke();
-
-        // Right arm
-        ctx.beginPath();
-        ctx.moveTo(
-          _gMidPt.x - _gTx * _armGap,
-          _gMidPt.y - _gTy * _armGap
-        );
-        ctx.lineTo(
-          _gMidPt.x - _gTx * _armGap + _gNx * _armLen,
-          _gMidPt.y - _gTy * _armGap + _gNy * _armLen
-        );
-        ctx.stroke();
-
-        // Centre dot — active zone indicator
-        ctx.beginPath();
-        ctx.arc(
-          _gMidPt.x + _gNx * (_armLen * 0.5),
-          _gMidPt.y + _gNy * (_armLen * 0.5),
-          _inFilthyWindow ? 3.2 : 1.8, 0, Math.PI * 2
-        );
-        ctx.fillStyle = _gateColor;
+        ctx.arc(_sx, _sy, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = '#00ff41';
+        ctx.globalAlpha = 0.55 + _ccPulse * 0.4;
+        ctx.shadowBlur = 10;
         ctx.fill();
+      }
 
-      } else if (worldShape === 'diamond') {
-        // ── W2: Chevron gate — V pointing outward ──
-        const _chevSize = Math.max(5, orbitRadius * 0.052);
-        const _chevDepth = _chevSize * 0.55;
-        ctx.lineWidth = Math.max(1.4, bodyWidth * 0.35) + (hitFlash * 0.5);
+      // Core fill — solid bright green circle
+      ctx.beginPath();
+      ctx.arc(_ccPt.x, _ccPt.y, _ccR, 0, Math.PI * 2);
+      const _ccGrad = ctx.createRadialGradient(
+        _ccPt.x - _ccR * 0.3, _ccPt.y - _ccR * 0.3, 0,
+        _ccPt.x, _ccPt.y, _ccR
+      );
+      _ccGrad.addColorStop(0, '#ffffff');
+      _ccGrad.addColorStop(0.4, '#80ff90');
+      _ccGrad.addColorStop(1, '#00cc30');
+      ctx.fillStyle = _ccGrad;
+      ctx.globalAlpha = 0.92 + _ccPulse * 0.08;
+      ctx.shadowBlur = 28 + _ccPulse * 14;
+      ctx.shadowColor = '#00ff41';
+      ctx.fill();
 
-        // Outer V (wide)
-        ctx.beginPath();
-        ctx.moveTo(
-          _gMidPt.x + _gTx * _chevSize + _gNx * _chevDepth,
-          _gMidPt.y + _gTy * _chevSize + _gNy * _chevDepth
-        );
-        ctx.lineTo(
-          _gMidPt.x + _gNx * (_chevDepth * 1.8),
-          _gMidPt.y + _gNy * (_chevDepth * 1.8)
-        );
-        ctx.lineTo(
-          _gMidPt.x - _gTx * _chevSize + _gNx * _chevDepth,
-          _gMidPt.y - _gTy * _chevSize + _gNy * _chevDepth
-        );
-        ctx.stroke();
-
-        // Inner dot at V tip
-        if (_inPerfectWindow || _inGoodWindow) {
-          ctx.beginPath();
-          ctx.arc(
-            _gMidPt.x + _gNx * (_chevDepth * 1.8),
-            _gMidPt.y + _gNy * (_chevDepth * 1.8),
-            _inFilthyWindow ? 3.0 : 1.6, 0, Math.PI * 2
-          );
-          ctx.fillStyle = _gateColor;
-          ctx.fill();
-        }
-
-      } else if (worldShape === 'square') {
-        // ── W4: Double-bar gate — parallel bars outward ──
-        const _barLen = Math.max(5, orbitRadius * 0.058);
-        const _barSep = Math.max(2.5, orbitRadius * 0.022);
-        ctx.lineWidth = Math.max(1.6, bodyWidth * 0.36) + (hitFlash * 0.5);
-        ctx.strokeStyle = _inFilthyWindow ? '#00ff41' : _gateColor;
-        ctx.shadowColor = _inFilthyWindow ? '#00ff41' : _gateColor;
-
-        // Near bar
-        ctx.beginPath();
-        ctx.moveTo(
-          _gMidPt.x + _gTx * _barLen * 0.5 + _gNx * _barSep,
-          _gMidPt.y + _gTy * _barLen * 0.5 + _gNy * _barSep
-        );
-        ctx.lineTo(
-          _gMidPt.x - _gTx * _barLen * 0.5 + _gNx * _barSep,
-          _gMidPt.y - _gTy * _barLen * 0.5 + _gNy * _barSep
-        );
-        ctx.stroke();
-
-        // Far bar
-        ctx.beginPath();
-        ctx.moveTo(
-          _gMidPt.x + _gTx * _barLen * 0.4 + _gNx * (_barSep + _armLen * 0.6),
-          _gMidPt.y + _gTy * _barLen * 0.4 + _gNy * (_barSep + _armLen * 0.6)
-        );
-        ctx.lineTo(
-          _gMidPt.x - _gTx * _barLen * 0.4 + _gNx * (_barSep + _armLen * 0.6),
-          _gMidPt.y - _gTy * _barLen * 0.4 + _gNy * (_barSep + _armLen * 0.6)
-        );
-        ctx.stroke();
+      // PERFECT STRIKE label above core
+      if (_ccApproach > 0.4) {
+        ctx.font = `bold ${Math.max(8, orbitRadius * 0.055)}px Orbitron, sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = _ccApproach * 0.9;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#00ff41';
+        ctx.fillText('PERFECT', _ccPt.x, _ccPt.y - _ccR - 6);
       }
 
       ctx.restore();
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
     }
-    // --- END SYNC GATE ---
+    // ── END CORRUPTOR CORE ────────────────────────
+
 
     // --- EDGE BRACKETS (small inward ticks framing the timing zone) ---
     const drawBracketTick = (angle) => {
@@ -2540,6 +2438,127 @@ function draw() {
     }
     ctx.restore();
   });
+
+  // ── SYNC GATE SECOND PASS (drawn above all targets) ──────────
+  targets.forEach(t => {
+    if (!t.active) return;
+    const tCenter = t.start + (t.size / 2);
+    const approach = getTargetApproachIntensity(t, angle, direction);
+    const hitFlash = t.hitFlash || 0;
+    const dynamicRadius = orbitRadius + ((t.hitScalePulse || 0) * 1.4);
+
+    const _showSyncGate = shouldDrawTargetMarkers
+      && !t.isEchoTarget
+      && !t.isBossShield
+      && !t.isPhantom
+      && !t.isLifeZone
+      && !t.isCornerBonus;
+
+    if (!_showSyncGate) return;
+
+    const _gMidAngle = normalizeAngle(tCenter);
+    // Start gate arms OUTSIDE the housing — clear the target stroke
+    const _gRadius = dynamicRadius + 6;
+    const _gMidPt = getPointOnShape(_gMidAngle, worldShape, centerObj.x, centerObj.y, _gRadius);
+
+    const _gRadX = _gMidPt.x - centerObj.x;
+    const _gRadY = _gMidPt.y - centerObj.y;
+    const _gRadLen = Math.hypot(_gRadX, _gRadY) || 1;
+    const _gNx = _gRadX / _gRadLen;
+    const _gNy = _gRadY / _gRadLen;
+    const _gTx = -_gNy;
+    const _gTy = _gNx;
+
+    const _orbToGate = Math.abs(
+      ((angle - _gMidAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI
+    );
+    const _gWn = parseInt((levelData && levelData.id || '1-1').split('-')[0], 10);
+    const _gSn = parseInt((levelData && levelData.id || '1-1').split('-')[1], 10);
+    const _gStage = ((_gWn - 1) * 6) + _gSn;
+    const _gGrace = _gStage <= 3 ? 1.25 : _gStage <= 6 ? 1.12 : _gStage <= 12 ? 1.0 : _gStage <= 18 ? 0.92 : 0.88;
+    const _gHM = hardModeActive ? 0.82 : 1.0;
+    const _gMult = _gGrace * _gHM;
+    const _inGoodWindow = _orbToGate < (0.14 * _gMult);
+    const _inPerfectWindow = _orbToGate < (0.08 * _gMult);
+    const _inFilthyWindow = _orbToGate < (0.03 * _gMult);
+
+    const _gatePulse = _inGoodWindow
+      ? (0.65 + Math.sin(now * 0.028) * 0.35)
+      : (0.35 + approach * 0.45);
+    const _gateAlpha = Math.min(0.95,
+      (_inFilthyWindow ? 1.0 : _inPerfectWindow ? 0.88 : _inGoodWindow ? 0.68 : 0.45 + approach * 0.3)
+      * _gatePulse + hitFlash * 0.4
+    );
+
+    const _armLen = Math.max(6, orbitRadius * 0.058);
+    const _armGap = Math.max(4, orbitRadius * 0.038);
+    const _gateColor = _inFilthyWindow ? '#ffffff'
+      : _inPerfectWindow ? (t.color || '#ffffff')
+      : _inGoodWindow ? (t.color || '#ffffff')
+      : 'rgba(255,255,255,0.7)';
+
+    ctx.save();
+    ctx.globalAlpha = _gateAlpha;
+    ctx.strokeStyle = _gateColor;
+    ctx.lineCap = 'round';
+    const _shadowAmt = _inFilthyWindow ? 20 : _inPerfectWindow ? 14 : 8;
+    ctx.shadowBlur = _shadowAmt;
+    ctx.shadowColor = _gateColor;
+
+    if (worldShape === 'circle' || worldShape === 'triangle') {
+      ctx.lineWidth = Math.max(1.8, 2.2 + (_inPerfectWindow ? 0.8 : 0) + (hitFlash * 0.6));
+      ctx.beginPath();
+      ctx.moveTo(_gMidPt.x + _gTx * _armGap, _gMidPt.y + _gTy * _armGap);
+      ctx.lineTo(_gMidPt.x + _gTx * _armGap + _gNx * _armLen, _gMidPt.y + _gTy * _armGap + _gNy * _armLen);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(_gMidPt.x - _gTx * _armGap, _gMidPt.y - _gTy * _armGap);
+      ctx.lineTo(_gMidPt.x - _gTx * _armGap + _gNx * _armLen, _gMidPt.y - _gTy * _armGap + _gNy * _armLen);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(_gMidPt.x + _gNx * (_armLen * 0.55), _gMidPt.y + _gNy * (_armLen * 0.55),
+        _inFilthyWindow ? 3.5 : 2.0, 0, Math.PI * 2);
+      ctx.fillStyle = _gateColor;
+      ctx.fill();
+
+    } else if (worldShape === 'diamond') {
+      ctx.lineWidth = Math.max(1.6, 2.0 + (hitFlash * 0.5));
+      const _chevSize = Math.max(5.5, orbitRadius * 0.055);
+      const _chevDepth = _chevSize * 0.55;
+      ctx.beginPath();
+      ctx.moveTo(_gMidPt.x + _gTx * _chevSize + _gNx * _chevDepth, _gMidPt.y + _gTy * _chevSize + _gNy * _chevDepth);
+      ctx.lineTo(_gMidPt.x + _gNx * (_chevDepth * 1.8), _gMidPt.y + _gNy * (_chevDepth * 1.8));
+      ctx.lineTo(_gMidPt.x - _gTx * _chevSize + _gNx * _chevDepth, _gMidPt.y - _gTy * _chevSize + _gNy * _chevDepth);
+      ctx.stroke();
+      if (_inGoodWindow || _inPerfectWindow) {
+        ctx.beginPath();
+        ctx.arc(_gMidPt.x + _gNx * (_chevDepth * 1.8), _gMidPt.y + _gNy * (_chevDepth * 1.8),
+          _inFilthyWindow ? 3.2 : 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = _gateColor;
+        ctx.fill();
+      }
+
+    } else if (worldShape === 'square') {
+      ctx.lineWidth = Math.max(1.8, 2.2 + (hitFlash * 0.5));
+      ctx.strokeStyle = _inFilthyWindow ? '#00ff41' : _gateColor;
+      ctx.shadowColor = _inFilthyWindow ? '#00ff41' : _gateColor;
+      const _barLen = Math.max(5.5, orbitRadius * 0.06);
+      const _barSep = Math.max(3, orbitRadius * 0.024);
+      ctx.beginPath();
+      ctx.moveTo(_gMidPt.x + _gTx * _barLen * 0.5 + _gNx * _barSep, _gMidPt.y + _gTy * _barLen * 0.5 + _gNy * _barSep);
+      ctx.lineTo(_gMidPt.x - _gTx * _barLen * 0.5 + _gNx * _barSep, _gMidPt.y - _gTy * _barLen * 0.5 + _gNy * _barSep);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(_gMidPt.x + _gTx * _barLen * 0.4 + _gNx * (_barSep + _armLen * 0.58), _gMidPt.y + _gTy * _barLen * 0.4 + _gNy * (_barSep + _armLen * 0.58));
+      ctx.lineTo(_gMidPt.x - _gTx * _barLen * 0.4 + _gNx * (_barSep + _armLen * 0.58), _gMidPt.y - _gTy * _barLen * 0.4 + _gNy * (_barSep + _armLen * 0.58));
+      ctx.stroke();
+    }
+
+    ctx.restore();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  });
+  // ── END SYNC GATE SECOND PASS ─────────────────────────────
 
   // TRAIL
   if (!inMenu && trail.length > 0) {
@@ -4183,6 +4202,7 @@ function restartFromCheckpoint() {
 }
 
 function returnToMenu() {
+  localStorage.removeItem('orbitSync_checkpointIdx');
   if (_pendingResize) {
     _pendingResize = false;
     updateCanvasSize();
@@ -4355,6 +4375,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         }
 
         // Wire up the button
+        localStorage.removeItem('orbitSync_checkpointIdx');
         ui.btn.onclick = function () {
           ui.overlay.style.display = 'none';
           ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)'; // Reset bg
