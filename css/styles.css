@@ -1018,3 +1018,25 @@ body.hard-mode #hardModeBadge { display: block; }
 .augment-card:disabled .aug-cost {
   color: rgba(255,80,80,0.5);
 }
+
+
+.admin-world-btn {
+  padding: 10px 16px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,40,60,0.2);
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 68px;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  touch-action: manipulation;
+}
+.admin-world-btn.active {
+  background: rgba(177,87,255,0.2);
+  border-color: rgba(177,87,255,0.6);
+  color: #cc88ff;
+}
