@@ -4,8 +4,18 @@
   OG.systems.progression = OG.systems.progression || {};
 
   function getCheckpointIndex() {
-    let currentWorld = String((OG.state && OG.state.legacy && OG.state.legacy.menuSelectedWorld) || 1);
-    for (let i = 0; i < campaign.length; i++) { if (campaign[i].id.startsWith(currentWorld + '-')) return i; }
+    // Try saved stage first
+    const savedIdx = parseInt(localStorage.getItem('orbitSync_checkpointIdx') || '-1', 10);
+    if (savedIdx >= 0 && Array.isArray(campaign) && campaign[savedIdx]) {
+      const savedStage = campaign[savedIdx];
+      const savedWorld = parseInt(String(savedStage.id).split('-')[0], 10);
+      const currentWorld = (OG.state && OG.state.legacy && OG.state.legacy.menuSelectedWorld) || 1;
+      // Only restore if it's the same world the player is attempting
+      if (savedWorld === currentWorld) return savedIdx;
+    }
+    // Fallback: start of world
+    const worldNum = String((OG.state && OG.state.legacy && OG.state.legacy.menuSelectedWorld) || 1);
+    for (let i = 0; i < campaign.length; i++) { if (campaign[i].id.startsWith(worldNum + '-')) return i; }
     return 0;
   }
 
