@@ -66,7 +66,7 @@ window.getActiveAugment = function() { return activeAugment; };
 // Only aegis and prism are real boss music stages. 3-6/spectre uses echo mechanics — base track only.
 function _isMusicBossStage(ld) {
   if (!ld || !ld.boss) return false;
-  return ld.boss === 'aegis' || ld.boss === 'prism';
+  return ld.boss === 'aegis' || ld.boss === 'prism' || ld.boss === 'corruptor';
 }
 function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 
@@ -2584,7 +2584,7 @@ function update() {
     echoAngle = angle;
   }
 
-  const _isRealBossStage = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+  const _isRealBossStage = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor');
   if (!inMenu && _isRealBossStage && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
   if (!inMenu && comboCount > 0) {
     comboTimer = Math.max(0, comboTimer - (delta * 16.6667));

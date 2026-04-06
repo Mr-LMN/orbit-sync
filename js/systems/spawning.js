@@ -10,6 +10,98 @@
     }
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
+    // ─── THE CORRUPTOR (World 4 Boss) ──────
+    if (levelData.boss === 'corruptor') {
+      const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
+
+      if (!isBossPhaseTwo) {
+
+        // PHASE 1: Corner shield nodes — 4 purple shields drifting along sides
+        if (bossPhase === 1) {
+          ui.text.innerText = 'CORRUPTOR: Destroy the shield nodes.';
+          ui.text.style.color = '#b157ff';
+          // 4 nodes spaced evenly, drifting in alternating directions
+          const nodeCount = _hmActive ? 4 : 4; // always 4, HM makes them faster
+          const nodeSpeed = _hmActive ? 0.032 : 0.022;
+          const nodeSize = _hmActive ? Math.PI / 7 : Math.PI / 6;
+          for (let i = 0; i < nodeCount; i++) {
+            const nodeAngle = (i * Math.PI * 2 / nodeCount) + 0.1;
+            targets.push(buildTarget(nodeAngle, nodeSize, {
+              color: '#b157ff',
+              active: true,
+              hp: _hmActive ? 2 : 3,
+              isBossShield: true,
+              moveSpeed: nodeSpeed * (i % 2 === 0 ? 1 : -1),
+              nextDirectionSwapAt: performance.now() + 1400 + (i * 300)
+            }));
+          }
+        }
+
+        // PHASE 2: ENRAGED — 2 fast shields + phantom decoy
+        else if (bossPhase === 2) {
+          ui.text.innerText = 'CORRUPTOR ENRAGED: Find the real signal.';
+          ui.text.style.color = '#ff3366';
+          const phantomCount = _hmActive ? 2 : 1;
+          const realAngle = Math.random() * Math.PI * 2;
+          // Real shield
+          targets.push(buildTarget(realAngle, Math.PI / 9, {
+            color: '#b157ff',
+            active: true,
+            hp: 1,
+            isBossShield: true,
+            moveSpeed: _hmActive ? 0.048 : 0.038,
+            nextDirectionSwapAt: performance.now() + 900
+          }));
+          // Second real shield (opposite)
+          targets.push(buildTarget(
+            normalizeAngle(realAngle + Math.PI * 1.15), Math.PI / 9, {
+              color: '#b157ff',
+              active: true,
+              hp: 1,
+              isBossShield: true,
+              moveSpeed: _hmActive ? -0.042 : -0.034,
+              nextDirectionSwapAt: performance.now() + 1100
+            }
+          ));
+          // Phantom decoys — look identical to real shields
+          for (let p = 0; p < phantomCount; p++) {
+            targets.push(buildTarget(
+              normalizeAngle(realAngle + Math.PI * (0.5 + p * 0.7)), Math.PI / 9.2, {
+                color: '#b157ff',
+                active: true,
+                isPhantom: true,
+                hp: 1,
+                moveSpeed: 0.028 * (p % 2 === 0 ? 1 : -1)
+              }
+            ));
+          }
+        }
+
+      } else {
+        // CORE EXPOSED — tiny bright green node, corner-aligned, PERFECT required
+        ui.text.innerText = 'CORRUPT CORE EXPOSED — PERFECT STRIKE ONLY';
+        ui.text.style.color = '#00ff41';
+        const _coreSize = _hmActive ? Math.PI / 15 : Math.PI / 12;
+        // Snap core position to a corner angle of the square
+        const cornerAngles = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
+        const coreAngle = cornerAngles[Math.floor(Math.random() * 4)];
+        const coreTarget = buildTarget(coreAngle, _coreSize, {
+          color: '#00ff41',
+          active: true,
+          hp: 1
+        });
+        coreTarget.isCorruptorCore = true;
+        targets.push(coreTarget);
+        // Visual flash to indicate core position
+        setTimeout(() => {
+          createShockwave('#00ff41', 24);
+          createParticles(centerObj.x, centerObj.y, '#00ff41', 18);
+        }, 120);
+      }
+      return;
+    }
+    // ─── END CORRUPTOR ──────────────────────
+
     if (levelData.boss === 'aegis') {
       if (!isBossPhaseTwo) {
         ui.text.innerText = bossPhase === 1 ? 'BOSS: Break the shields!' : 'BOSS ENRAGED: Faster & Sharper!';
