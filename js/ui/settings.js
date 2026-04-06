@@ -34,16 +34,16 @@
   function updateSelectedStageStatus() {
     const stageId = OG.debug.stageOverrideId || '';
     if (!stageId) {
-      setAdminStatus('No test stage selected.');
+      setAdminStatus('No stage selected — LAUNCH will start from World 1.');
       return;
     }
     const stageIndex = getStageIndexById(stageId);
     if (stageIndex < 0 || !campaign[stageIndex]) {
-      setAdminStatus('No test stage selected.');
+      setAdminStatus('No stage selected.');
       return;
     }
     const selected = campaign[stageIndex];
-    setAdminStatus(`Test stage active: ${selected.id} — ${selected.title}`);
+    setAdminStatus(`Ready: ${selected.id} — ${selected.title}`);
   }
 
   function populateAdminStageOptions() {
@@ -108,14 +108,30 @@
       return;
     }
 
+    // Set the override
     OG.debug.stageOverrideId = selectedId;
     const worldNum = parseInt(selectedId.split('-')[0], 10);
     if (Number.isFinite(worldNum) && worldNum > 0) {
       menuSelectedWorld = worldNum;
-      if (typeof updateWorldSelectorUI === 'function') updateWorldSelectorUI();
-      if (typeof refreshMenuWorldPreview === 'function') refreshMenuWorldPreview();
     }
-    updateSelectedStageStatus();
+
+    // Close settings modal immediately
+    ui.settingsModal.style.bottom = '-100%';
+
+    // Brief delay then launch — gives modal time to slide away
+    setTimeout(() => {
+      // Ensure menu is showing as the base
+      if (inMenu) {
+        // Already on menu — just call startCampaign which reads the override
+        if (typeof startCampaign === 'function') startCampaign();
+      } else {
+        // In a run — return to menu first then launch
+        if (typeof returnToMenu === 'function') returnToMenu();
+        setTimeout(() => {
+          if (typeof startCampaign === 'function') startCampaign();
+        }, 200);
+      }
+    }, 280);
   }
 
   function toggleAdminInfiniteLives() {
