@@ -1636,44 +1636,6 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  if (worldShape === 'square' && !isBoss) {
-    ctx.save();
-    // Glitch corner flash — brief green spark at each corner in sequence
-    const _squareCorners = [
-      { x: centerObj.x + orbitRadius, y: centerObj.y - orbitRadius },
-      { x: centerObj.x + orbitRadius, y: centerObj.y + orbitRadius },
-      { x: centerObj.x - orbitRadius, y: centerObj.y + orbitRadius },
-      { x: centerObj.x - orbitRadius, y: centerObj.y - orbitRadius }
-    ];
-    // Outer glow on sides — faint purple aura
-    buildShapePath(ctx, 'square', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = '#b157ff';
-    ctx.lineWidth = 10;
-    ctx.globalAlpha = (0.04 + Math.abs(Math.sin(now / 1900)) * 0.025) * railGlowScale;
-    ctx.shadowBlur = 18 * railGlowScale;
-    ctx.shadowColor = '#b157ff';
-    ctx.stroke();
-    // Corner spark — cycles through 4 corners sequentially
-    const _cornerCycleMs = 800;
-    const _activeCorner = Math.floor((now / _cornerCycleMs) % 4);
-    const _cornerPhase = ((now % _cornerCycleMs) / _cornerCycleMs);
-    const _cornerAlpha = _cornerPhase < 0.3
-      ? (_cornerPhase / 0.3) * 0.7
-      : (1 - (_cornerPhase - 0.3) / 0.7) * 0.7;
-    const ac = _squareCorners[_activeCorner];
-    ctx.beginPath();
-    ctx.arc(ac.x, ac.y, 3.5 + _cornerAlpha * 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#00ff41';
-    ctx.globalAlpha = _cornerAlpha;
-    ctx.shadowBlur = 14;
-    ctx.shadowColor = '#00ff41';
-    ctx.fill();
-    ctx.restore();
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-  }
-
-
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
   // so shield segments remain readable against the bright lane, especially on small screens.
   if (isBoss) {
