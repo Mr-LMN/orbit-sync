@@ -10,7 +10,7 @@
 
   function updateShopUI() {
     updatePersistentCoinUI();
-    const items = ['classic', 'skull', 'prism', 'echo', 'crimson'];
+    const items = ['classic', 'skull', 'prism', 'echo', 'crimson', 'pulse', 'ghost', 'storm'];
     items.forEach(id => {
       let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
       let preview = card ? card.querySelector('.item-preview') : null;
@@ -26,7 +26,9 @@
     if (goalEl) {
       const goals = [
         { id: 'skull', cost: 50 }, { id: 'prism', cost: 150 },
-        { id: 'crimson', cost: 150 }, { id: 'echo', cost: 200 }
+        { id: 'crimson', cost: 150 }, { id: 'echo', cost: 200 },
+        { id: 'pulse', cost: 300 }, { id: 'storm', cost: 350 },
+        { id: 'ghost', cost: 400 }
       ];
       const nextGoal = goals.find(g => !unlockedSkins.includes(g.id));
       if (nextGoal) {

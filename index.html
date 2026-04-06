@@ -52,6 +52,7 @@
 
   <div id="mainMenu">
     <button id="menuSettingsBtn" class="settings-btn menu-settings-btn" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙</button>
+    <div id="dailyStreakBadge" style="display:none; font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,200,80,0.7); text-align:center; margin-bottom:8px;"></div>
     <h1 class="title" id="orbitTitle" style="cursor:default; touch-action:manipulation;">ORBIT</h1>
     <h1 class="title" id="syncTitle" style="color:#fff; text-shadow:none; margin-bottom: 20px; cursor:default; touch-action:manipulation;">SYNC</h1>
 
@@ -202,20 +203,20 @@
         <p class="item-name">Crimson Rail</p>
         <button class="buy-btn buy-coins" id="btn-crimson" onclick="buyItem('crimson', 150)">🪙 150</button>
       </div>
-      <div class="shop-item shop-locked" id="item-pulse">
-        <div class="item-preview item-preview-locked" data-skin="pulse"></div>
+      <div class="shop-item" id="item-pulse">
+        <div class="item-preview" data-skin="pulse"></div>
         <p class="item-name">Pulse Core</p>
-        <button class="buy-btn" disabled style="opacity:0.4; cursor:not-allowed;">COMING SOON</button>
+        <button class="buy-btn buy-coins" id="btn-pulse" onclick="buyItem('pulse', 300)">🪙 300</button>
       </div>
-      <div class="shop-item shop-locked" id="item-ghost">
-        <div class="item-preview item-preview-locked" data-skin="ghost"></div>
+      <div class="shop-item" id="item-ghost">
+        <div class="item-preview" data-skin="ghost"></div>
         <p class="item-name">Ghost Orb</p>
-        <button class="buy-btn" disabled style="opacity:0.4; cursor:not-allowed;">COMING SOON</button>
+        <button class="buy-btn buy-coins" id="btn-ghost" onclick="buyItem('ghost', 400)">🪙 400</button>
       </div>
-      <div class="shop-item shop-locked" id="item-storm">
-        <div class="item-preview item-preview-locked" data-skin="storm"></div>
+      <div class="shop-item" id="item-storm">
+        <div class="item-preview" data-skin="storm"></div>
         <p class="item-name">Storm Core</p>
-        <button class="buy-btn" disabled style="opacity:0.4; cursor:not-allowed;">COMING SOON</button>
+        <button class="buy-btn buy-coins" id="btn-storm" onclick="buyItem('storm', 350)">🪙 350</button>
       </div>
     </div>
   </div>

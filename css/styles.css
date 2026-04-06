@@ -1040,3 +1040,11 @@ body.hard-mode #hardModeBadge { display: block; }
   border-color: rgba(177,87,255,0.6);
   color: #cc88ff;
 }
+
+
+@keyframes streakFadeOut {
+  0% { opacity:0; transform:translate(-50%,-60%); }
+  15% { opacity:1; transform:translate(-50%,-50%); }
+  70% { opacity:1; }
+  100% { opacity:0; transform:translate(-50%,-40%); }
+}
