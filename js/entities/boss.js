@@ -13,6 +13,9 @@
     if (levelData.boss === 'prism') {
       return { name: 'THE PRISM', tagline: 'ALIGNMENT // SEQUENCE' };
     }
+    if (levelData.boss === 'corruptor') {
+      return { name: 'THE CORRUPTOR', tagline: 'IDENTIFY // DESTROY // SURVIVE' };
+    }
     if (levelData.boss === 'spectre') {
       return { name: 'THE SPECTRE', tagline: 'Track real + echo. Stay composed.' };
     }
@@ -60,6 +63,7 @@
     if (!levelData.boss || bossIntroPlaying) return;
     const isAegisIntro = levelData.id === '1-6' || levelData.boss === 'aegis';
     const isWorld2BossIntro = levelData.id === '2-6' && levelData.boss === 'prism';
+    const isCorruptorIntro = levelData.boss === 'corruptor';
     bossIntroPlaying = true;
     isCinematicIntro = true;
     isPlaying = false;
@@ -158,6 +162,45 @@
         createPopup(centerObj.x, centerObj.y - 18, 'ALIGN NOW', '#ffffff');
         createShockwave('#ffffff', 20);
       });
+    } else if (isCorruptorIntro) {
+      ui.title.style.color = '#b157ff';
+      ui.title.innerText = '';
+      ui.subtitle.innerText = '';
+      forceHideOverlayExtras();
+
+      queueIntroStep(80, () => {
+        ui.title.innerText = 'WORLD 4: GLITCH PROTOCOL';
+        ui.subtitle.innerText = 'Signal compromised.';
+        createShockwave('#b157ff', 20);
+      });
+      queueIntroStep(600, () => {
+        ui.title.innerText = 'THE CORRUPTOR';
+        ui.subtitle.innerText = 'IDENTIFY';
+        createPopup(centerObj.x, centerObj.y - 72, 'IDENTIFY', '#b157ff');
+        createShockwave('#b157ff', 28);
+        pulseBrightness(1.3, 150);
+      });
+      queueIntroStep(1200, () => {
+        ui.title.innerText = 'THE CORRUPTOR';
+        ui.subtitle.innerText = 'DESTROY';
+        createPopup(centerObj.x, centerObj.y - 38, 'DESTROY', '#cc88ff');
+        createShockwave('#00ff41', 22);
+        pulseBrightness(1.2, 120);
+      });
+      queueIntroStep(1900, () => {
+        ui.title.innerText = 'THE CORRUPTOR';
+        ui.subtitle.innerText = 'SURVIVE';
+        createPopup(centerObj.x, centerObj.y - 18, 'SURVIVE', '#00ff41');
+        createPopup(centerObj.x, centerObj.y + 18, 'IF YOU CAN', '#ffffff');
+        createShockwave('#ffffff', 32);
+        createShockwave('#b157ff', 44);
+        pulseBrightness(1.5, 200);
+        vibrate([60, 30, 80, 30, 60]);
+      });
+      queueIntroStep(2800, () => {
+        ui.title.innerText = 'THE CORRUPTOR';
+        ui.subtitle.innerText = 'ENGAGE';
+      });
     } else {
       const bossMeta = getBossDisplayMeta();
       ui.title.innerText = bossMeta.name;
@@ -179,7 +222,7 @@
       if (ui.gameUI) ui.gameUI.style.display = 'block';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
-      ui.bossPhase2.className = isWorld2BossIntro ? 'boss-segment' : 'boss-segment active-segment';
+      ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro) ? 'boss-segment' : 'boss-segment active-segment';
       if (isWorld2BossIntro) {
         world2BossArenaRotationSpeed = world2BossTransitionFrom25 ? 0.0038 : 0.0032;
         world2BossTransitionFrom25 = false;
@@ -188,7 +231,7 @@
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : 1700));
+    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : (isCorruptorIntro ? 3600 : 1700)));
   }
 
   function playBossCinematic() {
@@ -212,7 +255,7 @@
     createShockwave('#ff3366', 42);
     createParticles(centerObj.x, centerObj.y, '#ff3366', 42);
 
-    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism';
+    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor';
     if (bossCinematicTimeout) clearTimeout(bossCinematicTimeout);
     bossCinematicTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';
