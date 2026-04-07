@@ -15,6 +15,7 @@ const ui = {
   wave: document.getElementById('waveDisplay'), bossUI: document.getElementById('bossUI'),
   arenaInfo: document.getElementById('arenaInfo'),
   bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2'),
+  pauseBtn: document.getElementById('pauseBtn'),
   scorePunchAnim: null
 };
 
@@ -461,7 +462,7 @@ function getWorldVisualTheme(level) {
 }
 
 function _syncPauseBtn() {
-  const pb = document.getElementById('pauseBtn');
+  const pb = ui.pauseBtn;
   if (!pb) return;
   pb.style.display = (!inMenu && isPlaying || (!inMenu && !isPlaying)) ? 'flex' : 'none';
 }
@@ -1499,7 +1500,7 @@ function loadLevel(idx) {
     }
     spawnTargets();
   }
-  const _pb1 = document.getElementById('pauseBtn');
+  const _pb1 = ui.pauseBtn;
   if (_pb1) _pb1.style.display = isCinematicIntro ? 'none' : 'flex';
   return true;
 }
@@ -3554,7 +3555,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const currentRunWorld = getCurrentRunWorld();
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-    const _pb3 = document.getElementById('pauseBtn');
+    const _pb3 = ui.pauseBtn;
     if (_pb3) _pb3.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
     const pbStatsBlock = document.getElementById('pbStatsBlock');
@@ -3718,7 +3719,7 @@ function restartCurrentStageAfterRevive() {
   isPlaying = true;
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
+  const _pb = ui.pauseBtn;
   if (_pb) _pb.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
@@ -4671,12 +4672,12 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
-  const _pb2 = document.getElementById('pauseBtn');
+  const _pb2 = ui.pauseBtn;
   if (_pb2) _pb2.style.display = 'flex';
 }
 
 function returnToMenu() {
-  const _pb0 = document.getElementById('pauseBtn');
+  const _pb0 = ui.pauseBtn;
   if (_pb0) _pb0.style.display = 'none';
   localStorage.removeItem('orbitSync_checkpointIdx');
   if (_pendingResize) {
@@ -4693,7 +4694,7 @@ function returnToMenu() {
   toggleSettings(false);
   setOverlayState('cinematic');
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
-  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _pb2 = document.getElementById('pauseBtn'); if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _pb2 = ui.pauseBtn; if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   const runStatsBlock = document.getElementById('runStatsBlock');
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
@@ -4748,7 +4749,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   ui.overlay.style.display = 'flex';
   ui.overlay.style.background = 'rgba(5, 5, 10, 0.95)'; // Darker, cleaner focus
   ui.topBar.style.display = 'none';
-  const _pb2 = document.getElementById('pauseBtn');
+  const _pb2 = ui.pauseBtn;
   if (_pb2) _pb2.style.display = 'none';
   ui.gameUI.style.display = 'none';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'none';
@@ -4855,7 +4856,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
                 resetRunState();
                 ui.score.innerText = '0';
                 ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
+  const _pb = ui.pauseBtn;
   if (_pb) _pb.style.display = 'flex';
                 ui.gameUI.style.display = 'block';
                 ui.bigMultiplier.style.display = 'block';
@@ -4883,7 +4884,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
             return;
           }
           ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
+  const _pb = ui.pauseBtn;
   if (_pb) _pb.style.display = 'flex';
           ui.gameUI.style.display = 'block';
           if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
