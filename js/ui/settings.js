@@ -287,6 +287,9 @@
 
   function toggleSettings(show) {
     ui.settingsModal.style.bottom = show ? '0' : '-100%';
+    if (!inMenu) {
+      isPlaying = !show; // pause while settings open during gameplay
+    }
     if (!show) {
       const panel = document.getElementById('adminToolsPanel');
       if (panel) panel.style.display = 'none';
@@ -301,12 +304,24 @@
         const el = document.getElementById(id);
         if (!el || el._touchBound) return;
         el._touchBound = true;
-        const handler = () => {
-          if (id === 'musicVolumeSlider') setMusicVolume(el.value);
-          else setSfxVolume(el.value);
-        };
-        el.addEventListener('touchend', handler, { passive: true });
-        el.addEventListener('touchmove', handler, { passive: true });
+        const fn = id === 'musicVolumeSlider' ? setMusicVolume : setSfxVolume;
+        // Use pointermove for reliable cross-device drag
+        el.addEventListener('pointermove', (e) => {
+          e.stopPropagation();
+          fn(el.value);
+        }, { passive: true });
+        el.addEventListener('pointerup', (e) => {
+          e.stopPropagation();
+          fn(el.value);
+        }, { passive: true });
+        el.addEventListener('touchmove', (e) => {
+          e.stopPropagation();
+          fn(el.value);
+        }, { passive: true });
+        el.addEventListener('touchend', (e) => {
+          e.stopPropagation();
+          fn(el.value);
+        }, { passive: true });
       });
       const _savedMusicVol = localStorage.getItem('orbitSync_musicVol') || '60';
       const _savedSfxVol = localStorage.getItem('orbitSync_sfxVol') || '80';
@@ -351,12 +366,11 @@
   function applySettingsUI() {
     const musicMute = document.getElementById('musicMuteBtn');
     const sfxMute = document.getElementById('sfxMuteBtn');
-    const hapticsBtn = document.getElementById('hapticsToggleBtn');
+    const hapticsBtn = document.getElementById('hapticsIconBtn');
     if (musicMute) musicMute.classList.toggle('muted', !audio.musicEnabled);
     if (sfxMute) sfxMute.classList.toggle('muted', !audio.sfxEnabled);
     if (hapticsBtn) {
-      hapticsBtn.innerText = audio.hapticsEnabled ? 'On' : 'Off';
-      hapticsBtn.classList.toggle('off', !audio.hapticsEnabled);
+      hapticsBtn.classList.toggle('muted', !audio.hapticsEnabled);
     }
   }
 

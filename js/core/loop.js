@@ -3271,7 +3271,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     };
     const currentRunWorld = getCurrentRunWorld();
     const newRecords = checkAndSavePB(score, streakBeforeFail);
-    isPlaying = false; ui.topBar.style.display = 'none'; const _settingsFab2 = document.getElementById('topSettingsBtn'); if (_settingsFab2) _settingsFab2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+    isPlaying = false; ui.topBar.style.display = 'none'; const _pb2 = document.getElementById('pauseBtn'); if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
     const pbStatsBlock = document.getElementById('pbStatsBlock');
     const runStatsBlock = document.getElementById('runStatsBlock');
@@ -3434,8 +3434,8 @@ function restartCurrentStageAfterRevive() {
   isPlaying = true;
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
-  const _settingsFab = document.getElementById('topSettingsBtn');
-  if (_settingsFab) _settingsFab.style.display = 'flex';
+  const _pb = document.getElementById('pauseBtn');
+  if (_pb) _pb.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
   ui.bigMultiplier.style.display = 'none';
@@ -4246,8 +4246,8 @@ function restartFromCheckpoint() {
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
-  const _settingsFab = document.getElementById('topSettingsBtn');
-  if (_settingsFab) _settingsFab.style.display = 'flex';
+  const _pb = document.getElementById('pauseBtn');
+  if (_pb) _pb.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
   ui.bigMultiplier.style.display = 'none';
@@ -4278,7 +4278,7 @@ function returnToMenu() {
   toggleSettings(false);
   setOverlayState('cinematic');
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
-  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _settingsFab2 = document.getElementById('topSettingsBtn'); if (_settingsFab2) _settingsFab2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _pb2 = document.getElementById('pauseBtn'); if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   const runStatsBlock = document.getElementById('runStatsBlock');
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
@@ -4328,8 +4328,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   ui.overlay.style.display = 'flex';
   ui.overlay.style.background = 'rgba(5, 5, 10, 0.95)'; // Darker, cleaner focus
   ui.topBar.style.display = 'none';
-  const _settingsFab2 = document.getElementById('topSettingsBtn');
-  if (_settingsFab2) _settingsFab2.style.display = 'none';
+  const _pb2 = document.getElementById('pauseBtn');
+  if (_pb2) _pb2.style.display = 'none';
   ui.gameUI.style.display = 'none';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'none';
   ui.bossUI.style.display = 'none';
@@ -4430,8 +4430,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
                 resetRunState();
                 ui.score.innerText = '0';
                 ui.topBar.style.display = 'flex';
-                const _settingsFab = document.getElementById('topSettingsBtn');
-                if (_settingsFab) _settingsFab.style.display = 'flex';
+  const _pb = document.getElementById('pauseBtn');
+  if (_pb) _pb.style.display = 'flex';
                 ui.gameUI.style.display = 'block';
                 ui.bigMultiplier.style.display = 'block';
                 ui.text.style.display = 'none';
@@ -4458,8 +4458,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
             return;
           }
           ui.topBar.style.display = 'flex';
-          const _settingsFab = document.getElementById('topSettingsBtn');
-          if (_settingsFab) _settingsFab.style.display = 'flex';
+  const _pb = document.getElementById('pauseBtn');
+  if (_pb) _pb.style.display = 'flex';
           ui.gameUI.style.display = 'block';
           if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
           ui.bigMultiplier.style.display = 'none';

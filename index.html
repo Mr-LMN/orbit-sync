@@ -23,7 +23,7 @@
     <div class="top-stat top-stat-crystals">💎 <span id="crystalCount">0</span></div>
   </div>
   <span id="streakCount" style="display:none;">0</span>
-  <button id="topSettingsBtn" class="settings-fab" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)">⚙ MENU</button>
+  <button id="pauseBtn" class="pause-fab" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)" style="display:none;">❙❙</button>
 
   <div id="bigMultiplier" style="display: none;">x<span id="multiplierCount">1</span></div>
 
@@ -124,33 +124,32 @@
 
   <div id="settingsModal">
     <div class="settings-header">
-      <h2>Settings</h2>
-      <button class="close-btn" onclick="toggleSettings(false)">×</button>
+      <span style="font-family:'Orbitron',sans-serif; font-size:0.75rem; letter-spacing:3px; color:rgba(255,255,255,0.8);">SETTINGS</span>
+      <button onclick="toggleSettings(false)" style="background:none; border:none; color:rgba(255,255,255,0.5); font-size:1.4rem; cursor:pointer; padding:4px 8px; line-height:1;">✕</button>
     </div>
     <div class="settings-content">
-      <div class="settings-row settings-row-slider">
-        <button id="musicMuteBtn" class="vol-mute-btn" onclick="toggleMusicSetting()" title="Mute music">♪</button>
-        <div class="vol-slider-wrap">
-          <span class="vol-label">MUSIC</span>
-          <input type="range" id="musicVolumeSlider" class="vol-slider" min="0" max="100" value="60" oninput="setMusicVolume(this.value)" onchange="setMusicVolume(this.value)">
-        </div>
+
+      <!-- AUDIO ROW -->
+      <div class="settings-audio-row">
+        <button id="musicMuteBtn" class="audio-icon-btn" onclick="toggleMusicSetting()">♪</button>
+        <input type="range" id="musicVolumeSlider" class="audio-slider" min="0" max="100" value="60"
+          oninput="setMusicVolume(this.value)" onchange="setMusicVolume(this.value)">
+        <button id="sfxMuteBtn" class="audio-icon-btn" onclick="toggleSfxSetting()">♬</button>
+        <input type="range" id="sfxVolumeSlider" class="audio-slider" min="0" max="100" value="80"
+          oninput="setSfxVolume(this.value)" onchange="setSfxVolume(this.value)">
+        <button id="hapticsIconBtn" class="audio-icon-btn" onclick="toggleHapticsSetting()" title="Haptics">📳</button>
       </div>
-      <div class="settings-row settings-row-slider">
-        <button id="sfxMuteBtn" class="vol-mute-btn" onclick="toggleSfxSetting()" title="Mute SFX">♬</button>
-        <div class="vol-slider-wrap">
-          <span class="vol-label">SFX</span>
-          <input type="range" id="sfxVolumeSlider" class="vol-slider" min="0" max="100" value="80" oninput="setSfxVolume(this.value)" onchange="setSfxVolume(this.value)">
-        </div>
-      </div>
-      <div class="settings-row">
-        <span>Haptics</span>
-        <button id="hapticsToggleBtn" class="settings-toggle" onclick="toggleHapticsSetting()"></button>
-      </div>
-      <div style="height:1px; background:linear-gradient(90deg, transparent, rgba(255,40,60,0.25), transparent); margin:8px 0;"></div>
+
+      <!-- DIVIDER -->
+      <div style="height:1px; background:rgba(255,255,255,0.07); margin:0 4px;"></div>
+
+      <!-- HARD MODE ROW -->
       <div class="settings-row" id="hardModeRow" style="opacity:0.45;">
         <span>Hard Mode</span>
-        <span id="hardModeStatus" style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:2px; color:rgba(255,80,100,0.7);">LOCKED</span>
+        <span id="hardModeStatus" style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:1px; color:rgba(255,80,100,0.7);">LOCKED</span>
       </div>
+
+      <!-- ADMIN PANEL -->
       <div id="adminToolsPanel" class="admin-tools-panel" style="display: none;">
         <div style="font-family:'Orbitron',sans-serif; font-size:0.5rem; letter-spacing:3px; color:rgba(255,60,80,0.6); text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(255,40,60,0.15);">⚠ DEVELOPER ACCESS ⚠</div>
         <div id="adminCodeEntry" class="admin-code-entry">
@@ -160,9 +159,9 @@
         <div id="adminStageControls" class="admin-stage-controls" style="display: none;">
           <div style="font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,60,80,0.5); margin-bottom:6px;">SELECT WORLD</div>
           <div id="adminWorldBtns" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;"></div>
-          <select id="adminWorldSelect" style="display:none;"></select>
           <div style="font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,60,80,0.5); margin-bottom:6px;">SELECT STAGE</div>
           <select id="adminStageSelect" style="width:100%; padding:12px; font-size:0.75rem; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,40,60,0.2); color:#fff; font-family:'Orbitron',sans-serif; min-height:48px; appearance:none; -webkit-appearance:none;"></select>
+          <select id="adminWorldSelect" style="display:none;"></select>
           <div class="admin-stage-actions">
             <button id="adminStageApply" class="settings-toggle" style="background:linear-gradient(135deg,#b157ff,#7c2fe0); color:#fff; font-weight:bold; letter-spacing:1.5px;">▶ LAUNCH</button>
             <button id="adminStageClear" class="settings-toggle off">CLEAR</button>
@@ -174,6 +173,7 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
 
