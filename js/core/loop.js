@@ -16,7 +16,35 @@ const ui = {
   arenaInfo: document.getElementById('arenaInfo'),
   bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2'),
   pauseBtn: document.getElementById('pauseBtn'),
-  scorePunchAnim: null
+  scorePunchAnim: null,
+    clearCoinsDisplay: document.getElementById('clearCoinsDisplay'),
+    clearScoreDisplay: document.getElementById('clearScoreDisplay'),
+    clearStreakDisplay: document.getElementById('clearStreakDisplay'),
+    clearSummary: document.getElementById('clearSummary'),
+    closeMissBanner: document.getElementById('closeMissBanner'),
+    coinReviveBtn: document.getElementById('coinReviveBtn'),
+    dailyStreakBadge: document.getElementById('dailyStreakBadge'),
+    nearMissMsg: document.getElementById('nearMissMsg'),
+    newRecordBanner: document.getElementById('newRecordBanner'),
+    overlayActionStack: document.getElementById('overlayActionStack'),
+    overlayButtonGroup: document.getElementById('overlayButtonGroup'),
+    overlaySecondaryActions: document.getElementById('overlaySecondaryActions'),
+    pbScoreDisplay: document.getElementById('pbScoreDisplay'),
+    pbStatsBlock: document.getElementById('pbStatsBlock'),
+    pbStreakDisplay: document.getElementById('pbStreakDisplay'),
+    pbWorldDisplay: document.getElementById('pbWorldDisplay'),
+    reviveBtn: document.getElementById('reviveBtn'),
+    runCoinsBox: document.getElementById('runCoinsBox'),
+    runCoinsHint: document.getElementById('runCoinsHint'),
+    runComboDisplay: document.getElementById('runComboDisplay'),
+    runScoreDisplay: document.getElementById('runScoreDisplay'),
+    runStatsBlock: document.getElementById('runStatsBlock'),
+    shareBtn: document.getElementById('shareBtn'),
+    stagePBDisplay: document.getElementById('stagePBDisplay'),
+    stageReplayBtns: document.getElementById('stageReplayBtns'),
+    stageReplayRow: document.getElementById('stageReplayRow'),
+    tutorialMsg: document.getElementById('tutorialMsg'),
+    tutorialOverlay: document.getElementById('tutorialOverlay')
 };
 
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
@@ -113,7 +141,7 @@ if (_lastLoginStr !== _todayStr) {
 // Queue bonus display for when menu renders
 if (_dailyBonusToShow > 0) {
   setTimeout(() => {
-    const badge = document.getElementById('dailyStreakBadge');
+    const badge = ui.dailyStreakBadge;
     if (badge) {
       const em = dailyLoginStreak >= 7 ? '🔥🔥' : dailyLoginStreak >= 3 ? '🔥' : '✦';
       badge.innerText = `${em} DAY ${dailyLoginStreak} STREAK`;
@@ -588,7 +616,7 @@ for (let i = 0; i < 8; i++) {
   });
 }
 
-document.getElementById('menuBtn').onclick = returnToMenu;
+ui.menuBtn.onclick = returnToMenu;
 
 function toggleShop(show) { return OrbitGame.ui.shop.toggleShop(show); }
 function toggleSettings(show) { return OrbitGame.ui.settings.toggleSettings(show); }
@@ -1013,7 +1041,7 @@ function flushScoreCoinUI() {
   pendingHudUpdates = 0;
   hudLastFlushAt = performance.now();
   // Update stage PB display live
-  const _livePBEl = document.getElementById('stagePBDisplay');
+  const _livePBEl = ui.stagePBDisplay;
   if (_livePBEl && _livePBEl.style.display !== 'none' && levelData && levelData.id) {
     const _currentStageScore = score - (scoreAtLevelStart || 0);
     const _storedBest = (playerProgress.bestScores && playerProgress.bestScores[levelData.id]) || 0;
@@ -1031,17 +1059,17 @@ function setOverlayState(type) {
   }
 }
 function forceHideOverlayExtras() {
-  const reviveBtn = document.getElementById('reviveBtn');
-  const coinReviveBtn = document.getElementById('coinReviveBtn');
-  const runCoinsBox = document.getElementById('runCoinsBox');
-  const menuBtn = ui.menuBtn || document.getElementById('menuBtn');
-  const clearSummary = document.getElementById('clearSummary');
-  const shareBtn = document.getElementById('shareBtn');
-  const pbStatsBlock = document.getElementById('pbStatsBlock');
-  const runStatsBlock = document.getElementById('runStatsBlock');
-  const newRecordBanner = document.getElementById('newRecordBanner');
-  const closeMissBanner = document.getElementById('closeMissBanner');
-  const overlayActionStack = document.getElementById('overlayActionStack');
+  const reviveBtn = ui.reviveBtn;
+  const coinReviveBtn = ui.coinReviveBtn;
+  const runCoinsBox = ui.runCoinsBox;
+  const menuBtn = ui.menuBtn || ui.menuBtn;
+  const clearSummary = ui.clearSummary;
+  const shareBtn = ui.shareBtn;
+  const pbStatsBlock = ui.pbStatsBlock;
+  const runStatsBlock = ui.runStatsBlock;
+  const newRecordBanner = ui.newRecordBanner;
+  const closeMissBanner = ui.closeMissBanner;
+  const overlayActionStack = ui.overlayActionStack;
   if (reviveBtn) reviveBtn.style.display = 'none';
   if (coinReviveBtn) coinReviveBtn.style.display = 'none';
   if (runCoinsBox) runCoinsBox.style.display = 'none';
@@ -1051,7 +1079,7 @@ function forceHideOverlayExtras() {
     shareBtn.style.display = 'none';
     shareBtn.classList.remove('pb-share');
     // Always restore to secondary actions on reset
-    const sec = document.getElementById('overlaySecondaryActions');
+    const sec = ui.overlaySecondaryActions;
     if (sec && !sec.contains(shareBtn)) sec.prepend(shareBtn);
     shareBtn.style.width = '';
     shareBtn.style.minHeight = '';
@@ -1066,7 +1094,7 @@ function forceHideOverlayExtras() {
   }
 }
 function updateFailActionHierarchy(reviveAvailable) {
-  const overlayActionStack = document.getElementById('overlayActionStack');
+  const overlayActionStack = ui.overlayActionStack;
   if (!overlayActionStack || !ui.btn) return;
   if (reviveAvailable) {
     overlayActionStack.classList.add('revive-available');
@@ -1446,7 +1474,7 @@ function loadLevel(idx) {
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
   // Per-stage personal best display
-  const _stagePBEl = document.getElementById('stagePBDisplay');
+  const _stagePBEl = ui.stagePBDisplay;
   if (_stagePBEl && levelData && levelData.id) {
     const _stagePBVal = (playerProgress.bestScores && playerProgress.bestScores[levelData.id]) || 0;
     if (_stagePBVal > 0) {
@@ -1457,8 +1485,8 @@ function loadLevel(idx) {
     }
   }
   // Tutorial: only on first ever play of 1-1
-  const tutOverlay = document.getElementById('tutorialOverlay');
-  const tutMsg = document.getElementById('tutorialMsg');
+  const tutOverlay = ui.tutorialOverlay;
+  const tutMsg = ui.tutorialMsg;
   if (levelData.id === '1-1' && !tutorialComplete && !hardModeActive && tutOverlay && tutMsg) {
     tutorialPhase = 1;
     tutorialHitCount = 0;
@@ -3515,21 +3543,21 @@ function scrambleText(element, finalText, duration) {
 }
 
 function updatePBDisplay(newRecords) {
-  document.getElementById('pbScoreDisplay').innerText = personalBest.score;
-  document.getElementById('pbStreakDisplay').innerText = personalBest.streak;
-  document.getElementById('pbWorldDisplay').innerText = personalBest.world;
+  ui.pbScoreDisplay.innerText = personalBest.score;
+  ui.pbStreakDisplay.innerText = personalBest.streak;
+  ui.pbWorldDisplay.innerText = personalBest.world;
 
   // Highlight new records in gold
-  document.getElementById('pbScoreDisplay').className =
+  ui.pbScoreDisplay.className =
     newRecords.score ? 'pb-value new-record' : 'pb-value';
-  document.getElementById('pbStreakDisplay').className =
+  ui.pbStreakDisplay.className =
     newRecords.streak ? 'pb-value new-record' : 'pb-value';
-  document.getElementById('pbWorldDisplay').className =
+  ui.pbWorldDisplay.className =
     newRecords.world ? 'pb-value new-record' : 'pb-value';
 
   // Show banner if any record was broken
   const anyNew = newRecords.score || newRecords.streak || newRecords.world;
-  const newRecordBanner = document.getElementById('newRecordBanner');
+  const newRecordBanner = ui.newRecordBanner;
   if (newRecordBanner) {
     newRecordBanner.style.display = anyNew ? 'block' : 'none';
     newRecordBanner.innerText = anyNew ? '★ NEW RECORD ★' : '';
@@ -3569,15 +3597,15 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const _pb3 = ui.pauseBtn;
     if (_pb3) _pb3.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
-    const pbStatsBlock = document.getElementById('pbStatsBlock');
-    const runStatsBlock = document.getElementById('runStatsBlock');
-    const runScoreDisplay = document.getElementById('runScoreDisplay');
-    const runComboDisplay = document.getElementById('runComboDisplay');
-    const nearMissEl = document.getElementById('nearMissMsg');
-    const runCoinsBox = document.getElementById('runCoinsBox');
-    const runCoinsHint = document.getElementById('runCoinsHint');
-    const menuBtn = ui.menuBtn || document.getElementById('menuBtn');
-    const clearSummary = document.getElementById('clearSummary');
+    const pbStatsBlock = ui.pbStatsBlock;
+    const runStatsBlock = ui.runStatsBlock;
+    const runScoreDisplay = ui.runScoreDisplay;
+    const runComboDisplay = ui.runComboDisplay;
+    const nearMissEl = ui.nearMissMsg;
+    const runCoinsBox = ui.runCoinsBox;
+    const runCoinsHint = ui.runCoinsHint;
+    const menuBtn = ui.menuBtn || ui.menuBtn;
+    const clearSummary = ui.clearSummary;
     updatePBDisplay(newRecords);
     glitchCanvas(120, () => {
       ui.overlay.style.display = 'flex';
@@ -3586,7 +3614,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       let title = generateTitle(score, currentRunWorld, streakBeforeFail, reviveCount);
       ui.title.innerText = title;
     });
-    const newRecordBanner = document.getElementById('newRecordBanner');
+    const newRecordBanner = ui.newRecordBanner;
     if (newRecordBanner) {
       let pbMessage = '';
       const scoreDiff = Math.max(0, previousPB.score - score);
@@ -3596,7 +3624,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       newRecordBanner.style.display = pbMessage ? 'block' : 'none';
       newRecordBanner.innerText = pbMessage;
     }
-    const closeMissBanner = document.getElementById('closeMissBanner');
+    const closeMissBanner = ui.closeMissBanner;
     const isCloseMiss = Number.isFinite(failEdgeDistance) && failEdgeDistance > 0 && failEdgeDistance < 0.08;
     let nearBestBannerActive = false;
     if (closeMissBanner) {
@@ -3648,9 +3676,9 @@ function handleFail(reason, failEdgeDistance = Infinity) {
         returnToMenu();
       };
     }
-    const shareBtn = document.getElementById('shareBtn');
-    const overlayButtonGroup = document.getElementById('overlayButtonGroup');
-    const overlaySecondaryActions = document.getElementById('overlaySecondaryActions');
+    const shareBtn = ui.shareBtn;
+    const overlayButtonGroup = ui.overlayButtonGroup;
+    const overlaySecondaryActions = ui.overlaySecondaryActions;
     const isNewPB = !!(newRecords.score || newRecords.streak || newRecords.world);
     if (shareBtn) {
       shareBtn.style.display = 'inline-block';
@@ -3674,8 +3702,8 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       }
     }
     setOverlayState('gameOver');
-    let reviveBtn = document.getElementById('reviveBtn');
-    let coinReviveBtn = document.getElementById('coinReviveBtn');
+    let reviveBtn = ui.reviveBtn;
+    let coinReviveBtn = ui.coinReviveBtn;
     reviveBtn.style.display = 'block';
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
     let reviveAvailable = false;
@@ -4477,8 +4505,8 @@ function tap() {
     // Tutorial phase progression
     if (tutorialPhase > 0 && levelData && levelData.id === '1-1') {
       tutorialHitCount++;
-      const tutMsg = document.getElementById('tutorialMsg');
-      const tutOverlay = document.getElementById('tutorialOverlay');
+      const tutMsg = ui.tutorialMsg;
+      const tutOverlay = ui.tutorialOverlay;
       if (tutorialPhase === 1 && (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect' || hitTimingTier === 'good') && tutMsg) {
         tutorialPhase = 2;
         tutMsg.innerText = 'NOW TAP DEAD CENTRE FOR PERFECT';
@@ -4660,15 +4688,15 @@ function restartFromCheckpoint() {
   ui.overlay.style.display = 'none';
   ui.title.classList.remove('run-title');
   ui.subtitle.classList.remove('subtle-failure');
-  const runStatsBlock = document.getElementById('runStatsBlock');
-  const runScoreDisplay = document.getElementById('runScoreDisplay');
-  const runComboDisplay = document.getElementById('runComboDisplay');
-  const nearMissEl = document.getElementById('nearMissMsg');
+  const runStatsBlock = ui.runStatsBlock;
+  const runScoreDisplay = ui.runScoreDisplay;
+  const runComboDisplay = ui.runComboDisplay;
+  const nearMissEl = ui.nearMissMsg;
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   if (runScoreDisplay) runScoreDisplay.innerText = 'Score 0';
   if (runComboDisplay) runComboDisplay.innerText = 'COMBO 0';
   if (nearMissEl) nearMissEl.innerText = '';
-  const closeMissBanner = document.getElementById('closeMissBanner');
+  const closeMissBanner = ui.closeMissBanner;
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
   ui.gameUI.style.display = 'block';
@@ -4706,14 +4734,14 @@ function returnToMenu() {
   setOverlayState('cinematic');
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
   ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _pb2 = ui.pauseBtn; if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-  const runStatsBlock = document.getElementById('runStatsBlock');
+  const runStatsBlock = ui.runStatsBlock;
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
   refreshMenuWorldPreview();
 
   // Daily streak badge
-  const _streakBadge = document.getElementById('dailyStreakBadge');
+  const _streakBadge = ui.dailyStreakBadge;
   if (_streakBadge && dailyLoginStreak > 0) {
     const _streakEmoji = dailyLoginStreak >= 7 ? '🔥🔥' : dailyLoginStreak >= 3 ? '🔥' : '✦';
     _streakBadge.innerText = `${_streakEmoji} DAY ${dailyLoginStreak} STREAK`;
@@ -4777,10 +4805,10 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   // Hide buttons during tally
   setOverlayState('worldClearTally');
 
-  const clearSummary = document.getElementById('clearSummary');
-  const clearScoreDisplay = document.getElementById('clearScoreDisplay');
-  const clearCoinsDisplay = document.getElementById('clearCoinsDisplay');
-  const clearStreakDisplay = document.getElementById('clearStreakDisplay');
+  const clearSummary = ui.clearSummary;
+  const clearScoreDisplay = ui.clearScoreDisplay;
+  const clearCoinsDisplay = ui.clearCoinsDisplay;
+  const clearStreakDisplay = ui.clearStreakDisplay;
   if (clearSummary) clearSummary.style.display = 'grid';
   if (clearScoreDisplay) clearScoreDisplay.innerText = score;
   if (clearStreakDisplay) clearStreakDisplay.innerText = runBestStreak;
@@ -4826,8 +4854,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           setTimeout(() => showAugmentPicker(), 1200);
         }
         // Populate stage replay buttons
-        const _replayRow = document.getElementById('stageReplayRow');
-        const _replayBtns = document.getElementById('stageReplayBtns');
+        const _replayRow = ui.stageReplayRow;
+        const _replayBtns = ui.stageReplayBtns;
         if (_replayRow && _replayBtns && !isCampaignClear) {
           const _worldPrefix = String(currentLevelIdx >= 0 && campaign[currentLevelIdx]
             ? campaign[currentLevelIdx].id.split('-')[0]
