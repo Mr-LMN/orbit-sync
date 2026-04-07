@@ -2921,8 +2921,8 @@ function draw() {
 
   // Blackout vignette — deepens when orb is hidden
   if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
-    const _bFade = Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200);
-    ctx.fillStyle = `rgba(3, 3, 8, ${0.28 * Math.min(1, _bFade)})`;
+    const _bFade = Math.max(0, Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200));
+    ctx.fillStyle = `rgba(3, 3, 8, ${0.28 * _bFade})`;
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
   }
 
@@ -3783,6 +3783,14 @@ function tap() {
   if (inMenu || !isPlaying || (typeof isCinematicIntro !== 'undefined' && isCinematicIntro)) return;
   if (ui.overlay.style.display === 'flex') return;
   if (bossTransitionLock) return;
+  // During blackout, ignore taps that miss — player can't see orb
+  if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
+    // Still allow taps that HIT a target (player got it right blind)
+    // but don't punish missed taps as fails
+    const _blindHit = targets.some(t => t.active && !t.isPhantom &&
+      isInsideTarget(((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2), t));
+    if (!_blindHit) return;
+  }
   if (nearMissReplayActive) return;
   let hitIndex = -1; let hitQuality = "miss"; let hitSegmentIndex = -1;
   let hitAngleForEffects = angle;
