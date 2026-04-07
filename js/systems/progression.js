@@ -5,7 +5,7 @@
 
   function getCheckpointIndex() {
     // Try saved stage first
-    const savedIdx = parseInt(localStorage.getItem('orbitSync_checkpointIdx') || '-1', 10);
+    const savedIdx = parseInt(OG.storage.getItem('orbitSync_checkpointIdx') || '-1', 10);
     if (savedIdx >= 0 && Array.isArray(campaign) && campaign[savedIdx]) {
       const savedStage = campaign[savedIdx];
       const savedWorld = parseInt(String(savedStage.id).split('-')[0], 10);

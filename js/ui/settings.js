@@ -328,8 +328,8 @@
           fn(el.value);
         }, { passive: true });
       });
-      const _savedMusicVol = localStorage.getItem('orbitSync_musicVol') || '60';
-      const _savedSfxVol = localStorage.getItem('orbitSync_sfxVol') || '80';
+      const _savedMusicVol = OG.storage.getItem('orbitSync_musicVol') || '60';
+      const _savedSfxVol = OG.storage.getItem('orbitSync_sfxVol') || '80';
       const _ms = document.getElementById('musicVolumeSlider');
       const _ss = document.getElementById('sfxVolumeSlider');
       if (_ms) _ms.value = _savedMusicVol;
@@ -403,7 +403,7 @@
     if (v > 0) _prevMusicVol = parseInt(val, 10);
     if (btn) btn.classList.toggle('muted', v === 0);
     if (slider) slider.value = val;
-    localStorage.setItem('orbitSync_musicVol', val);
+    OG.storage.setItem('orbitSync_musicVol', val);
   }
 
   function setSfxVolume(val) {
@@ -416,7 +416,7 @@
     if (v > 0) _prevSfxVol = parseInt(val, 10);
     if (btn) btn.classList.toggle('muted', v === 0);
     if (slider) slider.value = val;
-    localStorage.setItem('orbitSync_sfxVol', val);
+    OG.storage.setItem('orbitSync_sfxVol', val);
   }
 
   function toggleMusicSetting() {
