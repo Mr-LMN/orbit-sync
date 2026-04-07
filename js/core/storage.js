@@ -35,7 +35,7 @@
           try {
             return window.atob(encoded);
           } catch (e) {
-            // Fall through if atob fails
+            return fallback;
           }
         } else {
           console.warn(`Storage integrity check failed for key: ${key}`);
