@@ -981,7 +981,7 @@ function renderShopOrbPreview(previewEl, skinId) {
   if (!previewEl) return;
   let canvasEl = previewEl.querySelector('canvas');
   if (!canvasEl) {
-    previewEl.innerHTML = '';
+    previewEl.textContent = '';
     canvasEl = document.createElement('canvas');
     canvasEl.width = 60;
     canvasEl.height = 60;
@@ -4830,7 +4830,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           // Find the world that was just cleared (one before nextWorld)
           const _clearedWorldPrefix = nextWorld > 1 ? String(nextWorld - 1) + '-' : '1-';
           const _worldStages = campaign.filter(s => s && s.id && s.id.startsWith(_clearedWorldPrefix) && !s.boss);
-          _replayBtns.innerHTML = '';
+          _replayBtns.textContent = '';
           const _totalStars = _worldStages.reduce((acc, s) => {
             return acc + ((playerProgress.stageStars && playerProgress.stageStars[s.id]) || 0);
           }, 0);

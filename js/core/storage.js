@@ -1,6 +1,7 @@
 (function initStorage(window) {
   const OG = window.OrbitGame;
   const SECRET = 'orbit-sync-s3cr3t';
+  const fallbackStorage = {};
 
   function _hash(str) {
     let hash = 5381;
@@ -16,7 +17,14 @@
       const encoded = window.btoa(strValue);
       const signature = _hash(encoded + SECRET);
       const finalValue = `${encoded}.${signature}`;
-      window.localStorage.setItem(key, finalValue);
+      try {
+        window.localStorage.setItem(key, finalValue);
+      } catch (e) {
+        fallbackStorage[key] = finalValue;
+        if (e.name === 'QuotaExceededError' || e.message === 'QuotaExceededError') {
+          return false;
+        }
+      }
       return true;
     } catch (err) {
       return false;
@@ -25,7 +33,13 @@
 
   function getItem(key, fallback) {
     try {
-      const raw = window.localStorage.getItem(key);
+      let raw = null;
+      try {
+        raw = window.localStorage.getItem(key);
+      } catch (e) {
+        raw = fallbackStorage.hasOwnProperty(key) ? fallbackStorage[key] : null;
+      }
+
       if (raw === null) return fallback;
 
       const parts = raw.split('.');
@@ -65,7 +79,11 @@
   }
 
   function removeItem(key) {
-    window.localStorage.removeItem(key);
+    try {
+      window.localStorage.removeItem(key);
+    } catch (e) {
+      delete fallbackStorage[key];
+    }
   }
 
   OG.storage = Object.assign(OG.storage || {}, {

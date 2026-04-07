@@ -52,7 +52,7 @@
     if (!select || !Array.isArray(campaign)) return;
     const previousValue = OG.debug.stageOverrideId || '';
     const selectedWorld = String(_adminSelectedWorld || '');
-    select.innerHTML = '';
+    select.textContent = '';
     for (let i = 0; i < campaign.length; i++) {
       const stage = campaign[i];
       if (!stage || !stage.id) continue;
@@ -94,7 +94,7 @@
       ? overrideWorld : fallback;
 
     // Build button grid
-    btnContainer.innerHTML = '';
+    btnContainer.textContent = '';
     worldValues.forEach(worldNum => {
       const btn = document.createElement('button');
       btn.className = 'admin-world-btn' + (worldNum === _adminSelectedWorld ? ' active' : '');
@@ -116,7 +116,7 @@
 
     // Sync hidden select for backward compat
     if (hiddenSelect) {
-      hiddenSelect.innerHTML = '';
+      hiddenSelect.textContent = '';
       worldValues.forEach(w => {
         const opt = document.createElement('option');
         opt.value = String(w);
