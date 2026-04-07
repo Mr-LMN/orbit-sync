@@ -132,14 +132,14 @@
         <button id="musicMuteBtn" class="vol-mute-btn" onclick="toggleMusicSetting()" title="Mute music">♪</button>
         <div class="vol-slider-wrap">
           <span class="vol-label">MUSIC</span>
-          <input type="range" id="musicVolumeSlider" class="vol-slider" min="0" max="100" value="60" oninput="setMusicVolume(this.value)">
+          <input type="range" id="musicVolumeSlider" class="vol-slider" min="0" max="100" value="60" oninput="setMusicVolume(this.value)" onchange="setMusicVolume(this.value)">
         </div>
       </div>
       <div class="settings-row settings-row-slider">
         <button id="sfxMuteBtn" class="vol-mute-btn" onclick="toggleSfxSetting()" title="Mute SFX">♬</button>
         <div class="vol-slider-wrap">
           <span class="vol-label">SFX</span>
-          <input type="range" id="sfxVolumeSlider" class="vol-slider" min="0" max="100" value="80" oninput="setSfxVolume(this.value)">
+          <input type="range" id="sfxVolumeSlider" class="vol-slider" min="0" max="100" value="80" oninput="setSfxVolume(this.value)" onchange="setSfxVolume(this.value)">
         </div>
       </div>
       <div class="settings-row">

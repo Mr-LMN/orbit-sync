@@ -296,6 +296,18 @@
     }
     if (show) {
       applySettingsUI();
+      // Force mobile slider touch support
+      ['musicVolumeSlider', 'sfxVolumeSlider'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el._touchBound) return;
+        el._touchBound = true;
+        const handler = () => {
+          if (id === 'musicVolumeSlider') setMusicVolume(el.value);
+          else setSfxVolume(el.value);
+        };
+        el.addEventListener('touchend', handler, { passive: true });
+        el.addEventListener('touchmove', handler, { passive: true });
+      });
       const _savedMusicVol = localStorage.getItem('orbitSync_musicVol') || '60';
       const _savedSfxVol = localStorage.getItem('orbitSync_sfxVol') || '80';
       const _ms = document.getElementById('musicVolumeSlider');

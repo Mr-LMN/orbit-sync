@@ -335,16 +335,19 @@
       // Four real targets, no phantom — pure speed and multi-target overload.
       // Reward: players who mastered phantom detection now face honest chaos.
       if (levelData.id === '4-5') {
-        ui.text.innerText = 'Four live zones. No tricks. Just speed.';
+        ui.text.innerText = 'Maximum signal load. No tricks — just survive.';
         ui.text.style.color = w4Color;
-        const count = 4;
+        // Wave escalation: 3 targets early, builds to 4 on final waves
+        const wave = Math.max(1, (stageHits || 0) + 1);
+        const count = wave >= 8 ? 4 : 3;
         const spacing = (Math.PI * 2) / count;
         const offset = Math.random() * Math.PI * 2;
         for (let i = 0; i < count; i++) {
           const a = normalizeAngle(offset + (i * spacing));
-          targets.push(buildTarget(a, Math.PI / 10, {
+          const speed = 0.007 + (wave * 0.0003); // grows slightly each wave
+          targets.push(buildTarget(a, Math.PI / 9.5, {
             color: w4Color, active: true, hp: 1,
-            moveSpeed: 0.009 * (i % 2 === 0 ? 1 : -1)
+            moveSpeed: speed * (i % 2 === 0 ? 1 : -1)
           }));
         }
         return;
