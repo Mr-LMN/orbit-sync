@@ -541,25 +541,25 @@
       baseSize *= 0.78;
     }
     let offset = Math.random() * Math.PI * 2;
-    // Twin mechanic: two mirrored targets, both need hitting
     if (levelData.mechanics && levelData.mechanics.includes('twin')) {
       const twinSize = Math.PI / 9;
-      // Anchor positions at opposite diamond sides
-      const baseAnchor = Math.random() * Math.PI; // random orientation each wave
+      const baseAnchor = Math.random() * Math.PI;
       const anchorA = normalizeAngle(baseAnchor);
-      const anchorB = normalizeAngle(baseAnchor + Math.PI); // mirror
+      const anchorB = normalizeAngle(baseAnchor + Math.PI);
       const twinA = buildTarget(anchorA, twinSize, {
-        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0, isTwin: true
+        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0
       });
       const twinB = buildTarget(anchorB, twinSize, {
-        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0, isTwin: true
+        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0
       });
-      twinA.twinPair = true;
-      twinB.twinPair = true;
+      twinA.isTwin = true;
+      twinB.isTwin = true;
       targets.push(twinA);
       targets.push(twinB);
-      ui.text.innerText = 'Two mirrored zones. Hit both to clear.';
-      ui.text.style.color = '#2ff6ff';
+      if (ui && ui.text) {
+        ui.text.innerText = 'Two mirrored zones. Hit both to clear.';
+        ui.text.style.color = '#2ff6ff';
+      }
       return;
     }
 
