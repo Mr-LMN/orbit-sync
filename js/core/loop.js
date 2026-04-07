@@ -252,6 +252,13 @@ const NEAR_MISS_COOLDOWN_MS = 700;
 let lastNearMissAt = -Infinity;
 let bossIntroPlaying = false;
 let isCinematicIntro = false;
+// ── BLACKOUT SYSTEM (World 5 / Null Gate) ────────────────
+let _blackoutActive = false;
+let _blackoutEndsAt = 0;
+let _nextBlackoutAt = 0;
+let _blackoutFlickerPhase = false;
+let _blackoutInitialised = false;
+// ─────────────────────────────────────────────────────────
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
 let perfectLifeStreak = 0;
 let runBestStreak = 0;
@@ -380,6 +387,7 @@ function computeWorldPalette(level) {
     case 2: return { primary: '#2ff6ff', secondary: '#ff4fd8', bg: '#07070a' };
     case 3: return { primary: '#ffaa00', secondary: '#ff6600', bg: '#080500' };
     case 4: return { primary: '#b157ff', secondary: '#00ff41', bg: '#06040a' };
+    case 5: return { primary: '#a8d8ff', secondary: '#003c8f', bg: '#030308' };
     default: return { primary: '#00ff88', secondary: '#00e5ff', bg: '#050508' };
   }
 }
@@ -392,6 +400,7 @@ function computeWorldShape(level) {
     case 2: return 'diamond';
     case 3: return 'triangle';
     case 4: return 'square';
+    case 5: return 'pentagon';
     default: return 'circle';
   }
 }
@@ -432,6 +441,15 @@ function getWorldVisualTheme(level) {
       targetGlowColor: '#cc88ff',
       targetCoreColor: '#f0e8ff',
       railGlowScale: 1.0
+    };
+  }
+  if (worldNum === 5) {
+    return {
+      railColor: '#a8d8ff',
+      targetColor: '#c8e8ff',
+      targetGlowColor: '#dff2ff',
+      targetCoreColor: '#ffffff',
+      railGlowScale: 1.05
     };
   }
   return {
@@ -1395,6 +1413,11 @@ function loadLevel(idx) {
   currentWorldShape = computeWorldShape(levelData);
   currentWorldVisualTheme = getWorldVisualTheme(levelData);
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
+  _blackoutActive = false;
+  _blackoutEndsAt = 0;
+  _nextBlackoutAt = 0;
+  _blackoutFlickerPhase = false;
+  _blackoutInitialised = false;
   popups = [];
   shockwaves = [];
   targetHitRipples = [];
@@ -1440,7 +1463,8 @@ function loadLevel(idx) {
     tutorialPhase = 0;
   }
   // Restore lives to full on boss entry — you earned it getting here
-  if (levelData.boss && (levelData.boss === 'aegis' || levelData.boss === 'prism')) {
+  if (levelData.boss && (levelData.boss === 'aegis' || levelData.boss === 'prism'
+      || levelData.boss === 'corruptor' || levelData.boss === 'null_gate')) {
     lives = hardModeActive ? 2 : maxLives;
     ui.lives.innerText = lives;
   }
@@ -1660,6 +1684,10 @@ function draw() {
       // Glitch Protocol — deep purple with green pulse
       const _w4glitch = (Math.sin(now * 0.0008) + 1) * 0.5;
       _atmColor = `rgba(${Math.round(80 + _w4glitch * 40)}, ${Math.round(20 + _w4glitch * 10)}, ${Math.round(140 + _w4glitch * 60)}, ${0.08 + _atmPulse * 0.04})`;
+    } else if (worldNum === 5 && !isBoss) {
+      // The Void — near-invisible deep space. Stars, silence, cold
+      const _w5pulse = (Math.sin(now * 0.00025) + 1) * 0.5;
+      _atmColor = `rgba(${Math.round(10 + _w5pulse * 20)}, ${Math.round(20 + _w5pulse * 40)}, ${Math.round(80 + _w5pulse * 80)}, ${0.05 + _atmPulse * 0.025})`;
     } else if (isBoss) {
       // Boss — deep red threat, steady
       _atmColor = `rgba(120, 0, 20, ${0.06 + _atmPulse * 0.03})`;
@@ -1697,6 +1725,18 @@ function draw() {
         _gGrad.addColorStop(0, `rgba(0, 200, 50, ${0.04 + _w4GreenPulse * 0.035})`);
         _gGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = _gGrad;
+        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+      }
+      if (worldNum === 5 && !isBoss) {
+        // The Void: barely visible cold blue bloom from top of screen
+        const _w5BluePulse = (Math.sin(now * 0.00018 + 0.9) + 1) * 0.5;
+        const _vGrad = ctx.createRadialGradient(
+          viewportWidth * 0.5, 0, 0,
+          viewportWidth * 0.5, 0, viewportHeight * 0.65
+        );
+        _vGrad.addColorStop(0, `rgba(100, 180, 255, ${0.04 + _w5BluePulse * 0.03})`);
+        _vGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = _vGrad;
         ctx.fillRect(0, 0, viewportWidth, viewportHeight);
       }
     }
@@ -1825,6 +1865,52 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
+  if (worldShape === 'pentagon' && !isBoss) {
+    ctx.save();
+    // Outer rail aura — ice blue
+    buildShapePath(ctx, 'pentagon', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#a8d8ff';
+    ctx.lineWidth = 11;
+    ctx.globalAlpha = (0.035 + Math.abs(Math.sin(now / 2200)) * 0.02) * railGlowScale;
+    ctx.shadowBlur = 20 * railGlowScale;
+    ctx.shadowColor = '#a8d8ff';
+    ctx.stroke();
+
+    // Mid shimmer — sharper
+    buildShapePath(ctx, 'pentagon', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#c8e8ff';
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = (0.08 + Math.abs(Math.sin(now / 1800)) * 0.025) * railGlowScale;
+    ctx.shadowBlur = 10 * railGlowScale;
+    ctx.stroke();
+
+    // Pentagon corner sensors — 5 cold white sensor dots, slowly breathing
+    const _pentaCorners = [];
+    for (let _pi = 0; _pi < 5; _pi++) {
+      const _pa = -Math.PI / 2 + (_pi * Math.PI * 2 / 5);
+      _pentaCorners.push({
+        x: centerObj.x + Math.cos(_pa) * orbitRadius,
+        y: centerObj.y + Math.sin(_pa) * orbitRadius
+      });
+    }
+    const _sensorPulse = (Math.sin(now * 0.0012) + 1) * 0.5;
+    _pentaCorners.forEach((pt, idx) => {
+      const _offset = idx * (Math.PI * 2 / 5);
+      const _sp = (Math.sin(now * 0.0014 + _offset) + 1) * 0.5;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 2.5 + _sp * 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#dff2ff';
+      ctx.globalAlpha = 0.18 + _sensorPulse * 0.22;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = '#a8d8ff';
+      ctx.fill();
+    });
+
+    ctx.restore();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
+
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
   // so shield segments remain readable against the bright lane, especially on small screens.
   if (isBoss) {
@@ -1845,7 +1931,7 @@ function draw() {
 
   const orbColor = multiColors[Math.min(multiplier - 1, 7)];
   const baseBodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
-  const shouldDrawTargetMarkers = useHeavyEffects || worldShape === 'circle';
+  const shouldDrawTargetMarkers = useHeavyEffects || worldShape === 'circle' || worldShape === 'pentagon';
   const shouldDrawWorld2MechanicBrackets = shouldDrawTargetMarkers && worldNum === 2 && worldShape === 'diamond' && !isBoss;
 
   // TARGETS
@@ -2199,6 +2285,7 @@ function draw() {
           : worldNum === 2 ? 'rgba(47,246,255,0.10)'
           : worldNum === 3 ? (t.isEchoTarget ? 'rgba(80,240,255,0.09)' : 'rgba(255,140,0,0.11)')
           : worldNum === 4 ? (t.isPhantom ? 'rgba(177,87,255,0.07)' : 'rgba(177,87,255,0.13)')
+          : worldNum === 5 ? 'rgba(168,216,255,0.09)'
           : 'rgba(0,200,255,0.10)';
         const _bossShieldFill = isBossShield ? 'rgba(255,40,80,0.14)' : _fw;
         const _fillR = Math.max(10, orbitRadius * 0.085);
@@ -2359,6 +2446,72 @@ function draw() {
         });
       }
     }
+
+  // ── NULL GATE CORE: blinking white node ──────────────
+  if (t.isNullGateCore) {
+    const _nCycle = t.coreBlinkCycle || 1600;
+    const _nVisible = t.coreVisibleDuration || 600;
+    const _nPhase = now % _nCycle;
+    const _nIsVisible = _nPhase < _nVisible;
+    const _nFade = _nPhase < 80 ? (_nPhase / 80)
+      : _nPhase < (_nVisible - 80) ? 1.0
+      : Math.max(0, (_nVisible - _nPhase) / 80);
+
+    // Flicker warning at 120ms before going dark
+    const _nFlicker = !_nIsVisible && (_nCycle - _nPhase) < 120;
+
+    if (_nIsVisible || _nFlicker) {
+      const _ncMidAngle = normalizeAngle(t.start + t.size / 2);
+      const _ncPt = getPointOnShape(_ncMidAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+      const _ncPulse = (Math.sin(now * 0.012) + 1) * 0.5;
+      const _ncR = 5.5 * (1 + _ncPulse * 0.15) * (_nFlicker ? (0.5 + Math.sin(now * 0.08) * 0.5) : 1.0);
+
+      ctx.save();
+      ctx.globalAlpha = _nFade * (0.92 + _ncPulse * 0.08);
+
+      // Outer halo
+      ctx.beginPath();
+      ctx.arc(_ncPt.x, _ncPt.y, _ncR * 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#a8d8ff';
+      ctx.globalAlpha = _nFade * (0.1 + _ncPulse * 0.12);
+      ctx.shadowBlur = 24;
+      ctx.shadowColor = '#a8d8ff';
+      ctx.fill();
+
+      // Core — brilliant white
+      ctx.beginPath();
+      ctx.arc(_ncPt.x, _ncPt.y, _ncR, 0, Math.PI * 2);
+      const _ncGrad = ctx.createRadialGradient(
+        _ncPt.x - _ncR * 0.3, _ncPt.y - _ncR * 0.3, 0,
+        _ncPt.x, _ncPt.y, _ncR
+      );
+      _ncGrad.addColorStop(0, '#ffffff');
+      _ncGrad.addColorStop(0.5, '#c8e8ff');
+      _ncGrad.addColorStop(1, '#a8d8ff');
+      ctx.fillStyle = _ncGrad;
+      ctx.globalAlpha = _nFade;
+      ctx.shadowBlur = 30 + _ncPulse * 15;
+      ctx.shadowColor = '#ffffff';
+      ctx.fill();
+
+      // LOCATE label — only in visible phase
+      if (_nIsVisible && approach > 0.3) {
+        ctx.font = `bold ${Math.max(7, orbitRadius * 0.048)}px Orbitron, sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = _nFade * approach * 0.85;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#a8d8ff';
+        ctx.fillText('LOCATE', _ncPt.x, _ncPt.y - _ncR - 5);
+      }
+
+      ctx.restore();
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+    }
+  }
+  // ── END NULL GATE CORE ───────────────────────────────
 
     // ── CORRUPTOR CORE special render ─────────────
     if (t.isCorruptorCore) {
@@ -2694,6 +2847,9 @@ function draw() {
   // TRAIL
   if (!inMenu && trail.length > 0) {
     const currentWorldNum = getWorldNum();
+    if (_blackoutActive && currentWorldNum === 5) {
+      ctx.globalAlpha = 1.0;
+    } else {
     const isEchoWorld = currentWorldNum === 3;
     const _trailMult = Math.min(multiplier, 8);
     const _trailRadiusMult = 1 + (_trailMult * 0.04);
@@ -2730,6 +2886,14 @@ function draw() {
     }
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
+    } // end blackout guard
+  }
+
+  // Blackout vignette — deepens when orb is hidden
+  if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
+    const _bFade = Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200);
+    ctx.fillStyle = `rgba(3, 3, 8, ${0.28 * Math.min(1, _bFade)})`;
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
   }
 
   // Shockwaves (preserved behaviour + integration)
@@ -2785,7 +2949,28 @@ function draw() {
   const currentWorldNum = getWorldNum();
   const isWorld3 = currentWorldNum === 3;
 
-  drawOrb(ctx, angle, worldShape);
+  const _orbShouldBlackout = _blackoutActive && currentWorldNum === 5 && !inMenu;
+  const _orbFlicker = _blackoutFlickerPhase && currentWorldNum === 5 && !inMenu;
+  if (!_orbShouldBlackout) {
+    const _orbAlpha = _orbFlicker
+      ? (0.3 + Math.sin(now * 0.06) * 0.7)  // rapid flicker warning
+      : 1.0;
+    ctx.globalAlpha = Math.max(0, _orbAlpha);
+    drawOrb(ctx, angle, worldShape);
+    ctx.globalAlpha = 1.0;
+  }
+  // During blackout: ghost outline so screen isn't jarring
+  if (_orbShouldBlackout) {
+    const _ghostPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(_ghostPt.x, _ghostPt.y, 5, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(168,216,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+    ctx.restore();
+  }
 
   if (isWorld3) {
     if (echoHistory.length > 0) {
@@ -3039,7 +3224,54 @@ function update() {
     echoAngle = angle;
   }
 
-  const _isRealBossStage = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor');
+  // ── BLACKOUT TICK ─────────────────────────────────────
+  if (isPlaying && !inMenu && !isCinematicIntro) {
+    const _bcfg = levelData && levelData.blackout;
+    if (_bcfg) {
+      if (!_blackoutInitialised) {
+        _blackoutInitialised = true;
+        _nextBlackoutAt = frameNow + (_bcfg.firstAt || 2000);
+      }
+      // End blackout
+      if (_blackoutActive && frameNow >= _blackoutEndsAt) {
+        _blackoutActive = false;
+        _nextBlackoutAt = frameNow + _bcfg.interval;
+        // Return tone — soft high ping
+        if (audioCtx && typeof playTone === 'function') {
+          playTone(880, 'sine', 0.06, 0.01, 0.18);
+        }
+      }
+      // Start blackout
+      if (!_blackoutActive && frameNow >= _nextBlackoutAt) {
+        _blackoutActive = true;
+        _blackoutEndsAt = frameNow + _bcfg.duration;
+        _blackoutFlickerPhase = true;
+        // Blackout tone — low thud
+        if (audioCtx && typeof playTone === 'function') {
+          playTone(90, 'sine', 0.12, 0.008, 0.12);
+        }
+        triggerScreenShake(2);
+      }
+      // Flicker warning: 180ms before blackout starts
+      _blackoutFlickerPhase = !_blackoutActive &&
+        (_nextBlackoutAt - frameNow) < 180 &&
+        (_nextBlackoutAt - frameNow) > 0;
+    } else {
+      _blackoutActive = false;
+      _blackoutFlickerPhase = false;
+    }
+    // Boss-controlled blackout for Null Gate
+    if (levelData && levelData.boss === 'null_gate' && !isBossPhaseTwo && bossPhase === 1) {
+      const _bossBlackoutCycle = 3500;
+      const _bossBlackoutDur = 1500;
+      const _cyclePos = frameNow % _bossBlackoutCycle;
+      _blackoutActive = _cyclePos < _bossBlackoutDur;
+      _blackoutFlickerPhase = !_blackoutActive && _cyclePos > (_bossBlackoutCycle - 200);
+    }
+  }
+  // ── END BLACKOUT TICK ─────────────────────────────────
+
+  const _isRealBossStage = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate');
   if (!inMenu && _isRealBossStage && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
   if (!inMenu && comboCount > 0) {
     comboTimer = Math.max(0, comboTimer - (delta * 16.6667));
@@ -3731,6 +3963,52 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
       }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
+        // ─── NULL GATE PHASE TRANSITIONS ───────────────
+        if (levelData.boss === 'null_gate' && bossPhase === 1) {
+          // All 5 seals broken → Phase 2 ENRAGED
+          bossPhase = 2;
+          ui.bossPhase1.className = 'boss-segment';
+          ui.bossPhase2.className = 'boss-segment active-segment';
+          pauseGameplayBriefly(1400);
+          triggerScreenShake(36);
+          pulseBrightness(2.8, 260);
+          // Five simultaneous shockwaves from pentagon corners
+          for (let _ni = 0; _ni < 5; _ni++) {
+            setTimeout(() => {
+              createShockwave('#a8d8ff', 28 + _ni * 8);
+              createParticles(centerObj.x, centerObj.y, '#c8e8ff', 16);
+            }, _ni * 80);
+          }
+          createShockwave('#ffffff', 72);
+          createPopup(centerObj.x, centerObj.y - 70, 'SEALS BROKEN', '#a8d8ff');
+          createPopup(centerObj.x, centerObj.y - 34, 'NULL GATE', '#ffffff');
+          createPopup(centerObj.x, centerObj.y, 'DESTABILISED', '#ff3366');
+          escalateBossDrone();
+          vibrate([50, 20, 80, 20, 110, 20, 80]);
+          scheduleBossSpawn(1400);
+          return;
+        }
+        if (levelData.boss === 'null_gate' && bossPhase === 2) {
+          // 3 shields + phantoms cleared → Core exposed
+          isBossPhaseTwo = true;
+          ui.bossPhase2.className = 'boss-segment';
+          pauseGameplayBriefly(900);
+          triggerScreenShake(32);
+          pulseBrightness(3.0, 300);
+          createShockwave('#ffffff', 40);
+          createShockwave('#a8d8ff', 58);
+          createShockwave('#003c8f', 76);
+          createParticles(centerObj.x, centerObj.y, '#ffffff', 52);
+          createParticles(centerObj.x, centerObj.y, '#a8d8ff', 36);
+          createPopup(centerObj.x, centerObj.y - 60, 'NULL GATE CORE', '#a8d8ff');
+          createPopup(centerObj.x, centerObj.y - 26, 'EXPOSED', '#ffffff');
+          createPopup(centerObj.x, centerObj.y + 10, 'LOCATE AND STRIKE', '#c8e8ff');
+          soundCoreExposed();
+          vibrate([80, 30, 80]);
+          scheduleBossSpawn(900);
+          return;
+        }
+        // ─── END NULL GATE ──────────────────────────────
         // ─── CORRUPTOR ──────────────────────────
         if (levelData.boss === 'corruptor' && bossPhase === 1) {
           bossPhase = 2;
@@ -3801,6 +4079,76 @@ function tap() {
         }
       } return;
     }
+
+    // ─── NULL GATE CORE DEFEAT ──────────────────────
+    if (
+      levelData &&
+      levelData.boss === 'null_gate' &&
+      isBossPhaseTwo &&
+      t.isNullGateCore
+    ) {
+      // Check blink phase — can only hit during visible window
+      const _nCycle = t.coreBlinkCycle || 1600;
+      const _nVisible = t.coreVisibleDuration || 600;
+      const _nPhase = performance.now() % _nCycle;
+      if (_nPhase >= _nVisible) {
+        // Tapped during dark phase — register as miss, show feedback
+        createPopup(hitX, hitY - 20, 'TOO DARK', '#a8d8ff');
+        createShockwave('#003c8f', 20);
+        handleFail('STRUCK THE VOID');
+        return;
+      }
+
+      t.active = false;
+      ui.bossPhase2.className = 'boss-segment';
+
+      // The void shatters — most dramatic defeat sequence in the game
+      triggerScreenShake(44);
+      pulseBrightness(3.5, 360);
+
+      // Canvas goes white then void-black in sequence
+      canvas.style.filter = 'brightness(6) contrast(0.5)';
+      setTimeout(() => { canvas.style.filter = 'brightness(0.1)'; }, 100);
+      setTimeout(() => { canvas.style.filter = 'brightness(3) hue-rotate(200deg)'; }, 220);
+      setTimeout(() => { canvas.style.filter = 'brightness(0.3)'; }, 360);
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 520);
+
+      // Five corner bursts — one per pentagon point
+      for (let _nb = 0; _nb < 5; _nb++) {
+        setTimeout(() => {
+          const _ba = -Math.PI / 2 + (_nb * Math.PI * 2 / 5);
+          const _bx = centerObj.x + Math.cos(_ba) * orbitRadius;
+          const _by = centerObj.y + Math.sin(_ba) * orbitRadius;
+          createParticles(_bx, _by, '#a8d8ff', 24);
+          createShockwave('#ffffff', 30 + _nb * 10);
+          createUpwardBurstParticles(_bx, _by, '#c8e8ff', 18);
+        }, _nb * 100);
+      }
+
+      // Centre collapse
+      setTimeout(() => {
+        createShockwave('#a8d8ff', 88);
+        createShockwave('#ffffff', 110);
+        createParticles(centerObj.x, centerObj.y, '#ffffff', 70);
+        createParticles(centerObj.x, centerObj.y, '#a8d8ff', 50);
+        createUpwardBurstParticles(centerObj.x, centerObj.y, '#c8e8ff', 60);
+      }, 500);
+
+      createPopup(centerObj.x, centerObj.y - 78, 'VOID', '#a8d8ff');
+      createPopup(centerObj.x, centerObj.y - 44, 'SHATTERED', '#ffffff');
+      createPopup(centerObj.x, centerObj.y - 10, 'SIGNAL RECLAIMED', '#c8e8ff');
+
+      soundBossDefeated();
+      stopBossDrone();
+      vibrate([100, 40, 140, 40, 180, 40, 100]);
+
+      stageHits = 999;
+      isPlaying = false;
+
+      setTimeout(() => { triggerStageClear(); }, 2200);
+      return;
+    }
+    // ─── END NULL GATE CORE DEFEAT ──────────────────
 
     if (
       levelData &&

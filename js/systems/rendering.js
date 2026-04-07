@@ -55,7 +55,7 @@
     if (shape === 'triangle') {
       return getTrianglePoint(t, cx, cy, radius);
     }
-    const sides = 6;
+    const sides = (shape === 'pentagon') ? 5 : 6;
     const rotation = -Math.PI / 2;
     const corners = [];
     for (let i = 0; i < sides; i++) {

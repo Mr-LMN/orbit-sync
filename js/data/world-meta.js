@@ -1,7 +1,7 @@
 (function initWorldMeta(window) {
   const OG = window.OrbitGame;
 
-  const WORLD_ORDER = ['world1', 'world2', 'world3', 'world4'];
+  const WORLD_ORDER = ['world1', 'world2', 'world3', 'world4', 'world5'];
   const DEFAULT_WORLDS = {
     world1: {
       id: 'world1',
@@ -30,6 +30,14 @@
     world4: {
       id: 'world4',
       title: 'GLITCH PROTOCOL',
+      unlocked: false,
+      stages: [],
+      bossStageId: null,
+      hardUnlocked: false
+    },
+    world5: {
+      id: 'world5',
+      title: 'THE VOID',
       unlocked: false,
       stages: [],
       bossStageId: null,
@@ -105,7 +113,8 @@
     { id: 1, label: 'WORLD 1' },
     { id: 2, label: 'WORLD 2' },
     { id: 3, label: 'WORLD 3' },
-    { id: 4, label: 'WORLD 4' }
+    { id: 4, label: 'WORLD 4' },
+    { id: 5, label: 'WORLD 5' }
   ];
   OG.data.worldOrder = WORLD_ORDER.slice();
   OG.data.worldIdFromStageId = worldIdFromStageId;

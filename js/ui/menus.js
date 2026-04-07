@@ -48,7 +48,7 @@
 
   function changeWorld(dir) {
     menuSelectedWorld += dir;
-    const totalWorlds = 4;
+    const totalWorlds = 5;
     if (menuSelectedWorld < 1) menuSelectedWorld = 1;
     if (menuSelectedWorld > totalWorlds) menuSelectedWorld = totalWorlds;
     updateWorldSelectorUI();
@@ -72,7 +72,8 @@
       1: { name: 'WORLD 1', sub: 'ORBIT INIT', color: '#00ff88' },
       2: { name: 'WORLD 2', sub: 'PRISM BREAK', color: '#2ff6ff' },
       3: { name: 'WORLD 3', sub: isUnlocked ? 'RESONANCE' : '???', color: '#ffaa00' },
-      4: { name: isUnlocked ? 'WORLD 4' : '? ? ? ?', sub: isUnlocked ? 'GLITCH PROTOCOL' : 'COMPLETE WORLD 3 TO UNLOCK', color: isUnlocked ? '#b157ff' : 'rgba(255,255,255,0.2)' }
+      4: { name: isUnlocked ? 'WORLD 4' : '? ? ? ?', sub: isUnlocked ? 'GLITCH PROTOCOL' : 'COMPLETE WORLD 3 TO UNLOCK', color: isUnlocked ? '#b157ff' : 'rgba(255,255,255,0.2)' },
+      5: { name: isUnlocked ? 'WORLD 5' : '? ? ? ?', sub: isUnlocked ? 'THE VOID' : 'CLEAR WORLD 4', color: isUnlocked ? '#a8d8ff' : 'rgba(255,255,255,0.15)' }
     };
     const wd = worldData[menuSelectedWorld] || worldData[1];
 
@@ -110,7 +111,7 @@
     const leftArrow = document.querySelector('#worldSelector .arrow-btn:first-child');
     const rightArrow = document.querySelector('#worldSelector .arrow-btn:last-child');
     if (leftArrow) leftArrow.disabled = menuSelectedWorld <= 1;
-    if (rightArrow) rightArrow.disabled = menuSelectedWorld >= 4;
+    if (rightArrow) rightArrow.disabled = menuSelectedWorld >= 5;
   }
 
   function _launchBestScore() {
