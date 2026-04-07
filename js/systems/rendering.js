@@ -71,7 +71,13 @@
     const progress = (normalized - rawIdx * sectorSize) / sectorSize;
     const p1 = corners[sectorIdx];
     const p2 = corners[(sectorIdx + 1) % sides];
-    return { x: p1.x + (p2.x - p1.x) * progress, y: p1.y + (p2.y - p1.y) * progress };
+    let ptX = p1?.x + (p2?.x - p1?.x) * progress;
+    let ptY = p1?.y + (p2?.y - p1?.y) * progress;
+    if (isNaN(ptX) || isNaN(ptY)) {
+      ptX = p1?.x || cx || 0;
+      ptY = p1?.y || cy || 0;
+    }
+    return { x: ptX, y: ptY };
   }
 
   function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps = 40) {

@@ -3188,9 +3188,14 @@ function update() {
   }
 
   angle += moveStep;
+  if (isNaN(angle)) angle = 0;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
   const tPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
+  if (isNaN(tPt.x) || isNaN(tPt.y)) {
+    tPt.x = centerObj.x;
+    tPt.y = centerObj.y;
+  }
   trail.push({ x: Math.round(tPt.x), y: Math.round(tPt.y) });
   const maxTrailMultiplier = isMobile ? 3 : 4;
   if (trail.length > multiplier * maxTrailMultiplier) trail.shift();
