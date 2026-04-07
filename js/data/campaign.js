@@ -9,10 +9,10 @@
     { id: '1-5', title: 'Split Focus', hitsNeeded: 8, speed: 0.048, lives: 3, targets: 3, fixedTargetCount: true, moveSpeed: 0.01, reverse: false, text: 'Three zones are active at once. Keep your attention split and steady.' },
     { id: '1-6', title: 'The Aegis Core', hitsNeeded: 99, speed: 0.045, lives: 3, boss: 'aegis', moveSpeed: 0.03, reverse: true, text: 'BOSS: Break the shields. Expose the core.' },
     { id: '2-1', title: 'Refract', hitsNeeded: 5, speed: 0.036, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['corner'], text: 'Hit the corner point for PERFECT.' },
-    { id: '2-2', title: 'Split Signal', hitsNeeded: 5, speed: 0.038, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['dual'], text: 'Two halves. One seam. Dead-centre clears both.' },
+    { id: '2-2', title: 'Twin Signal', hitsNeeded: 5, speed: 0.038, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['twin'], text: 'Two mirrored zones appear. Hit both to clear.' },
     { id: '2-3', title: 'Fracture', hitsNeeded: 3, speed: 0.040, lives: 3, targets: 1, moveSpeed: 0, reverse: false, mechanics: ['split'], text: 'Hit once to crack. Finish the fragments.' },
     { id: '2-4', title: 'Cascade', hitsNeeded: 3, speed: 0.042, lives: 3, targets: 1, moveSpeed: 0.0062, reverse: false, mechanics: ['split'], text: 'Track the cascade. Finish every shard.' },
-      { id: '2-5', title: 'Critical Angle', hitsNeeded: 6, speed: 0.044, lives: 3, targets: 1, moveSpeed: 0.008, reverse: true, mechanics: ['dual'], shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 5.5 }, text: 'Shrinking. Reversing. One target. No mistakes.' },
+      { id: '2-5', title: 'Critical Angle', hitsNeeded: 6, speed: 0.044, lives: 3, targets: 1, moveSpeed: 0.008, reverse: true, shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 5.5 }, text: 'Shrinking. Reversing. One target. No mistakes.' },
     {
       id: '2-6',
       title: 'The Prism',

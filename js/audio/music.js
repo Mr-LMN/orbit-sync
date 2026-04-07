@@ -22,6 +22,10 @@
     return 'assets/boss.mp3';
   }
 
+  function _isMusicBossStage(level) {
+    return !!(level && (level.boss === 'aegis' || level.boss === 'prism' || level.boss === 'corruptor'));
+  }
+
   function hasActiveMusicGraph() {
     return !!(
       audio.baseSource &&
@@ -133,8 +137,10 @@
         audio.baseGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
       }
       if (audio.bossGain) {
-        audio.bossGain.gain.cancelScheduledValues(audio.audioCtx.currentTime);
-        audio.bossGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
+        const _stopNow = audio.audioCtx.currentTime;
+        audio.bossGain.gain.cancelScheduledValues(_stopNow);
+        audio.bossGain.gain.setValueAtTime(audio.bossGain.gain.value, _stopNow);
+        audio.bossGain.gain.linearRampToValueAtTime(0, _stopNow + 0.3);
       }
       disposeMusicNodes();
       audio.currentBaseTrack = null;
@@ -167,7 +173,7 @@
     const wantedTrack = getBaseTrackForLevel(currentLevelIdx);
     await startDynamicMusic(wantedTrack);
     if (token !== audio.musicLoadToken) return;
-    const isMusicBoss = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+    const isMusicBoss = levelData && _isMusicBossStage(levelData);
     updateMusicState(multiplier, !!isMusicBoss);
   }
 
@@ -184,8 +190,8 @@
     if (isBossActive) {
       audio.baseGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.cancelScheduledValues(now);
-      audio.baseGain.gain.linearRampToValueAtTime(0.08, now + 0.5);
-      audio.bossGain.gain.linearRampToValueAtTime(0.48, now + 0.5);
+      audio.baseGain.gain.linearRampToValueAtTime(0.12, now + 0.5);
+      audio.bossGain.gain.linearRampToValueAtTime(0.26, now + 0.5);
     } else {
       audio.baseGain.gain.cancelScheduledValues(now);
       audio.bossGain.gain.cancelScheduledValues(now);
@@ -234,7 +240,7 @@
 
   function unduckMusic() {
     if (!audio.audioCtx) return;
-    const isMusicBoss = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism');
+    const isMusicBoss = levelData && _isMusicBossStage(levelData);
     updateMusicState(multiplier, !!isMusicBoss);
   }
 
