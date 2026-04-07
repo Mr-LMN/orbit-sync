@@ -443,6 +443,12 @@ function getWorldVisualTheme(level) {
   };
 }
 
+function _syncPauseBtn() {
+  const pb = document.getElementById('pauseBtn');
+  if (!pb) return;
+  pb.style.display = (!inMenu && isPlaying || (!inMenu && !isPlaying)) ? 'flex' : 'none';
+}
+
 function updateCanvasSize() {
   viewportWidth = window.innerWidth;
   viewportHeight = window.innerHeight;
@@ -1469,6 +1475,8 @@ function loadLevel(idx) {
     }
     spawnTargets();
   }
+  const _pb1 = document.getElementById('pauseBtn');
+  if (_pb1) _pb1.style.display = 'flex';
   return true;
 }
 
@@ -3271,7 +3279,9 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     };
     const currentRunWorld = getCurrentRunWorld();
     const newRecords = checkAndSavePB(score, streakBeforeFail);
-    isPlaying = false; ui.topBar.style.display = 'none'; const _pb2 = document.getElementById('pauseBtn'); if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+    isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+    const _pb3 = document.getElementById('pauseBtn');
+    if (_pb3) _pb3.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
     const pbStatsBlock = document.getElementById('pbStatsBlock');
     const runStatsBlock = document.getElementById('runStatsBlock');
@@ -4246,8 +4256,6 @@ function restartFromCheckpoint() {
   const closeMissBanner = document.getElementById('closeMissBanner');
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
-  if (_pb) _pb.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
   ui.bigMultiplier.style.display = 'none';
@@ -4260,9 +4268,13 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
+  const _pb2 = document.getElementById('pauseBtn');
+  if (_pb2) _pb2.style.display = 'flex';
 }
 
 function returnToMenu() {
+  const _pb0 = document.getElementById('pauseBtn');
+  if (_pb0) _pb0.style.display = 'none';
   localStorage.removeItem('orbitSync_checkpointIdx');
   if (_pendingResize) {
     _pendingResize = false;
