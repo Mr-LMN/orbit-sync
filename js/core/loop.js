@@ -1461,6 +1461,7 @@ function loadLevel(idx) {
       playBossCinematic();
     }
   } else {
+    if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
     stopBossDrone();
     // Also ensure music is in correct non-boss state on every non-boss load
     if (audioCtx) {
@@ -2191,62 +2192,46 @@ function draw() {
     ctx.save();
 
     if (!isLiteTargetRender) {
-      // ── TARGET FILL: gives physical depth/weight ──────────
+      // ── WORLD BODY FILL: luminous panel per world ─────────────
       if (!t.isLifeZone && !t.isCornerBonus && !isLiteTargetRender) {
-        // Inner filled region within the target arc
-        // Use a canvas clip to contain fill to the arc segment
+        const _midFillPt = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        const _fw = worldNum === 1 ? 'rgba(0,200,255,0.11)'
+          : worldNum === 2 ? 'rgba(47,246,255,0.10)'
+          : worldNum === 3 ? (t.isEchoTarget ? 'rgba(80,240,255,0.09)' : 'rgba(255,140,0,0.11)')
+          : worldNum === 4 ? (t.isPhantom ? 'rgba(177,87,255,0.07)' : 'rgba(177,87,255,0.13)')
+          : 'rgba(0,200,255,0.10)';
+        const _bossShieldFill = isBossShield ? 'rgba(255,40,80,0.14)' : _fw;
+        const _fillR = Math.max(10, orbitRadius * 0.085);
+        const _fg = ctx.createRadialGradient(
+          _midFillPt.x, _midFillPt.y, 0,
+          _midFillPt.x, _midFillPt.y, _fillR
+        );
+        _fg.addColorStop(0, _bossShieldFill);
+        _fg.addColorStop(1, 'rgba(0,0,0,0)');
+
+        const _steps = 10;
+        const _iR = dynamicRadius - (bodyWidth * 2.8);
+        const _oR = dynamicRadius + (bodyWidth * 2.8);
         ctx.save();
         ctx.beginPath();
-        // Build a filled "wedge" from center through the arc
-        const _fillStart = t.start;
-        const _fillEnd = t.start + t.size;
-        const _fillMid = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
-        // Radial gradient centered at the arc midpoint
-        const _fillGrad = ctx.createRadialGradient(
-          _fillMid.x, _fillMid.y, 0,
-          _fillMid.x, _fillMid.y, Math.max(8, orbitRadius * 0.08)
-        );
-        const _fillColor = t.color || '#ffffff';
-        _fillGrad.addColorStop(0, _fillColor.replace(')', ', 0.22)').replace('rgb(', 'rgba(').replace('#', 'rgba(').length > 20
-          ? _fillColor
-          : _fillColor + '38');
-        // Simpler approach: just use rgba manually per world color
-        const _wn4fill = worldNum === 4 ? 'rgba(177,87,255,0.14)'
-          : worldNum === 3 ? 'rgba(255,170,0,0.12)'
-          : worldNum === 2 ? 'rgba(47,246,255,0.12)'
-          : 'rgba(0,229,255,0.12)';
-        const _fillInner = isBossShield ? 'rgba(255,80,100,0.18)' : _wn4fill;
-        const _fillOuter = 'rgba(0,0,0,0)';
-        const _fg = ctx.createRadialGradient(
-          _fillMid.x, _fillMid.y, 0,
-          _fillMid.x, _fillMid.y, Math.max(10, orbitRadius * 0.1)
-        );
-        _fg.addColorStop(0, _fillInner);
-        _fg.addColorStop(1, _fillOuter);
-
-        // Draw steps along the arc to create a filled band
-        const _steps = 8;
-        const _innerR = dynamicRadius - (bodyWidth * 2.5);
-        const _outerR = dynamicRadius + (bodyWidth * 2.5);
-        ctx.beginPath();
         for (let _si = 0; _si <= _steps; _si++) {
-          const _sa = _fillStart + (_si / _steps) * (t.size);
-          const _op = getPointOnShape(_sa, worldShape, centerObj.x, centerObj.y, _outerR);
-          if (_si === 0) ctx.moveTo(_op.x, _op.y);
-          else ctx.lineTo(_op.x, _op.y);
+          const _sa = t.start + (_si / _steps) * t.size;
+          const _op = getPointOnShape(_sa, worldShape, centerObj.x, centerObj.y, _oR);
+          if (_si === 0) ctx.moveTo(_op.x, _op.y); else ctx.lineTo(_op.x, _op.y);
         }
         for (let _si = _steps; _si >= 0; _si--) {
-          const _sa = _fillStart + (_si / _steps) * (t.size);
-          const _ip = getPointOnShape(_sa, worldShape, centerObj.x, centerObj.y, _innerR);
+          const _sa = t.start + (_si / _steps) * t.size;
+          const _ip = getPointOnShape(_sa, worldShape, centerObj.x, centerObj.y, _iR);
           ctx.lineTo(_ip.x, _ip.y);
         }
         ctx.closePath();
         ctx.fillStyle = _fg;
-        ctx.globalAlpha = 0.85 + (approach * 0.15);
+        ctx.globalAlpha = 0.9 + (approach * 0.1);
         ctx.fill();
         ctx.restore();
+        ctx.globalAlpha = 1.0;
       }
-      // ── END TARGET FILL ───────────────────────────
+      // ── END WORLD BODY FILL ───────────────────────────────────
 
       // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
       ctx.beginPath();
@@ -2580,11 +2565,92 @@ function draw() {
       ctx.moveTo(_gMidPt.x - _gTx * _armGap, _gMidPt.y - _gTy * _armGap);
       ctx.lineTo(_gMidPt.x - _gTx * _armGap + _gNx * _armLen, _gMidPt.y - _gTy * _armGap + _gNy * _armLen);
       ctx.stroke();
-      ctx.beginPath();
-      ctx.arc(_gMidPt.x + _gNx * (_armLen * 0.55), _gMidPt.y + _gNy * (_armLen * 0.55),
-        _inFilthyWindow ? 3.5 : 2.0, 0, Math.PI * 2);
-      ctx.fillStyle = _gateColor;
-      ctx.fill();
+      // ── WORLD NODE: floating indicator at gate midpoint ──────
+      const _nodeX = _gMidPt.x + _gNx * (_armLen * 0.7);
+      const _nodeY = _gMidPt.y + _gNy * (_armLen * 0.7);
+      const _nodeR = _inFilthyWindow ? 5.5 : _inPerfectWindow ? 4.2 : _inGoodWindow ? 3.5 : 2.8;
+      const _nodeAlpha = _inFilthyWindow ? 1.0 : _inPerfectWindow ? 0.88 : _inGoodWindow ? 0.72 : 0.38;
+      const _nodeColor = _inFilthyWindow ? '#ffffff' : t.color || _gateColor;
+      const _nodeShadow = _inFilthyWindow ? 22 : _inPerfectWindow ? 14 : 8;
+
+      ctx.save();
+      ctx.globalAlpha = _nodeAlpha + (hitFlash * 0.3);
+      ctx.shadowBlur = _nodeShadow;
+      ctx.shadowColor = _nodeColor;
+
+      const _wn = parseInt((levelData && levelData.id || '1-1').split('-')[0], 10);
+
+      if (_wn === 1) {
+        // W1: clean circle node
+        ctx.beginPath();
+        ctx.arc(_nodeX, _nodeY, _nodeR, 0, Math.PI * 2);
+        ctx.fillStyle = _nodeColor;
+        ctx.fill();
+        // White core
+        ctx.beginPath();
+        ctx.arc(_nodeX, _nodeY, _nodeR * 0.42, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = Math.min(1, _nodeAlpha + 0.2);
+        ctx.fill();
+
+      } else if (_wn === 2) {
+        // W2: diamond/rhombus node
+        const _ds = _nodeR * 1.15;
+        ctx.beginPath();
+        ctx.moveTo(_nodeX, _nodeY - _ds);
+        ctx.lineTo(_nodeX + _ds * 0.7, _nodeY);
+        ctx.lineTo(_nodeX, _nodeY + _ds);
+        ctx.lineTo(_nodeX - _ds * 0.7, _nodeY);
+        ctx.closePath();
+        ctx.fillStyle = _nodeColor;
+        ctx.fill();
+        // Bright centre dot
+        ctx.beginPath();
+        ctx.arc(_nodeX, _nodeY, _nodeR * 0.35, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = Math.min(1, _nodeAlpha + 0.2);
+        ctx.fill();
+
+      } else if (_wn === 3) {
+        // W3: upward triangle node for real targets
+        // Echo targets skip the node (handled by _showSyncGate guard)
+        const _ts = _nodeR * 1.2;
+        ctx.beginPath();
+        ctx.moveTo(_nodeX, _nodeY - _ts);
+        ctx.lineTo(_nodeX + _ts * 0.85, _nodeY + _ts * 0.6);
+        ctx.lineTo(_nodeX - _ts * 0.85, _nodeY + _ts * 0.6);
+        ctx.closePath();
+        ctx.fillStyle = _nodeColor;
+        ctx.fill();
+
+      } else if (_wn === 4) {
+        // W4: square node, green tint when approaching
+        const _ss = _nodeR * 0.95;
+        const _sqColor = _inGoodWindow ? '#00ff41' : _nodeColor;
+        ctx.shadowColor = _sqColor;
+        ctx.beginPath();
+        ctx.rect(_nodeX - _ss, _nodeY - _ss, _ss * 2, _ss * 2);
+        ctx.fillStyle = _sqColor;
+        ctx.fill();
+        // Inner white
+        ctx.beginPath();
+        ctx.rect(_nodeX - _ss * 0.4, _nodeY - _ss * 0.4, _ss * 0.8, _ss * 0.8);
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = Math.min(1, _nodeAlpha + 0.15);
+        ctx.fill();
+
+      } else {
+        // Fallback: circle
+        ctx.beginPath();
+        ctx.arc(_nodeX, _nodeY, _nodeR, 0, Math.PI * 2);
+        ctx.fillStyle = _nodeColor;
+        ctx.fill();
+      }
+
+      ctx.restore();
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+      // ── END WORLD NODE ───────────────────────────────────────
 
     } else if (worldShape === 'diamond') {
       ctx.lineWidth = Math.max(1.6, 2.0 + (hitFlash * 0.5));

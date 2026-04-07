@@ -374,19 +374,25 @@
     }
   }
 
+  let _prevMusicVol = 60;
+  let _prevSfxVol = 80;
+
   function setMusicVolume(val) {
     const v = parseInt(val, 10) / 100;
     if (typeof OrbitGame !== 'undefined' && OrbitGame.audio) {
       OrbitGame.audio.musicEnabled = v > 0;
       if (OrbitGame.audio.baseGain && OrbitGame.audio.audioCtx) {
-        const now = OrbitGame.audio.audioCtx.currentTime;
-        const target = Math.min(0.48, v * 0.48);
-        OrbitGame.audio.baseGain.gain.cancelScheduledValues(now);
-        OrbitGame.audio.baseGain.gain.linearRampToValueAtTime(target, now + 0.3);
+        const now2 = OrbitGame.audio.audioCtx.currentTime;
+        const target2 = Math.min(0.48, v * 0.48);
+        OrbitGame.audio.baseGain.gain.cancelScheduledValues(now2);
+        OrbitGame.audio.baseGain.gain.linearRampToValueAtTime(target2, now2 + 0.3);
       }
     }
     const btn = document.getElementById('musicMuteBtn');
+    const slider = document.getElementById('musicVolumeSlider');
+    if (v > 0) _prevMusicVol = parseInt(val, 10);
     if (btn) btn.classList.toggle('muted', v === 0);
+    if (slider) slider.value = val;
     localStorage.setItem('orbitSync_musicVol', val);
   }
 
@@ -396,25 +402,33 @@
       OrbitGame.audio.sfxEnabled = v > 0;
     }
     const btn = document.getElementById('sfxMuteBtn');
+    const slider = document.getElementById('sfxVolumeSlider');
+    if (v > 0) _prevSfxVol = parseInt(val, 10);
     if (btn) btn.classList.toggle('muted', v === 0);
+    if (slider) slider.value = val;
     localStorage.setItem('orbitSync_sfxVol', val);
   }
 
   function toggleMusicSetting() {
-    audio.musicEnabled = !audio.musicEnabled;
-    if (!audio.musicEnabled) {
-      stopDynamicMusic();
-    } else if (isPlaying) {
-      initAudio();
-      ensureCorrectMusicForLevel();
+    const slider = document.getElementById('musicVolumeSlider');
+    const currentVal = slider ? parseInt(slider.value, 10) : 60;
+    if (currentVal > 0) {
+      // Mute: animate slider to 0
+      setMusicVolume(0);
+    } else {
+      // Unmute: restore to previous volume
+      setMusicVolume(_prevMusicVol || 60);
     }
-    applySettingsUI();
   }
 
   function toggleSfxSetting() {
-    audio.sfxEnabled = !audio.sfxEnabled;
-    if (!audio.sfxEnabled) stopBossDrone();
-    applySettingsUI();
+    const slider = document.getElementById('sfxVolumeSlider');
+    const currentVal = slider ? parseInt(slider.value, 10) : 80;
+    if (currentVal > 0) {
+      setSfxVolume(0);
+    } else {
+      setSfxVolume(_prevSfxVol || 80);
+    }
   }
 
   function toggleHapticsSetting() {
