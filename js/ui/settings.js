@@ -354,8 +354,10 @@
 
         hardModeRow.style.opacity = (_hasAnyWorld && _viewWorldUnlocked) ? '1' : '0.45';
 
-        const _hmBtn = document.getElementById('menuHardModeBtn');
-        if (_hmBtn) _hmBtn.style.display = _viewHardUnlocked ? 'block' : 'none';
+        const _hmMenuBtn = document.getElementById('menuHardModeBtn');
+        if (_hmMenuBtn) {
+          _hmMenuBtn.style.display = _viewHardUnlocked ? 'block' : 'none';
+        }
 
         if (!_viewWorldUnlocked) {
           hardModeStatus.innerText = `CLEAR WORLD ${_viewWorld - 1} FIRST`;

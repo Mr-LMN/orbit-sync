@@ -4195,18 +4195,11 @@ function tap() {
     updateMultiplierUI();
     const _hmParticleColor = hardModeActive ? '#ff3344' : t.color;
     createParticles(hitX, hitY, _hmParticleColor, 18 + Math.min(18, comboCount));
-    // Twin hit: draw a connecting spark to the partner
     if (t.isTwin) {
-      const _partner = targets.find(pt => pt !== t && pt.isTwin && pt.active);
-      if (_partner) {
-        const _pPt = getPointOnShape(
-          normalizeAngle(_partner.start + _partner.size / 2),
-          worldShape, centerObj.x, centerObj.y, orbitRadius
-        );
-        createParticles(_pPt.x, _pPt.y, '#2ff6ff', 10);
+      const _twinPartner = targets.find(pt => pt !== t && pt.isTwin && pt.active);
+      if (_twinPartner) {
         createPopup(hitX, hitY - 18, 'FIND THE MIRROR', '#2ff6ff');
       } else {
-        // Last twin cleared — bonus flourish
         createShockwave('#2ff6ff', 28);
         createShockwave('#ff4fd8', 18);
         createPopup(hitX, hitY - 18, 'SYNC!', '#ffffff');
@@ -4494,8 +4487,8 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         // Check if the boss stage of the world just cleared was previously completed
         const _clearedWorldNum = nextWorld > 1 ? (nextWorld - 1) : 1;
         const _bossStageId = `${_clearedWorldNum}-6`;
-        const _worldPreviouslyCleared = playerProgress.completedStages &&
-          playerProgress.completedStages[_bossStageId];
+        const _worldPreviouslyCleared = !!(playerProgress.completedStages &&
+          playerProgress.completedStages[_bossStageId]);
         if (!isCampaignClear && _worldPreviouslyCleared && typeof showAugmentPicker === 'function') {
           setTimeout(() => showAugmentPicker(), 1200);
         }
