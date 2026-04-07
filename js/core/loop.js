@@ -4529,7 +4529,7 @@ function tap() {
       || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
 
-    if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
+    if (shouldForceHudFlush) {
       const isResonanceFinalHit = levelData
         && levelData.id === '3-6'
         && stageHits === (levelData.hitsNeeded - 1)
