@@ -112,14 +112,14 @@ body.last-life #gameCanvas {
   transform: translate(-50%, -50%);
   text-align: center;
   pointer-events: none;
-  z-index: 6;
-  opacity: 0.55;
+  z-index: 15;
+  opacity: 0.65;
   transition: opacity 0.6s ease;
 }
-body.run-state-heat #arenaInfo     { opacity: 0.42; }
-body.run-state-locked #arenaInfo   { opacity: 0.32; }
-body.run-state-overdrive #arenaInfo { opacity: 0.22; }
-body.last-life #arenaInfo          { opacity: 0.28; }
+body.run-state-heat #arenaInfo     { opacity: 0.5; }
+body.run-state-locked #arenaInfo   { opacity: 0.42; }
+body.run-state-overdrive #arenaInfo { opacity: 0.32; }
+body.last-life #arenaInfo          { opacity: 0.35; }
 
 #stageDisplay {
   font-family: 'Orbitron', sans-serif;
@@ -208,8 +208,8 @@ body.last-life #arenaInfo          { opacity: 0.28; }
 /* Pause FAB — shown during gameplay instead of gear */
 .pause-fab {
   position: fixed;
-  bottom: 22px;
-  right: 16px;
+  bottom: 28px;
+  right: 18px;
   width: 44px;
   height: 44px;
   border-radius: 12px;
@@ -219,7 +219,7 @@ body.last-life #arenaInfo          { opacity: 0.28; }
   color: rgba(255,255,255,0.7);
   font-size: 0.9rem;
   cursor: pointer;
-  z-index: 25;
+  z-index: 30;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1142,5 +1142,4 @@ body.hard-mode #hardModeBadge { display: block; }
   70% { opacity:1; }
   100% { opacity:0; transform:translate(-50%,-40%); }
 }
-
 
