@@ -393,16 +393,15 @@ function computeWorldPalette(level) {
 }
 
 function computeWorldShape(level) {
-  if (!level) return 'circle';
-  const worldNum = parseInt(level.id.split('-')[0], 10);
-  switch(worldNum) {
-    case 1: return 'circle';
-    case 2: return 'diamond';
-    case 3: return 'triangle';
-    case 4: return 'square';
-    case 5: return 'pentagon';
-    default: return 'circle';
-  }
+  if (!level || !level.id) return 'circle';
+  const worldNum = parseInt(String(level.id).split('-')[0], 10);
+  if (!Number.isFinite(worldNum)) return 'circle';
+  if (worldNum === 1) return 'circle';
+  if (worldNum === 2) return 'diamond';
+  if (worldNum === 3) return 'triangle';
+  if (worldNum === 4) return 'square';
+  if (worldNum === 5) return 'pentagon';
+  return 'circle';
 }
 
 function getWorldVisualTheme(level) {
