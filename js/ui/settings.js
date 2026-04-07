@@ -288,7 +288,12 @@
   function toggleSettings(show) {
     ui.settingsModal.style.bottom = show ? '0' : '-100%';
     if (!inMenu) {
-      isPlaying = !show; // pause while settings open during gameplay
+      if (show) {
+        isPlaying = false;
+      } else {
+        // Delay resume so modal animation completes before tap() can fire
+        setTimeout(() => { if (!inMenu) isPlaying = true; }, 340);
+      }
     }
     if (!show) {
       const panel = document.getElementById('adminToolsPanel');
@@ -349,12 +354,15 @@
 
         hardModeRow.style.opacity = (_hasAnyWorld && _viewWorldUnlocked) ? '1' : '0.45';
 
+        const _hmBtn = document.getElementById('menuHardModeBtn');
+        if (_hmBtn) _hmBtn.style.display = _viewHardUnlocked ? 'block' : 'none';
+
         if (!_viewWorldUnlocked) {
           hardModeStatus.innerText = `CLEAR WORLD ${_viewWorld - 1} FIRST`;
           hardModeStatus.style.color = 'rgba(255,80,100,0.7)';
         } else if (_viewHardUnlocked) {
-          hardModeStatus.innerText = 'COMING SOON';
-          hardModeStatus.style.color = 'rgba(255,200,80,0.7)';
+          hardModeStatus.innerText = 'UNLOCKED ✓';
+          hardModeStatus.style.color = 'rgba(0,255,136,0.8)';
         } else {
           hardModeStatus.innerText = `W${_viewWorld}: ${_viewStars} / 10 ★`;
           hardModeStatus.style.color = 'rgba(255,150,80,0.6)';
