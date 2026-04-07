@@ -223,7 +223,7 @@
       bossIntroPlaying = false;
       if (ui.gameUI) ui.gameUI.style.display = 'block';
       const _pbRestore = document.getElementById('pauseBtn');
-      if (_pbRestore) _pbRestore.style.display = 'flex';
+      if (_pbRestore && !inMenu) _pbRestore.style.display = 'flex';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
       ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro) ? 'boss-segment' : 'boss-segment active-segment';
@@ -271,7 +271,7 @@
       isPlaying = true;
       if (ui.gameUI) ui.gameUI.style.display = 'block';
       const _pbRestore = document.getElementById('pauseBtn');
-      if (_pbRestore) _pbRestore.style.display = 'flex';
+      if (_pbRestore && !inMenu) _pbRestore.style.display = 'flex';
       if (_isRealBoss) {
         if (ui.bossUI) ui.bossUI.style.display = 'flex';
         ui.bossPhase1.className = 'boss-segment active-segment';
