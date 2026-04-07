@@ -52,7 +52,7 @@
     if (!select || !Array.isArray(campaign)) return;
     const previousValue = OG.debug.stageOverrideId || '';
     const selectedWorld = String(_adminSelectedWorld || '');
-    select.innerHTML = '';
+    select.textContent = '';
     for (let i = 0; i < campaign.length; i++) {
       const stage = campaign[i];
       if (!stage || !stage.id) continue;
@@ -94,7 +94,7 @@
       ? overrideWorld : fallback;
 
     // Build button grid
-    btnContainer.innerHTML = '';
+    btnContainer.textContent = '';
     worldValues.forEach(worldNum => {
       const btn = document.createElement('button');
       btn.className = 'admin-world-btn' + (worldNum === _adminSelectedWorld ? ' active' : '');
@@ -116,7 +116,7 @@
 
     // Sync hidden select for backward compat
     if (hiddenSelect) {
-      hiddenSelect.innerHTML = '';
+      hiddenSelect.textContent = '';
       worldValues.forEach(w => {
         const opt = document.createElement('option');
         opt.value = String(w);
@@ -296,11 +296,8 @@
       }
     }
     if (!show) {
-      const panel = document.getElementById('adminToolsPanel');
-      if (panel) panel.style.display = 'none';
       const hardModeRow = document.getElementById('hardModeRow');
       if (hardModeRow) hardModeRow.style.display = '';
-      adminPanelVisible = false;
     }
     if (show) {
       applySettingsUI();
@@ -328,17 +325,16 @@
           fn(el.value);
         }, { passive: true });
       });
-      const _savedMusicVol = localStorage.getItem('orbitSync_musicVol') || '60';
-      const _savedSfxVol = localStorage.getItem('orbitSync_sfxVol') || '80';
+      const _savedMusicVol = OG.storage.getItem('orbitSync_musicVol') || '60';
+      const _savedSfxVol = OG.storage.getItem('orbitSync_sfxVol') || '80';
       const _ms = document.getElementById('musicVolumeSlider');
       const _ss = document.getElementById('sfxVolumeSlider');
       if (_ms) _ms.value = _savedMusicVol;
       if (_ss) _ss.value = _savedSfxVol;
-      updateSelectedStageStatus();
       const hardModeRow = document.getElementById('hardModeRow');
       const hardModeStatus = document.getElementById('hardModeStatus');
       if (hardModeRow && hardModeStatus) {
-        if (!adminPanelVisible) hardModeRow.style.display = '';
+        hardModeRow.style.display = '';
         const _getWorldStars = (worldNum) => {
           if (typeof playerProgress === 'undefined' || !playerProgress.stageStars) return 0;
           const _stageIds = ['1','2','3','4','5'].map(n => `${worldNum}-${n}`);
@@ -403,7 +399,7 @@
     if (v > 0) _prevMusicVol = parseInt(val, 10);
     if (btn) btn.classList.toggle('muted', v === 0);
     if (slider) slider.value = val;
-    localStorage.setItem('orbitSync_musicVol', val);
+    OG.storage.setItem('orbitSync_musicVol', val);
   }
 
   function setSfxVolume(val) {
@@ -416,7 +412,7 @@
     if (v > 0) _prevSfxVol = parseInt(val, 10);
     if (btn) btn.classList.toggle('muted', v === 0);
     if (slider) slider.value = val;
-    localStorage.setItem('orbitSync_sfxVol', val);
+    OG.storage.setItem('orbitSync_sfxVol', val);
   }
 
   function toggleMusicSetting() {
@@ -453,10 +449,4 @@
   OG.ui.settings.toggleHapticsSetting = toggleHapticsSetting;
   window.setMusicVolume = setMusicVolume;
   window.setSfxVolume = setSfxVolume;
-  OG.ui.settings.bindAdminControls = bindAdminControls;
-  OG.ui.settings.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
-  OG.ui.settings._openAdminPanel = _openAdminPanel;
-  window.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
-
-  bindAdminControls();
 })(window);

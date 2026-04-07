@@ -15,6 +15,7 @@ const ui = {
   wave: document.getElementById('waveDisplay'), bossUI: document.getElementById('bossUI'),
   arenaInfo: document.getElementById('arenaInfo'),
   bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2'),
+  pauseBtn: document.getElementById('pauseBtn'),
   scorePunchAnim: null
 };
 
@@ -71,9 +72,9 @@ function _isMusicBossStage(ld) {
 function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 
 // --- SAVE SYSTEM ---
-let globalCoins = parseInt(localStorage.getItem('orbitSync_coins')) || 0;
-let unlockedSkins = JSON.parse(localStorage.getItem('orbitSync_unlocks')) || ['classic'];
-let activeSkin = localStorage.getItem('orbitSync_equipped') || 'classic';
+let globalCoins = parseInt(OG.storage.getItem('orbitSync_coins')) || 0;
+let unlockedSkins = OG.storage.getJSON('orbitSync_unlocks') || ['classic'];
+let activeSkin = OG.storage.getItem('orbitSync_equipped') || 'classic';
 if (!Array.isArray(unlockedSkins)) unlockedSkins = ['classic'];
 unlockedSkins = unlockedSkins.map((skinId) => skinId === 'fire' ? 'prism' : skinId);
 if (!unlockedSkins.includes('classic')) unlockedSkins.unshift('classic');
@@ -82,8 +83,8 @@ if (activeSkin === 'fire') activeSkin = 'prism';
 
 // ── DAILY LOGIN STREAK ───────────────────────
 const _todayStr = new Date().toDateString();
-const _lastLoginStr = localStorage.getItem('orbitSync_lastLogin') || '';
-const _lastStreakDay = localStorage.getItem('orbitSync_streakDay') || '0';
+const _lastLoginStr = OG.storage.getItem('orbitSync_lastLogin') || '';
+const _lastStreakDay = OG.storage.getItem('orbitSync_streakDay') || '0';
 let dailyLoginStreak = parseInt(_lastStreakDay, 10) || 0;
 let _dailyBonusToShow = 0;
 
@@ -103,9 +104,9 @@ if (_lastLoginStr !== _todayStr) {
   const _bonusTable = [0, 10, 15, 20, 25, 25, 25, 35];
   _dailyBonusToShow = _bonusTable[Math.min(dailyLoginStreak, 7)];
   globalCoins += _dailyBonusToShow;
-  localStorage.setItem('orbitSync_lastLogin', _todayStr);
-  localStorage.setItem('orbitSync_streakDay', String(dailyLoginStreak));
-  localStorage.setItem('orbitSync_coins', Math.floor(globalCoins));
+  OG.storage.setItem('orbitSync_lastLogin', _todayStr);
+  OG.storage.setItem('orbitSync_streakDay', String(dailyLoginStreak));
+  OG.storage.setItem('orbitSync_coins', Math.floor(globalCoins));
 }
 // ── END DAILY LOGIN STREAK ───────────────────
 
@@ -127,15 +128,26 @@ if (_dailyBonusToShow > 0) {
       text-shadow:0 0 20px rgba(255,170,0,0.8);
       animation:streakFadeOut 2.8s ease forwards;
     `;
-    notif.innerHTML = `+${_dailyBonusToShow} COINS<br><span style="font-size:0.5rem;opacity:0.6">DAY ${dailyLoginStreak} LOGIN BONUS</span>`;
+
+    const coinsText = document.createTextNode(`+${_dailyBonusToShow} COINS`);
+    const br = document.createElement('br');
+    const subtitle = document.createElement('span');
+    subtitle.style.fontSize = '0.5rem';
+    subtitle.style.opacity = '0.6';
+    subtitle.textContent = `DAY ${dailyLoginStreak} LOGIN BONUS`;
+
+    notif.appendChild(coinsText);
+    notif.appendChild(br);
+    notif.appendChild(subtitle);
+
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
   }, 600);
 }
 
-let maxWorldUnlocked = parseInt(localStorage.getItem('orbitSync_maxWorld')) || 1;
+let maxWorldUnlocked = parseInt(OG.storage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = 1;
-let tutorialComplete = localStorage.getItem('orbitSync_tutorialDone') === '1';
+let tutorialComplete = OG.storage.getItem('orbitSync_tutorialDone') === '1';
 let hardModeActive = false;
 let activeAugment = null; // 'wide_sync' | 'coin_surge' | 'iron_shield' | null
 let tutorialHitCount = 0;
@@ -153,12 +165,7 @@ function defaultPlayerProgress() {
 
 let playerProgress = (() => {
   const base = defaultPlayerProgress();
-  let stored = null;
-  try {
-    stored = JSON.parse(localStorage.getItem('orbitSync_playerProgress') || 'null');
-  } catch (err) {
-    stored = null;
-  }
+  let stored = OG.storage.getJSON('orbitSync_playerProgress', null);
   if (stored && typeof stored === 'object') {
     const merged = Object.assign({}, base, stored);
     if (!Array.isArray(merged.unlockedWorlds)) merged.unlockedWorlds = ['world1'];
@@ -175,20 +182,20 @@ let playerProgress = (() => {
 if (playerProgress.unlockedWorlds.includes('world3')) maxWorldUnlocked = Math.max(maxWorldUnlocked, 3);
 else if (playerProgress.unlockedWorlds.includes('world2')) maxWorldUnlocked = Math.max(maxWorldUnlocked, 2);
 let personalBest = {
-  score: parseInt(localStorage.getItem('orbitSync_pbScore')) || 0,
-  streak: parseInt(localStorage.getItem('orbitSync_pbStreak')) || 0,
-  world: parseInt(localStorage.getItem('orbitSync_pbWorld')) || 1
+  score: parseInt(OG.storage.getItem('orbitSync_pbScore')) || 0,
+  streak: parseInt(OG.storage.getItem('orbitSync_pbStreak')) || 0,
+  world: parseInt(OG.storage.getItem('orbitSync_pbWorld')) || 1
 };
 
 function saveData() {
-  localStorage.setItem('orbitSync_coins', Math.floor(globalCoins));
-  localStorage.setItem('orbitSync_unlocks', JSON.stringify(unlockedSkins));
-  localStorage.setItem('orbitSync_equipped', activeSkin);
+  OG.storage.setItem('orbitSync_coins', Math.floor(globalCoins));
+  OG.storage.setJSON('orbitSync_unlocks', unlockedSkins);
+  OG.storage.setItem('orbitSync_equipped', activeSkin);
   if (!playerProgress.unlockedWorlds.includes('world1')) playerProgress.unlockedWorlds.unshift('world1');
   if (maxWorldUnlocked >= 2 && !playerProgress.unlockedWorlds.includes('world2')) playerProgress.unlockedWorlds.push('world2');
   if (maxWorldUnlocked >= 3 && !playerProgress.unlockedWorlds.includes('world3')) playerProgress.unlockedWorlds.push('world3');
-  localStorage.setItem('orbitSync_playerProgress', JSON.stringify(playerProgress));
-  localStorage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
+  OG.storage.setJSON('orbitSync_playerProgress', playerProgress);
+  OG.storage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
 }
 
 function checkAndSavePB(currentScore, currentStreak) {
@@ -197,17 +204,17 @@ function checkAndSavePB(currentScore, currentStreak) {
 
   if (currentScore > personalBest.score) {
     personalBest.score = currentScore;
-    localStorage.setItem('orbitSync_pbScore', currentScore);
+    OG.storage.setItem('orbitSync_pbScore', currentScore);
     newRecords.score = true;
   }
   if (currentStreak > personalBest.streak) {
     personalBest.streak = currentStreak;
-    localStorage.setItem('orbitSync_pbStreak', currentStreak);
+    OG.storage.setItem('orbitSync_pbStreak', currentStreak);
     newRecords.streak = true;
   }
   if (currentWorld > personalBest.world) {
     personalBest.world = currentWorld;
-    localStorage.setItem('orbitSync_pbWorld', currentWorld);
+    OG.storage.setItem('orbitSync_pbWorld', currentWorld);
     newRecords.world = true;
   }
   return newRecords;
@@ -461,7 +468,7 @@ function getWorldVisualTheme(level) {
 }
 
 function _syncPauseBtn() {
-  const pb = document.getElementById('pauseBtn');
+  const pb = ui.pauseBtn;
   if (!pb) return;
   pb.style.display = (!inMenu && isPlaying || (!inMenu && !isPlaying)) ? 'flex' : 'none';
 }
@@ -974,7 +981,7 @@ function renderShopOrbPreview(previewEl, skinId) {
   if (!previewEl) return;
   let canvasEl = previewEl.querySelector('canvas');
   if (!canvasEl) {
-    previewEl.innerHTML = '';
+    previewEl.textContent = '';
     canvasEl = document.createElement('canvas');
     canvasEl.width = 60;
     canvasEl.height = 60;
@@ -1434,7 +1441,7 @@ function loadLevel(idx) {
 
   // Save checkpoint — so retries resume from this stage, not world start
   if (!levelData.boss) {
-    localStorage.setItem('orbitSync_checkpointIdx', String(idx));
+    OG.storage.setItem('orbitSync_checkpointIdx', String(idx));
   }
 
   ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
@@ -1499,7 +1506,7 @@ function loadLevel(idx) {
     }
     spawnTargets();
   }
-  const _pb1 = document.getElementById('pauseBtn');
+  const _pb1 = ui.pauseBtn;
   if (_pb1) _pb1.style.display = isCinematicIntro ? 'none' : 'flex';
   return true;
 }
@@ -2948,7 +2955,7 @@ function draw() {
   const _orbFlicker = _blackoutFlickerPhase && worldNum === 5 && !inMenu;
   if (!_orbBlacked) {
     if (_orbFlicker) {
-      ctx.globalAlpha = 0.3 + Math.abs(Math.sin(frameNow * 0.055)) * 0.7;
+      ctx.globalAlpha = 0.3 + Math.abs(Math.sin(now * 0.055)) * 0.7;
     }
     drawOrb(ctx, angle, worldShape);
     ctx.globalAlpha = 1.0;
@@ -3559,7 +3566,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const currentRunWorld = getCurrentRunWorld();
     const newRecords = checkAndSavePB(score, streakBeforeFail);
     isPlaying = false; ui.topBar.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
-    const _pb3 = document.getElementById('pauseBtn');
+    const _pb3 = ui.pauseBtn;
     if (_pb3) _pb3.style.display = 'none';
     const pendingCoins = getPendingRunCoins();
     const pbStatsBlock = document.getElementById('pbStatsBlock');
@@ -3723,7 +3730,7 @@ function restartCurrentStageAfterRevive() {
   isPlaying = true;
   ui.overlay.style.display = 'none';
   ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
+  const _pb = ui.pauseBtn;
   if (_pb) _pb.style.display = 'flex';
   ui.gameUI.style.display = 'block';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
@@ -4482,13 +4489,13 @@ function tap() {
           if (tutOverlay) tutOverlay.style.display = 'none';
           tutorialPhase = 0;
           tutorialComplete = true;
-          localStorage.setItem('orbitSync_tutorialDone', '1');
+          OG.storage.setItem('orbitSync_tutorialDone', '1');
         }, 1400);
       } else if (tutorialHitCount >= 4 && tutOverlay) {
         tutOverlay.style.display = 'none';
         tutorialPhase = 0;
         tutorialComplete = true;
-        localStorage.setItem('orbitSync_tutorialDone', '1');
+        OG.storage.setItem('orbitSync_tutorialDone', '1');
       }
     }
 
@@ -4538,7 +4545,7 @@ function tap() {
       || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
 
-    if (targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active) || stageHits >= levelData.hitsNeeded) {
+    if (shouldForceHudFlush) {
       const isResonanceFinalHit = levelData
         && levelData.id === '3-6'
         && stageHits === (levelData.hitsNeeded - 1)
@@ -4676,14 +4683,14 @@ function restartFromCheckpoint() {
   currentLevelIdx = getCheckpointIndex();
   loadLevel(currentLevelIdx);
   isPlaying = true;
-  const _pb2 = document.getElementById('pauseBtn');
+  const _pb2 = ui.pauseBtn;
   if (_pb2) _pb2.style.display = 'flex';
 }
 
 function returnToMenu() {
-  const _pb0 = document.getElementById('pauseBtn');
+  const _pb0 = ui.pauseBtn;
   if (_pb0) _pb0.style.display = 'none';
-  localStorage.removeItem('orbitSync_checkpointIdx');
+  OG.storage.removeItem('orbitSync_checkpointIdx');
   if (_pendingResize) {
     _pendingResize = false;
     updateCanvasSize();
@@ -4698,7 +4705,7 @@ function returnToMenu() {
   toggleSettings(false);
   setOverlayState('cinematic');
   ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)';
-  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _pb2 = document.getElementById('pauseBtn'); if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
+  ui.overlay.style.display = 'none'; ui.mainMenu.style.display = 'flex'; ui.topBar.style.display = 'none'; const _pb2 = ui.pauseBtn; if (_pb2) _pb2.style.display = 'none'; ui.gameUI.style.display = 'none'; if (ui.arenaInfo) ui.arenaInfo.style.display = 'none'; ui.bossUI.style.display = 'none'; ui.bigMultiplier.style.display = 'none';
   const runStatsBlock = document.getElementById('runStatsBlock');
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
@@ -4753,7 +4760,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   ui.overlay.style.display = 'flex';
   ui.overlay.style.background = 'rgba(5, 5, 10, 0.95)'; // Darker, cleaner focus
   ui.topBar.style.display = 'none';
-  const _pb2 = document.getElementById('pauseBtn');
+  const _pb2 = ui.pauseBtn;
   if (_pb2) _pb2.style.display = 'none';
   ui.gameUI.style.display = 'none';
   if (ui.arenaInfo) ui.arenaInfo.style.display = 'none';
@@ -4828,7 +4835,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           // Find the world that was just cleared (one before nextWorld)
           const _clearedWorldPrefix = nextWorld > 1 ? String(nextWorld - 1) + '-' : '1-';
           const _worldStages = campaign.filter(s => s && s.id && s.id.startsWith(_clearedWorldPrefix) && !s.boss);
-          _replayBtns.innerHTML = '';
+          _replayBtns.textContent = '';
           const _totalStars = _worldStages.reduce((acc, s) => {
             return acc + ((playerProgress.stageStars && playerProgress.stageStars[s.id]) || 0);
           }, 0);
@@ -4860,7 +4867,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
                 resetRunState();
                 ui.score.innerText = '0';
                 ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
+  const _pb = ui.pauseBtn;
   if (_pb) _pb.style.display = 'flex';
                 ui.gameUI.style.display = 'block';
                 ui.bigMultiplier.style.display = 'block';
@@ -4879,7 +4886,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         }
 
         // Wire up the button
-        localStorage.removeItem('orbitSync_checkpointIdx');
+        OG.storage.removeItem('orbitSync_checkpointIdx');
         ui.btn.onclick = function () {
           ui.overlay.style.display = 'none';
           ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)'; // Reset bg
@@ -4888,7 +4895,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
             return;
           }
           ui.topBar.style.display = 'flex';
-  const _pb = document.getElementById('pauseBtn');
+  const _pb = ui.pauseBtn;
   if (_pb) _pb.style.display = 'flex';
           ui.gameUI.style.display = 'block';
           if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
