@@ -128,7 +128,18 @@ if (_dailyBonusToShow > 0) {
       text-shadow:0 0 20px rgba(255,170,0,0.8);
       animation:streakFadeOut 2.8s ease forwards;
     `;
-    notif.innerHTML = `+${_dailyBonusToShow} COINS<br><span style="font-size:0.5rem;opacity:0.6">DAY ${dailyLoginStreak} LOGIN BONUS</span>`;
+
+    const coinsText = document.createTextNode(`+${_dailyBonusToShow} COINS`);
+    const br = document.createElement('br');
+    const subtitle = document.createElement('span');
+    subtitle.style.fontSize = '0.5rem';
+    subtitle.style.opacity = '0.6';
+    subtitle.textContent = `DAY ${dailyLoginStreak} LOGIN BONUS`;
+
+    notif.appendChild(coinsText);
+    notif.appendChild(br);
+    notif.appendChild(subtitle);
+
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
   }, 600);
