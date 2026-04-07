@@ -149,31 +149,6 @@
         <span id="hardModeStatus" style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:1px; color:rgba(255,80,100,0.7);">LOCKED</span>
       </div>
 
-      <!-- ADMIN PANEL -->
-      <div id="adminToolsPanel" class="admin-tools-panel" style="display: none;">
-        <div style="font-family:'Orbitron',sans-serif; font-size:0.5rem; letter-spacing:3px; color:rgba(255,60,80,0.6); text-align:center; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid rgba(255,40,60,0.15);">⚠ DEVELOPER ACCESS ⚠</div>
-        <div id="adminCodeEntry" class="admin-code-entry">
-          <input id="adminCodeInput" type="password" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="_ _ _ _ _ _">
-          <button id="adminCodeSubmit" class="settings-toggle">Unlock</button>
-        </div>
-        <div id="adminStageControls" class="admin-stage-controls" style="display: none;">
-          <div style="font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,60,80,0.5); margin-bottom:6px;">SELECT WORLD</div>
-          <div id="adminWorldBtns" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;"></div>
-          <div style="font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,60,80,0.5); margin-bottom:6px;">SELECT STAGE</div>
-          <select id="adminStageSelect" style="width:100%; padding:12px; font-size:0.75rem; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,40,60,0.2); color:#fff; font-family:'Orbitron',sans-serif; min-height:48px; appearance:none; -webkit-appearance:none;"></select>
-          <select id="adminWorldSelect" style="display:none;"></select>
-          <div class="admin-stage-actions">
-            <button id="adminStageApply" class="settings-toggle" style="background:linear-gradient(135deg,#b157ff,#7c2fe0); color:#fff; font-weight:bold; letter-spacing:1.5px;">▶ LAUNCH</button>
-            <button id="adminStageClear" class="settings-toggle off">CLEAR</button>
-          </div>
-          <p id="adminStageStatus" class="admin-stage-status">No stage selected.</p>
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08);">
-            <span style="font-size:0.7rem; letter-spacing:1px;">Infinite Lives</span>
-            <button id="adminInfiniteToggle" class="settings-toggle off" onclick="toggleAdminInfiniteLives()">Off</button>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 

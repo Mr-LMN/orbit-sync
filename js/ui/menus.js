@@ -15,11 +15,6 @@
 
   function _launchCampaign() {
     let startLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
-    const stageOverrideId = OG.debug && OG.debug.stageOverrideId;
-    if (stageOverrideId && Array.isArray(campaign)) {
-      const overrideIdx = campaign.findIndex((stage) => stage && stage.id === stageOverrideId);
-      if (overrideIdx >= 0) startLevelIdx = overrideIdx;
-    }
 
     initAudio();
     toggleSettings(false);
