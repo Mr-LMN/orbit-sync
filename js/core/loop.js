@@ -2696,8 +2696,8 @@ function draw() {
     const currentWorldNum = getWorldNum();
     const isEchoWorld = currentWorldNum === 3;
     const _trailMult = Math.min(multiplier, 8);
-    const _trailRadiusMult = 1 + (_trailMult * 0.04); // x8 = 1.32x (was 1.96x)
-    const _trailOpacityMult = 1 + (_trailMult * 0.03); // x8 = 1.24x (was 1.64x)
+    const _trailRadiusMult = 1 + (_trailMult * 0.04);
+    const _trailOpacityMult = 1 + (_trailMult * 0.03);
 
     for (let i = 0; i < trail.length; i++) {
       const p = trail[i];
@@ -2711,14 +2711,12 @@ function draw() {
         ? Math.min(0.32, life * 0.18 * _trailOpacityMult)
         : Math.min(0.45, life * 0.28 * _trailOpacityMult);
 
-      // Each skin gets a distinct trail identity
       const _skinTrailColor = activeSkin === 'crimson' ? '#ff2244'
         : activeSkin === 'ghost' ? 'rgba(180,230,255,0.6)'
         : activeSkin === 'storm' ? '#ffee00'
-        : activeSkin === 'pulse' ? orbColor  // pulse keeps multiplier color
         : activeSkin === 'echo' ? '#00eaff'
         : activeSkin === 'skull' ? '#aaffdd'
-        : orbColor; // classic + prism use multiplier color
+        : orbColor;
       const trailColor = isEchoWorld ? '#dffcff' : _skinTrailColor;
       const glowAmount = isEchoWorld ? (3 * life) : (7 * life * _trailRadiusMult);
 
