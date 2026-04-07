@@ -219,7 +219,7 @@ function updatePersistentCoinUI() {
 }
 
 function getPendingRunCoins() {
-  return Math.floor(runCents / 3);
+  return Math.floor(runCents / 7);
 }
 
 function bankRunCoins() {
@@ -2696,23 +2696,31 @@ function draw() {
     const currentWorldNum = getWorldNum();
     const isEchoWorld = currentWorldNum === 3;
     const _trailMult = Math.min(multiplier, 8);
-    const _trailRadiusMult = 1 + (_trailMult * 0.12); // x8 = 1.96x wider trail
-    const _trailOpacityMult = 1 + (_trailMult * 0.08); // x8 = 1.64x brighter
+    const _trailRadiusMult = 1 + (_trailMult * 0.04); // x8 = 1.32x (was 1.96x)
+    const _trailOpacityMult = 1 + (_trailMult * 0.03); // x8 = 1.24x (was 1.64x)
 
     for (let i = 0; i < trail.length; i++) {
       const p = trail[i];
       const life = i / trail.length;
 
       const radius = isEchoWorld
-        ? Math.max(1.2, 6.2 * life * _trailRadiusMult)
-        : Math.max(1.8, 9.5 * life * _trailRadiusMult);
+        ? Math.max(0.8, 4.0 * life * _trailRadiusMult)
+        : Math.max(1.2, 6.0 * life * _trailRadiusMult);
 
       const opacity = isEchoWorld
-        ? Math.min(0.35, life * 0.18 * _trailOpacityMult)
-        : Math.min(0.72, life * 0.42 * _trailOpacityMult);
+        ? Math.min(0.22, life * 0.12 * _trailOpacityMult)
+        : Math.min(0.45, life * 0.28 * _trailOpacityMult);
 
-      const trailColor = isEchoWorld ? '#dffcff' : orbColor;
-      const glowAmount = isEchoWorld ? (4 * life) : (10 * life * _trailRadiusMult);
+      // Each skin gets a distinct trail identity
+      const _skinTrailColor = activeSkin === 'crimson' ? '#ff2244'
+        : activeSkin === 'ghost' ? 'rgba(180,230,255,0.6)'
+        : activeSkin === 'storm' ? '#ffee00'
+        : activeSkin === 'pulse' ? orbColor  // pulse keeps multiplier color
+        : activeSkin === 'echo' ? '#00eaff'
+        : activeSkin === 'skull' ? '#aaffdd'
+        : orbColor; // classic + prism use multiplier color
+      const trailColor = isEchoWorld ? '#dffcff' : _skinTrailColor;
+      const glowAmount = isEchoWorld ? (3 * life) : (7 * life * _trailRadiusMult);
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
@@ -3094,11 +3102,6 @@ function update() {
       if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
       if (t.start < 0) t.start += Math.PI * 2;
     }
-    // Keep dual target center angle in sync with movement
-    if (t.isDual && typeof t.targetHalfWidth === 'number') {
-      t.angle = normalizeAngle(t.start + t.targetHalfWidth);
-    }
-
     let sizeScale = 1;
     if (!inMenu && t.shrinkConfig && t.baseSize && t.shrinkConfig.distance > 0) {
       const waveDistance = Math.max(0, totalStageDistance - (t.spawnDistance || 0));
@@ -4180,15 +4183,35 @@ function tap() {
       createParticles(streakPt.x, streakPt.y, '#ffaa00', 25);
     }
 
-    let centsEarned = (hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect' || hitQuality === "perfect"
-      ? 3
-      : (hitTimingTier === 'good' || hitQuality === "good" ? 2 : 1)) * multiplier;
+    // Base earn: 1/2/3 → now capped so high multiplier doesn't snowball
+    const _baseEarn = hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect' || hitQuality === 'perfect'
+      ? 2 : (hitTimingTier === 'good' || hitQuality === 'good' ? 1 : 0.5);
+    // Multiplier contribution softened — logarithmic feel
+    const _multContrib = 1 + Math.log2(Math.max(1, multiplier)) * 0.4;
+    let centsEarned = _baseEarn * _multContrib;
     if (activeAugment === 'coin_surge') centsEarned = Math.ceil(centsEarned * 1.5);
     runCents += centsEarned;
     markScoreCoinDirty();
     updateMultiplierUI();
     const _hmParticleColor = hardModeActive ? '#ff3344' : t.color;
     createParticles(hitX, hitY, _hmParticleColor, 18 + Math.min(18, comboCount));
+    // Twin hit: draw a connecting spark to the partner
+    if (t.isTwin) {
+      const _partner = targets.find(pt => pt !== t && pt.isTwin && pt.active);
+      if (_partner) {
+        const _pPt = getPointOnShape(
+          normalizeAngle(_partner.start + _partner.size / 2),
+          worldShape, centerObj.x, centerObj.y, orbitRadius
+        );
+        createParticles(_pPt.x, _pPt.y, '#2ff6ff', 10);
+        createPopup(hitX, hitY - 18, 'FIND THE MIRROR', '#2ff6ff');
+      } else {
+        // Last twin cleared — bonus flourish
+        createShockwave('#2ff6ff', 28);
+        createShockwave('#ff4fd8', 18);
+        createPopup(hitX, hitY - 18, 'SYNC!', '#ffffff');
+      }
+    }
     if (comboCount > 2 && comboCount % 6 === 0) {
       createPopup(hitX, hitY - 36, `COMBO x${comboCount}`, '#ffd54a');
     }
@@ -4462,8 +4485,13 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           : (nextWorld === 2 ? "The Diamond Protocol Awaits" : "Ready for the next sector.");
         ui.btn.innerText = isCampaignClear ? "RETURN TO MENU" : `ENTER WORLD ${nextWorld}`;
         setOverlayState('worldClearReady');
-        // Show augment picker after brief delay (let player see their score first)
-        if (!isCampaignClear && typeof showAugmentPicker === 'function') {
+        // Show augment picker ONLY on replay (world already completed before)
+        // Check if the boss stage of the world just cleared was previously completed
+        const _clearedWorldNum = nextWorld > 1 ? (nextWorld - 1) : 1;
+        const _bossStageId = `${_clearedWorldNum}-6`;
+        const _worldPreviouslyCleared = playerProgress.completedStages &&
+          playerProgress.completedStages[_bossStageId];
+        if (!isCampaignClear && _worldPreviouslyCleared && typeof showAugmentPicker === 'function') {
           setTimeout(() => showAugmentPicker(), 1200);
         }
         // Populate stage replay buttons

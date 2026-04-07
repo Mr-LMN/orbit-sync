@@ -541,7 +541,27 @@
       baseSize *= 0.78;
     }
     let offset = Math.random() * Math.PI * 2;
-    const isDual = levelData.mechanics && levelData.mechanics.includes('dual');
+    // Twin mechanic: two mirrored targets, both need hitting
+    if (levelData.mechanics && levelData.mechanics.includes('twin')) {
+      const twinSize = Math.PI / 9;
+      // Anchor positions at opposite diamond sides
+      const baseAnchor = Math.random() * Math.PI; // random orientation each wave
+      const anchorA = normalizeAngle(baseAnchor);
+      const anchorB = normalizeAngle(baseAnchor + Math.PI); // mirror
+      const twinA = buildTarget(anchorA, twinSize, {
+        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0, isTwin: true
+      });
+      const twinB = buildTarget(anchorB, twinSize, {
+        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0, isTwin: true
+      });
+      twinA.twinPair = true;
+      twinB.twinPair = true;
+      targets.push(twinA);
+      targets.push(twinB);
+      ui.text.innerText = 'Two mirrored zones. Hit both to clear.';
+      ui.text.style.color = '#2ff6ff';
+      return;
+    }
 
     for (let i = 0; i < tCount; i++) {
       const angle = normalizeAngle(offset + (i * (Math.PI * 2 / tCount)) + (baseSize / 2));
@@ -565,9 +585,8 @@
       }
       target.angle = angle;
       target.baseAngle = angle;
-      target.isDual = isDual;
-      target.targetHalfWidth = baseSize / 2;
-      target.dualState = isDual ? 'full' : 'normal';
+      target.isDual = false;
+      target.dualState = 'normal';
       targets.push(target);
     }
     if (levelData.hasPhantom && !inMenu && !levelData.boss) {
