@@ -2955,7 +2955,7 @@ function draw() {
   const _orbFlicker = _blackoutFlickerPhase && worldNum === 5 && !inMenu;
   if (!_orbBlacked) {
     if (_orbFlicker) {
-      ctx.globalAlpha = 0.3 + Math.abs(Math.sin(frameNow * 0.055)) * 0.7;
+      ctx.globalAlpha = 0.3 + Math.abs(Math.sin(now * 0.055)) * 0.7;
     }
     drawOrb(ctx, angle, worldShape);
     ctx.globalAlpha = 1.0;
