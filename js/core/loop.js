@@ -1,5 +1,5 @@
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const ui = {
   score: document.getElementById('scoreDisplay'), stage: document.getElementById('stageDisplay'),
   combo: document.getElementById('comboDisplay'),
