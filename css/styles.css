@@ -1116,19 +1116,20 @@ body.hard-mode #hardModeBadge { display: block; }
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
+  height: 6px;
   border-radius: 2px;
   background: rgba(255,255,255,0.12);
   outline: none;
 }
 .vol-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #00ff88;
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(0,255,136,0.5);
+  box-shadow: 0 0 12px rgba(0,255,136,0.6);
+  touch-action: none;
 }
 .vol-slider::-webkit-slider-runnable-track {
   height: 4px;

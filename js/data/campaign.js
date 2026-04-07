@@ -151,14 +151,13 @@
       id: '4-5',
       title: 'System Overload',
       hitsNeeded: 10,
-      speed: 0.053,
+      speed: 0.048,
       lives: 3,
-      targets: 4,
-      fixedTargetCount: true,
-      moveSpeed: 0.009,
+      targets: 3,
+      moveSpeed: 0.007,
       reverse: false,
       hasPhantom: false,
-      text: 'Four zones. Maximum throughput. No room for error.'
+      text: 'Maximum signal load. No tricks — just survive.'
     },
     {
       id: '4-6',
