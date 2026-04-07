@@ -2845,11 +2845,8 @@ function draw() {
   // ── END SYNC GATE SECOND PASS ─────────────────────────────
 
   // TRAIL
-  if (!inMenu && trail.length > 0) {
+  if (!inMenu && trail.length > 0 && !(_blackoutActive && getWorldNum() === 5)) {
     const currentWorldNum = getWorldNum();
-    if (_blackoutActive && currentWorldNum === 5) {
-      ctx.globalAlpha = 1.0;
-    } else {
     const isEchoWorld = currentWorldNum === 3;
     const _trailMult = Math.min(multiplier, 8);
     const _trailRadiusMult = 1 + (_trailMult * 0.04);
@@ -2886,7 +2883,6 @@ function draw() {
     }
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
-    } // end blackout guard
   }
 
   // Blackout vignette — deepens when orb is hidden
@@ -2949,27 +2945,14 @@ function draw() {
   const currentWorldNum = getWorldNum();
   const isWorld3 = currentWorldNum === 3;
 
-  const _orbShouldBlackout = _blackoutActive && currentWorldNum === 5 && !inMenu;
-  const _orbFlicker = _blackoutFlickerPhase && currentWorldNum === 5 && !inMenu;
-  if (!_orbShouldBlackout) {
-    const _orbAlpha = _orbFlicker
-      ? (0.3 + Math.sin(now * 0.06) * 0.7)  // rapid flicker warning
-      : 1.0;
-    ctx.globalAlpha = Math.max(0, _orbAlpha);
+  const _orbBlacked = _blackoutActive && worldNum === 5 && !inMenu;
+  const _orbFlicker = _blackoutFlickerPhase && worldNum === 5 && !inMenu;
+  if (!_orbBlacked) {
+    if (_orbFlicker) {
+      ctx.globalAlpha = 0.3 + Math.abs(Math.sin(frameNow * 0.055)) * 0.7;
+    }
     drawOrb(ctx, angle, worldShape);
     ctx.globalAlpha = 1.0;
-  }
-  // During blackout: ghost outline so screen isn't jarring
-  if (_orbShouldBlackout) {
-    const _ghostPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(_ghostPt.x, _ghostPt.y, 5, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(168,216,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.shadowBlur = 0;
-    ctx.stroke();
-    ctx.restore();
   }
 
   if (isWorld3) {
@@ -3224,52 +3207,45 @@ function update() {
     echoAngle = angle;
   }
 
-  // ── BLACKOUT TICK ─────────────────────────────────────
-  if (isPlaying && !inMenu && !isCinematicIntro) {
+  // ── BLACKOUT TICK (World 5) ───────────────────────
+  if (isPlaying && !inMenu && !isCinematicIntro && worldNum === 5) {
     const _bcfg = levelData && levelData.blackout;
     if (_bcfg) {
       if (!_blackoutInitialised) {
         _blackoutInitialised = true;
         _nextBlackoutAt = frameNow + (_bcfg.firstAt || 2000);
       }
-      // End blackout
       if (_blackoutActive && frameNow >= _blackoutEndsAt) {
         _blackoutActive = false;
         _nextBlackoutAt = frameNow + _bcfg.interval;
-        // Return tone — soft high ping
-        if (audioCtx && typeof playTone === 'function') {
-          playTone(880, 'sine', 0.06, 0.01, 0.18);
-        }
+        if (audioCtx && typeof playTone === 'function') playTone(880, 'sine', 0.05, 0.01, 0.15);
       }
-      // Start blackout
       if (!_blackoutActive && frameNow >= _nextBlackoutAt) {
         _blackoutActive = true;
         _blackoutEndsAt = frameNow + _bcfg.duration;
-        _blackoutFlickerPhase = true;
-        // Blackout tone — low thud
-        if (audioCtx && typeof playTone === 'function') {
-          playTone(90, 'sine', 0.12, 0.008, 0.12);
-        }
+        if (audioCtx && typeof playTone === 'function') playTone(90, 'sine', 0.10, 0.008, 0.10);
         triggerScreenShake(2);
       }
-      // Flicker warning: 180ms before blackout starts
-      _blackoutFlickerPhase = !_blackoutActive &&
-        (_nextBlackoutAt - frameNow) < 180 &&
-        (_nextBlackoutAt - frameNow) > 0;
+      _blackoutFlickerPhase = !_blackoutActive
+        && (_nextBlackoutAt - frameNow) < 180
+        && (_nextBlackoutAt - frameNow) > 0;
     } else {
       _blackoutActive = false;
       _blackoutFlickerPhase = false;
     }
-    // Boss-controlled blackout for Null Gate
+    // Null Gate phase 1 boss blackout
     if (levelData && levelData.boss === 'null_gate' && !isBossPhaseTwo && bossPhase === 1) {
-      const _bossBlackoutCycle = 3500;
-      const _bossBlackoutDur = 1500;
-      const _cyclePos = frameNow % _bossBlackoutCycle;
-      _blackoutActive = _cyclePos < _bossBlackoutDur;
-      _blackoutFlickerPhase = !_blackoutActive && _cyclePos > (_bossBlackoutCycle - 200);
+      const _bCycle = 3500;
+      const _bDur = 1500;
+      const _cPos = frameNow % _bCycle;
+      _blackoutActive = _cPos < _bDur;
+      _blackoutFlickerPhase = !_blackoutActive && _cPos > (_bCycle - 200);
     }
+  } else if (worldNum !== 5) {
+    _blackoutActive = false;
+    _blackoutFlickerPhase = false;
   }
-  // ── END BLACKOUT TICK ─────────────────────────────────
+  // ── END BLACKOUT TICK ────────────────────────────
 
   const _isRealBossStage = levelData && (levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate');
   if (!inMenu && _isRealBossStage && !isBossPhaseTwo && Math.random() < 0.02) { triggerScreenShake(3); }
