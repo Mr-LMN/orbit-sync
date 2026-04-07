@@ -187,6 +187,28 @@
   }
 
   function spawnWorld2MechanicTargets() {
+    if (levelData.mechanics && levelData.mechanics.includes('twin')) {
+      const twinSize = Math.PI / 9;
+      const baseAnchor = Math.random() * Math.PI;
+      const anchorA = normalizeAngle(baseAnchor);
+      const anchorB = normalizeAngle(baseAnchor + Math.PI);
+      const twinA = buildTarget(anchorA, twinSize, {
+        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0
+      });
+      const twinB = buildTarget(anchorB, twinSize, {
+        color: '#2ff6ff', active: true, hp: 1, moveSpeed: 0
+      });
+      twinA.isTwin = true;
+      twinB.isTwin = true;
+      targets.push(twinA);
+      targets.push(twinB);
+      if (ui && ui.text) {
+        ui.text.innerText = 'Two mirrored zones. Hit both to clear.';
+        ui.text.style.color = '#2ff6ff';
+      }
+      return;
+    }
+
     const splitControl = OG.systems && OG.systems.splitControl;
     const mechanics = levelData.mechanics || [];
     const count = levelData.targets || 1;
