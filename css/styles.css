@@ -142,6 +142,92 @@ body.last-life #arenaInfo          { opacity: 0.28; }
 
 #mainMenu { position: absolute; text-align: center; z-index: 10; background: rgba(15,15,19,0.85); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
 .title { font-size: 4rem; margin: 0; color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.5); font-weight: 900; letter-spacing: 2px;}
+/* Settings modal compact */
+#settingsModal {
+  height: auto;
+  max-height: 52%;
+  min-height: 220px;
+}
+.settings-header {
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.settings-content {
+  padding: 0;
+  gap: 0;
+}
+.settings-row {
+  padding: 14px 20px;
+  border-radius: 0;
+  background: none;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Compact audio row — all in one line */
+.settings-audio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.audio-icon-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  padding: 4px;
+  flex-shrink: 0;
+  touch-action: manipulation;
+  min-width: 32px;
+  min-height: 32px;
+}
+.audio-icon-btn.muted { color: rgba(255,80,80,0.5); }
+.audio-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.15);
+  outline: none;
+  touch-action: none;
+  cursor: pointer;
+}
+.audio-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #00ff88;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0,255,136,0.5);
+}
+
+/* Pause FAB — shown during gameplay instead of gear */
+.pause-fab {
+  position: fixed;
+  bottom: 22px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(10,10,18,0.85);
+  backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.7);
+  font-size: 0.9rem;
+  cursor: pointer;
+  z-index: 25;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.pause-fab:active { background: rgba(255,255,255,0.1); }
+
+/* Keep menu gear button */
 .settings-btn {
   position: absolute;
   top: 10px;
@@ -150,45 +236,19 @@ body.last-life #arenaInfo          { opacity: 0.28; }
   height: 36px;
   border-radius: 50%;
   border: 1px solid rgba(255,255,255,0.3);
-  background: rgba(10, 10, 15, 0.65);
+  background: rgba(10,10,15,0.65);
   color: #fff;
   font-size: 1rem;
-  line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 25;
-}
-/* Floating action button — gameplay settings */
-.settings-fab {
-  position: fixed;
-  bottom: 24px;
-  right: 18px;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(10,10,18,0.82);
-  backdrop-filter: blur(8px);
-  color: rgba(255,255,255,0.6);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.52rem;
-  letter-spacing: 2px;
-  cursor: pointer;
-  z-index: 25;
-  display: none;
-  align-items: center;
-  gap: 6px;
   touch-action: manipulation;
-  transition: background 0.15s ease, color 0.15s ease;
 }
-.settings-fab:active {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-}
-.settings-btn:active { transform: scale(0.94); }
 .menu-settings-btn { top: 16px; right: 16px; }
+.settings-btn:active { transform: scale(0.94); }
+
 
 .btn { padding: 15px 40px; font-size: 1.5rem; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin: 0; transition: transform 0.1s; width: 250px;}
 .btn:active { transform: scale(0.95); }
@@ -225,7 +285,9 @@ body.last-life #arenaInfo          { opacity: 0.28; }
   bottom: -100%;
   left: 0;
   width: 100%;
-  height: 58%;
+  height: auto;
+  max-height: 52%;
+  min-height: 220px;
   background: #15151c;
   border-top-left-radius: 30px;
   border-top-right-radius: 30px;
@@ -240,8 +302,8 @@ body.last-life #arenaInfo          { opacity: 0.28; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 30px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 14px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .settings-header h2 {
   margin: 0;
@@ -249,22 +311,23 @@ body.last-life #arenaInfo          { opacity: 0.28; }
   font-size: 2rem;
 }
 .settings-content {
-  padding: 0 0 24px;
+  padding: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   max-height: 72vh;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
 }
 .settings-row {
-  background: #1a1a24;
-  border-radius: 14px;
-  padding: 14px 16px;
+  background: none;
+  border-radius: 0;
+  padding: 14px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.95rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .settings-toggle {
   border: none;
@@ -1080,62 +1143,4 @@ body.hard-mode #hardModeBadge { display: block; }
   100% { opacity:0; transform:translate(-50%,-40%); }
 }
 
-.settings-row-slider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-}
-.vol-mute-btn {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.6);
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  font-size: 1rem;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s, color 0.15s;
-}
-.vol-mute-btn.muted {
-  color: rgba(255,80,80,0.6);
-  border-color: rgba(255,80,80,0.3);
-  text-decoration: line-through;
-}
-.vol-mute-btn:active { background: rgba(255,255,255,0.08); }
-.vol-slider-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.vol-label {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.45rem;
-  letter-spacing: 2px;
-  color: rgba(255,255,255,0.35);
-}
-.vol-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.12);
-  outline: none;
-}
-.vol-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #00ff88;
-  cursor: pointer;
-  box-shadow: 0 0 12px rgba(0,255,136,0.6);
-  touch-action: none;
-}
-.vol-slider::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-}
+
