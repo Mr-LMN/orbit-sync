@@ -212,17 +212,8 @@
     const el = document.getElementById('challengePreview');
     if (!el) return;
     el.style.display = 'flex';
-    // Calculate days until next Monday
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon
-    const daysUntilMonday = dayOfWeek === 1 ? 7 : (8 - dayOfWeek) % 7;
     const countdown = document.getElementById('challengeCountdown');
-    if (countdown) {
-      countdown.innerText = daysUntilMonday === 1
-        ? 'UNLOCKS TOMORROW'
-        : daysUntilMonday === 0 ? 'LAUNCHING TODAY'
-        : `LAUNCHES IN ${daysUntilMonday} DAYS`;
-    }
+    if (countdown) countdown.innerText = 'COMING SOON';
   }
 
 

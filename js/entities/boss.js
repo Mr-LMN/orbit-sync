@@ -61,6 +61,8 @@
 
   function triggerBossIntro() {
     if (!levelData.boss || bossIntroPlaying) return;
+    const _pbCinema = document.getElementById('pauseBtn');
+    if (_pbCinema) _pbCinema.style.display = 'none';
     const isAegisIntro = levelData.id === '1-6' || levelData.boss === 'aegis';
     const isWorld2BossIntro = levelData.id === '2-6' && levelData.boss === 'prism';
     const isCorruptorIntro = levelData.boss === 'corruptor';
@@ -220,6 +222,8 @@
       isPlaying = true;
       bossIntroPlaying = false;
       if (ui.gameUI) ui.gameUI.style.display = 'block';
+      const _pbRestore = document.getElementById('pauseBtn');
+      if (_pbRestore) _pbRestore.style.display = 'flex';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
       ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro) ? 'boss-segment' : 'boss-segment active-segment';
@@ -236,6 +240,8 @@
 
   function playBossCinematic() {
     if (!levelData.boss) return;
+    const _pbCinema2 = document.getElementById('pauseBtn');
+    if (_pbCinema2) _pbCinema2.style.display = 'none';
     setOverlayState('cinematic');
     isCinematicIntro = true;
     isPlaying = false;
@@ -264,6 +270,8 @@
       isCinematicIntro = false;
       isPlaying = true;
       if (ui.gameUI) ui.gameUI.style.display = 'block';
+      const _pbRestore = document.getElementById('pauseBtn');
+      if (_pbRestore) _pbRestore.style.display = 'flex';
       if (_isRealBoss) {
         if (ui.bossUI) ui.bossUI.style.display = 'flex';
         ui.bossPhase1.className = 'boss-segment active-segment';

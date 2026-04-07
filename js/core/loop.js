@@ -1264,7 +1264,7 @@ function generateTitle(score, world, streak, revives) {
   if (revives === 0 && perfectRate >= 0.85 && totalHits >= 5) return "FILTHY ACCURACY";
 
   // World clear titles
-  if (revives === 0 && world >= 3) return "WORLD BREAKER";
+  if (revives === 0 && world >= 4) return "WORLD BREAKER";
   if (revives === 0 && world >= 2) return "CLEAN SWEEP";
 
   // Comeback / survival titles
@@ -1273,7 +1273,7 @@ function generateTitle(score, world, streak, revives) {
   if (revives >= 3 && world >= 2) return "NEVER SAY DIE";
 
   // Combo titles
-  if (streak >= 20) return "CHAIN MASTER";
+  if (streak >= 25) return "CHAIN MASTER";
   if (streak >= 12) return "COMBO KING";
   if (streak >= 8) return "ON A ROLL";
 
@@ -1281,7 +1281,7 @@ function generateTitle(score, world, streak, revives) {
   if (world >= 3 && score > 150) return "RESONANCE LOCKED";
   if (world >= 3) return "ECHO RUNNER";
   if (world >= 2 && score > 100) return "PRISM SHREDDER";
-  if (score >= 150) return "ORBIT ELITE";
+  if (score >= 800) return "ORBIT ELITE";
   if (score >= 75) return "SYNC RUNNER";
 
   // Progress titles
@@ -1477,7 +1477,7 @@ function loadLevel(idx) {
     spawnTargets();
   }
   const _pb1 = document.getElementById('pauseBtn');
-  if (_pb1) _pb1.style.display = 'flex';
+  if (_pb1) _pb1.style.display = isCinematicIntro ? 'none' : 'flex';
   return true;
 }
 
@@ -2704,11 +2704,11 @@ function draw() {
       const life = i / trail.length;
 
       const radius = isEchoWorld
-        ? Math.max(0.8, 4.0 * life * _trailRadiusMult)
+        ? Math.max(1.0, 5.0 * life * _trailRadiusMult)
         : Math.max(1.2, 6.0 * life * _trailRadiusMult);
 
       const opacity = isEchoWorld
-        ? Math.min(0.22, life * 0.12 * _trailOpacityMult)
+        ? Math.min(0.32, life * 0.18 * _trailOpacityMult)
         : Math.min(0.45, life * 0.28 * _trailOpacityMult);
 
       // Each skin gets a distinct trail identity
@@ -4350,7 +4350,7 @@ function restartFromCheckpoint() {
   ui.bigMultiplier.style.display = 'none';
 
   resetRunState();
-  ui.score.innerText = 0;
+  ui.score.innerText = '';
   updateStreakUI();
   updateMultiplierUI();
   markScoreCoinDirty(true);
@@ -4417,6 +4417,11 @@ function refreshMenuWorldPreview() {
 }
 
 function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampaignClear }) {
+  // Reset boss HP bar segments so they don't carry over
+  if (ui.bossPhase1) ui.bossPhase1.className = 'boss-segment';
+  if (ui.bossPhase2) ui.bossPhase2.className = 'boss-segment';
+  if (ui.bossUI) ui.bossUI.style.display = 'none';
+
   clearRunTransientTimers();
   isPlaying = false;
 
