@@ -10,6 +10,97 @@
     }
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
+    // ─── THE NULL GATE (World 5 Boss) ──────
+    if (levelData.boss === 'null_gate') {
+      const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
+      const w5Core = '#ffffff';
+      const w5Shield = '#c8e8ff';
+
+      if (!isBossPhaseTwo) {
+
+        // PHASE 1 — THE SEALS: 5 shield nodes on pentagon sides
+        // Orb blacks out periodically (handled by loop.js blackout system)
+        if (bossPhase === 1) {
+          ui.text.innerText = 'THE VOID IS WATCHING. BREAK THE SEALS.';
+          ui.text.style.color = '#a8d8ff';
+          const shieldCount = _hmActive ? 5 : 5; // always 5 — one per pentagon side
+          const shieldSize = _hmActive ? Math.PI / 7 : Math.PI / 6;
+          const shieldSpeed = _hmActive ? 0.016 : 0.010;
+          for (let i = 0; i < shieldCount; i++) {
+            const sideCenter = (-Math.PI / 2) + (i * Math.PI * 2 / 5) + (Math.PI / 5);
+            targets.push(buildTarget(normalizeAngle(sideCenter), shieldSize, {
+              color: w5Shield,
+              active: true,
+              hp: _hmActive ? 2 : 2,
+              isBossShield: true,
+              moveSpeed: shieldSpeed * (i % 2 === 0 ? 1 : -1),
+              nextDirectionSwapAt: performance.now() + 1800 + (i * 220)
+            }));
+          }
+        }
+
+        // PHASE 2 — ENRAGED: 3 fast shields + 2 phantom decoys
+        // No blackout — raw speed and deception instead
+        else if (bossPhase === 2) {
+          ui.text.innerText = 'SIGNAL FRAGMENTING. FIND THE TRUTH.';
+          ui.text.style.color = '#ff3366';
+          const phantomCount = _hmActive ? 3 : 2;
+          const realSpeed = _hmActive ? 0.046 : 0.036;
+
+          // 3 real shields
+          for (let i = 0; i < 3; i++) {
+            const a = normalizeAngle(-Math.PI / 2 + (i * Math.PI * 2 / 3));
+            targets.push(buildTarget(a, Math.PI / 9, {
+              color: w5Shield,
+              active: true,
+              hp: 1,
+              isBossShield: true,
+              moveSpeed: realSpeed * (i % 2 === 0 ? 1 : -1),
+              nextDirectionSwapAt: performance.now() + 800 + (i * 200)
+            }));
+          }
+
+          // Phantom decoys — identical colour, no scoring
+          for (let p = 0; p < phantomCount; p++) {
+            targets.push(buildTarget(
+              normalizeAngle(Math.random() * Math.PI * 2), Math.PI / 9.2, {
+                color: w5Shield,
+                active: true,
+                isPhantom: true,
+                hp: 1,
+                moveSpeed: 0.022 * (p % 2 === 0 ? 1 : -1)
+              }
+            ));
+          }
+        }
+
+      } else {
+        // PHASE 3 — THE CORE: Blinking white node, slowly drifting
+        // Visible for 0.6s, dark for 1.0s — player must memorise and tap in darkness
+        ui.text.innerText = 'LOCATE. STRIKE. BECOME.';
+        ui.text.style.color = '#ffffff';
+        const _coreSize = _hmActive ? Math.PI / 16 : Math.PI / 13;
+        const coreAngle = normalizeAngle(-Math.PI / 2 + (Math.floor(Math.random() * 5) * Math.PI * 2 / 5));
+        const coreTarget = buildTarget(coreAngle, _coreSize, {
+          color: '#ffffff',
+          active: true,
+          hp: 1,
+          moveSpeed: 0.008  // core drifts slowly — harder to memorise
+        });
+        coreTarget.isNullGateCore = true;
+        coreTarget.coreBlinkCycle = 1600; // ms per blink cycle
+        coreTarget.coreVisibleDuration = 600; // ms visible
+        targets.push(coreTarget);
+        setTimeout(() => {
+          createShockwave('#ffffff', 18);
+          createShockwave('#a8d8ff', 28);
+          createParticles(centerObj.x, centerObj.y, '#a8d8ff', 20);
+        }, 80);
+      }
+      return;
+    }
+    // ─── END NULL GATE ──────────────────────
+
     // ─── THE CORRUPTOR (World 4 Boss) ──────
     if (levelData.boss === 'corruptor') {
       const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
@@ -224,6 +315,101 @@
       spawnWorld2MechanicTargets();
       return;
     }
+  // ═══════════════════════════════════════
+  // WORLD 5 — THE VOID STAGE SPAWNER
+  // ═══════════════════════════════════════
+  if (worldNum === 5 && !levelData.boss) {
+    const w5Color = '#c8e8ff';    // Ice white-blue
+    const w5Glow = '#a8d8ff';
+
+    // ─── 5-1: First Contact ─────────────────
+    // Single target. No blackout. Just the pentagon shape.
+    // Show players the geometry before adding fear.
+    if (levelData.id === '5-1') {
+      ui.text.innerText = 'Five sides. No forgiveness. Learn the shape.';
+      ui.text.style.color = w5Color;
+      const anchor = Math.random() * Math.PI * 2;
+      targets.push(buildTarget(anchor, Math.PI / 7.5, {
+        color: w5Color, active: true, hp: 1, moveSpeed: 0
+      }));
+      return;
+    }
+
+    // ─── 5-2: Signal Lost ──────────────────
+    // First blackout stage. Single target, slight movement.
+    if (levelData.id === '5-2') {
+      ui.text.innerText = 'The orb vanishes. Trust your timing.';
+      ui.text.style.color = w5Color;
+      const anchor = Math.random() * Math.PI * 2;
+      targets.push(buildTarget(anchor, Math.PI / 8, {
+        color: w5Color, active: true, hp: 1, moveSpeed: 0
+      }));
+      return;
+    }
+
+    // ─── 5-3: Blind Drift ──────────────────
+    // Drifting target during blackout — player must predict position.
+    if (levelData.id === '5-3') {
+      ui.text.innerText = 'The zone drifts while you are blind. Predict.';
+      ui.text.style.color = w5Color;
+      const wave = Math.max(1, (stageHits || 0) + 1);
+      const driftSpeed = 0.006 + (wave * 0.0004); // slowly escalates
+      const anchor = Math.random() * Math.PI * 2;
+      targets.push(buildTarget(anchor, Math.PI / 8.5, {
+        color: w5Color, active: true, hp: 1, moveSpeed: driftSpeed
+      }));
+      return;
+    }
+
+    // ─── 5-4: Void Echo ────────────────────
+    // Two targets on opposite sides of the pentagon during blackout.
+    if (levelData.id === '5-4') {
+      ui.text.innerText = 'Two zones. One darkness. Track both.';
+      ui.text.style.color = w5Color;
+      const baseAngle = Math.random() * Math.PI * 2;
+      // Placed at two of the pentagon's 5 segments
+      const segmentSize = Math.PI * 2 / 5;
+      targets.push(buildTarget(normalizeAngle(baseAngle), Math.PI / 9, {
+        color: w5Color, active: true, hp: 1, moveSpeed: 0.004
+      }));
+      targets.push(buildTarget(normalizeAngle(baseAngle + segmentSize * 2), Math.PI / 9, {
+        color: w5Color, active: true, hp: 1, moveSpeed: -0.004
+      }));
+      return;
+    }
+
+    // ─── 5-5: Null Storm ───────────────────
+    // Three shrinking targets. Most intense regular stage.
+    // Wave escalation: targets start large, shrink per wave.
+    if (levelData.id === '5-5') {
+      ui.text.innerText = 'Maximum pressure. The void is consuming everything.';
+      ui.text.style.color = w5Color;
+      const wave = Math.max(1, (stageHits || 0) + 1);
+      const progressionFactor = Math.min(1, wave / Math.max(1, levelData.hitsNeeded));
+      const baseSize = (Math.PI / 8) * (1 - progressionFactor * 0.25);
+      const count = 3;
+      const segmentSize = Math.PI * 2 / 5;
+      const offset = Math.random() * Math.PI * 2;
+      for (let i = 0; i < count; i++) {
+        const a = normalizeAngle(offset + (i * segmentSize));
+        targets.push(buildTarget(a, baseSize, {
+          color: w5Color, active: true, hp: 1,
+          moveSpeed: 0.007 * (i % 2 === 0 ? 1 : -1)
+        }));
+      }
+      return;
+    }
+
+    // Fallback for any unlisted W5 non-boss stages
+    targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8, {
+      color: w5Color, active: true, hp: 1
+    }));
+    return;
+  }
+  // ═══════════════════════════════════════
+  // END WORLD 5 STAGE SPAWNER
+  // ═══════════════════════════════════════
+
     // ═══════════════════════════════════════
     // WORLD 4 — GLITCH PROTOCOL STAGE SPAWNER
     // ═══════════════════════════════════════

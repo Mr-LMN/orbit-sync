@@ -13,6 +13,9 @@
     if (levelData.boss === 'prism') {
       return { name: 'THE PRISM', tagline: 'ALIGNMENT // SEQUENCE' };
     }
+    if (levelData.boss === 'null_gate') {
+      return { name: 'THE NULL GATE', tagline: 'SIGHT IS A LIE' };
+    }
     if (levelData.boss === 'corruptor') {
       return { name: 'THE CORRUPTOR', tagline: 'IDENTIFY // DESTROY // SURVIVE' };
     }
@@ -66,6 +69,7 @@
     const isAegisIntro = levelData.id === '1-6' || levelData.boss === 'aegis';
     const isWorld2BossIntro = levelData.id === '2-6' && levelData.boss === 'prism';
     const isCorruptorIntro = levelData.boss === 'corruptor';
+    const isNullGateIntro = levelData.boss === 'null_gate';
     bossIntroPlaying = true;
     isCinematicIntro = true;
     isPlaying = false;
@@ -164,6 +168,45 @@
         createPopup(centerObj.x, centerObj.y - 18, 'ALIGN NOW', '#ffffff');
         createShockwave('#ffffff', 20);
       });
+    } else if (isNullGateIntro) {
+      ui.title.style.color = '#a8d8ff';
+      ui.title.innerText = '';
+      ui.subtitle.innerText = '';
+      forceHideOverlayExtras();
+
+      queueIntroStep(80, () => {
+        ui.title.innerText = 'WORLD 5: THE VOID';
+        ui.subtitle.innerText = 'You are being watched.';
+        createShockwave('#a8d8ff', 16);
+      });
+      queueIntroStep(700, () => {
+        ui.title.innerText = 'THE NULL GATE';
+        ui.subtitle.innerText = 'SIGHT IS A LIE';
+        createPopup(centerObj.x, centerObj.y - 80, 'SIGHT IS A LIE', '#a8d8ff');
+        createShockwave('#c8e8ff', 24);
+        pulseBrightness(1.4, 160);
+      });
+      queueIntroStep(1400, () => {
+        ui.title.innerText = 'THE NULL GATE';
+        ui.subtitle.innerText = 'TRUST THE VOID';
+        createPopup(centerObj.x, centerObj.y - 44, 'TRUST THE VOID', '#ffffff');
+        createShockwave('#a8d8ff', 32);
+        createParticles(centerObj.x, centerObj.y, '#a8d8ff', 28);
+        pulseBrightness(1.3, 140);
+      });
+      queueIntroStep(2200, () => {
+        ui.title.innerText = 'THE NULL GATE';
+        ui.subtitle.innerText = 'BECOME THE DARKNESS';
+        createPopup(centerObj.x, centerObj.y - 18, 'BECOME THE DARKNESS', '#c8e8ff');
+        createShockwave('#ffffff', 40);
+        createShockwave('#a8d8ff', 56);
+        pulseBrightness(1.8, 200);
+        vibrate([50, 25, 70, 25, 90]);
+      });
+      queueIntroStep(3100, () => {
+        ui.title.innerText = 'THE NULL GATE';
+        ui.subtitle.innerText = 'ENGAGE';
+      });
     } else if (isCorruptorIntro) {
       ui.title.style.color = '#b157ff';
       ui.title.innerText = '';
@@ -226,7 +269,7 @@
       if (_pbRestore && !inMenu) _pbRestore.style.display = 'flex';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
-      ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro) ? 'boss-segment' : 'boss-segment active-segment';
+      ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro || isNullGateIntro) ? 'boss-segment' : 'boss-segment active-segment';
       if (isWorld2BossIntro) {
         world2BossArenaRotationSpeed = world2BossTransitionFrom25 ? 0.0038 : 0.0032;
         world2BossTransitionFrom25 = false;
@@ -235,7 +278,7 @@
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : (isCorruptorIntro ? 3600 : 1700)));
+    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : (isCorruptorIntro ? 3600 : (isNullGateIntro ? 4200 : 1700))));
   }
 
   function playBossCinematic() {
@@ -261,7 +304,7 @@
     createShockwave('#ff3366', 42);
     createParticles(centerObj.x, centerObj.y, '#ff3366', 42);
 
-    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor';
+    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate';
     if (bossCinematicTimeout) clearTimeout(bossCinematicTimeout);
     bossCinematicTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';

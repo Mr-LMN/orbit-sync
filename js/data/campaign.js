@@ -169,6 +169,77 @@
       moveSpeed: 0.028,
       reverse: true,
       text: 'BOSS: Destroy the nodes. Expose the corrupt core.'
+    },
+    {
+      id: '5-1',
+      title: 'First Contact',
+      hitsNeeded: 6,
+      speed: 0.048,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: false,
+      text: 'Five sides. No forgiveness. Learn the shape.'
+    },
+    {
+      id: '5-2',
+      title: 'Signal Lost',
+      hitsNeeded: 6,
+      speed: 0.050,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0,
+      reverse: true,
+      blackout: { duration: 900, interval: 3200, firstAt: 1800 },
+      text: 'The orb vanishes. Trust your timing.'
+    },
+    {
+      id: '5-3',
+      title: 'Blind Drift',
+      hitsNeeded: 7,
+      speed: 0.052,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0.008,
+      reverse: false,
+      blackout: { duration: 1100, interval: 2800, firstAt: 1500 },
+      text: 'The zone drifts while you are blind. Predict. Strike.'
+    },
+    {
+      id: '5-4',
+      title: 'Void Echo',
+      hitsNeeded: 8,
+      speed: 0.054,
+      lives: 3,
+      targets: 2,
+      moveSpeed: 0.005,
+      reverse: true,
+      blackout: { duration: 1000, interval: 2400, firstAt: 1200 },
+      text: 'Two zones. One darkness. Track both.'
+    },
+    {
+      id: '5-5',
+      title: 'Null Storm',
+      hitsNeeded: 10,
+      speed: 0.056,
+      lives: 3,
+      targets: 3,
+      moveSpeed: 0.007,
+      reverse: false,
+      blackout: { duration: 1200, interval: 2000, firstAt: 1000 },
+      shrink: { startScale: 1.0, endScale: 0.78, distance: Math.PI * 6 },
+      text: 'Maximum pressure. The void is consuming everything.'
+    },
+    {
+      id: '5-6',
+      title: 'The Null Gate',
+      hitsNeeded: 99,
+      speed: 0.052,
+      lives: 3,
+      boss: 'null_gate',
+      moveSpeed: 0.025,
+      reverse: true,
+      text: 'BOSS: Sight is a lie. Trust the void.'
     }
   ];
 

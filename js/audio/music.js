@@ -23,7 +23,7 @@
   }
 
   function _isMusicBossStage(level) {
-    return !!(level && (level.boss === 'aegis' || level.boss === 'prism' || level.boss === 'corruptor'));
+    return !!(level && (level.boss === 'aegis' || level.boss === 'prism' || level.boss === 'corruptor' || level.boss === 'null_gate'));
   }
 
   function hasActiveMusicGraph() {
@@ -210,6 +210,7 @@
     const worldBaseRate = worldNum === 2 ? 1.06
       : worldNum === 3 ? 1.03
       : worldNum === 4 ? 1.09
+      : worldNum === 5 ? 0.94
       : 1.0;
     const targetSpeed = worldBaseRate + (Math.min(currentMultiplier, 8) * 0.012);
     audio.baseSource.playbackRate.cancelScheduledValues(now);
