@@ -315,100 +315,81 @@
       spawnWorld2MechanicTargets();
       return;
     }
-  // ═══════════════════════════════════════
-  // WORLD 5 — THE VOID STAGE SPAWNER
-  // ═══════════════════════════════════════
-  if (worldNum === 5 && !levelData.boss) {
-    const w5Color = '#c8e8ff';    // Ice white-blue
-    const w5Glow = '#a8d8ff';
+    // ═══════════════════════════════════════
+    // WORLD 5 — THE VOID STAGE SPAWNER
+    // ═══════════════════════════════════════
+    if (worldNum === 5 && !levelData.boss) {
+      const w5Color = '#c8e8ff';
+      const w5Glow = '#a8d8ff';
 
-    // ─── 5-1: First Contact ─────────────────
-    // Single target. No blackout. Just the pentagon shape.
-    // Show players the geometry before adding fear.
-    if (levelData.id === '5-1') {
-      ui.text.innerText = 'Five sides. No forgiveness. Learn the shape.';
-      ui.text.style.color = w5Color;
-      const anchor = Math.random() * Math.PI * 2;
-      targets.push(buildTarget(anchor, Math.PI / 7.5, {
-        color: w5Color, active: true, hp: 1, moveSpeed: 0
-      }));
-      return;
-    }
-
-    // ─── 5-2: Signal Lost ──────────────────
-    // First blackout stage. Single target, slight movement.
-    if (levelData.id === '5-2') {
-      ui.text.innerText = 'The orb vanishes. Trust your timing.';
-      ui.text.style.color = w5Color;
-      const anchor = Math.random() * Math.PI * 2;
-      targets.push(buildTarget(anchor, Math.PI / 8, {
-        color: w5Color, active: true, hp: 1, moveSpeed: 0
-      }));
-      return;
-    }
-
-    // ─── 5-3: Blind Drift ──────────────────
-    // Drifting target during blackout — player must predict position.
-    if (levelData.id === '5-3') {
-      ui.text.innerText = 'The zone drifts while you are blind. Predict.';
-      ui.text.style.color = w5Color;
-      const wave = Math.max(1, (stageHits || 0) + 1);
-      const driftSpeed = 0.006 + (wave * 0.0004); // slowly escalates
-      const anchor = Math.random() * Math.PI * 2;
-      targets.push(buildTarget(anchor, Math.PI / 8.5, {
-        color: w5Color, active: true, hp: 1, moveSpeed: driftSpeed
-      }));
-      return;
-    }
-
-    // ─── 5-4: Void Echo ────────────────────
-    // Two targets on opposite sides of the pentagon during blackout.
-    if (levelData.id === '5-4') {
-      ui.text.innerText = 'Two zones. One darkness. Track both.';
-      ui.text.style.color = w5Color;
-      const baseAngle = Math.random() * Math.PI * 2;
-      // Placed at two of the pentagon's 5 segments
-      const segmentSize = Math.PI * 2 / 5;
-      targets.push(buildTarget(normalizeAngle(baseAngle), Math.PI / 9, {
-        color: w5Color, active: true, hp: 1, moveSpeed: 0.004
-      }));
-      targets.push(buildTarget(normalizeAngle(baseAngle + segmentSize * 2), Math.PI / 9, {
-        color: w5Color, active: true, hp: 1, moveSpeed: -0.004
-      }));
-      return;
-    }
-
-    // ─── 5-5: Null Storm ───────────────────
-    // Three shrinking targets. Most intense regular stage.
-    // Wave escalation: targets start large, shrink per wave.
-    if (levelData.id === '5-5') {
-      ui.text.innerText = 'Maximum pressure. The void is consuming everything.';
-      ui.text.style.color = w5Color;
-      const wave = Math.max(1, (stageHits || 0) + 1);
-      const progressionFactor = Math.min(1, wave / Math.max(1, levelData.hitsNeeded));
-      const baseSize = (Math.PI / 8) * (1 - progressionFactor * 0.25);
-      const count = 3;
-      const segmentSize = Math.PI * 2 / 5;
-      const offset = Math.random() * Math.PI * 2;
-      for (let i = 0; i < count; i++) {
-        const a = normalizeAngle(offset + (i * segmentSize));
-        targets.push(buildTarget(a, baseSize, {
-          color: w5Color, active: true, hp: 1,
-          moveSpeed: 0.007 * (i % 2 === 0 ? 1 : -1)
+      if (levelData.id === '5-1') {
+        ui.text.innerText = 'Five sides. No forgiveness. Learn the shape.';
+        ui.text.style.color = w5Color;
+        targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 7.5, {
+          color: w5Color, active: true, hp: 1, moveSpeed: 0
         }));
+        return;
       }
+
+      if (levelData.id === '5-2') {
+        ui.text.innerText = 'The orb vanishes. Trust your timing.';
+        ui.text.style.color = w5Color;
+        targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8, {
+          color: w5Color, active: true, hp: 1, moveSpeed: 0
+        }));
+        return;
+      }
+
+      if (levelData.id === '5-3') {
+        ui.text.innerText = 'The zone drifts while you are blind. Predict.';
+        ui.text.style.color = w5Color;
+        const wave53 = Math.max(1, (stageHits || 0) + 1);
+        targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8.5, {
+          color: w5Color, active: true, hp: 1,
+          moveSpeed: 0.006 + (wave53 * 0.0004)
+        }));
+        return;
+      }
+
+      if (levelData.id === '5-4') {
+        ui.text.innerText = 'Two zones. One darkness. Track both.';
+        ui.text.style.color = w5Color;
+        const base54 = Math.random() * Math.PI * 2;
+        const seg54 = Math.PI * 2 / 5;
+        targets.push(buildTarget(normalizeAngle(base54), Math.PI / 9, {
+          color: w5Color, active: true, hp: 1, moveSpeed: 0.004
+        }));
+        targets.push(buildTarget(normalizeAngle(base54 + seg54 * 2), Math.PI / 9, {
+          color: w5Color, active: true, hp: 1, moveSpeed: -0.004
+        }));
+        return;
+      }
+
+      if (levelData.id === '5-5') {
+        ui.text.innerText = 'Maximum pressure. The void is consuming everything.';
+        ui.text.style.color = w5Color;
+        const wave55 = Math.max(1, (stageHits || 0) + 1);
+        const pf55 = Math.min(1, wave55 / Math.max(1, levelData.hitsNeeded));
+        const sz55 = (Math.PI / 8) * (1 - pf55 * 0.25);
+        const seg55 = Math.PI * 2 / 5;
+        const off55 = Math.random() * Math.PI * 2;
+        for (let i = 0; i < 3; i++) {
+          targets.push(buildTarget(normalizeAngle(off55 + i * seg55), sz55, {
+            color: w5Color, active: true, hp: 1,
+            moveSpeed: 0.007 * (i % 2 === 0 ? 1 : -1)
+          }));
+        }
+        return;
+      }
+
+      targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8, {
+        color: w5Color, active: true, hp: 1
+      }));
       return;
     }
-
-    // Fallback for any unlisted W5 non-boss stages
-    targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8, {
-      color: w5Color, active: true, hp: 1
-    }));
-    return;
-  }
-  // ═══════════════════════════════════════
-  // END WORLD 5 STAGE SPAWNER
-  // ═══════════════════════════════════════
+    // ═══════════════════════════════════════
+    // END WORLD 5 STAGE SPAWNER
+    // ═══════════════════════════════════════
 
     // ═══════════════════════════════════════
     // WORLD 4 — GLITCH PROTOCOL STAGE SPAWNER
