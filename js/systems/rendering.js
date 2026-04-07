@@ -8,8 +8,9 @@
       const tau = Math.PI * 2;
       const norm = ((angle % tau) + tau) % tau;
       const sideSize = tau / 3;
-      const sideIndex = Math.floor(norm / sideSize) % 3;
-      const localT = (norm - sideIndex * sideSize) / sideSize;
+      const rawIndex = Math.floor(norm / sideSize);
+      const sideIndex = rawIndex % 3;
+      const localT = (norm - rawIndex * sideSize) / sideSize;
 
       // Wider-base isosceles triangle for cleaner gameplay/readability
       const corners = [
@@ -46,8 +47,9 @@
       ];
       const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       const sectorSize = Math.PI * 2 / 4;
-      const sectorIdx = Math.floor(normalized / sectorSize) % 4;
-      const progress = (normalized - sectorIdx * sectorSize) / sectorSize;
+      const rawIdx = Math.floor(normalized / sectorSize);
+      const sectorIdx = rawIdx % 4;
+      const progress = (normalized - rawIdx * sectorSize) / sectorSize;
       const p1 = corners[sectorIdx];
       const p2 = corners[(sectorIdx + 1) % 4];
       return { x: p1.x + (p2.x - p1.x) * progress, y: p1.y + (p2.y - p1.y) * progress };
@@ -64,8 +66,9 @@
     }
     const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
     const sectorSize = Math.PI * 2 / sides;
-    const sectorIdx = Math.floor(normalized / sectorSize) % sides;
-    const progress = (normalized - sectorIdx * sectorSize) / sectorSize;
+    const rawIdx = Math.floor(normalized / sectorSize);
+    const sectorIdx = rawIdx % sides;
+    const progress = (normalized - rawIdx * sectorSize) / sectorSize;
     const p1 = corners[sectorIdx];
     const p2 = corners[(sectorIdx + 1) % sides];
     return { x: p1.x + (p2.x - p1.x) * progress, y: p1.y + (p2.y - p1.y) * progress };
