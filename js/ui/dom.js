@@ -28,7 +28,8 @@
     wave: document.getElementById('waveDisplay'),
     bossUI: document.getElementById('bossUI'),
     bossPhase1: document.getElementById('bossPhase1'),
-    bossPhase2: document.getElementById('bossPhase2')
+    bossPhase2: document.getElementById('bossPhase2'),
+    pauseBtn: document.getElementById('pauseBtn')
   };
 
   OG.dom = Object.assign(OG.dom || {}, { canvas, ctx, ui });
