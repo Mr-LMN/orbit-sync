@@ -3228,7 +3228,7 @@ function update() {
       }
       if (_blackoutActive && frameNow >= _blackoutEndsAt) {
         _blackoutActive = false;
-        _nextBlackoutAt = frameNow + _bcfg.interval;
+        _nextBlackoutAt = _blackoutEndsAt - _bcfg.duration + _bcfg.interval;
         if (audioCtx && typeof playTone === 'function') playTone(880, 'sine', 0.05, 0.01, 0.15);
       }
       if (!_blackoutActive && frameNow >= _nextBlackoutAt) {

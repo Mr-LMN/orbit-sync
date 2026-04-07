@@ -6,7 +6,8 @@
   function getPointOnShape(t, shape, cx, cy, radius) {
     function getTrianglePoint(angle, tx, ty, tradius) {
       const tau = Math.PI * 2;
-      const norm = ((angle % tau) + tau) % tau;
+      let norm = ((angle % tau) + tau) % tau;
+      if (Math.abs(norm - tau) < 1e-10) norm = 0;
       const sideSize = tau / 3;
       const rawIndex = Math.floor(norm / sideSize);
       const sideIndex = rawIndex % 3;
@@ -30,7 +31,8 @@
 
     if (shape === 'circle') return { x: cx + Math.cos(t) * radius, y: cy + Math.sin(t) * radius };
     if (shape === 'square') {
-      const a = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      let a = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (Math.abs(a - Math.PI * 2) < 1e-10) a = 0;
       const sector = Math.floor((a / (Math.PI * 2)) * 4);
       const local = (a % (Math.PI / 2)) / (Math.PI / 2);
       if (sector === 0) return { x: cx + radius, y: cy - radius + (local * radius * 2) };
@@ -45,7 +47,8 @@
         { x: cx, y: cy + radius },
         { x: cx - radius, y: cy }
       ];
-      const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      let normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
       const sectorSize = Math.PI * 2 / 4;
       const rawIdx = Math.floor(normalized / sectorSize);
       const sectorIdx = rawIdx % 4;
@@ -64,7 +67,8 @@
       const a = rotation + (i * Math.PI * 2 / sides);
       corners.push({ x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius });
     }
-    const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    let normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
     const sectorSize = Math.PI * 2 / sides;
     const rawIdx = Math.floor(normalized / sectorSize);
     const sectorIdx = rawIdx % sides;
@@ -87,7 +91,8 @@
       if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
       const sectorSize = Math.PI / 2;
       const normalize = (value) => ((value % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-      const startNorm = normalize(startAngle);
+      let startNorm = normalize(startAngle);
+      if (Math.abs(startNorm - Math.PI * 2) < 1e-10) startNorm = 0;
       const endUnwrapped = startNorm + span;
       const pointAngles = [startNorm];
 
