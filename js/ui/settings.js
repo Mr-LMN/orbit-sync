@@ -296,11 +296,8 @@
       }
     }
     if (!show) {
-      const panel = document.getElementById('adminToolsPanel');
-      if (panel) panel.style.display = 'none';
       const hardModeRow = document.getElementById('hardModeRow');
       if (hardModeRow) hardModeRow.style.display = '';
-      adminPanelVisible = false;
     }
     if (show) {
       applySettingsUI();
@@ -334,11 +331,10 @@
       const _ss = document.getElementById('sfxVolumeSlider');
       if (_ms) _ms.value = _savedMusicVol;
       if (_ss) _ss.value = _savedSfxVol;
-      updateSelectedStageStatus();
       const hardModeRow = document.getElementById('hardModeRow');
       const hardModeStatus = document.getElementById('hardModeStatus');
       if (hardModeRow && hardModeStatus) {
-        if (!adminPanelVisible) hardModeRow.style.display = '';
+        hardModeRow.style.display = '';
         const _getWorldStars = (worldNum) => {
           if (typeof playerProgress === 'undefined' || !playerProgress.stageStars) return 0;
           const _stageIds = ['1','2','3','4','5'].map(n => `${worldNum}-${n}`);
@@ -453,10 +449,4 @@
   OG.ui.settings.toggleHapticsSetting = toggleHapticsSetting;
   window.setMusicVolume = setMusicVolume;
   window.setSfxVolume = setSfxVolume;
-  OG.ui.settings.bindAdminControls = bindAdminControls;
-  OG.ui.settings.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
-  OG.ui.settings._openAdminPanel = _openAdminPanel;
-  window.toggleAdminInfiniteLives = toggleAdminInfiniteLives;
-
-  bindAdminControls();
 })(window);
