@@ -240,6 +240,73 @@
       moveSpeed: 0.025,
       reverse: true,
       text: 'BOSS: Sight is a lie. Trust the void.'
+    },
+    {
+      id: '6-1',
+      title: 'Ignition',
+      hitsNeeded: 6,
+      speed: 0.050,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0.005,
+      reverse: false,
+      text: 'The core runs hot. Acceleration zones active.'
+    },
+    {
+      id: '6-2',
+      title: 'Thermal Draft',
+      hitsNeeded: 7,
+      speed: 0.052,
+      lives: 3,
+      targets: 1,
+      moveSpeed: 0.008,
+      reverse: true,
+      text: 'Drifting targets in the heat stream. Stay focused.'
+    },
+    {
+      id: '6-3',
+      title: 'Flare Out',
+      hitsNeeded: 8,
+      speed: 0.054,
+      lives: 3,
+      targets: 2,
+      moveSpeed: 0.006,
+      reverse: false,
+      text: 'Twin flares. Accelerate into the strike.'
+    },
+    {
+      id: '6-4',
+      title: 'Meltdown',
+      hitsNeeded: 10,
+      speed: 0.056,
+      lives: 3,
+      targets: 2,
+      moveSpeed: 0.009,
+      reverse: true,
+      shrink: { startScale: 1.0, endScale: 0.70, distance: Math.PI * 4 },
+      text: 'Reversing, shrinking, accelerating. Pure chaos.'
+    },
+    {
+      id: '6-5',
+      title: 'Supernova',
+      hitsNeeded: 12,
+      speed: 0.058,
+      lives: 3,
+      targets: 3,
+      moveSpeed: 0.012,
+      reverse: false,
+      text: 'Three zones. Maximum heat.'
+    },
+    {
+      id: '6-6',
+      title: 'Solar Core',
+      hitsNeeded: 99,
+      speed: 0.055,
+      lives: 3,
+      boss: 'solar_core',
+      moveSpeed: 0.030,
+      reverse: true,
+      text: 'BOSS: Extinguish the inferno.'
     }
   ];
 
