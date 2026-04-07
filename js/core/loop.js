@@ -4569,7 +4569,10 @@ function tap() {
     if (comboCount > 2 && comboCount % 6 === 0) {
       createPopup(hitX, hitY - 36, `COMBO x${comboCount}`, '#ffd54a');
     }
-    const shouldForceHudFlush = targets.filter(tgt => !tgt.isHeart && !tgt.isPhantom && !tgt.isCornerBonus).every(tgt => !tgt.active)
+    // Only progression-relevant targets should gate wave advancement.
+    const shouldForceHudFlush = targets
+      .filter((tgt) => !tgt.isHeart && !tgt.isLifeZone && !tgt.isPhantom && !tgt.isCornerBonus)
+      .every((tgt) => !tgt.active)
       || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
 
