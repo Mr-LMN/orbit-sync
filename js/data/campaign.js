@@ -189,8 +189,8 @@
       lives: 3,
       targets: 1,
       moveSpeed: 0,
-      reverse: true,
-      blackout: { duration: 900, interval: 3200, firstAt: 1800 },
+      reverse: false,
+      blackout: { duration: 900, interval: 3200, firstAt: 2200 },
       text: 'The orb vanishes. Trust your timing.'
     },
     {

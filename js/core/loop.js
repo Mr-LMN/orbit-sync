@@ -3471,7 +3471,7 @@ function update() {
       }
       if (_blackoutActive && frameNow >= _blackoutEndsAt) {
         _blackoutActive = false;
-        _nextBlackoutAt = frameNow + _bcfg.interval;
+        _nextBlackoutAt = _blackoutEndsAt - _bcfg.duration + _bcfg.interval;
         if (audioCtx && typeof playTone === 'function') playTone(880, 'sine', 0.05, 0.01, 0.15);
 
         // Massive light flood when blackout ends
@@ -4014,6 +4014,14 @@ function tap() {
   if (inMenu || !isPlaying || (typeof isCinematicIntro !== 'undefined' && isCinematicIntro)) return;
   if (ui.overlay.style.display === 'flex') return;
   if (bossTransitionLock) return;
+  // During blackout, ignore taps that miss — player can't see orb
+  if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
+    // Still allow taps that HIT a target (player got it right blind)
+    // but don't punish missed taps as fails
+    const _blindHit = targets.some(t => t.active && !t.isPhantom &&
+      isInsideTarget(((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2), t));
+    if (!_blindHit) return;
+  }
   if (nearMissReplayActive) return;
   let hitIndex = -1; let hitQuality = "miss"; let hitSegmentIndex = -1;
   let hitAngleForEffects = angle;

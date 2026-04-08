@@ -1,0 +1,10 @@
+const tau = Math.PI * 2;
+const a = -1e-15;
+const angle = a;
+let norm = ((angle % tau) + tau) % tau;
+// if (Math.abs(norm - tau) < 1e-10) norm = 0;
+const sideSize = tau / 3;
+const rawIndex = Math.floor(norm / sideSize);
+const sideIndex = rawIndex % 3;
+const localT = (norm - rawIndex * sideSize) / sideSize;
+console.log({ angle, norm, rawIndex, sideIndex, localT });
