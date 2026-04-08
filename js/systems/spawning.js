@@ -10,6 +10,56 @@
     }
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
+
+    // ─── SOLAR CORE (World 6 Boss) ──────
+    if (levelData.boss === 'solar_core') {
+      const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
+      const w6Core = '#ffffff';
+      const w6Shield = '#ffcc00';
+
+      if (!isBossPhaseTwo) {
+        if (bossPhase === 1) {
+          ui.text.innerText = 'EXTINGUISH THE INFERNO. BREAK THE FLARES.';
+          ui.text.style.color = '#ff6600';
+
+          for (let i = 0; i < 6; i++) {
+            const startAngle = i * (Math.PI * 2 / 6) + (Math.PI / 24);
+            const size = (Math.PI * 2 / 6) - (Math.PI / 12);
+            targets.push(buildTarget(startAngle, size, {
+              isBossShield: true,
+              hp: _hmActive ? 3 : 2,
+              active: true,
+              color: w6Shield,
+              moveSpeed: 0.008
+            }));
+          }
+        }
+      } else {
+         ui.text.innerText = 'THE CORE IS EXPOSED. FINAL STRIKE.';
+         ui.text.style.color = w6Core;
+         const coreTarget = buildTarget(0, Math.PI / 6, {
+           isBossShield: true,
+           hp: _hmActive ? 5 : 4,
+           active: true,
+           color: w6Core,
+           moveSpeed: 0.015
+         });
+         coreTarget.isSolarFinalCore = true;
+         targets.push(coreTarget);
+
+         // Add 3 fast rotating phantom flares to dodge
+         for(let i=0; i<3; i++) {
+             targets.push(buildTarget((i * Math.PI*2/3) + Math.PI/12, Math.PI/12, {
+                isPhantom: true,
+                active: true,
+                color: '#ff3300',
+                moveSpeed: -0.02
+             }));
+         }
+      }
+      return;
+    }
+
     // ─── THE NULL GATE (World 5 Boss) ──────
     if (levelData.boss === 'null_gate') {
       const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
@@ -735,6 +785,19 @@
       target.dualState = 'normal';
       targets.push(target);
     }
+    if (worldNum === 6 && !inMenu && !levelData.boss) {
+      // Add accelerant zones for World 6 logic
+      if (Math.random() > 0.4) { // 60% chance to spawn an accelerant zone
+          const accStart = Math.random() * Math.PI * 2;
+          targets.push(buildTarget(accStart, Math.PI / 3, {
+            color: 'rgba(255, 200, 0, 0.4)',
+            active: true,
+            isAccelerant: true,
+            hp: 99 // Unkillable zone
+          }));
+      }
+    }
+
     if (levelData.hasPhantom && !inMenu && !levelData.boss) {
       const realTargetAngle = targets.length > 0
         ? targets[0].start + targets[0].size + (Math.PI * 0.4)

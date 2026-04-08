@@ -60,28 +60,34 @@
     if (shape === 'triangle') {
       return getTrianglePoint(t, cx, cy, radius);
     }
-    const sides = (shape === 'pentagon') ? 5 : 6;
-    const rotation = -Math.PI / 2;
-    const corners = [];
-    for (let i = 0; i < sides; i++) {
-      const a = rotation + (i * Math.PI * 2 / sides);
-      corners.push({ x: cx + Math.cos(a) * radius, y: cy + Math.sin(a) * radius });
+
+    if (shape === 'pentagon' || shape === 'hexagon') {
+      const sides = (shape === 'pentagon') ? 5 : 6;
+      const rotation = -Math.PI / 2;
+      const corners = [];
+      for (let i = 0; i < sides; i++) {
+        const a = rotation + (i * Math.PI * 2 / sides);
+        // Adjust radius so the path matches the orbit radius
+        const rAdjust = radius / Math.cos(Math.PI / sides);
+        corners.push({ x: cx + Math.cos(a) * rAdjust, y: cy + Math.sin(a) * rAdjust });
+      }
+      const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      const sectorSize = Math.PI * 2 / sides;
+      const rawIdx = Math.floor(normalized / sectorSize);
+      const sectorIdx = rawIdx % sides;
+      const progress = (normalized - rawIdx * sectorSize) / sectorSize;
+      const p1 = corners[sectorIdx];
+      const p2 = corners[(sectorIdx + 1) % sides];
+      let ptX = p1?.x + (p2?.x - p1?.x) * progress;
+      let ptY = p1?.y + (p2?.y - p1?.y) * progress;
+      if (isNaN(ptX) || isNaN(ptY)) {
+        ptX = p1?.x || cx || 0;
+        ptY = p1?.y || cy || 0;
+      }
+      return { x: ptX, y: ptY };
     }
-    let normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
-    const sectorSize = Math.PI * 2 / sides;
-    const rawIdx = Math.floor(normalized / sectorSize);
-    const sectorIdx = rawIdx % sides;
-    const progress = (normalized - rawIdx * sectorSize) / sectorSize;
-    const p1 = corners[sectorIdx];
-    const p2 = corners[(sectorIdx + 1) % sides];
-    let ptX = p1?.x + (p2?.x - p1?.x) * progress;
-    let ptY = p1?.y + (p2?.y - p1?.y) * progress;
-    if (isNaN(ptX) || isNaN(ptY)) {
-      ptX = p1?.x || cx || 0;
-      ptY = p1?.y || cy || 0;
-    }
-    return { x: ptX, y: ptY };
+
+    return { x: cx, y: cy };
   }
 
   function buildShapePath(ctx, shape, cx, cy, radius, startAngle, endAngle, steps = 40) {

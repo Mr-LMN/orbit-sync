@@ -423,6 +423,7 @@ function computeWorldPalette(level) {
     case 3: return { primary: '#ffaa00', secondary: '#ff6600', bg: '#080500' };
     case 4: return { primary: '#b157ff', secondary: '#00ff41', bg: '#06040a' };
     case 5: return { primary: '#a8d8ff', secondary: '#003c8f', bg: '#030308' };
+    case 6: return { primary: '#ff3300', secondary: '#ffcc00', bg: '#0a0300' };
     default: return { primary: '#00ff88', secondary: '#00e5ff', bg: '#050508' };
   }
 }
@@ -436,6 +437,7 @@ function computeWorldShape(level) {
   if (worldNum === 3) return 'triangle';
   if (worldNum === 4) return 'square';
   if (worldNum === 5) return 'pentagon';
+  if (worldNum === 6) return 'hexagon';
   return 'circle';
 }
 
@@ -484,6 +486,15 @@ function getWorldVisualTheme(level) {
       targetGlowColor: '#dff2ff',
       targetCoreColor: '#ffffff',
       railGlowScale: 1.05
+    };
+  }
+  if (worldNum === 6) {
+    return {
+      railColor: '#ff3300',
+      targetColor: '#ffcc00',
+      targetGlowColor: '#ff6600',
+      targetCoreColor: '#ffffff',
+      railGlowScale: 1.15
     };
   }
   return {
@@ -671,181 +682,201 @@ function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
   ctx.save();
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+
   if (skin === 'skull') {
-    ctx.font = `${Math.round(radius * 3.75)}px sans-serif`;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(10, 255, 100, 0.15)';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#0aff64';
+    ctx.fill();
+    ctx.font = `${Math.round(radius * 3.5)}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('💀', x, y);
     ctx.restore();
     return;
   }
+
   if (skin === 'prism') {
     drawPrismOrbSkin(ctx, x, y, radius, pulse);
     ctx.restore();
     return;
   }
+
   if (skin === 'echo') {
-    // Cyan ghost echo trail orb - same shape as classic, cyan-tinted glow
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
     ctx.fillStyle = '#00eaff';
+    ctx.globalAlpha = 0.3;
     ctx.shadowColor = '#00eaff';
-    ctx.shadowBlur = 18 + pulse * 8;
+    ctx.shadowBlur = 25 + pulse * 10;
     ctx.fill();
-    // Inner bright core
+
     ctx.beginPath();
-    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 0.8, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.9;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 15;
+    ctx.globalAlpha = 1;
     ctx.fill();
     ctx.restore();
     return;
   }
+
   if (skin === 'crimson') {
-    // Deep red orb - same shape as classic, crimson glow
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 1.4, 0, Math.PI * 2);
     ctx.fillStyle = '#ff2244';
+    ctx.globalAlpha = 0.4;
     ctx.shadowColor = '#ff2244';
-    ctx.shadowBlur = 18 + pulse * 8;
+    ctx.shadowBlur = 25 + pulse * 12;
     ctx.fill();
+
     ctx.beginPath();
-    ctx.arc(x, y, radius * 0.45, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffaaaa';
-    ctx.shadowBlur = 10;
+    const hexPoints = 6;
+    for (let i = 0; i < hexPoints; i++) {
+      const angle = (i * Math.PI * 2) / hexPoints + performance.now() * 0.002;
+      const px = x + Math.cos(angle) * radius * 0.9;
+      const py = y + Math.sin(angle) * radius * 0.9;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#ff8888';
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.9;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowBlur = 15;
+    ctx.globalAlpha = 1;
     ctx.fill();
     ctx.restore();
     return;
   }
 
   if (skin === 'pulse') {
-    // Orb pulses in size with multiplier — bigger at x8
-    const _pulseScale = 1 + (Math.sin(Date.now() / 160) * 0.5 + 0.5) * 0.18
-      + (Math.min(multiplier, 8) * 0.04);
+    const _pulseScale = 1 + (Math.sin(Date.now() / 160) * 0.5 + 0.5) * 0.25 + (Math.min(multiplier, 8) * 0.06);
     const _pulseR = radius * _pulseScale;
     const orbColor2 = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
-    // Outer glow ring
+
     ctx.beginPath();
-    ctx.arc(x, y, _pulseR * 1.5, 0, Math.PI * 2);
+    ctx.arc(x, y, _pulseR * 1.8, 0, Math.PI * 2);
     ctx.fillStyle = orbColor2;
-    ctx.globalAlpha = 0.12;
-    ctx.shadowBlur = 20;
+    ctx.globalAlpha = 0.15;
+    ctx.shadowBlur = 30;
     ctx.shadowColor = orbColor2;
     ctx.fill();
-    // Core
+
     ctx.beginPath();
-    ctx.arc(x, y, _pulseR, 0, Math.PI * 2);
-    ctx.fillStyle = orbColor2;
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 16 + Math.sin(Date.now() / 120) * 8;
-    ctx.shadowColor = orbColor2;
-    ctx.fill();
-    // White hot centre
+    ctx.arc(x, y, _pulseR * 1.1, 0, Math.PI * 2);
+    ctx.strokeStyle = orbColor2;
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = 0.8;
+    ctx.stroke();
+
     ctx.beginPath();
-    ctx.arc(x, y, _pulseR * 0.38, 0, Math.PI * 2);
+    ctx.arc(x, y, _pulseR * 0.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 12;
+    ctx.globalAlpha = 1;
     ctx.fill();
     ctx.restore();
     return;
   }
 
   if (skin === 'ghost') {
-    // Nearly invisible — just a faint outline + inner glow
     const orbColor3 = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
-    const _ghostAlpha = 0.08 + (Math.sin(Date.now() / 800) + 1) * 0.06;
-    // Very faint fill
+    const _ghostAlpha = 0.15 + (Math.sin(Date.now() / 600) + 1) * 0.1;
+
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 1.2, 0, Math.PI * 2);
     ctx.fillStyle = orbColor3;
     ctx.globalAlpha = _ghostAlpha;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 15;
     ctx.shadowColor = orbColor3;
     ctx.fill();
-    // Crisp outline — the only clear indicator
+
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.strokeStyle = orbColor3;
-    ctx.globalAlpha = 0.55 + _ghostAlpha;
-    ctx.lineWidth = 1.2;
-    ctx.shadowBlur = 8;
+    ctx.arc(x, y, radius * 0.9, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.8;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
     ctx.stroke();
-    // Tiny bright core dot so it's not completely invisible
+
     ctx.beginPath();
-    ctx.arc(x, y, 1.8, 0, Math.PI * 2);
+    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = 0.7;
-    ctx.shadowBlur = 6;
+    ctx.globalAlpha = 0.9;
+    ctx.shadowBlur = 8;
     ctx.fill();
     ctx.restore();
     return;
   }
 
   if (skin === 'storm') {
-    // Electric yellow — bright with crackle shadow
-    const _stormPulse = (Math.sin(Date.now() / 90) + 1) * 0.5;
-    // Outer electric field
+    const _stormPulse = (Math.sin(Date.now() / 70) + 1) * 0.5;
+
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.6, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 1.8, 0, Math.PI * 2);
     ctx.fillStyle = '#ffee00';
-    ctx.globalAlpha = 0.06 + _stormPulse * 0.08;
-    ctx.shadowBlur = 24;
+    ctx.globalAlpha = 0.1 + _stormPulse * 0.15;
+    ctx.shadowBlur = 35;
     ctx.shadowColor = '#ffee00';
     ctx.fill();
-    // Main orb
+
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffe400';
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 18 + _stormPulse * 12;
-    ctx.shadowColor = '#ffee00';
-    ctx.fill();
-    // White-yellow inner core
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.42, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
+    ctx.moveTo(x - radius * 0.8, y - radius * 0.8);
+    ctx.lineTo(x + radius * 0.2, y - radius * 0.2);
+    ctx.lineTo(x - radius * 0.2, y + radius * 0.2);
+    ctx.lineTo(x + radius * 0.8, y + radius * 0.8);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2 + _stormPulse * 2;
     ctx.globalAlpha = 0.9;
-    ctx.shadowBlur = 10;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 0.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff';
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 15;
     ctx.fill();
     ctx.restore();
     return;
   }
 
+  // Classic
   ctx.beginPath();
-  ctx.arc(x, y, (radius * 2) + pulse, 0, Math.PI * 2);
+  ctx.arc(x, y, (radius * 1.8) + pulse, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
-  ctx.globalAlpha = 0.15;
-  ctx.shadowBlur = 25;
+  ctx.globalAlpha = 0.25;
+  ctx.shadowBlur = 30;
   ctx.shadowColor = orbColor;
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, radius * 1.47, 0, Math.PI * 2);
+  ctx.arc(x, y, radius * 1.2, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
-  ctx.globalAlpha = 0.7;
-  ctx.shadowBlur = 12;
+  ctx.globalAlpha = 0.8;
+  ctx.shadowBlur = 15;
   ctx.shadowColor = orbColor;
   ctx.fill();
 
-  let coreGrad = ctx.createRadialGradient(x - (radius * 0.24), y - (radius * 0.24), 0, x, y, radius * 0.94);
-  coreGrad.addColorStop(0, '#ffffff');
-  coreGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.8)');
-  coreGrad.addColorStop(1, orbColor);
   ctx.beginPath();
-  ctx.arc(x, y, radius, 0, Math.PI * 2);
-  ctx.fillStyle = coreGrad;
+  ctx.arc(x, y, radius * 0.6, 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = 1.0;
-  ctx.shadowBlur = 0;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.ellipse(x - (radius * 0.41), y - (radius * 0.53), radius * 0.53, radius * 0.29, Math.PI / 5, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(x + (radius * 0.47), y + (radius * 0.47), Math.max(0.9, radius * 0.14), 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+  ctx.shadowBlur = 10;
   ctx.fill();
   ctx.restore();
 }
@@ -1227,16 +1258,22 @@ function createUpwardBurstParticles(x, y, color, count = 36) { return OrbitGame.
 function createDirectionalShardBurst(x, y, axisAngle, config = {}) {
   const depth = Number.isFinite(config.depth) ? config.depth : 1;
   const tangentAngle = axisAngle + (Math.PI * 0.5);
-  const spread = depth >= 2 ? 5 : depth === 1 ? 7 : 9;
-  const stride = depth >= 2 ? 3.6 : depth === 1 ? 4.8 : 6;
+  const spread = depth >= 2 ? 12 : depth === 1 ? 16 : 20;
+  const stride = depth >= 2 ? 4.5 : depth === 1 ? 6.0 : 7.5;
   const leftColor = config.leftColor || '#e3f3ff';
   const rightColor = config.rightColor || '#f4fbff';
   for (let i = 0; i < spread; i++) {
     const amount = (i + 1) * stride;
     const tx = Math.cos(tangentAngle) * amount;
     const ty = Math.sin(tangentAngle) * amount;
-    createParticles(x - tx, y - ty, leftColor, 1);
-    createParticles(x + tx, y + ty, rightColor, 1);
+    createParticles(x - tx, y - ty, leftColor, 2);
+    createParticles(x + tx, y + ty, rightColor, 2);
+
+    const shardAngle = tangentAngle + (Math.random() - 0.5) * 0.5;
+    const shardDist = amount * (0.8 + Math.random() * 0.4);
+    const sx = x + Math.cos(shardAngle) * shardDist * (i % 2 === 0 ? 1 : -1);
+    const sy = y + Math.sin(shardAngle) * shardDist * (i % 2 === 0 ? 1 : -1);
+    createParticles(sx, sy, i % 2 === 0 ? leftColor : rightColor, 1);
   }
 }
 function createPopup(x, y, text, color, hitQuality = null) { return OrbitGame.entities.effects.createPopup(x, y, text, color, hitQuality); }
@@ -1509,6 +1546,13 @@ function loadLevel(idx) {
   updateMultiplierUI();
   updateWaveUI();
 
+  const currentWorldNum = getWorldNum();
+  if (currentWorldNum === 4 && !inMenu) {
+    document.body.classList.add('world4-active');
+  } else {
+    document.body.classList.remove('world4-active');
+  }
+
   if (levelData.boss) {
     isCinematicIntro = true;
     if (levelData.id === '1-6' || levelData.boss === 'aegis' || (levelData.id === '2-6' && levelData.boss === 'prism')) {
@@ -1710,7 +1754,7 @@ function draw() {
     } else if (worldNum === 2 && !isBoss) {
       // Crystal — cyan-to-magenta shifting shimmer, more visible
       const _w2shift = (Math.sin(now * 0.0004) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(20 + _w2shift * 180)}, ${Math.round(100 + _w2shift * 60)}, 220, ${0.07 + _atmPulse * 0.04})`;
+      _atmColor = `rgba(${Math.round(10 + _w2shift * 160)}, ${Math.round(80 + _w2shift * 100)}, 255, ${0.1 + _atmPulse * 0.06})`;
     } else if (worldNum === 3 && !isBoss) {
       // Echo/resonance — amber-orange warmth
       _atmColor = `rgba(180, 80, 10, ${0.04 + _atmPulse * 0.02})`;
@@ -1719,9 +1763,13 @@ function draw() {
       const _w4glitch = (Math.sin(now * 0.0008) + 1) * 0.5;
       _atmColor = `rgba(${Math.round(80 + _w4glitch * 40)}, ${Math.round(20 + _w4glitch * 10)}, ${Math.round(140 + _w4glitch * 60)}, ${0.08 + _atmPulse * 0.04})`;
     } else if (worldNum === 5 && !isBoss) {
-      // The Void — near-invisible deep space. Stars, silence, cold
+      // The Void — completely black with cold blue bloom. Increased intensity from original
       const _w5pulse = (Math.sin(now * 0.00025) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(10 + _w5pulse * 20)}, ${Math.round(20 + _w5pulse * 40)}, ${Math.round(80 + _w5pulse * 80)}, ${0.05 + _atmPulse * 0.025})`;
+      _atmColor = `rgba(${Math.round(5 + _w5pulse * 10)}, ${Math.round(10 + _w5pulse * 20)}, ${Math.round(40 + _w5pulse * 40)}, ${0.12 + _atmPulse * 0.05})`;
+    } else if (worldNum === 6 && !isBoss) {
+      // Inferno Core - Deep heat waves
+      const _w6pulse = (Math.sin(now * 0.0005) + 1) * 0.5;
+      _atmColor = `rgba(${Math.round(180 + _w6pulse * 75)}, ${Math.round(40 + _w6pulse * 60)}, 0, ${0.1 + _atmPulse * 0.05})`;
     } else if (isBoss) {
       // Boss — deep red threat, steady
       _atmColor = `rgba(120, 0, 20, ${0.06 + _atmPulse * 0.03})`;
@@ -1836,6 +1884,66 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
+  if (worldShape === 'hexagon' && !isBoss) {
+    ctx.save();
+    // Fire/Plasma aura
+    buildShapePath(ctx, 'hexagon', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ff3300';
+    ctx.lineWidth = 14;
+    ctx.globalAlpha = (0.08 + Math.abs(Math.sin(now / 1500)) * 0.04) * railGlowScale;
+    ctx.shadowBlur = 25 * railGlowScale;
+    ctx.shadowColor = '#ff3300';
+    ctx.stroke();
+
+    // Intense heat core line
+    buildShapePath(ctx, 'hexagon', centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffcc00';
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = (0.2 + Math.abs(Math.sin(now / 800)) * 0.1) * railGlowScale;
+    ctx.shadowBlur = 15 * railGlowScale;
+    ctx.stroke();
+
+    // Hexagon corners - solar flares
+    const _hexCorners = [];
+    for (let _hi = 0; _hi < 6; _hi++) {
+      const _ha = -Math.PI / 2 + (_hi * Math.PI * 2 / 6);
+      const rAdjust = orbitRadius / Math.cos(Math.PI / 6);
+      _hexCorners.push({
+        x: centerObj.x + Math.cos(_ha) * rAdjust,
+        y: centerObj.y + Math.sin(_ha) * rAdjust
+      });
+    }
+    const _flarePulse = (Math.sin(now * 0.002) + 1) * 0.5;
+    _hexCorners.forEach((pt, idx) => {
+      const _offset = idx * (Math.PI * 2 / 6);
+      const _fp = (Math.sin(now * 0.003 + _offset) + 1) * 0.5;
+
+      ctx.beginPath();
+      ctx.moveTo(pt.x - 8 * _fp, pt.y - 8 * _fp);
+      ctx.lineTo(pt.x + 8 * _fp, pt.y + 8 * _fp);
+      ctx.moveTo(pt.x + 8 * _fp, pt.y - 8 * _fp);
+      ctx.lineTo(pt.x - 8 * _fp, pt.y + 8 * _fp);
+      ctx.strokeStyle = '#ffcc00';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.4 + _flarePulse * 0.3;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ff6600';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 2 + _fp * 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.6 + _flarePulse * 0.4;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#ffcc00';
+      ctx.fill();
+    });
+
+    ctx.restore();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
+
   // Ambient breath ring — syncs intensity to multiplier state
   if (!inMenu && isPlaying) {
     const _brSpeed = 0.0006 + (Math.min(multiplier, 8) * 0.00018);
@@ -1863,34 +1971,54 @@ function draw() {
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
     ctx.strokeStyle = effectiveRailColor;
-    ctx.lineWidth = 12;
-    ctx.globalAlpha = (0.045 + Math.abs(Math.sin(now / 1800)) * 0.02) * railGlowScale;
-    ctx.shadowBlur = 20 * railGlowScale;
+    ctx.lineWidth = 15;
+    ctx.globalAlpha = (0.06 + Math.abs(Math.sin(now / 1800)) * 0.03) * railGlowScale;
+    ctx.shadowBlur = 25 * railGlowScale;
     ctx.shadowColor = effectiveRailColor;
     ctx.stroke();
 
     // Mid glow — tighter, slightly brighter
     buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
       orbitRadius, 0, Math.PI * 2, 8);
-    ctx.strokeStyle = effectiveRailColor;
-    ctx.lineWidth = 4;
-    ctx.globalAlpha = (0.11 + Math.abs(Math.sin(now / 1600)) * 0.02) * railGlowScale;
-    ctx.shadowBlur = 11 * railGlowScale;
-    ctx.shadowColor = effectiveRailColor;
+    ctx.strokeStyle = '#66ffff'; // More icy/crystalline
+    ctx.lineWidth = 3;
+    ctx.globalAlpha = (0.25 + Math.abs(Math.sin(now / 1600)) * 0.05) * railGlowScale;
+    ctx.shadowBlur = 12 * railGlowScale;
+    ctx.shadowColor = '#66ffff';
     ctx.stroke();
 
-    // Corner hot spots — tiny bright dots at each diamond point,
-    // no circles, just a slightly brighter section of the line
+    // Inner sharp core for glass effect
+    buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
+      orbitRadius, 0, Math.PI * 2, 8);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.6;
+    ctx.stroke();
+
+    // Corner hot spots — sharp diamond points
     const cornerPoints = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
     cornerPoints.forEach((cornerAngle, idx) => {
-      const span = Math.PI / 18;
+      const span = Math.PI / 24;
       buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
         orbitRadius, cornerAngle - span, cornerAngle + span, 6);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2.1;
-      ctx.globalAlpha = 0.2 + Math.abs(Math.sin(now / 1100 + idx)) * 0.06;
-      ctx.shadowBlur = 9;
-      ctx.shadowColor = effectiveRailColor;
+      ctx.lineWidth = 2.5;
+      ctx.globalAlpha = 0.4 + Math.abs(Math.sin(now / 1100 + idx)) * 0.2;
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = '#2ff6ff';
+      ctx.stroke();
+
+      // Draw a tiny cross at the corners to make it feel like a lens flare
+      const pt = getPointOnShape(cornerAngle, 'diamond', centerObj.x, centerObj.y, orbitRadius);
+      const flareSize = 6 + Math.abs(Math.sin(now / 800 + idx)) * 4;
+      ctx.beginPath();
+      ctx.moveTo(pt.x - flareSize, pt.y);
+      ctx.lineTo(pt.x + flareSize, pt.y);
+      ctx.moveTo(pt.x, pt.y - flareSize);
+      ctx.lineTo(pt.x, pt.y + flareSize);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
       ctx.stroke();
     });
 
@@ -2080,30 +2208,75 @@ function draw() {
       ctx.stroke();
     };
 
+    if (t.isAccelerant) {
+      ctx.save();
+      const accPulse = (Math.sin(now / 200 + tCenter * 2) + 1) * 0.5;
+
+      // Glow under
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ff6600';
+      ctx.globalAlpha = 0.2 + accPulse * 0.3;
+      ctx.lineWidth = 14;
+      ctx.lineCap = 'butt';
+      setShadowBlur(20);
+      ctx.shadowColor = '#ff6600';
+      ctx.stroke();
+
+      // Sharp core dashes (like hazard stripes)
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#ffcc00';
+      ctx.globalAlpha = 0.6 + accPulse * 0.4;
+      ctx.lineWidth = 4;
+      ctx.setLineDash([15, 10]);
+      ctx.lineDashOffset = -(now / 15); // animate dashes flowing
+      setShadowBlur(10);
+      ctx.shadowColor = '#ffcc00';
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.restore();
+      return; // Skip normal target drawing
+    }
+
     if (t.isPhantom) {
       ctx.save();
       const phantomPulse = 0.68 + Math.abs(Math.sin(now / 290 + (tCenter * 1.1))) * 0.4;
       const isDiamondWorld = worldNum === 2 && !isBoss;
-      ctx.setLineDash(isDiamondWorld ? [7, 8] : [4, 12]);
+      const isGlitchWorld = worldNum === 4 && !isBoss;
+      ctx.setLineDash(isDiamondWorld ? [7, 8] : (isGlitchWorld ? [2, 6, 8, 4] : [4, 12]));
+
+      // Jitter effect for Glitch World
+      let jitterStart = t.start;
+      let jitterSize = t.size;
+      if (isGlitchWorld) {
+        const jitter = (Math.random() - 0.5) * 0.05 * phantomPulse;
+        jitterStart += jitter;
+        jitterSize += jitter * 0.5;
+        if (Math.random() < 0.1) {
+          ctx.translate((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
+        }
+      }
       
       // Very faint glow — barely there
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-        orbitRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = '#ff3366';
-      ctx.globalAlpha = isDiamondWorld ? (0.2 * phantomPulse) : 0.12;
-      ctx.lineWidth = isDiamondWorld ? 10 : 8;
+        orbitRadius, jitterStart, jitterStart + jitterSize);
+      ctx.strokeStyle = isGlitchWorld ? (Math.random() > 0.5 ? '#b157ff' : '#00ff41') : '#ff3366';
+      ctx.globalAlpha = isDiamondWorld ? (0.2 * phantomPulse) : (isGlitchWorld ? 0.3 * phantomPulse : 0.12);
+      ctx.lineWidth = isDiamondWorld ? 10 : (isGlitchWorld ? 12 : 8);
       ctx.lineCap = 'butt';
-      setShadowBlur(isDiamondWorld ? 16 : 0);
-      ctx.shadowColor = '#ff3366';
+      setShadowBlur(isDiamondWorld || isGlitchWorld ? 16 : 0);
+      ctx.shadowColor = isGlitchWorld ? '#b157ff' : '#ff3366';
       ctx.stroke();
       
       // Thin dashed line only, no fill, no X label
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
-        orbitRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = '#ff3366';
-      ctx.globalAlpha = isDiamondWorld ? (0.75 * phantomPulse) : 0.45;
-      ctx.lineWidth = isDiamondWorld ? 2.6 : 1.5;
-      setShadowBlur(isDiamondWorld ? 10 : 0);
+        orbitRadius, jitterStart, jitterStart + jitterSize);
+      ctx.strokeStyle = isGlitchWorld ? (Math.random() > 0.8 ? '#ffffff' : '#ff3366') : '#ff3366';
+      ctx.globalAlpha = isDiamondWorld ? (0.75 * phantomPulse) : (isGlitchWorld ? 0.6 * phantomPulse : 0.45);
+      ctx.lineWidth = isDiamondWorld ? 2.6 : (isGlitchWorld ? Math.random() * 4 + 1 : 1.5);
+      setShadowBlur(isDiamondWorld || isGlitchWorld ? 10 : 0);
       ctx.stroke();
 
       // Diamond-only prism interference streak to make phantom traps pop.
@@ -2119,6 +2292,17 @@ function draw() {
         ctx.stroke();
       }
       
+      // Glitch-only square interference
+      if (isGlitchWorld) {
+        const phantomMid = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, orbitRadius);
+        if (Math.random() > 0.6) {
+          ctx.fillStyle = Math.random() > 0.5 ? '#b157ff' : '#00ff41';
+          ctx.globalAlpha = 0.5 * phantomPulse;
+          const rectSize = Math.random() * 8 + 2;
+          ctx.fillRect(phantomMid.x + (Math.random()-0.5)*15, phantomMid.y + (Math.random()-0.5)*15, rectSize, rectSize * (Math.random() > 0.5 ? 0.2 : 2));
+        }
+      }
+
       ctx.setLineDash([]);
       ctx.restore();
       ctx.globalAlpha = 1.0;
@@ -2177,24 +2361,27 @@ function draw() {
       const glowWidth = Math.max(3, bodyWidth * 0.85);
       const coreWidth = Math.max(1.8, bodyWidth * 0.45);
 
+      const cornerGlowColor = isDiamondWorld ? '#2ff6ff' : '#ffd54a';
+      const cornerCoreColor = isDiamondWorld ? '#ff4fd8' : '#ffffff';
+
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = '#ffd54a';
-      ctx.globalAlpha = (isDiamondWorld ? 0.48 : 0.36) + (approach * 0.28) + (hitFlash * (isDiamondWorld ? 0.28 : 0.2));
+      ctx.strokeStyle = cornerGlowColor;
+      ctx.globalAlpha = (isDiamondWorld ? 0.6 : 0.36) + (approach * 0.35) + (hitFlash * (isDiamondWorld ? 0.4 : 0.2));
       ctx.globalAlpha *= bonusPulse;
-      ctx.lineWidth = glowWidth + (approach * (isDiamondWorld ? 1.0 : 0.6));
+      ctx.lineWidth = glowWidth + (approach * (isDiamondWorld ? 1.5 : 0.6));
       ctx.lineCap = 'round';
-      setShadowBlur(useHeavyEffects ? ((isDiamondWorld ? 20 : 14) + (approach * 8)) : (6 + (approach * 3)));
-      ctx.shadowColor = '#ffd54a';
+      setShadowBlur(useHeavyEffects ? ((isDiamondWorld ? 25 : 14) + (approach * 12)) : (6 + (approach * 3)));
+      ctx.shadowColor = cornerGlowColor;
       ctx.stroke();
 
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = '#ffffff';
-      ctx.globalAlpha = Math.min(1, 0.86 + approach * 0.12 + hitFlash * 0.25);
-      ctx.lineWidth = coreWidth;
-      setShadowBlur(useHeavyEffects ? (6 + (approach * 6)) : 0);
-      ctx.shadowColor = '#ffd54a';
+      ctx.strokeStyle = cornerCoreColor;
+      ctx.globalAlpha = Math.min(1, 0.9 + approach * 0.15 + hitFlash * 0.3);
+      ctx.lineWidth = coreWidth * (isDiamondWorld ? 1.5 : 1);
+      setShadowBlur(useHeavyEffects ? (8 + (approach * 8)) : 0);
+      ctx.shadowColor = cornerCoreColor;
       ctx.stroke();
 
       const cornerPt = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
@@ -2202,15 +2389,27 @@ function draw() {
       ctx.save();
       ctx.translate(cornerPt.x, cornerPt.y);
       ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = '#ffd54a';
+      ctx.fillStyle = cornerGlowColor;
       ctx.globalAlpha = 0.88 + approach * 0.12;
-      setShadowBlur(useHeavyEffects ? (isDiamondWorld ? 18 : 12) : 0);
-      ctx.shadowColor = '#ffd54a';
+      setShadowBlur(useHeavyEffects ? (isDiamondWorld ? 22 : 12) : 0);
+      ctx.shadowColor = cornerGlowColor;
       ctx.fillRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.2;
-      ctx.globalAlpha = 0.95;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 1.0;
       ctx.strokeRect(-diamondSize / 2, -diamondSize / 2, diamondSize, diamondSize);
+
+      if (isDiamondWorld) {
+          ctx.beginPath();
+          ctx.moveTo(-diamondSize, 0);
+          ctx.lineTo(diamondSize, 0);
+          ctx.moveTo(0, -diamondSize);
+          ctx.lineTo(0, diamondSize);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.0;
+          ctx.stroke();
+      }
+
       ctx.restore();
 
       ctx.restore();
@@ -2919,10 +3118,17 @@ function draw() {
     ctx.shadowBlur = 0;
   }
 
-  // Blackout vignette — deepens when orb is hidden
+  // Blackout vignette — Spotlight effect for The Void
   if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
-    const _bFade = Math.max(0, Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200));
-    ctx.fillStyle = `rgba(3, 3, 8, ${0.28 * _bFade})`;
+    const _bFade = Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200);
+    const spotlightGrad = ctx.createRadialGradient(
+        tPt.x, tPt.y, orbitRadius * 0.1,
+        tPt.x, tPt.y, orbitRadius * 0.8
+    );
+    spotlightGrad.addColorStop(0, 'rgba(3, 3, 8, 0)');
+    spotlightGrad.addColorStop(0.3, `rgba(3, 3, 8, ${0.4 * _bFade})`);
+    spotlightGrad.addColorStop(1, `rgba(3, 3, 8, ${0.98 * _bFade})`);
+    ctx.fillStyle = spotlightGrad;
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
   }
 
@@ -3204,6 +3410,15 @@ function update() {
     moveStep *= (1 + Math.min(0.2, totalStageDistance / (Math.PI * 48)));
   }
   if (levelData.boss && isBossPhaseTwo && !inMenu) moveStep *= 1.3;
+
+  // Implement Accelerant mechanic for World 6
+  if (worldNum === 6 && !inMenu && !isCinematicIntro) {
+      const isAccelerating = targets.some(t => t.active && t.isAccelerant && isInsideTarget(angle, t));
+      if (isAccelerating) {
+          moveStep *= 2.5; // Massive speed boost inside accelerant zones
+      }
+  }
+
   if (!inMenu && levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase >= 2 && bossPhase <= 4) {
     moveStep *= 1.18;
     if (bossPhase === 2 && performance.now() >= world2BossNextForcedReverseAt) {
@@ -3258,6 +3473,11 @@ function update() {
         _blackoutActive = false;
         _nextBlackoutAt = _blackoutEndsAt - _bcfg.duration + _bcfg.interval;
         if (audioCtx && typeof playTone === 'function') playTone(880, 'sine', 0.05, 0.01, 0.15);
+
+        // Massive light flood when blackout ends
+        createShockwave('#ffffff', 60);
+        pulseBrightness(2.5, 200);
+        createParticles(centerObj.x, centerObj.y, '#ffffff', 30);
       }
       if (!_blackoutActive && frameNow >= _nextBlackoutAt) {
         _blackoutActive = true;
@@ -3388,8 +3608,19 @@ function update() {
       }
     }
 
+    // Accelerant zones just pass by
+    if (t.isAccelerant && t.active) {
+      const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (!t._wasMissable && isInsideTarget(normAngle, t)) {
+        t._wasMissable = true;
+      }
+      if (t._wasMissable && !isInsideTarget(normAngle, t)) {
+        t.active = false; // just disappears
+      }
+    }
+
     // Hard Mode pass-through penalty
-    if (hardModeActive && t.active && !t.isLifeZone && !t.isPhantom && !t.isBossShield && !t.isCornerBonus) {
+    if (hardModeActive && t.active && !t.isLifeZone && !t.isPhantom && !t.isBossShield && !t.isCornerBonus && !t.isAccelerant) {
       const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
       const insideNow = isInsideTarget(normAngle, t);
       if (!t._hmWasInside && insideNow) {
@@ -3799,6 +4030,7 @@ function tap() {
   for (let i = 0; i < targets.length; i++) {
     if (!targets[i].active) continue;
     const t = targets[i];
+    if (t.isAccelerant) continue; // cannot hit accelerants
     if (t.isEchoTarget) {
       const echoHit = isInsideTarget(echoAngle, t);
       if (echoHit) {
@@ -3986,6 +4218,25 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
       }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
+        // ─── SOLAR CORE TRANSITIONS ─────────────────
+        if (levelData.boss === 'solar_core' && bossPhase === 1) {
+          bossPhase = 2;
+          ui.bossPhase1.className = 'boss-segment';
+          ui.bossPhase2.className = 'boss-segment active-segment';
+          pauseGameplayBriefly(1200);
+          triggerScreenShake(30);
+          pulseBrightness(2.5, 200);
+          createShockwave('#ffcc00', 40);
+          createShockwave('#ff3300', 60);
+          createParticles(centerObj.x, centerObj.y, '#ff6600', 40);
+          createPopup(centerObj.x, centerObj.y - 70, 'FLARES BROKEN', '#ffcc00');
+          createPopup(centerObj.x, centerObj.y - 34, 'CORE EXPOSED', '#ffffff');
+          escalateBossDrone();
+          vibrate([60, 20, 80]);
+          scheduleBossSpawn(1200);
+          return;
+        }
+
         // ─── NULL GATE PHASE TRANSITIONS ───────────────
         if (levelData.boss === 'null_gate' && bossPhase === 1) {
           // All 5 seals broken → Phase 2 ENRAGED
@@ -4101,6 +4352,36 @@ function tap() {
           scheduleBossSpawn(760);
         }
       } return;
+    }
+
+    // ─── SOLAR CORE DEFEAT ──────────────────────
+    if (
+      levelData &&
+      levelData.boss === 'solar_core' &&
+      isBossPhaseTwo &&
+      t.isSolarFinalCore
+    ) {
+      t.active = false;
+      ui.bossPhase2.className = 'boss-segment';
+      triggerScreenShake(40);
+      pulseBrightness(3.5, 300);
+      createShockwave('#ffffff', 40);
+      createShockwave('#ffcc00', 60);
+      createShockwave('#ff3300', 80);
+      createParticles(centerObj.x, centerObj.y, '#ffffff', 80);
+      createParticles(centerObj.x, centerObj.y, '#ffcc00', 50);
+      createUpwardBurstParticles(centerObj.x, centerObj.y - 10, '#ffffff', 60);
+      createPopup(centerObj.x, centerObj.y - 60, 'INFERNO', '#ffcc00');
+      createPopup(centerObj.x, centerObj.y - 20, 'EXTINGUISHED', '#ffffff');
+      soundBossDefeated();
+      stopBossDrone();
+      vibrate([100, 50, 150]);
+      stageHits = 999;
+      isPlaying = false;
+      canvas.style.filter = 'brightness(3) saturate(3) hue-rotate(180deg)';
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 200);
+      setTimeout(() => { triggerStageClear(); }, 1800);
+      return;
     }
 
     // ─── NULL GATE CORE DEFEAT ──────────────────────
@@ -4264,11 +4545,20 @@ function tap() {
       t.active = false;
     }
 
+    if (t.isAccelerant) {
+      // You can tap inside an accelerant zone without penalty, but it doesn't give points
+      // However, if we just break, it might trigger a miss, so we actually want to ignore it
+      // in the hit detection loop entirely, or just return here.
+      // Wait, if it's the *only* thing they tapped, we don't want to punish them either.
+      return;
+    }
+
     if (t.isPhantom) {
       // Player hit a phantom — punish without the usual hit flow
       const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
       const isDiamondWorld = worldNum === 2;
       const isGlitchWorld = worldNum === 4;
+      const isInfernoWorld = worldNum === 6;
       comboCount = 0;
       comboTimer = 0;
       comboGlow = 0;
@@ -4276,15 +4566,16 @@ function tap() {
 
       if (isGlitchWorld) {
         // W4: corrupted signal feedback — purple + green
-        triggerScreenShake(14);
-        canvas.style.filter = 'brightness(2.2) hue-rotate(260deg) saturate(1.8)';
-        setTimeout(() => canvas.style.filter = 'brightness(1)', 110);
-        createShockwave('#b157ff', 34);
-        createShockwave('#00ff41', 20);
+        triggerScreenShake(18);
+        canvas.style.filter = 'brightness(2.5) hue-rotate(280deg) saturate(2.0)';
+        setTimeout(() => canvas.style.filter = 'brightness(1)', 150);
+        createShockwave('#b157ff', 40);
+        createShockwave('#00ff41', 26);
         createPopup(hitX, hitY - 20, 'CORRUPTED', '#b157ff');
-        createParticles(hitX, hitY, '#b157ff', 24);
-        createParticles(hitX, hitY, '#00ff41', 12);
-        createUpwardBurstParticles(hitX, hitY - 6, '#cc88ff', 18);
+        createParticles(hitX, hitY, '#b157ff', 30);
+        createParticles(hitX, hitY, '#00ff41', 20);
+        createUpwardBurstParticles(hitX, hitY - 6, '#cc88ff', 25);
+        glitchCanvas(250, () => {});
       } else {
         triggerScreenShake(isDiamondWorld ? 11 : 8);
         canvas.style.filter = 'brightness(2)';
@@ -4377,6 +4668,9 @@ function tap() {
       vibrate(12);
     }
 
+    const worldNumHit = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+    const hasActivePhantoms = targets.some(tgt => tgt.active && tgt.isPhantom);
+
     if (hitTimingTier === 'filthy-perfect') {
       perfectLifeStreak++;
       runPerfectCount++;
@@ -4416,6 +4710,14 @@ function tap() {
       vibrate([12, 28, 12]);
       createUpwardBurstParticles(hitX, hitY - 10, '#ffffff', 52);
       createParticles(hitX, hitY, '#ffffff', 20);
+
+      if (worldNumHit === 4 && hasActivePhantoms) {
+        createPopup(centerObj.x, centerObj.y, 'SIGNAL PURGED', '#00ff41');
+        createShockwave('#00ff41', 40);
+        document.body.classList.remove('world4-active');
+        setTimeout(() => document.body.classList.add('world4-active'), 1000);
+      }
+
       if (perfectLifeStreak >= 6) {
         gainLifeFromPerfectStreak();
       } else if (perfectLifeStreak >= 2) {
@@ -4579,7 +4881,7 @@ function tap() {
     }
     // Only progression-relevant targets should gate wave advancement.
     const shouldForceHudFlush = targets
-      .filter((tgt) => !tgt.isHeart && !tgt.isLifeZone && !tgt.isPhantom && !tgt.isCornerBonus)
+      .filter((tgt) => !tgt.isHeart && !tgt.isLifeZone && !tgt.isPhantom && !tgt.isCornerBonus && !tgt.isAccelerant)
       .every((tgt) => !tgt.active)
       || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
@@ -4624,7 +4926,7 @@ function tap() {
     let nearestTarget = null;
     for (let i = 0; i < targets.length; i++) {
       const t = targets[i];
-      if (!t.active) continue;
+      if (!t.active || t.isAccelerant) continue;
 
       const startEdge = normalizeAngle(t.start);
       const endEdge = normalizeAngle(t.start + t.size);
@@ -4727,6 +5029,7 @@ function restartFromCheckpoint() {
 }
 
 function returnToMenu() {
+  document.body.classList.remove('world4-active');
   const _pb0 = ui.pauseBtn;
   if (_pb0) _pb0.style.display = 'none';
   OG.storage.removeItem('orbitSync_checkpointIdx');

@@ -1,12 +1,20 @@
 (function initWorldMeta(window) {
   const OG = window.OrbitGame;
 
-  const WORLD_ORDER = ['world1', 'world2', 'world3', 'world4', 'world5'];
+  const WORLD_ORDER = ['world1', 'world2', 'world3', 'world4', 'world5', 'world6'];
   const DEFAULT_WORLDS = {
     world1: {
       id: 'world1',
       title: 'ORBIT INIT',
       unlocked: true,
+      stages: [],
+      bossStageId: null,
+      hardUnlocked: false
+    },
+    world6: {
+      id: 'world6',
+      title: 'INFERNO CORE',
+      unlocked: false,
       stages: [],
       bossStageId: null,
       hardUnlocked: false
@@ -114,7 +122,8 @@
     { id: 2, label: 'WORLD 2' },
     { id: 3, label: 'WORLD 3' },
     { id: 4, label: 'WORLD 4' },
-    { id: 5, label: 'WORLD 5' }
+    { id: 5, label: 'WORLD 5' },
+    { id: 6, label: 'WORLD 6' }
   ];
   OG.data.worldOrder = WORLD_ORDER.slice();
   OG.data.worldIdFromStageId = worldIdFromStageId;

@@ -12,6 +12,7 @@
     const level = campaign[levelIdx];
     if (!level) return 'assets/Base.mp3';
     const worldNum = parseInt(level.id.split('-')[0], 10);
+    if (worldNum === 6) return 'assets/Base-3.mp3'; // World 6 fiery intense track
     return (worldNum === 2 || worldNum === 4) ? 'assets/Base-2.mp3' : 'assets/Base.mp3';
   }
 
@@ -19,11 +20,12 @@
     const level = campaign[levelIdx];
     if (!level || !level.boss) return 'assets/boss.mp3';
     if (level.id === '2-6' && level.boss === 'prism') return 'assets/calculated_threat.mp3';
+    if (level.id === '6-6' && level.boss === 'solar_core') return 'assets/boss_solar.mp3'; // Solar Core theme
     return 'assets/boss.mp3';
   }
 
   function _isMusicBossStage(level) {
-    return !!(level && (level.boss === 'aegis' || level.boss === 'prism' || level.boss === 'corruptor' || level.boss === 'null_gate'));
+    return !!(level && (level.boss === 'aegis' || level.boss === 'prism' || level.boss === 'corruptor' || level.boss === 'null_gate' || level.boss === 'solar_core'));
   }
 
   function hasActiveMusicGraph() {
