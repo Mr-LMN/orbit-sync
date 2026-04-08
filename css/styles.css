@@ -549,42 +549,99 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   display: none;
 }
 
-/* ── RUN STATS (fail screen) — floating, no cells ─ */
-.run-focus-block {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  width: 100%; margin: 0 0 12px; padding: 0;
-  text-align: center; order: 2;
+/* ── NEW: SUMMARY CARD ───────────────────── */
+.summary-card {
+  width: 100%;
+  background: rgba(12, 14, 20, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.03);
+  backdrop-filter: blur(12px);
+  order: 2;
+  box-sizing: border-box;
 }
-.run-focus-combo {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(3.4rem, 14vw, 5.2rem);
-  line-height: 0.92; letter-spacing: 2px;
-  color: #ffffff;
-  text-shadow: 0 0 24px rgba(255,255,255,0.35);
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
 }
-.run-focus-score {
-  margin-top: 2px;
+
+.summary-label {
   font-family: 'Orbitron', sans-serif;
-  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
-  letter-spacing: 2px; color: rgba(200,220,245,0.5);
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  color: rgba(200, 220, 245, 0.6);
   text-transform: uppercase;
 }
+
+.summary-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  color: #ffffff;
+  letter-spacing: 1px;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.summary-value.new-record {
+  color: #ffb830;
+  text-shadow: 0 0 16px rgba(255, 184, 48, 0.7);
+}
+
+.summary-value-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.run-coins-hint {
+  display: none !important;
+}
+
 .near-miss-msg {
-  margin-top: 5px;
+  margin-top: 12px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.68rem; letter-spacing: 1.5px;
-  color: rgba(255,210,140,0.55);
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  color: rgba(255, 210, 140, 0.65);
+  text-align: center;
   min-height: 14px;
 }
 
-/* ── WORLD CLEAR STATS — no cells ─────────── */
-#pbStatsBlock, #clearSummary {
+.btn-compact {
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  color: #ffaa00;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
+  transition: transform 0.1s, background 0.1s;
+}
+
+.btn-compact:active {
+  transform: scale(0.92);
+  background: rgba(255, 170, 0, 0.25);
+}
+
+/* ── WORLD CLEAR STATS — kept for clear screen ─────────── */
+#clearSummary {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0; margin: 0 0 12px; width: 100%; order: 2;
   background: transparent;
 }
-.clear-stat, .pb-stat {
+.clear-stat {
   text-align: center; padding: 6px 4px 8px;
   background: none !important; border: none !important;
   box-shadow: none !important; backdrop-filter: none !important;
@@ -592,45 +649,21 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   display: flex; flex-direction: column; justify-content: center;
   position: relative;
 }
-.clear-stat:not(:last-child)::after, .pb-stat:not(:last-child)::after {
+.clear-stat:not(:last-child)::after {
   content: ''; position: absolute; right: 0; top: 15%;
   width: 1px; height: 70%;
   background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.07), transparent);
 }
-.clear-label, .pb-label {
+.clear-label {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.48rem; letter-spacing: 2px;
   color: rgba(255,255,255,0.28); margin-bottom: 5px; line-height: 1.2;
 }
-.clear-value, .pb-value {
+.clear-value {
   font-family: 'Bebas Neue', sans-serif;
   font-size: clamp(1.7rem, 5.5vw, 2.4rem);
   line-height: 1; color: rgba(255,255,255,0.88);
   transition: color 0.3s, text-shadow 0.3s;
-}
-.pb-value.new-record {
-  color: #ffb830;
-  text-shadow: 0 0 16px rgba(255,184,48,0.7);
-}
-
-/* ── COINS — pure glowing text, no pill ────── */
-.run-coins-box {
-  background: none !important; border: none !important;
-  box-shadow: none !important; animation: none !important;
-  padding: 0; margin: 0 auto 18px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(1rem, 3.2vw, 1.2rem);
-  font-weight: 700; letter-spacing: 2px;
-  color: #ffb830;
-  text-shadow: 0 0 22px rgba(255,184,48,0.9), 0 0 44px rgba(255,130,0,0.35);
-  order: 3;
-}
-.run-coins-hint {
-  margin-top: 3px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 0.56rem; letter-spacing: 1px;
-  color: rgba(255,210,140,0.5); text-shadow: none;
-  text-transform: lowercase;
 }
 
 /* ══════════════════════════════════════════

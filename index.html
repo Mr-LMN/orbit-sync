@@ -295,13 +295,40 @@
     <h1 id="screenTitle">OUT OF SYNC</h1>
     <p id="screenSubtitle">Failed on Stage 1-1</p>
     <div id="overlayMetaStack">
-      <div id="runCoinsBox" class="run-coins-box">
-        <div id="runCoinsDisplay">0 COINS</div>
-        <div id="runCoinsHint" class="run-coins-hint" style="display:none;"></div>
-        <button id="adDoubleCoinsBtn" class="btn" style="display:none; font-size: 0.6rem; margin-top: 6px; padding: 6px 12px; background: rgba(255, 170, 0, 0.15); border: 1px solid rgba(255, 170, 0, 0.4); color: #ffaa00;">📺 DOUBLE COINS</button>
+
+      <div id="newRecordBanner" style="display:none; color:#ffaa00; font-family:'Orbitron',sans-serif;"></div>
+      <div id="closeMissBanner" style="display:none; color:#ffd27a; font-family:'Orbitron',sans-serif;">⚠ ONE TAP OFF</div>
+
+      <div id="summaryCard" class="summary-card" style="display:none;">
+        <div id="runStatsBlock" class="summary-row">
+          <div class="summary-label">SCORE</div>
+          <div class="summary-value" id="runScoreDisplay">0</div>
+        </div>
+
+        <div class="summary-row">
+          <div class="summary-label">BEST SCORE</div>
+          <div class="summary-value" id="pbScoreDisplay">0</div>
+        </div>
+
+        <div class="summary-row" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+          <div class="summary-label">COMBO</div>
+          <div class="summary-value" id="runComboDisplay">0</div>
+        </div>
+
+        <div id="runCoinsBox" class="summary-row" style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px;">
+          <div class="summary-label" style="color: #ffaa00;">COINS EARNED</div>
+          <div class="summary-value-group">
+            <span id="runCoinsDisplay" style="color: #ffb830;">0</span>
+            <button id="adDoubleCoinsBtn" class="btn-compact" style="display:none;">📺 x2</button>
+          </div>
+          <div id="runCoinsHint" class="run-coins-hint" style="display:none;"></div>
+        </div>
+
+        <p id="nearMissMsg" class="near-miss-msg"></p>
       </div>
+
       <div id="clearSummary" class="clear-summary" style="display:none;">
-        <div class="clear-stat">
+         <div class="clear-stat">
           <div class="clear-label">SCORE</div>
           <div class="clear-value" id="clearScoreDisplay">0</div>
         </div>
@@ -314,32 +341,17 @@
           <div class="clear-value" id="clearCoinsDisplay">0</div>
         </div>
       </div>
-      <div id="pbStatsBlock">
-        <div class="pb-stat" id="pbScoreBlock">
-          <div class="pb-label">BEST SCORE</div>
-          <div class="pb-value" id="pbScoreDisplay">0</div>
-        </div>
-        <div class="pb-stat" id="pbStreakBlock">
-          <div class="pb-label">BEST STREAK</div>
-          <div class="pb-value" id="pbStreakDisplay">0</div>
-        </div>
-        <div class="pb-stat" id="pbWorldBlock">
-          <div class="pb-label">BEST WORLD</div>
-          <div class="pb-value" id="pbWorldDisplay">1</div>
-        </div>
+
+      <div id="pbStatsBlock" style="display:none;">
+        <div id="pbStreakDisplay">0</div>
+        <div id="pbWorldDisplay">1</div>
       </div>
 
-      <div id="newRecordBanner" style="display:none; color:#ffaa00; font-family:'Orbitron',sans-serif;"></div>
-      <div id="closeMissBanner" style="display:none; color:#ffd27a; font-family:'Orbitron',sans-serif;">⚠ ONE TAP OFF</div>
-      <div id="runStatsBlock" class="run-focus-block" style="display:none;">
-        <div class="run-focus-combo" id="runComboDisplay">COMBO 0</div>
-        <div class="run-focus-score" id="runScoreDisplay">Score 0</div>
-        <p id="nearMissMsg" class="near-miss-msg"></p>
-      </div>
       <div id="stageReplayRow" style="display:none; width:100%; margin-bottom:8px;">
         <div style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:2px; color:rgba(255,255,255,0.3); text-align:center; margin-bottom:8px;">REPLAY A STAGE</div>
         <div id="stageReplayBtns" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;"></div>
       </div>
+
       <div id="overlayActionStack" class="overlay-action-stack">
         <div id="overlayButtonGroup" class="overlay-button-group">
           <button id="adReviveBtn" class="btn" style="display: none; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff;">📺 WATCH AD TO REVIVE</button>
