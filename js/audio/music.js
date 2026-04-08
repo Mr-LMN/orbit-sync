@@ -75,17 +75,27 @@
         audio.baseSource.loop = true;
         audio.bossSource.loop = true;
 
+
         audio.baseGain = audio.audioCtx.createGain();
         audio.bossGain = audio.audioCtx.createGain();
+
+        // Synthwave music master filter
+        if (!audio.musicFilter) {
+          audio.musicFilter = audio.audioCtx.createBiquadFilter();
+          audio.musicFilter.type = 'lowpass';
+          audio.musicFilter.frequency.value = 6000; // Roll off harsh highs
+          audio.musicFilter.connect(audio.audioCtx.destination);
+        }
 
         audio.bossGain.gain.value = 0;
         audio.baseGain.gain.setValueAtTime(0, audio.audioCtx.currentTime);
         audio.baseGain.gain.linearRampToValueAtTime(0.32, audio.audioCtx.currentTime + 2.5);
 
         audio.baseSource.connect(audio.baseGain);
-        audio.baseGain.connect(audio.audioCtx.destination);
+        audio.baseGain.connect(audio.musicFilter);
         audio.bossSource.connect(audio.bossGain);
-        audio.bossGain.connect(audio.audioCtx.destination);
+        audio.bossGain.connect(audio.musicFilter);
+
 
         const startTime = audio.audioCtx.currentTime + 0.1;
         audio.baseSource.start(startTime);
