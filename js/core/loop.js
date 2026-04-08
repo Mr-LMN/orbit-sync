@@ -274,7 +274,7 @@ updatePersistentCoinUI();
 // --- GAME VARIABLES ---
 let currentLevelIdx = 0; let levelData;
 let score = 0; let stageHits = 0; let runCents = 0;
-const maxLives = 3;
+let maxLives = 3;
 let angle = 0; let direction = 1; let isPlaying = false; let inMenu = true;
 let echoAngle = 0;
 let echoHistory = [];
@@ -639,89 +639,119 @@ function updateShopUI() { return OrbitGame.ui.shop.updateShopUI(); }
 function buyItem(id, cost) { return OrbitGame.ui.shop.buyItem(id, cost); }
 function equipSkin(id) { return OrbitGame.ui.shop.equipSkin(id); }
 
-const prismOrbImage = new Image();
-let prismOrbImageReady = false;
-prismOrbImage.onload = () => { prismOrbImageReady = true; };
-prismOrbImage.src = 'assets/1775068154785.png';
-
-function drawPrismOrbSkin(ctx, x, y, radius = 8.5, pulse = 0) {
-  ctx.save();
-  const pulseScale = 1 + (pulse * 0.45);
-
-  ctx.beginPath();
-  ctx.arc(x, y, (radius * 1.9) * pulseScale, 0, Math.PI * 2);
-  const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.1);
-  glow.addColorStop(0, 'rgba(180, 255, 255, 0.38)');
-  glow.addColorStop(0.7, 'rgba(90, 225, 255, 0.12)');
-  glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
-  ctx.fillStyle = glow;
-  ctx.globalAlpha = 0.9;
-  ctx.fill();
-
-  if (!prismOrbImageReady) {
-    const fallbackGrad = ctx.createRadialGradient(x - (radius * 0.3), y - (radius * 0.3), 0, x, y, radius * 1.2);
-    fallbackGrad.addColorStop(0, '#f5ffff');
-    fallbackGrad.addColorStop(0.4, '#8af6ff');
-    fallbackGrad.addColorStop(1, '#3abfe0');
-    ctx.beginPath();
-    ctx.arc(x, y, radius * (1.05 + pulse * 0.2), 0, Math.PI * 2);
-    ctx.fillStyle = fallbackGrad;
-    ctx.globalAlpha = 1;
-    ctx.fill();
-    ctx.restore();
-    return;
-  }
-
-  const spriteSize = radius * 2.75 * pulseScale;
-  ctx.imageSmoothingEnabled = true;
-  ctx.globalAlpha = 1;
-  ctx.drawImage(prismOrbImage, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
-  ctx.restore();
-}
-
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
   ctx.save();
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+  const multScale = 1 + (Math.min(multiplier - 1, 7) * 0.08); // Grow slightly with combo
 
   if (skin === 'skull') {
+    const sScale = radius * 0.22 * multScale;
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(10, 255, 100, 0.15)';
-    ctx.shadowBlur = 20;
+    ctx.arc(x, y, radius * 1.5 * multScale, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(20, 255, 50, 0.2)';
+    ctx.shadowBlur = 25 + pulse * 10;
     ctx.shadowColor = '#0aff64';
     ctx.fill();
-    ctx.font = `${Math.round(radius * 3.5)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('💀', x, y);
+
+    // Draw skull shape
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(x, y - sScale, sScale * 3.5, Math.PI, 0); // cranium
+    ctx.lineTo(x + sScale * 2.5, y + sScale * 2.5); // right cheek
+    ctx.lineTo(x + sScale * 1.5, y + sScale * 4.5); // right jaw
+    ctx.lineTo(x - sScale * 1.5, y + sScale * 4.5); // left jaw
+    ctx.lineTo(x - sScale * 2.5, y + sScale * 2.5); // left cheek
+    ctx.closePath();
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#0aff64';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(x - sScale * 1.5, y, sScale * 1.2, 0, Math.PI * 2);
+    ctx.arc(x + sScale * 1.5, y, sScale * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Nose
+    ctx.beginPath();
+    ctx.moveTo(x, y + sScale * 1.5);
+    ctx.lineTo(x - sScale * 0.5, y + sScale * 2.5);
+    ctx.lineTo(x + sScale * 0.5, y + sScale * 2.5);
+    ctx.closePath();
+    ctx.fill();
+
     ctx.restore();
     return;
   }
 
   if (skin === 'prism') {
-    drawPrismOrbSkin(ctx, x, y, radius, pulse);
+    const pRadius = radius * 1.8 * multScale;
+    const rot = performance.now() * 0.001;
+
+    // Aura
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, pRadius * 1.5);
+    glow.addColorStop(0, 'rgba(180, 255, 255, 0.4)');
+    glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.beginPath();
+    ctx.arc(x, y, pRadius * 1.5, 0, Math.PI * 2);
+    ctx.fillStyle = glow;
+    ctx.fill();
+
+    // Diamond shape
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.beginPath();
+    ctx.moveTo(0, -pRadius);
+    ctx.lineTo(pRadius * 0.8, 0);
+    ctx.lineTo(0, pRadius);
+    ctx.lineTo(-pRadius * 0.8, 0);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200, 255, 255, 0.8)';
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#00ffff';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Inner crystal
+    ctx.rotate(-rot * 2);
+    ctx.beginPath();
+    ctx.moveTo(0, -pRadius * 0.5);
+    ctx.lineTo(pRadius * 0.4, 0);
+    ctx.lineTo(0, pRadius * 0.5);
+    ctx.lineTo(-pRadius * 0.4, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
     ctx.restore();
     return;
   }
 
   if (skin === 'echo') {
+    const eRadius = radius * 1.4 * multScale;
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.3, 0, Math.PI * 2);
+    ctx.arc(x, y, eRadius, 0, Math.PI * 2);
     ctx.fillStyle = '#00eaff';
     ctx.globalAlpha = 0.3;
     ctx.shadowColor = '#00eaff';
     ctx.shadowBlur = 25 + pulse * 10;
     ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.8, 0, Math.PI * 2);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.9;
-    ctx.stroke();
+    // Concentric rippling rings
+    const time = performance.now() * 0.003;
+    for(let i=0; i<3; i++) {
+        const rOffset = ((time + i) % 3) / 3;
+        ctx.beginPath();
+        ctx.arc(x, y, eRadius * rOffset * 1.5, 0, Math.PI * 2);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2 * (1 - rOffset);
+        ctx.globalAlpha = 1 - rOffset;
+        ctx.stroke();
+    }
 
     ctx.beginPath();
-    ctx.arc(x, y, radius * 0.3, 0, Math.PI * 2);
+    ctx.arc(x, y, eRadius * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.shadowBlur = 15;
     ctx.globalAlpha = 1;
@@ -731,31 +761,38 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'crimson') {
+    const cRadius = radius * 1.6 * multScale;
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.4, 0, Math.PI * 2);
+    ctx.arc(x, y, cRadius, 0, Math.PI * 2);
     ctx.fillStyle = '#ff2244';
     ctx.globalAlpha = 0.4;
     ctx.shadowColor = '#ff2244';
-    ctx.shadowBlur = 25 + pulse * 12;
+    ctx.shadowBlur = 30 + pulse * 15;
     ctx.fill();
 
+    // Shuriken/Blade shape
+    ctx.translate(x, y);
+    const rot = performance.now() * 0.005 + (multiplier * 0.2); // Spins faster with multiplier
+    ctx.rotate(rot);
+
     ctx.beginPath();
-    const hexPoints = 6;
-    for (let i = 0; i < hexPoints; i++) {
-      const angle = (i * Math.PI * 2) / hexPoints + performance.now() * 0.002;
-      const px = x + Math.cos(angle) * radius * 0.9;
-      const py = y + Math.sin(angle) * radius * 0.9;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+    const blades = 4;
+    for (let i = 0; i < blades * 2; i++) {
+      const angle = (i * Math.PI) / blades;
+      const r = i % 2 === 0 ? cRadius : cRadius * 0.3;
+      if (i === 0) ctx.moveTo(r, 0);
+      else ctx.lineTo(r * Math.cos(angle), r * Math.sin(angle));
     }
     ctx.closePath();
-    ctx.strokeStyle = '#ff8888';
+    ctx.fillStyle = '#ff2244';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.globalAlpha = 0.9;
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(x, y, radius * 0.35, 0, Math.PI * 2);
+    ctx.arc(0, 0, cRadius * 0.25, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.shadowBlur = 15;
     ctx.globalAlpha = 1;
@@ -765,99 +802,110 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'pulse') {
-    const _pulseScale = 1 + (Math.sin(Date.now() / 160) * 0.5 + 0.5) * 0.25 + (Math.min(multiplier, 8) * 0.06);
-    const _pulseR = radius * _pulseScale;
-    const orbColor2 = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
+    const _pulseScale = 1 + (Math.sin(Date.now() / 100) * 0.6 + 0.5) * 0.35 + (Math.min(multiplier, 8) * 0.08);
+    const _pulseR = radius * _pulseScale * multScale;
 
+    // Outer fast-pulsing energy bounds
     ctx.beginPath();
     ctx.arc(x, y, _pulseR * 1.8, 0, Math.PI * 2);
-    ctx.fillStyle = orbColor2;
-    ctx.globalAlpha = 0.15;
-    ctx.shadowBlur = 30;
-    ctx.shadowColor = orbColor2;
+    ctx.fillStyle = orbColor;
+    ctx.globalAlpha = 0.25;
+    ctx.shadowBlur = 40;
+    ctx.shadowColor = orbColor;
     ctx.fill();
 
+    // Zig-zag heartbeat line inside
     ctx.beginPath();
     ctx.arc(x, y, _pulseR * 1.1, 0, Math.PI * 2);
-    ctx.strokeStyle = orbColor2;
-    ctx.lineWidth = 3;
-    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = orbColor;
+    ctx.lineWidth = 4;
+    ctx.globalAlpha = 0.9;
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(x, y, _pulseR * 0.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 12;
-    ctx.globalAlpha = 1;
-    ctx.fill();
+    ctx.moveTo(x - _pulseR, y);
+    ctx.lineTo(x - _pulseR*0.5, y);
+    ctx.lineTo(x - _pulseR*0.25, y - _pulseR*0.8);
+    ctx.lineTo(x + _pulseR*0.25, y + _pulseR*0.8);
+    ctx.lineTo(x + _pulseR*0.5, y);
+    ctx.lineTo(x + _pulseR, y);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
     ctx.restore();
     return;
   }
 
   if (skin === 'ghost') {
-    const orbColor3 = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
-    const _ghostAlpha = 0.15 + (Math.sin(Date.now() / 600) + 1) * 0.1;
+    const gRadius = radius * 1.4 * multScale;
+    const _ghostAlpha = 0.15 + (Math.sin(Date.now() / 400) + 1) * 0.2;
+    const waveY = Math.sin(Date.now() / 200) * 4;
 
+    ctx.translate(x, y + waveY);
+
+    // Wispy crescent shape
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.2, 0, Math.PI * 2);
-    ctx.fillStyle = orbColor3;
+    ctx.arc(0, 0, gRadius, Math.PI * 0.2, Math.PI * 1.8);
+    ctx.quadraticCurveTo(-gRadius * 1.5, 0, 0, gRadius);
+    ctx.fillStyle = orbColor;
     ctx.globalAlpha = _ghostAlpha;
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = orbColor3;
+    ctx.shadowBlur = 25;
+    ctx.shadowColor = orbColor;
     ctx.fill();
 
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.9, 0, Math.PI * 2);
     ctx.strokeStyle = '#ffffff';
     ctx.globalAlpha = 0.8;
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2;
     ctx.stroke();
 
+    // Ghost eye
     ctx.beginPath();
-    ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+    ctx.arc(gRadius * 0.3, -gRadius * 0.2, gRadius * 0.2, 0, Math.PI * 2);
     ctx.fillStyle = '#ffffff';
     ctx.globalAlpha = 0.9;
-    ctx.shadowBlur = 8;
+    ctx.shadowBlur = 10;
     ctx.fill();
     ctx.restore();
     return;
   }
 
   if (skin === 'storm') {
-    const _stormPulse = (Math.sin(Date.now() / 70) + 1) * 0.5;
+    const sRadius = radius * 1.7 * multScale;
+    const _stormPulse = (Math.sin(Date.now() / 50) + 1) * 0.5;
 
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.8, 0, Math.PI * 2);
+    ctx.arc(x, y, sRadius * 1.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ffee00';
-    ctx.globalAlpha = 0.1 + _stormPulse * 0.15;
-    ctx.shadowBlur = 35;
+    ctx.globalAlpha = 0.2 + _stormPulse * 0.2;
+    ctx.shadowBlur = 40;
     ctx.shadowColor = '#ffee00';
     ctx.fill();
 
+    ctx.translate(x, y);
+    // Jagged lightning shape
     ctx.beginPath();
-    ctx.moveTo(x - radius * 0.8, y - radius * 0.8);
-    ctx.lineTo(x + radius * 0.2, y - radius * 0.2);
-    ctx.lineTo(x - radius * 0.2, y + radius * 0.2);
-    ctx.lineTo(x + radius * 0.8, y + radius * 0.8);
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2 + _stormPulse * 2;
-    ctx.globalAlpha = 0.9;
+    ctx.moveTo(-sRadius * 0.4, -sRadius);
+    ctx.lineTo(sRadius * 0.6, -sRadius * 0.1);
+    ctx.lineTo(-sRadius * 0.1, sRadius * 0.1);
+    ctx.lineTo(sRadius * 0.4, sRadius);
+    ctx.lineTo(-sRadius * 0.6, sRadius * 0.1);
+    ctx.lineTo(sRadius * 0.1, -sRadius * 0.1);
+    ctx.closePath();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.strokeStyle = '#ffee00';
+    ctx.lineWidth = 2 + _stormPulse * 3;
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 15;
-    ctx.fill();
     ctx.restore();
     return;
   }
 
   // Classic
   ctx.beginPath();
-  ctx.arc(x, y, (radius * 1.8) + pulse, 0, Math.PI * 2);
+  ctx.arc(x, y, (radius * 1.8 * multScale) + pulse, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
   ctx.globalAlpha = 0.25;
   ctx.shadowBlur = 30;
@@ -865,7 +913,7 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, radius * 1.2, 0, Math.PI * 2);
+  ctx.arc(x, y, radius * 1.2 * multScale, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
   ctx.globalAlpha = 0.8;
   ctx.shadowBlur = 15;
@@ -873,7 +921,7 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, radius * 0.6, 0, Math.PI * 2);
+  ctx.arc(x, y, radius * 0.6 * multScale, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 10;
@@ -922,118 +970,8 @@ function drawOrb(ctx, orbAngle, worldShape, options = {}) {
 }
 
 function drawMiniOrbPreview(ctx, x, y, skin, radius = 12) {
-  const savedAlpha = ctx.globalAlpha;
-  ctx.save();
-
-  // Base plasma body so previews look like real orb skins, not emoji-only badges.
-  const shellGrad = ctx.createRadialGradient(x - radius * 0.35, y - radius * 0.35, 0, x, y, radius * 1.2);
-  shellGrad.addColorStop(0, 'rgba(255,255,255,0.95)');
-  shellGrad.addColorStop(0.35, '#9cf7ff');
-  shellGrad.addColorStop(1, '#00bcd4');
-  ctx.beginPath();
-  ctx.arc(x, y, radius * 1.05, 0, Math.PI * 2);
-  ctx.fillStyle = shellGrad;
-  ctx.globalAlpha = 0.92;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(x, y, radius * 0.62, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.globalAlpha = 1;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(x, y, radius + 12, 0, Math.PI * 2);
-  const halo = ctx.createRadialGradient(x, y, 1, x, y, radius + 12);
-  halo.addColorStop(0, 'rgba(255,255,255,0.10)');
-  halo.addColorStop(0.6, 'rgba(120,200,255,0.07)');
-  halo.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = halo;
-  ctx.fill();
-
-  const orbitCount = 3;
-  for (let i = 0; i < orbitCount; i++) {
-    const a = (Math.PI * 2 * i / orbitCount) - (Math.PI / 2);
-    const ox = x + Math.cos(a) * (radius + 4);
-    const oy = y + Math.sin(a) * (radius + 4);
-    ctx.beginPath();
-    ctx.arc(ox, oy, Math.max(1.6, radius * 0.2), 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.globalAlpha = 0.7;
-    ctx.fill();
-  }
-  ctx.globalAlpha = savedAlpha;
-
-  // Overlay skin glyphs while keeping orb material visible underneath.
-  if (skin === 'skull') {
-    ctx.font = `${Math.round(radius * 2.35)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('💀', x, y + 0.5);
-  } else if (skin === 'prism') {
-    if (prismOrbImageReady) {
-      const previewPulse = 1 + (Math.sin(performance.now() * 0.004) * 0.03);
-      const glowRadius = radius * 1.55 * previewPulse;
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, glowRadius);
-      glow.addColorStop(0, 'rgba(170,255,255,0.24)');
-      glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.beginPath();
-      ctx.arc(x, y, glowRadius, 0, Math.PI * 2);
-      ctx.fillStyle = glow;
-      ctx.fill();
-
-      const spriteSize = radius * 2.45 * previewPulse;
-      ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(prismOrbImage, x - spriteSize / 2, y - spriteSize / 2, spriteSize, spriteSize);
-    } else {
-      const fallbackGrad = ctx.createRadialGradient(x - radius * 0.2, y - radius * 0.2, 0, x, y, radius);
-      fallbackGrad.addColorStop(0, '#f5ffff');
-      fallbackGrad.addColorStop(1, '#3abfe0');
-      ctx.beginPath();
-      ctx.arc(x, y, radius * 0.95, 0, Math.PI * 2);
-      ctx.fillStyle = fallbackGrad;
-      ctx.fill();
-    }
-  } else if (skin === 'echo') {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#00eaff';
-    ctx.shadowColor = '#00eaff';
-    ctx.shadowBlur = 16;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.4, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowBlur = 8;
-    ctx.fill();
-    return;
-  } else if (skin === 'crimson') {
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff2244';
-    ctx.shadowColor = '#ff2244';
-    ctx.shadowBlur = 16;
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x, y, radius * 0.4, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffaaaa';
-    ctx.shadowBlur = 8;
-    ctx.fill();
-    return;
-  }
-
-  else if (skin === 'pulse') {
-    drawOrbSkin(ctx, x, y, 'pulse', radius, 0, '#00e5ff');
-    return;
-  } else if (skin === 'ghost') {
-    drawOrbSkin(ctx, x, y, 'ghost', radius, 0, '#a8f0ff');
-    return;
-  } else if (skin === 'storm') {
-    drawOrbSkin(ctx, x, y, 'storm', radius, 0, '#ffee00');
-    return;
-  }
-
-  ctx.restore();
+  // Use the actual skin renderer for the preview, just scaled down slightly
+  drawOrbSkin(ctx, x, y, skin, radius * 0.75, 0, '#00e5ff');
 }
 
 function renderShopOrbPreview(previewEl, skinId) {
@@ -1173,6 +1111,7 @@ function clearRunTransientTimers() {
 }
 function resetRunState() {
   clearRunTransientTimers();
+  maxLives = activeSkin === 'skull' ? 4 : 3;
   score = 0; stageHits = 0; lives = (hardModeActive ? 2 : maxLives); multiplier = 1; streak = 0;
   if (ui.combo) { ui.combo.innerText = ''; ui.combo.style.opacity = '0'; }
   distanceTraveled = 0; runCents = 0;
@@ -1234,6 +1173,13 @@ function loseLife(reason) {
     triggerScreenShake(6);
     canvas.style.boxShadow = 'inset 0 0 40px rgba(0,255,150,0.3)';
     setTimeout(() => canvas.style.boxShadow = 'none', 200);
+    return;
+  }
+  if (activeSkin === 'ghost' && window.ghostShieldActive) {
+    window.ghostShieldActive = false;
+    createPopup(centerObj.x, centerObj.y - 80, 'GHOST SAVIOR', '#aaaaff');
+    createShockwave('#aaaaff', 40);
+    soundShieldBreak();
     return;
   }
   lives--;
@@ -1538,6 +1484,12 @@ function loadLevel(idx) {
       || levelData.boss === 'corruptor' || levelData.boss === 'null_gate')) {
     lives = hardModeActive ? 2 : maxLives;
     ui.lives.innerText = lives;
+  }
+
+  if (activeSkin === 'ghost') {
+    window.ghostShieldActive = true;
+  } else {
+    window.ghostShieldActive = false;
   }
 
   ui.lives.innerText = lives;
@@ -4097,6 +4049,7 @@ function tap() {
     const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);
     const hitTimingAccuracy = Math.abs(hitTimingOffset);
     const _augWideMult = (activeAugment === 'wide_sync') ? 1.2 : 1.0;
+    const _skinEchoMult = (activeSkin === 'echo') ? 1.1 : 1.0;
     const _hmTightMult = (hardModeActive) ? 0.82 : 1.0;
 
     // Grace scale: 1-1 starts at 1.25x (25% more forgiving),
@@ -4113,7 +4066,7 @@ function tap() {
       return 0.88;                             // 4-1+: tight
     })();
 
-    const _windowMult = _augWideMult * _hmTightMult * _stageGrace;
+    const _windowMult = _augWideMult * _skinEchoMult * _hmTightMult * _stageGrace;
     const filthyWindow = 0.03 * _windowMult;
     const perfectWindow = 0.08 * _windowMult;
     const goodWindow = 0.14 * _windowMult;
@@ -4680,6 +4633,10 @@ function tap() {
       }
       ringHitFlash = Math.max(ringHitFlash, 0.55 + Math.min(multiplier, 8) * 0.055);
       multiplier = Math.min(multiplier + 1, 8);
+      if (activeSkin === 'crimson') {
+          comboCount++;
+          streak++;
+      }
       soundMultiplierUp(multiplier);
       score += (4 * multiplier);
       const normalX = hitX - centerObj.x;
@@ -4741,6 +4698,10 @@ function tap() {
       }
       ringHitFlash = Math.max(ringHitFlash, 0.45 + Math.min(multiplier, 8) * 0.04);
       multiplier = Math.min(multiplier + 1, 8);
+      if (activeSkin === 'crimson') {
+          comboCount++;
+          streak++;
+      }
       soundMultiplierUp(multiplier);
       score += (3 * multiplier);
       const normalX = hitX - centerObj.x;
@@ -4860,6 +4821,7 @@ function tap() {
     // Multiplier contribution softened — logarithmic feel
     const _multContrib = 1 + Math.log2(Math.max(1, multiplier)) * 0.4;
     let centsEarned = _baseEarn * _multContrib;
+    if (activeSkin === 'prism') centsEarned *= 1.1; // Prism +10%
     if (activeAugment === 'coin_surge') centsEarned = Math.ceil(centsEarned * 1.5);
     runCents += centsEarned;
     markScoreCoinDirty();
@@ -4891,6 +4853,12 @@ function tap() {
         && levelData.id === '3-6'
         && stageHits === (levelData.hitsNeeded - 1)
         && !world3BossCollapseTriggered;
+
+      if (activeSkin === 'storm' && runPerfectHitsOnly) {
+          runCents += 5;
+          createPopup(centerObj.x, centerObj.y - orbitRadius - 50, "STORM FLAWLESS +5", "#ffee00");
+          markScoreCoinDirty();
+      }
       if (isResonanceFinalHit) {
         world3BossCollapseTriggered = true;
         createPopup(centerObj.x, centerObj.y - 68, 'CORE COLLAPSE', '#ffffff');
@@ -4970,6 +4938,11 @@ function tap() {
         canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
         setTimeout(() => canvas.style.boxShadow = 'none', 100);
         if (navigator.vibrate) vibrate(12);
+        if (activeSkin === 'pulse') {
+          runCents += 1;
+          createPopup(hitX, hitY - 44, "+1 COIN", "#ffffff");
+          markScoreCoinDirty();
+        }
       }
       handleFail("MISSED", nearestEdgeDistance);
     } else {
