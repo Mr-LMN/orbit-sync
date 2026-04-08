@@ -272,7 +272,57 @@
     if (!el) return;
     el.style.display = 'flex';
     const countdown = document.getElementById('challengeCountdown');
-    if (countdown) countdown.innerText = 'COMING SOON';
+    if (countdown) countdown.innerText = 'SEASON 1 ACTIVE';
+  }
+
+  function startAbyssRun() {
+    initAudio();
+    toggleSettings(false);
+    ui.mainMenu.style.display = 'none';
+    const el = document.getElementById('challengePreview');
+    if (el) el.style.display = 'none';
+
+    ui.topBar.style.display = 'flex';
+    ui.gameUI.style.display = 'block';
+    ui.bigMultiplier.style.display = 'block';
+    ui.text.style.display = 'none';
+    inMenu = false;
+    isPlaying = true;
+
+    // Setup Abyss level data
+    window.levelData = {
+        id: 'abyss',
+        title: 'The Abyss',
+        hitsNeeded: 999999, // Endless
+        speed: 0.040,
+        lives: 3,
+        boss: 'abyss',
+        moveSpeed: 0.02,
+        reverse: true,
+        text: 'Survive the endless Abyss.'
+    };
+
+    currentLevelIdx = -1; // -1 denotes Abyss
+    resetRunState();
+    ui.score.innerText = '0';
+    updateStreakUI();
+    markScoreCoinDirty(true);
+    if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
+
+    setOverlayState('cinematic');
+
+    // Instead of loadLevel, we set things manually for Abyss
+    stageHits = 0;
+    bossPhase = 1;
+    isBossPhaseTwo = false;
+    window.abyssDepth = 0; // custom depth tracker
+
+    // Start Boss intro sequence
+    if (OrbitGame.entities && OrbitGame.entities.boss) {
+        OrbitGame.entities.boss.triggerBossIntro();
+    }
+
+    OrbitGame.core.loop.startMainLoop();
   }
 
 
@@ -303,4 +353,5 @@
   window.selectAugment = selectAugment;
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
+  window.startAbyssRun = startAbyssRun;
 })(window);

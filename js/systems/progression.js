@@ -20,6 +20,13 @@
   }
 
   function updateWaveUI() {
+    if (levelData.id === 'abyss') {
+      ui.wave.style.display = 'block';
+      ui.wave.innerText = `DEPTH ${window.abyssDepth || 0}`;
+      if (ui.bossUI) ui.bossUI.style.display = 'none';
+      return;
+    }
+
     if (levelData.boss) {
       ui.wave.style.display = 'none';
       if (ui.bossUI) ui.bossUI.style.display = 'none';
@@ -31,6 +38,25 @@
   }
 
   function triggerStageClear() {
+    if (levelData.id === 'abyss') {
+      window.abyssDepth = (window.abyssDepth || 0) + 1;
+
+      soundWaveClear();
+      const wavePopup = createPopup(centerObj.x, centerObj.y - orbitRadius - 28, 'ABYSS DEEPENS', '#ff3366');
+      wavePopup.animType = 'combo';
+      wavePopup.life = 1.85;
+      wavePopup.riseSpeed = 0.8;
+      wavePopup.fadeSpeed = 0.018;
+      wavePopup.shadow = 28;
+
+      createParticles(centerObj.x, centerObj.y, '#ff3366', Math.min(54, MAX_PARTICLES));
+      createUpwardBurstParticles(centerObj.x, centerObj.y + 10, '#ffaa00', 32);
+      createShockwave('#ff3366', 35);
+
+      spawnTargets(); // Immediate respawn, never advance stage
+      return;
+    }
+
     stageHits++;
     updateWaveUI();
 

@@ -11,6 +11,66 @@
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
 
+    // ─── THE ABYSS (Endless Challenge) ──────
+    if (levelData.id === 'abyss') {
+      const depth = window.abyssDepth || 0;
+
+      // Determine what mechanics to stack based on depth
+      const phase = Math.floor(depth / 10) + 1; // 1, 2, 3, 4, etc.
+
+      const speed = 0.040 + (depth * 0.001);
+      const isReverse = Math.random() > 0.5 && phase >= 2;
+      const count = Math.min(4, 1 + Math.floor(depth / 15) + (Math.random() > 0.6 ? 1 : 0));
+      const hasShrink = phase >= 2 && Math.random() > 0.4;
+      const hasShields = phase >= 3 && Math.random() > 0.5;
+      const hasPhantom = phase >= 4 && Math.random() > 0.3;
+      const hasBlindness = phase >= 5 && Math.random() > 0.7;
+
+      const abyssColor = '#ff3366';
+
+      // Update the global blackout state if blindness is active
+      if (hasBlindness) {
+         levelData.blackout = { duration: 900 + (Math.random() * 400), interval: 2500, firstAt: 1000 };
+      } else {
+         levelData.blackout = null;
+      }
+
+      let baseSize = (Math.PI / 8) * Math.max(0.6, 1 - (depth * 0.005));
+      let offset = Math.random() * Math.PI * 2;
+
+      for (let i = 0; i < count; i++) {
+        const a = normalizeAngle(offset + (i * (Math.PI * 2 / count)));
+
+        let config = {
+          color: abyssColor,
+          active: true,
+          hp: hasShields ? (Math.random() > 0.5 ? 2 : 1) : 1,
+          isBossShield: hasShields && Math.random() > 0.5,
+          moveSpeed: isReverse ? (speed * (i % 2 === 0 ? 1 : -1)) : 0
+        };
+
+        const target = buildTarget(a, baseSize, config);
+
+        if (hasShrink) {
+          target.shrinkConfig = { startScale: 1.0, endScale: 0.6, distance: Math.PI * 4 };
+        }
+
+        targets.push(target);
+      }
+
+      if (hasPhantom) {
+        targets.push(buildTarget(normalizeAngle(offset + Math.PI), Math.PI / 8.5, {
+          color: abyssColor,
+          active: true,
+          isPhantom: true,
+          hp: 1,
+          moveSpeed: speed * 0.5
+        }));
+      }
+
+      return;
+    }
+
     // ─── SOLAR CORE (World 6 Boss) ──────
     if (levelData.boss === 'solar_core') {
       const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
