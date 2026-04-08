@@ -528,6 +528,7 @@
           const fallback = buildTarget(splitAngle, Math.PI / 8, {
             color: w4Color, active: true, hp: 1
           });
+          fallback.splitFamilyId = (OrbitGame.systems && OrbitGame.systems.splitControl && typeof OrbitGame.systems.splitControl.getNextSplitFamilyId === 'function') ? OrbitGame.systems.splitControl.getNextSplitFamilyId() : null;
           fallback.splitOnHit = true;
           fallback.splitGeneration = 0;
           fallback.splitDepth = 0;
