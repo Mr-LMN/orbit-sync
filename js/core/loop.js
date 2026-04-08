@@ -1644,7 +1644,6 @@ function spawnControlledSplitRoot(options = {}) {
   return splitRoot;
 }
 
-OrbitGame.systems.splitControl.getNextSplitFamilyId = getNextSplitFamilyId;
 
 function maybeRespawnSplitRootForStage(clearedFamilyId) {
   if (!isSplitStageMode() || !clearedFamilyId) return false;
@@ -1662,14 +1661,17 @@ function maybeRespawnSplitRootForStage(clearedFamilyId) {
   return true;
 }
 
-OrbitGame.systems = OrbitGame.systems || {};
-OrbitGame.systems.splitControl = {
+const _OG = window.OrbitGame || {};
+window.OrbitGame = _OG;
+_OG.systems = _OG.systems || {};
+_OG.systems.splitControl = {
   resetSplitFamilyState,
   isSplitStageMode,
   getActiveSplitFamilyMembers,
   hasActiveSplitFamily,
   spawnControlledSplitRoot,
   maybeRespawnSplitRootForStage,
+  getNextSplitFamilyId,
   get activeSplitFamilyId() { return activeSplitFamilyId; }
 };
 
