@@ -9,6 +9,8 @@
     combo: document.getElementById('comboDisplay'),
     stage: document.getElementById('stageDisplay'),
     text: document.getElementById('tutorialText'),
+    tutorialTextContainer: document.getElementById('tutorialTextContainer'),
+    tutorialTextGlow: document.getElementById('tutorialTextGlow'),
     lives: document.getElementById('livesCount'),
     bigMultiplier: document.getElementById('bigMultiplier'),
     multiplierCount: document.getElementById('multiplierCount'),
