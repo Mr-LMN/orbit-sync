@@ -388,6 +388,7 @@ function getWorldNum() {
 }
 
 function computeWorldPalette(level) {
+  if (level && level.id === 'abyss') return { primary: '#ffaa00', secondary: '#ff0033', bg: '#08020a' };
   const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
   if (level && level.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
   switch (worldNum) {
@@ -403,6 +404,7 @@ function computeWorldPalette(level) {
 
 function computeWorldShape(level) {
   if (!level || !level.id) return 'circle';
+  if (level.id === 'abyss') return 'abyss';
   const worldNum = parseInt(String(level.id).split('-')[0], 10);
   if (!Number.isFinite(worldNum)) return 'circle';
   if (worldNum === 1) return 'circle';
@@ -415,6 +417,15 @@ function computeWorldShape(level) {
 }
 
 function getWorldVisualTheme(level) {
+  if (level && level.id === 'abyss') {
+    return {
+      railColor: '#ff5500',
+      targetColor: '#ff0033',
+      targetGlowColor: '#ff3366',
+      targetCoreColor: '#ffffff',
+      railGlowScale: 1.2
+    };
+  }
   const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
   if (level && level.boss) {
     return {
@@ -1282,6 +1293,15 @@ function generateTitle(score, world, streak, revives) {
   const perfectRate = totalHits > 0 ? runPerfectCount / totalHits : 0;
   const isHM = hardModeActive;
 
+  // Abyss specific titles
+  if (levelData && levelData.id === 'abyss') {
+      const depth = window.abyssDepth || 0;
+      if (depth >= 50) return "ABYSS WALKER";
+      if (depth >= 30) return "DEEP DIVER";
+      if (depth >= 15) return "VOID TOUCHED";
+      return "ABYSS NOVICE";
+  }
+
   // Hard Mode specific titles
   if (isHM && revives === 0 && world >= 3) return "IRON SYNC";
   if (isHM && revives === 0 && world >= 2) return "HARD CLEARED";
@@ -1715,7 +1735,11 @@ function draw() {
     let _atmColor = null;
     let _atmR = viewportWidth * 0.7;
 
-    if (hardModeActive && !isBoss) {
+    if (levelData && levelData.id === 'abyss') {
+      // Swirling Vortex / Abyss theme
+      const _abyssPulse = (Math.sin(now * 0.0007) + 1) * 0.5;
+      _atmColor = `rgba(${Math.round(80 + _abyssPulse * 40)}, ${Math.round(10 + _abyssPulse * 20)}, ${Math.round(100 + _abyssPulse * 40)}, ${0.12 + _atmPulse * 0.05})`;
+    } else if (hardModeActive && !isBoss) {
       // Hard Mode override — red threat atmosphere regardless of world
       _atmColor = `rgba(160, 10, 30, ${0.07 + _atmPulse * 0.04})`;
     } else if (worldNum === 1 && !isBoss) {
@@ -1789,6 +1813,18 @@ function draw() {
         _vGrad.addColorStop(0, `rgba(100, 180, 255, ${0.04 + _w5BluePulse * 0.03})`);
         _vGrad.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = _vGrad;
+        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+      }
+      if (levelData && levelData.id === 'abyss') {
+        // Abyss swirling vignette
+        const _abyssOrangePulse = (Math.sin(now * 0.0011 + 3.1) + 1) * 0.5;
+        const _abyssGrad = ctx.createRadialGradient(
+          centerObj.x, centerObj.y, orbitRadius * 0.8,
+          centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight)
+        );
+        _abyssGrad.addColorStop(0, 'rgba(0,0,0,0)');
+        _abyssGrad.addColorStop(1, `rgba(255, 60, 0, ${0.1 + _abyssOrangePulse * 0.08})`);
+        ctx.fillStyle = _abyssGrad;
         ctx.fillRect(0, 0, viewportWidth, viewportHeight);
       }
     }
@@ -3075,7 +3111,7 @@ function draw() {
   // ── END SYNC GATE SECOND PASS ─────────────────────────────
 
   // TRAIL
-  if (!inMenu && trail.length > 0 && !(_blackoutActive && getWorldNum() === 5)) {
+  if (!inMenu && trail.length > 0 && !(_blackoutActive && (getWorldNum() === 5 || levelData.id === 'abyss'))) {
     const currentWorldNum = getWorldNum();
     const isEchoWorld = currentWorldNum === 3;
     const _trailMult = Math.min(multiplier, 8);
@@ -3116,7 +3152,7 @@ function draw() {
   }
 
   // Blackout vignette — Spotlight effect for The Void
-  if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
+  if (_blackoutActive && (getWorldNum() === 5 || levelData.id === 'abyss') && !inMenu) {
     const _bFade = Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200);
     const playerPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
     const spotlightGrad = ctx.createRadialGradient(
@@ -3183,8 +3219,8 @@ function draw() {
   const currentWorldNum = getWorldNum();
   const isWorld3 = currentWorldNum === 3;
 
-  const _orbBlacked = _blackoutActive && worldNum === 5 && !inMenu;
-  const _orbFlicker = _blackoutFlickerPhase && worldNum === 5 && !inMenu;
+  const _orbBlacked = _blackoutActive && (worldNum === 5 || levelData.id === 'abyss') && !inMenu;
+  const _orbFlicker = _blackoutFlickerPhase && (worldNum === 5 || levelData.id === 'abyss') && !inMenu;
   if (!_orbBlacked) {
     if (_orbFlicker) {
       ctx.globalAlpha = 0.3 + Math.abs(Math.sin(now * 0.055)) * 0.7;
@@ -3485,8 +3521,8 @@ function update() {
     targetTimeScale = 1.0;
   }
 
-  // ── BLACKOUT TICK (World 5) ───────────────────────
-  if (isPlaying && !inMenu && !isCinematicIntro && worldNum === 5) {
+  // ── BLACKOUT TICK (World 5 / Abyss) ───────────────────────
+  if (isPlaying && !inMenu && !isCinematicIntro && (worldNum === 5 || (levelData && levelData.id === 'abyss'))) {
     const _bcfg = levelData && levelData.blackout;
     if (_bcfg) {
       if (!_blackoutInitialised) {
@@ -3524,7 +3560,7 @@ function update() {
       _blackoutActive = _cPos < _bDur;
       _blackoutFlickerPhase = !_blackoutActive && _cPos > (_bCycle - 200);
     }
-  } else if (worldNum !== 5) {
+  } else if (worldNum !== 5 && (!levelData || levelData.id !== 'abyss')) {
     _blackoutActive = false;
     _blackoutFlickerPhase = false;
   }
@@ -4100,7 +4136,7 @@ function tap() {
   if (ui.overlay.style.display === 'flex') return;
   if (bossTransitionLock) return;
   // During blackout, ignore taps that miss — player can't see orb
-  if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
+  if (_blackoutActive && (getWorldNum() === 5 || levelData.id === 'abyss') && !inMenu) {
     // Still allow taps that HIT a target (player got it right blind)
     // but don't punish missed taps as fails
     const _blindHit = targets.some(t => t.active && !t.isPhantom &&

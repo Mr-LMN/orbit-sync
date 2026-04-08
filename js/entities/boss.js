@@ -7,6 +7,9 @@
     if (!levelData || !levelData.boss) {
       return { name: 'BOSS', tagline: 'Stay synced.' };
     }
+    if (levelData.boss === 'abyss') {
+      return { name: 'THE ABYSS', tagline: 'ENDLESS // EVOLVING' };
+    }
     if (levelData.boss === 'aegis') {
       return { name: 'THE AEGIS CORE', tagline: 'Break the shields. Expose the core.' };
     }
@@ -304,7 +307,7 @@
     createShockwave('#ff3366', 42);
     createParticles(centerObj.x, centerObj.y, '#ff3366', 42);
 
-    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate';
+    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate' || levelData.boss === 'abyss';
     if (bossCinematicTimeout) clearTimeout(bossCinematicTimeout);
     bossCinematicTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';

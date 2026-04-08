@@ -61,14 +61,21 @@
       return getTrianglePoint(t, cx, cy, radius);
     }
 
-    if (shape === 'pentagon' || shape === 'hexagon') {
-      const sides = (shape === 'pentagon') ? 5 : 6;
-      const rotation = -Math.PI / 2;
+    if (shape === 'pentagon' || shape === 'hexagon' || shape === 'abyss') {
+      const sides = (shape === 'pentagon') ? 5 : (shape === 'hexagon') ? 6 : (3 + Math.floor((window.abyssDepth || 0) / 10));
+      const rotation = -Math.PI / 2 + ((window.abyssDepth || 0) * 0.1);
       const corners = [];
       for (let i = 0; i < sides; i++) {
         const a = rotation + (i * Math.PI * 2 / sides);
         // Adjust radius so the path matches the orbit radius
-        const rAdjust = radius / Math.cos(Math.PI / sides);
+        let rAdjust = radius / Math.cos(Math.PI / sides);
+
+        // Add fractal/abstract displacement for abyss shapes
+        if (shape === 'abyss') {
+            const phase = (window.abyssDepth || 0) + i;
+            rAdjust *= 0.85 + (Math.sin(phase * 1.5) * 0.3) + (Math.cos(phase * 2.1) * 0.2);
+        }
+
         corners.push({ x: cx + Math.cos(a) * rAdjust, y: cy + Math.sin(a) * rAdjust });
       }
       const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
@@ -80,6 +87,15 @@
       const p2 = corners[(sectorIdx + 1) % sides];
       let ptX = p1?.x + (p2?.x - p1?.x) * progress;
       let ptY = p1?.y + (p2?.y - p1?.y) * progress;
+
+      // Add secondary abstraction layer for abyss (curved/jagged edges)
+      if (shape === 'abyss') {
+          const edgeOffset = Math.sin(progress * Math.PI) * (radius * 0.15) * Math.sin((window.abyssDepth || 0) * 0.5 + sectorIdx);
+          const tangentA = Math.atan2(p2?.y - p1?.y, p2?.x - p1?.x) + Math.PI/2;
+          ptX += Math.cos(tangentA) * edgeOffset;
+          ptY += Math.sin(tangentA) * edgeOffset;
+      }
+
       if (isNaN(ptX) || isNaN(ptY)) {
         ptX = p1?.x || cx || 0;
         ptY = p1?.y || cy || 0;
