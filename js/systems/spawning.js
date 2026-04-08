@@ -243,6 +243,28 @@
     }
     // ─── END CORRUPTOR ──────────────────────
 
+    // ─── WORLD 1 FRENZY STAGE ──────────────────────
+    if (levelData.isFrenzy && !inMenu) {
+        ui.text.innerText = 'FRENZY! Rapid fire targets. Go wild for massive points!';
+        ui.text.style.color = '#ffd700';
+
+        const frenzyCount = levelData.targets || 4;
+        const spacing = (Math.PI * 2) / frenzyCount;
+        const offset = Math.random() * Math.PI * 2;
+        const baseSize = Math.PI / 8; // Slightly larger for easier rapid hitting
+
+        for (let i = 0; i < frenzyCount; i++) {
+            const angle = normalizeAngle(offset + (i * spacing));
+            targets.push(buildTarget(angle, baseSize, {
+                color: '#ffd700', // Gold color to signify bonus/frenzy
+                active: true,
+                hp: 1,
+                moveSpeed: levelData.moveSpeed * (i % 2 === 0 ? 1 : -1) // Alternate directions
+            }));
+        }
+        return;
+    }
+
     if (levelData.boss === 'aegis') {
       if (!isBossPhaseTwo) {
         ui.text.innerText = bossPhase === 1 ? 'BOSS: Break the shields!' : 'BOSS ENRAGED: Faster & Sharper!';

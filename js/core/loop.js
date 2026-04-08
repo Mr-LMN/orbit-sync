@@ -345,6 +345,8 @@ let nextSplitFamilyId = 1;
 let mainLoopRafId = null;
 let isMainLoopRunning = false;
 let glitchActive = false;
+let timeScale = 1.0;
+let targetTimeScale = 1.0;
 
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
@@ -1113,6 +1115,8 @@ function resetRunState() {
   clearRunTransientTimers();
   maxLives = activeSkin === 'skull' ? 4 : 3;
   score = 0; stageHits = 0; lives = (hardModeActive ? 2 : maxLives); multiplier = 1; streak = 0;
+  timeScale = 1.0;
+  targetTimeScale = 1.0;
   if (ui.combo) { ui.combo.innerText = ''; ui.combo.style.opacity = '0'; }
   distanceTraveled = 0; runCents = 0;
   angle = 0; direction = 1;
@@ -1447,6 +1451,8 @@ function loadLevel(idx) {
   world3BossLastAnnouncedPhase = 0;
   world3BossIntroDone = false;
   world3BossCollapseTriggered = false;
+  timeScale = 1.0;
+  targetTimeScale = 1.0;
   if (levelData.id !== '2-6') world2BossTransitionFrom25 = false;
   resetSplitFamilyState();
 
@@ -1784,6 +1790,7 @@ function draw() {
     ctx.fill();
 
     let speedMult = isBoss ? 3.5 : 1;
+    speedMult *= timeScale;
     if (worldNum === 2 && !isBoss) {
       d.x += Math.sin((now * 0.0012) + d.driftPhase + (d.y * 0.005)) * d.driftAmp;
       if (d.x < -2) d.x = viewportWidth + 2;
@@ -1796,11 +1803,27 @@ function draw() {
   });
 
   // ENERGY LANE
-  const effectiveRailColor = hardModeActive
+  let effectiveRailColor = hardModeActive
     ? '#cc1133'
     : (activeSkin === 'crimson')
       ? '#cc1133'
       : (theme.railColor || palette.primary);
+
+  // Matrix tension overrides
+  if (timeScale < 0.9 && !inMenu) {
+    const tensionIntensity = 1.0 - timeScale;
+    effectiveRailColor = blendHexColors(effectiveRailColor, '#ffffff', tensionIntensity * 0.8);
+
+    // Draw matrix vignette
+    const vigGrad = ctx.createRadialGradient(
+      centerObj.x, centerObj.y, orbitRadius * 0.5,
+      centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight)
+    );
+    vigGrad.addColorStop(0, 'rgba(0, 255, 255, 0)');
+    vigGrad.addColorStop(1, `rgba(0, 200, 255, ${tensionIntensity * 0.15})`);
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+  }
 
   // Dark groove
   buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
@@ -3349,6 +3372,10 @@ function update() {
   const frameNow = performance.now();
   const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
   lastFrameTime = frameNow;
+
+  // Lerp timeScale
+  timeScale += (targetTimeScale - timeScale) * 0.1 * delta;
+  if (Math.abs(timeScale - targetTimeScale) < 0.01) timeScale = targetTimeScale;
   const isBossTransitionPaused = frameNow < bossPauseUntil;
   const isStageClearHoldPaused = frameNow < stageClearHoldUntil;
   const isHitStopPaused = frameNow < hitStopUntil;
@@ -3384,7 +3411,7 @@ function update() {
   if (isBossTransitionPaused || isStageClearHoldPaused || isHitStopPaused) moveStep = 0;
   else moveStep *= nearMissSpeedScale;
 
-  moveStep *= delta;
+  moveStep *= delta * timeScale;
   if (!inMenu && levelData && levelData.id === '2-6' && levelData.boss === 'prism' && !isBossTransitionPaused) {
     world2BossArenaRotation = normalizeAngle(world2BossArenaRotation + (world2BossArenaRotationSpeed * delta));
   }
@@ -3408,9 +3435,31 @@ function update() {
     const nowMs = performance.now();
     recordEchoHistory(nowMs, angle);
     echoAngle = getDelayedEchoAngle(nowMs, angle);
+
+    // Matrix Tension Logic
+    if (isPlaying && !inMenu && !isHitStopPaused && !isStageClearHoldPaused) {
+        let shouldTension = false;
+        const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
+        for (let i = 0; i < targets.length; i++) {
+            const t = targets[i];
+            if (t.active && t.isEchoTarget) {
+                // If real orb is inside but echo hasn't reached it yet
+                if (isInsideTarget(normAngle, t)) {
+                    shouldTension = true;
+                    break;
+                }
+            }
+        }
+
+        targetTimeScale = shouldTension ? 0.25 : 1.0;
+    } else {
+        targetTimeScale = 1.0;
+    }
   } else {
     echoHistory.length = 0;
     echoAngle = angle;
+    targetTimeScale = 1.0;
   }
 
   // ── BLACKOUT TICK (World 5) ───────────────────────
@@ -4082,6 +4131,16 @@ function tap() {
       }, 60);
 
       createParticles(hitX, hitY, '#00eaff', 12);
+
+      // Resonance Blast if released from tension
+      if (timeScale < 0.6) {
+          triggerScreenShake(18);
+          createShockwave('#ffffff', 40);
+          createShockwave('#00eaff', 55);
+          pulseBrightness(2.2, 180);
+          targetTimeScale = 1.0; // Instantly release tension
+          timeScale = 1.0;
+      }
     }
     if (levelData.reverse !== false) {
       direction *= -1;
@@ -4638,7 +4697,8 @@ function tap() {
           streak++;
       }
       soundMultiplierUp(multiplier);
-      score += (4 * multiplier);
+      let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 5 : 0;
+      score += (4 * multiplier) + frenzyBonusScore;
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -4667,6 +4727,10 @@ function tap() {
       vibrate([12, 28, 12]);
       createUpwardBurstParticles(hitX, hitY - 10, '#ffffff', 52);
       createParticles(hitX, hitY, '#ffffff', 20);
+      if (levelData && levelData.isFrenzy) {
+        createParticles(hitX, hitY, '#ffd700', 30);
+        createShockwave('#ffd700', 35);
+      }
 
       if (worldNumHit === 4 && hasActivePhantoms) {
         createPopup(centerObj.x, centerObj.y, 'SIGNAL PURGED', '#00ff41');
@@ -4703,7 +4767,8 @@ function tap() {
           streak++;
       }
       soundMultiplierUp(multiplier);
-      score += (3 * multiplier);
+      let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 3 : 0;
+      score += (3 * multiplier) + frenzyBonusScore;
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -4730,6 +4795,9 @@ function tap() {
       }
       vibrate([12, 28, 12]);
       createUpwardBurstParticles(hitX, hitY - 10, '#fff36a', 42);
+      if (levelData && levelData.isFrenzy) {
+        createParticles(hitX, hitY, '#ffd700', 20);
+      }
       if (perfectLifeStreak >= 6) {
         gainLifeFromPerfectStreak();
       } else if (perfectLifeStreak >= 2) {
