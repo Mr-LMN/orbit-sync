@@ -3096,9 +3096,10 @@ function draw() {
   // Blackout vignette — Spotlight effect for The Void
   if (_blackoutActive && getWorldNum() === 5 && !inMenu) {
     const _bFade = Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200);
+    const playerPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
     const spotlightGrad = ctx.createRadialGradient(
-        tPt.x, tPt.y, orbitRadius * 0.1,
-        tPt.x, tPt.y, orbitRadius * 0.8
+        playerPt.x, playerPt.y, orbitRadius * 0.1,
+        playerPt.x, playerPt.y, orbitRadius * 0.8
     );
     spotlightGrad.addColorStop(0, 'rgba(3, 3, 8, 0)');
     spotlightGrad.addColorStop(0.3, `rgba(3, 3, 8, ${0.4 * _bFade})`);
