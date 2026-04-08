@@ -644,14 +644,19 @@ function equipSkin(id) { return OrbitGame.ui.shop.equipSkin(id); }
 function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = null) {
   ctx.save();
   const orbColor = colorOverride || multiColors[Math.min(multiplier - 1, 7)];
-  const multScale = 1 + (Math.min(multiplier - 1, 7) * 0.08); // Grow slightly with combo
+
+  // Physical size stays constant
+  const multScale = 1.0;
+
+  // Energy level increases visual intensity (glows, speeds) but not physical footprint
+  const energyLevel = Math.min(multiplier - 1, 7) / 7; // 0.0 to 1.0
 
   if (skin === 'skull') {
-    const sScale = radius * 0.22 * multScale;
+    const sScale = radius * 0.22;
     ctx.beginPath();
-    ctx.arc(x, y, radius * 1.5 * multScale, 0, Math.PI * 2);
+    ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(20, 255, 50, 0.2)';
-    ctx.shadowBlur = 25 + pulse * 10;
+    ctx.shadowBlur = 25 + pulse * 10 + (energyLevel * 15);
     ctx.shadowColor = '#0aff64';
     ctx.fill();
 
@@ -666,9 +671,9 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     ctx.closePath();
     ctx.fill();
 
-    // Eyes
+    // Eyes (glow harder at higher combo)
     ctx.fillStyle = '#0aff64';
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 10 + (energyLevel * 15);
     ctx.beginPath();
     ctx.arc(x - sScale * 1.5, y, sScale * 1.2, 0, Math.PI * 2);
     ctx.arc(x + sScale * 1.5, y, sScale * 1.2, 0, Math.PI * 2);
@@ -687,12 +692,15 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'prism') {
-    const pRadius = radius * 1.8 * multScale;
-    const rot = performance.now() * 0.001;
+    const pRadius = radius * 1.8;
+    const rotBaseSpeed = 0.001;
+    const rotSpeedup = energyLevel * 0.002;
+    const rot = performance.now() * (rotBaseSpeed + rotSpeedup);
 
     // Aura
     const glow = ctx.createRadialGradient(x, y, 0, x, y, pRadius * 1.5);
-    glow.addColorStop(0, 'rgba(180, 255, 255, 0.4)');
+    const alphaBase = 0.4 + (energyLevel * 0.3);
+    glow.addColorStop(0, `rgba(180, 255, 255, ${alphaBase})`);
     glow.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.beginPath();
     ctx.arc(x, y, pRadius * 1.5, 0, Math.PI * 2);
@@ -709,7 +717,7 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     ctx.lineTo(-pRadius * 0.8, 0);
     ctx.closePath();
     ctx.fillStyle = 'rgba(200, 255, 255, 0.8)';
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 20 + (energyLevel * 20);
     ctx.shadowColor = '#00ffff';
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
@@ -717,7 +725,7 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     ctx.stroke();
 
     // Inner crystal
-    ctx.rotate(-rot * 2);
+    ctx.rotate(-rot * 2); // Counter spin
     ctx.beginPath();
     ctx.moveTo(0, -pRadius * 0.5);
     ctx.lineTo(pRadius * 0.4, 0);
@@ -731,17 +739,18 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'echo') {
-    const eRadius = radius * 1.4 * multScale;
+    const eRadius = radius * 1.4;
     ctx.beginPath();
     ctx.arc(x, y, eRadius, 0, Math.PI * 2);
     ctx.fillStyle = '#00eaff';
-    ctx.globalAlpha = 0.3;
+    ctx.globalAlpha = 0.3 + (energyLevel * 0.2);
     ctx.shadowColor = '#00eaff';
-    ctx.shadowBlur = 25 + pulse * 10;
+    ctx.shadowBlur = 25 + pulse * 10 + (energyLevel * 15);
     ctx.fill();
 
-    // Concentric rippling rings
-    const time = performance.now() * 0.003;
+    // Concentric rippling rings (ripple faster with energy)
+    const timeSpeed = 0.003 + (energyLevel * 0.004);
+    const time = performance.now() * timeSpeed;
     for(let i=0; i<3; i++) {
         const rOffset = ((time + i) % 3) / 3;
         ctx.beginPath();
@@ -763,18 +772,19 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'crimson') {
-    const cRadius = radius * 1.6 * multScale;
+    const cRadius = radius * 1.6;
     ctx.beginPath();
     ctx.arc(x, y, cRadius, 0, Math.PI * 2);
     ctx.fillStyle = '#ff2244';
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.4 + (energyLevel * 0.2);
     ctx.shadowColor = '#ff2244';
-    ctx.shadowBlur = 30 + pulse * 15;
+    ctx.shadowBlur = 30 + pulse * 15 + (energyLevel * 15);
     ctx.fill();
 
     // Shuriken/Blade shape
     ctx.translate(x, y);
-    const rot = performance.now() * 0.005 + (multiplier * 0.2); // Spins faster with multiplier
+    const rotSpeed = 0.005 + (energyLevel * 0.015);
+    const rot = performance.now() * rotSpeed;
     ctx.rotate(rot);
 
     ctx.beginPath();
@@ -804,15 +814,20 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'pulse') {
-    const _pulseScale = 1 + (Math.sin(Date.now() / 100) * 0.6 + 0.5) * 0.35 + (Math.min(multiplier, 8) * 0.08);
-    const _pulseR = radius * _pulseScale * multScale;
+    // Pulse faster and slightly wider range of scale change, but hardcap the max size
+    const pulseSpeed = 100 - (energyLevel * 40);
+    const pulseAmp = 0.35 + (energyLevel * 0.15);
+    const _pulseScale = 1 + (Math.sin(Date.now() / pulseSpeed) * 0.6 + 0.5) * pulseAmp;
+
+    // Dampen physical growth, use mostly for the visual beat
+    const _pulseR = radius * (0.8 + (_pulseScale * 0.3));
 
     // Outer fast-pulsing energy bounds
     ctx.beginPath();
     ctx.arc(x, y, _pulseR * 1.8, 0, Math.PI * 2);
     ctx.fillStyle = orbColor;
-    ctx.globalAlpha = 0.25;
-    ctx.shadowBlur = 40;
+    ctx.globalAlpha = 0.25 + (energyLevel * 0.15);
+    ctx.shadowBlur = 40 + (energyLevel * 20);
     ctx.shadowColor = orbColor;
     ctx.fill();
 
@@ -840,9 +855,10 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'ghost') {
-    const gRadius = radius * 1.4 * multScale;
-    const _ghostAlpha = 0.15 + (Math.sin(Date.now() / 400) + 1) * 0.2;
-    const waveY = Math.sin(Date.now() / 200) * 4;
+    const gRadius = radius * 1.4;
+    const waveSpeed = 400 - (energyLevel * 150);
+    const _ghostAlpha = 0.15 + (Math.sin(Date.now() / waveSpeed) + 1) * 0.2 + (energyLevel * 0.15);
+    const waveY = Math.sin(Date.now() / (waveSpeed/2)) * 4;
 
     ctx.translate(x, y + waveY);
 
@@ -851,8 +867,8 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
     ctx.arc(0, 0, gRadius, Math.PI * 0.2, Math.PI * 1.8);
     ctx.quadraticCurveTo(-gRadius * 1.5, 0, 0, gRadius);
     ctx.fillStyle = orbColor;
-    ctx.globalAlpha = _ghostAlpha;
-    ctx.shadowBlur = 25;
+    ctx.globalAlpha = Math.min(1, _ghostAlpha);
+    ctx.shadowBlur = 25 + (energyLevel * 15);
     ctx.shadowColor = orbColor;
     ctx.fill();
 
@@ -873,14 +889,15 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
   }
 
   if (skin === 'storm') {
-    const sRadius = radius * 1.7 * multScale;
-    const _stormPulse = (Math.sin(Date.now() / 50) + 1) * 0.5;
+    const sRadius = radius * 1.7;
+    const stormSpeed = 50 - (energyLevel * 20);
+    const _stormPulse = (Math.sin(Date.now() / stormSpeed) + 1) * 0.5;
 
     ctx.beginPath();
     ctx.arc(x, y, sRadius * 1.5, 0, Math.PI * 2);
     ctx.fillStyle = '#ffee00';
-    ctx.globalAlpha = 0.2 + _stormPulse * 0.2;
-    ctx.shadowBlur = 40;
+    ctx.globalAlpha = 0.2 + _stormPulse * 0.2 + (energyLevel * 0.1);
+    ctx.shadowBlur = 40 + (energyLevel * 20);
     ctx.shadowColor = '#ffee00';
     ctx.fill();
 
@@ -907,23 +924,23 @@ function drawOrbSkin(ctx, x, y, skin, radius = 8.5, pulse = 0, colorOverride = n
 
   // Classic
   ctx.beginPath();
-  ctx.arc(x, y, (radius * 1.8 * multScale) + pulse, 0, Math.PI * 2);
+  ctx.arc(x, y, (radius * 1.8) + pulse, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
-  ctx.globalAlpha = 0.25;
-  ctx.shadowBlur = 30;
+  ctx.globalAlpha = 0.25 + (energyLevel * 0.15);
+  ctx.shadowBlur = 30 + (energyLevel * 15);
   ctx.shadowColor = orbColor;
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, radius * 1.2 * multScale, 0, Math.PI * 2);
+  ctx.arc(x, y, radius * 1.2, 0, Math.PI * 2);
   ctx.fillStyle = orbColor;
-  ctx.globalAlpha = 0.8;
+  ctx.globalAlpha = 0.8 + (energyLevel * 0.2);
   ctx.shadowBlur = 15;
   ctx.shadowColor = orbColor;
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, radius * 0.6 * multScale, 0, Math.PI * 2);
+  ctx.arc(x, y, radius * 0.6, 0, Math.PI * 2);
   ctx.fillStyle = '#ffffff';
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 10;

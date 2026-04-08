@@ -226,12 +226,11 @@
   function soundPerfect(multiplier) {
     if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    const baseFreq = 330 + (multiplier * 15);
-    // Bright, rich FM-style bell chime
-    playSynth(baseFreq, 'square', 0.15, 0.002, 0.25, t, 2000, true);
-    playSynth(baseFreq * 2, 'sine', 0.1, 0.002, 0.3, t, 0, true);
-    playSynth(baseFreq * 3.01, 'sine', 0.08, 0.005, 0.4, t, 0, true);
-    playNoiseBurst(0.05, 0.08, t, 'highpass', 4000, 1.0);
+    const baseFreq = 440 + (multiplier * 20); // Higher, cleaner base pitch
+    // Tight, satisfying crystal ding - much shorter decay
+    playSynth(baseFreq, 'sine', 0.25, 0.001, 0.12, t, 0, false);
+    playSynth(baseFreq * 1.5, 'triangle', 0.15, 0.001, 0.08, t, 0, false);
+    playNoiseBurst(0.03, 0.04, t, 'highpass', 3000, 1.0); // Very short, subtle transient click
   }
 
   function soundCornerBonus(worldNum = 1) {
