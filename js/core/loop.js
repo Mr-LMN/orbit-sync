@@ -1026,6 +1026,7 @@ function forceHideOverlayExtras() {
   const shareBtn = ui.shareBtn;
   const pbStatsBlock = ui.pbStatsBlock;
   const runStatsBlock = ui.runStatsBlock;
+  const summaryCard = document.getElementById('summaryCard');
   const newRecordBanner = ui.newRecordBanner;
   const closeMissBanner = ui.closeMissBanner;
   const overlayActionStack = ui.overlayActionStack;
@@ -1046,6 +1047,7 @@ function forceHideOverlayExtras() {
   }
   if (pbStatsBlock) pbStatsBlock.style.display = 'none';
   if (runStatsBlock) runStatsBlock.style.display = 'none';
+  if (summaryCard) summaryCard.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
   if (closeMissBanner) closeMissBanner.style.display = 'none';
   if (overlayActionStack) {
@@ -3802,11 +3804,11 @@ function updatePBDisplay(newRecords) {
 
   // Highlight new records in gold
   ui.pbScoreDisplay.className =
-    newRecords.score ? 'pb-value new-record pb-pulse' : 'pb-value';
+    newRecords.score ? 'summary-value new-record pb-pulse' : 'summary-value';
   ui.pbStreakDisplay.className =
-    newRecords.streak ? 'pb-value new-record pb-pulse' : 'pb-value';
+    newRecords.streak ? 'summary-value new-record pb-pulse' : 'summary-value';
   ui.pbWorldDisplay.className =
-    newRecords.world ? 'pb-value new-record pb-pulse' : 'pb-value';
+    newRecords.world ? 'summary-value new-record pb-pulse' : 'summary-value';
 
   // Show banner if any record was broken
   const anyNew = newRecords.score || newRecords.streak || newRecords.world;
@@ -3894,14 +3896,19 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     if (newRecordBanner) nearBestBannerActive = !isCloseMiss && newRecordBanner.style.display === 'block' && !newRecords.score && !newRecords.streak && !newRecords.world;
     if (clearSummary) clearSummary.style.display = 'none';
     if (pbStatsBlock) pbStatsBlock.style.display = 'none';
+
+    // Update the values for the new summary card
     const showComboHero = streakBeforeFail >= 3;
     const bestCombo = Math.max(runBestStreak || 0, streakBeforeFail || 0);
-    if (runComboDisplay) runComboDisplay.innerText = showComboHero ? `COMBO ${streakBeforeFail}` : `SCORE ${score}`;
+
     if (runScoreDisplay) {
-      if (showComboHero) runScoreDisplay.innerText = `Score ${score}`;
-      else if (bestCombo > 0) runScoreDisplay.innerText = `Best combo ${bestCombo}`;
-      else runScoreDisplay.innerText = '';
+      runScoreDisplay.innerText = score;
     }
+
+    if (runComboDisplay) {
+      runComboDisplay.innerText = bestCombo;
+    }
+
     if (nearMissEl) {
       nearMissEl.innerText = '';
       nearMissEl.style.display = 'none';
@@ -3913,7 +3920,11 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     ui.subtitle.classList.add('subtle-failure');
     ui.subtitle.innerText = subtitleText;
     ui.subtitle.style.display = subtitleText ? 'block' : 'none';
-    if (runStatsBlock) runStatsBlock.style.display = 'flex';
+
+    // The new run stats block is the summary card itself, so it just needs to be displayed block
+    const summaryCard = document.getElementById('summaryCard');
+    if (summaryCard) summaryCard.style.display = 'block';
+
     let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
 
     ui.btn.innerText = pendingCoins > 0 ? `BANK ${pendingCoins} + PLAY AGAIN` : 'PLAY AGAIN';
@@ -3924,12 +3935,12 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       restartFromCheckpoint();
     };
     if (pendingCoins > 0) {
-      ui.runCoins.innerText = `+${pendingCoins} COINS`;
+      ui.runCoins.innerText = `+${pendingCoins}`;
       if (runCoinsHint) runCoinsHint.style.display = 'none';
-      if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
+      if (runCoinsBox) runCoinsBox.style.display = 'flex';
 
       if (adDoubleCoinsBtn && !isPremium) {
-          adDoubleCoinsBtn.style.display = 'inline-block';
+          adDoubleCoinsBtn.style.display = 'inline-flex';
           adDoubleCoinsBtn.onclick = function() {
               if (audioCtx) soundUIClick();
               if (typeof showSimulatedAd === 'function') {
@@ -3946,9 +3957,9 @@ function handleFail(reason, failEdgeDistance = Infinity) {
           adDoubleCoinsBtn.style.display = 'none';
       }
     } else {
-      ui.runCoins.innerText = '';
+      ui.runCoins.innerText = '0';
       if (runCoinsHint) runCoinsHint.style.display = 'none';
-      if (runCoinsBox) runCoinsBox.style.display = 'none';
+      if (runCoinsBox) runCoinsBox.style.display = 'flex';
       if (adDoubleCoinsBtn) adDoubleCoinsBtn.style.display = 'none';
     }
     if (menuBtn) {
@@ -5135,12 +5146,14 @@ function restartFromCheckpoint() {
   ui.title.classList.remove('run-title');
   ui.subtitle.classList.remove('subtle-failure');
   const runStatsBlock = ui.runStatsBlock;
+  const summaryCard = document.getElementById('summaryCard');
   const runScoreDisplay = ui.runScoreDisplay;
   const runComboDisplay = ui.runComboDisplay;
   const nearMissEl = ui.nearMissMsg;
   if (runStatsBlock) runStatsBlock.style.display = 'none';
-  if (runScoreDisplay) runScoreDisplay.innerText = 'Score 0';
-  if (runComboDisplay) runComboDisplay.innerText = 'COMBO 0';
+  if (summaryCard) summaryCard.style.display = 'none';
+  if (runScoreDisplay) runScoreDisplay.innerText = '0';
+  if (runComboDisplay) runComboDisplay.innerText = '0';
   if (nearMissEl) nearMissEl.innerText = '';
   const closeMissBanner = ui.closeMissBanner;
   if (closeMissBanner) closeMissBanner.style.display = 'none';
