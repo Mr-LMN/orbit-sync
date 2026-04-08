@@ -226,7 +226,7 @@
   function soundPerfect(multiplier) {
     if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    const baseFreq = 330 + (multiplier * 50);
+    const baseFreq = 330 + (multiplier * 15);
     // Bright, rich FM-style bell chime
     playSynth(baseFreq, 'square', 0.15, 0.002, 0.25, t, 2000, true);
     playSynth(baseFreq * 2, 'sine', 0.1, 0.002, 0.3, t, 0, true);

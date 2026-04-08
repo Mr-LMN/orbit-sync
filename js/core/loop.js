@@ -457,9 +457,9 @@ function getWorldVisualTheme(level) {
   if (worldNum === 2) {
     return {
       railColor: '#2ff6ff',
-      targetColor: '#2ff6ff',
-      targetGlowColor: '#27dfff',
-      targetCoreColor: '#f8ffff',
+      targetColor: '#ff4fd8',
+      targetGlowColor: '#ff7aa8',
+      targetCoreColor: '#ffffff',
       railGlowScale: 0.95
     };
   }
@@ -1643,6 +1643,8 @@ function spawnControlledSplitRoot(options = {}) {
   targets.push(splitRoot);
   return splitRoot;
 }
+
+OrbitGame.systems.splitControl.getNextSplitFamilyId = getNextSplitFamilyId;
 
 function maybeRespawnSplitRootForStage(clearedFamilyId) {
   if (!isSplitStageMode() || !clearedFamilyId) return false;
