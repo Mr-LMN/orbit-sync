@@ -3,6 +3,26 @@
   OG.ui = OG.ui || {};
   OG.ui.overlay = OG.ui.overlay || {};
 
+  window.showSimulatedAd = function(onComplete) {
+    const adOverlay = document.getElementById('adSimulationOverlay');
+    if (!adOverlay) return;
+
+    // Pause any game sounds
+    if (typeof audioCtx !== 'undefined' && audioCtx.state === 'running') {
+        audioCtx.suspend();
+    }
+
+    adOverlay.style.display = 'flex';
+
+    setTimeout(() => {
+        adOverlay.style.display = 'none';
+        if (typeof audioCtx !== 'undefined' && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        if (onComplete) onComplete();
+    }, 2500); // Simulate a short 2.5s ad for dopamine retention
+  };
+
   function attemptCoinRevive() {
     const reviveCost = currentReviveCost || 50;
 

@@ -3,6 +3,24 @@
   OG.ui = OG.ui || {};
   OG.ui.shop = OG.ui.shop || {};
 
+  window.purchasePremium = function() {
+      if (typeof isPremium !== 'undefined' && isPremium) return;
+
+      // Simulate real-money purchase success
+      if (typeof audioCtx !== 'undefined') playPop(10, true);
+      isPremium = true;
+      if (typeof saveData === 'function') saveData();
+      updateShopUI();
+
+      if (typeof createPopup === 'function' && typeof centerObj !== 'undefined') {
+          createPopup(centerObj.x, centerObj.y - 40, 'PREMIUM UNLOCKED', '#ffd700');
+          createPopup(centerObj.x, centerObj.y, 'NO ADS & 2X COINS', '#ffd700');
+      }
+
+      // Refresh UI that might be affected
+      if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
+  };
+
   function toggleShop(show) {
     ui.shopModal.style.bottom = show ? '0' : '-100%';
     updateShopUI();
@@ -10,6 +28,20 @@
 
   function updateShopUI() {
     updatePersistentCoinUI();
+
+    // Update Premium Button State
+    const premiumBtn = document.getElementById('btn-premium');
+    if (premiumBtn) {
+        if (typeof isPremium !== 'undefined' && isPremium) {
+            premiumBtn.innerText = 'OWNED';
+            premiumBtn.classList.add('equipped');
+            premiumBtn.disabled = true;
+        } else {
+            premiumBtn.innerText = 'BUY £2.99';
+            premiumBtn.classList.remove('equipped');
+            premiumBtn.disabled = false;
+        }
+    }
     const items = ['classic', 'skull', 'prism', 'echo', 'crimson', 'pulse', 'ghost', 'storm'];
     items.forEach(id => {
       let btn = document.getElementById('btn-' + id); let card = document.getElementById('item-' + id);
