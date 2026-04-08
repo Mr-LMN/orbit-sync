@@ -1460,7 +1460,14 @@ function loadLevel(idx) {
     OG.storage.setItem('orbitSync_checkpointIdx', String(idx));
   }
 
-  ui.stage.innerText = `Stage ${levelData.id}`; ui.text.innerText = levelData.text;
+  ui.stage.innerText = `Stage ${levelData.id}`;
+  if (levelData.text && ui.tutorialTextContainer) {
+    ui.text.innerText = levelData.text;
+    ui.tutorialTextContainer.style.display = 'block';
+    ui.tutorialTextContainer.style.opacity = '1';
+  } else if (ui.tutorialTextContainer) {
+    ui.tutorialTextContainer.style.display = 'none';
+  }
   // Per-stage personal best display
   const _stagePBEl = ui.stagePBDisplay;
   if (_stagePBEl && levelData && levelData.id) {
@@ -4159,6 +4166,12 @@ function tap() {
   const hitY = hitPt.y;
 
   if (hitIndex !== -1) {
+    if (ui.tutorialTextContainer && ui.tutorialTextContainer.style.display !== 'none') {
+      ui.tutorialTextContainer.style.opacity = '0';
+      setTimeout(() => {
+        if (ui.tutorialTextContainer) ui.tutorialTextContainer.style.display = 'none';
+      }, 500);
+    }
     let t = targets[hitIndex];
     const targetCenterAngle = normalizeAngle(t.start + (t.size / 2));
     const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);

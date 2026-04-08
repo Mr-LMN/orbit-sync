@@ -143,9 +143,25 @@
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
     if (typeof OrbitGame !== 'undefined') OrbitGame.state.legacy.hardMode = true;
+
+    // Hard Mode Augment Tutorial Check
+    const hasSeenHardModeTutorial = OG.storage.getItem('orbitSync_hm_tutorial') === '1';
+
+    if (!hasSeenHardModeTutorial) {
+      OG.storage.setItem('orbitSync_hm_tutorial', '1');
+      showAugmentPicker(true);
+    } else {
+      _startHardModeGameplay();
+    }
+  }
+
+  function _startHardModeGameplay() {
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
+    const augOverlay = document.getElementById('augmentSelect');
+    if (augOverlay) augOverlay.style.display = 'none';
+
     ui.topBar.style.display = 'flex';
     ui.gameUI.style.display = 'block';
     ui.bigMultiplier.style.display = 'block';
@@ -171,9 +187,9 @@
   }
 
 
-  function selectAugment(augmentId, cost = 0) {
+  function selectAugment(augmentId, cost = 0, isTutorial = false) {
     // Check if player can afford it
-    if (augmentId && cost > 0) {
+    if (augmentId && cost > 0 && !isTutorial) {
       const currentCoins = typeof globalCoins !== 'undefined' ? Math.floor(globalCoins) : 0;
       if (currentCoins < cost) return; // Can't afford — button should be disabled anyway
       // Deduct coins
@@ -186,21 +202,68 @@
     const augOverlay = document.getElementById('augmentSelect');
     if (augOverlay) augOverlay.style.display = 'none';
     if (typeof window.setActiveAugment === 'function') window.setActiveAugment(augmentId || null);
+
+    if (isTutorial) {
+        _startHardModeGameplay();
+    }
   }
 
-  function showAugmentPicker() {
+  function showAugmentPicker(isTutorial = false) {
     const augOverlay = document.getElementById('augmentSelect');
     if (!augOverlay) return;
-    // Update coin display
-    const coinDisplay = document.getElementById('augmentCoinDisplay');
-    const currentCoins = typeof globalCoins !== 'undefined' ? Math.floor(globalCoins) : 0;
-    if (coinDisplay) coinDisplay.innerText = currentCoins;
-    // Disable cards player can't afford
-    const costs = { 'wide_sync': 25, 'coin_surge': 35, 'iron_shield': 50 };
-    Object.entries(costs).forEach(([id, cost]) => {
-      const btn = document.getElementById('aug-' + id);
-      if (btn) btn.disabled = currentCoins < cost;
-    });
+
+    const augTitle = document.getElementById('augTitle');
+    const augSub = document.getElementById('augSub');
+    const augSkipBtn = document.getElementById('augSkipBtn');
+
+    if (isTutorial) {
+        if (augTitle) augTitle.innerText = "HARD MODE UNLOCKED";
+        if (augSub) augSub.innerText = "YOUR FIRST AUGMENT IS ON US";
+        if (augSkipBtn) augSkipBtn.style.display = 'none';
+
+        // Disable everything except coin surge
+        const costs = { 'wide_sync': 25, 'coin_surge': 35, 'iron_shield': 50 };
+        Object.entries(costs).forEach(([id, cost]) => {
+          const btn = document.getElementById('aug-' + id);
+          if (btn) {
+              if (id === 'coin_surge') {
+                  btn.disabled = false;
+                  btn.style.opacity = '1';
+                  btn.onclick = () => selectAugment('coin_surge', 0, true);
+                  btn.querySelector('.aug-cost').innerText = 'FREE';
+                  btn.style.boxShadow = '0 0 20px #ffaa00';
+              } else {
+                  btn.disabled = true;
+                  btn.style.opacity = '0.3';
+                  btn.onclick = null;
+              }
+          }
+        });
+
+    } else {
+        if (augTitle) augTitle.innerText = "CHOOSE YOUR BOOST";
+        if (augSub) augSub.innerText = "ONE PER RUN · SPEND COINS TO ACTIVATE";
+        if (augSkipBtn) augSkipBtn.style.display = 'block';
+
+        // Update coin display
+        const coinDisplay = document.getElementById('augmentCoinDisplay');
+        const currentCoins = typeof globalCoins !== 'undefined' ? Math.floor(globalCoins) : 0;
+        if (coinDisplay) coinDisplay.innerText = currentCoins;
+
+        // Restore buttons and costs
+        const costs = { 'wide_sync': 25, 'coin_surge': 35, 'iron_shield': 50 };
+        Object.entries(costs).forEach(([id, cost]) => {
+          const btn = document.getElementById('aug-' + id);
+          if (btn) {
+              btn.style.opacity = '1';
+              btn.disabled = currentCoins < cost;
+              btn.onclick = () => selectAugment(id, cost);
+              btn.querySelector('.aug-cost').innerText = '🪙 ' + cost;
+              btn.style.boxShadow = 'none';
+          }
+        });
+    }
+
     augOverlay.style.display = 'flex';
   }
 

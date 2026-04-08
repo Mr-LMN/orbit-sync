@@ -19,8 +19,12 @@
 
       if (!isBossPhaseTwo) {
         if (bossPhase === 1) {
-          ui.text.innerText = 'EXTINGUISH THE INFERNO. BREAK THE FLARES.';
-          ui.text.style.color = '#ff6600';
+          if (ui.tutorialTextContainer) {
+            ui.text.innerText = 'EXTINGUISH THE INFERNO. BREAK THE FLARES.';
+            ui.text.style.color = '#ff6600';
+            ui.tutorialTextContainer.style.display = 'block';
+            ui.tutorialTextContainer.style.opacity = '1';
+          }
 
           for (let i = 0; i < 6; i++) {
             const startAngle = i * (Math.PI * 2 / 6) + (Math.PI / 24);
@@ -35,8 +39,12 @@
           }
         }
       } else {
-         ui.text.innerText = 'THE CORE IS EXPOSED. FINAL STRIKE.';
-         ui.text.style.color = w6Core;
+         if (ui.tutorialTextContainer) {
+           ui.text.innerText = 'THE CORE IS EXPOSED. FINAL STRIKE.';
+           ui.text.style.color = w6Core;
+           ui.tutorialTextContainer.style.display = 'block';
+           ui.tutorialTextContainer.style.opacity = '1';
+         }
          const coreTarget = buildTarget(0, Math.PI / 6, {
            isBossShield: true,
            hp: _hmActive ? 5 : 4,
@@ -71,8 +79,12 @@
         // PHASE 1 — THE SEALS: 5 shield nodes on pentagon sides
         // Orb blacks out periodically (handled by loop.js blackout system)
         if (bossPhase === 1) {
-          ui.text.innerText = 'THE VOID IS WATCHING. BREAK THE SEALS.';
-          ui.text.style.color = '#a8d8ff';
+          if (ui.tutorialTextContainer) {
+            ui.text.innerText = 'THE VOID IS WATCHING. BREAK THE SEALS.';
+            ui.text.style.color = '#a8d8ff';
+            ui.tutorialTextContainer.style.display = 'block';
+            ui.tutorialTextContainer.style.opacity = '1';
+          }
           const shieldCount = _hmActive ? 5 : 5; // always 5 — one per pentagon side
           const shieldSize = _hmActive ? Math.PI / 7 : Math.PI / 6;
           const shieldSpeed = _hmActive ? 0.016 : 0.010;
@@ -92,8 +104,12 @@
         // PHASE 2 — ENRAGED: 3 fast shields + 2 phantom decoys
         // No blackout — raw speed and deception instead
         else if (bossPhase === 2) {
-          ui.text.innerText = 'SIGNAL FRAGMENTING. FIND THE TRUTH.';
-          ui.text.style.color = '#ff3366';
+          if (ui.tutorialTextContainer) {
+            ui.text.innerText = 'SIGNAL FRAGMENTING. FIND THE TRUTH.';
+            ui.text.style.color = '#ff3366';
+            ui.tutorialTextContainer.style.display = 'block';
+            ui.tutorialTextContainer.style.opacity = '1';
+          }
           const phantomCount = _hmActive ? 3 : 2;
           const realSpeed = _hmActive ? 0.046 : 0.036;
 
@@ -127,8 +143,12 @@
       } else {
         // PHASE 3 — THE CORE: Blinking white node, slowly drifting
         // Visible for 0.6s, dark for 1.0s — player must memorise and tap in darkness
-        ui.text.innerText = 'LOCATE. STRIKE. BECOME.';
-        ui.text.style.color = '#ffffff';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'LOCATE. STRIKE. BECOME.';
+          ui.text.style.color = '#ffffff';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const _coreSize = _hmActive ? Math.PI / 16 : Math.PI / 13;
         const coreAngle = normalizeAngle(-Math.PI / 2 + (Math.floor(Math.random() * 5) * Math.PI * 2 / 5));
         const coreTarget = buildTarget(coreAngle, _coreSize, {
@@ -159,8 +179,12 @@
 
         // PHASE 1: Corner shield nodes — 4 purple shields drifting along sides
         if (bossPhase === 1) {
-          ui.text.innerText = 'CORRUPTOR: Destroy the shield nodes.';
-          ui.text.style.color = '#b157ff';
+          if (ui.tutorialTextContainer) {
+            ui.text.innerText = 'CORRUPTOR: Destroy the shield nodes.';
+            ui.text.style.color = '#b157ff';
+            ui.tutorialTextContainer.style.display = 'block';
+            ui.tutorialTextContainer.style.opacity = '1';
+          }
           // 4 nodes spaced evenly, drifting in alternating directions
           const nodeCount = _hmActive ? 4 : 4; // always 4, HM makes them faster
           const nodeSpeed = _hmActive ? 0.032 : 0.022;
@@ -180,8 +204,12 @@
 
         // PHASE 2: ENRAGED — 2 fast shields + phantom decoy
         else if (bossPhase === 2) {
-          ui.text.innerText = 'CORRUPTOR ENRAGED: Find the real signal.';
-          ui.text.style.color = '#ff3366';
+          if (ui.tutorialTextContainer) {
+            ui.text.innerText = 'CORRUPTOR ENRAGED: Find the real signal.';
+            ui.text.style.color = '#ff3366';
+            ui.tutorialTextContainer.style.display = 'block';
+            ui.tutorialTextContainer.style.opacity = '1';
+          }
           const phantomCount = _hmActive ? 2 : 1;
           const realAngle = Math.random() * Math.PI * 2;
           // Real shield
@@ -220,8 +248,12 @@
 
       } else {
         // CORE EXPOSED — tiny bright green node, corner-aligned, PERFECT required
-        ui.text.innerText = 'CORRUPT CORE EXPOSED — PERFECT STRIKE ONLY';
-        ui.text.style.color = '#00ff41';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'CORRUPT CORE EXPOSED — PERFECT STRIKE ONLY';
+          ui.text.style.color = '#00ff41';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const _coreSize = _hmActive ? Math.PI / 15 : Math.PI / 12;
         // Snap core position to a corner angle of the square
         const cornerAngles = [Math.PI * 0.25, Math.PI * 0.75, Math.PI * 1.25, Math.PI * 1.75];
@@ -245,8 +277,12 @@
 
     // ─── WORLD 1 FRENZY STAGE ──────────────────────
     if (levelData.isFrenzy && !inMenu) {
-        ui.text.innerText = 'FRENZY! Rapid fire targets. Go wild for massive points!';
-        ui.text.style.color = '#ffd700';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'FRENZY! Rapid fire targets. Go wild for massive points!';
+          ui.text.style.color = '#ffd700';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
 
         const frenzyCount = levelData.targets || 4;
         const spacing = (Math.PI * 2) / frenzyCount;
@@ -267,8 +303,12 @@
 
     if (levelData.boss === 'aegis') {
       if (!isBossPhaseTwo) {
-        ui.text.innerText = bossPhase === 1 ? 'BOSS: Break the shields!' : 'BOSS ENRAGED: Faster & Sharper!';
-        ui.text.style.color = bossPhase === 1 ? '#00e5ff' : '#ff3366';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = bossPhase === 1 ? 'BOSS: Break the shields!' : 'BOSS ENRAGED: Faster & Sharper!';
+          ui.text.style.color = bossPhase === 1 ? '#00e5ff' : '#ff3366';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         let offset = Math.random() * Math.PI * 2;
         const _hmActive = typeof isHardModeActive === 'function' && isHardModeActive();
         const shieldCount = bossPhase === 1 ? (_hmActive ? 4 : 3) : (_hmActive ? 3 : 2);
@@ -286,7 +326,11 @@
           ));
         }
       } else {
-        ui.text.innerText = 'CORE EXPOSED! Need PERFECT hit!'; ui.text.style.color = '#ffffff';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'CORE EXPOSED! Need PERFECT hit!'; ui.text.style.color = '#ffffff';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const _hmCore = typeof isHardModeActive === 'function' && isHardModeActive();
         targets.push(buildTarget(Math.random() * Math.PI * 2, _hmCore ? Math.PI / 14 : Math.PI / 10, { color: '#ffffff', active: true, hp: 1 }));
       }
@@ -304,8 +348,12 @@
         world2BossSequenceLength = 0;
         world2BossArenaRotationSpeed = 0.0034;
         world2BossNextForcedReverseAt = 0;
-        ui.text.innerText = 'THE PRISM // ALIGNMENT';
-        ui.text.style.color = '#2ff6ff';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'THE PRISM // ALIGNMENT';
+          ui.text.style.color = '#2ff6ff';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         for (let i = 0; i < 4; i++) {
           const anchor = (i * Math.PI / 2) + 0.06;
           const facetTarget = buildTarget(
@@ -327,8 +375,12 @@
         world2BossSequenceLength = 7;
         world2BossArenaRotationSpeed = 0.0068;
         world2BossNextForcedReverseAt = performance.now() + 2200;
-        ui.text.innerText = 'SEQUENCE // CALIBRATION';
-        ui.text.style.color = '#00e8ff';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'SEQUENCE // CALIBRATION';
+          ui.text.style.color = '#00e8ff';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const seqColors = ['#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff', '#ff4fd8', '#ffd54a', '#00e8ff'];
         for (let i = 0; i < world2BossSequenceLength; i++) {
           const seqTarget = buildTarget(
@@ -353,8 +405,12 @@
         world2BossSequenceProgress = 0;
         world2BossSequenceLength = 4;
         world2BossArenaRotationSpeed = 0.006;
-        ui.text.innerText = 'FINAL LOCK // CORNERS';
-        ui.text.style.color = '#ffd54a';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'FINAL LOCK // CORNERS';
+          ui.text.style.color = '#ffd54a';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const cornerAnchors = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
         cornerAnchors.forEach((anchor, idx) => {
           const cornerTarget = buildTarget(normalizeAngle(anchor + 0.04), Math.PI / 8.6, {
@@ -369,8 +425,12 @@
         });
       } else if (isPhaseTwoCore) {
         world2BossArenaRotationSpeed = 0.0052;
-        ui.text.innerText = 'CORE // FINAL STRIKE';
-        ui.text.style.color = '#ffffff';
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'CORE // FINAL STRIKE';
+          ui.text.style.color = '#ffffff';
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const coreTarget = buildTarget(normalizeAngle(-Math.PI / 2), Math.PI / 9.5, {
           color: '#ffffff',
           active: true,
@@ -395,8 +455,12 @@
       const w5Glow = '#a8d8ff';
 
       if (levelData.id === '5-1') {
-        ui.text.innerText = 'Five sides. No forgiveness. Learn the shape.';
-        ui.text.style.color = w5Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Five sides. No forgiveness. Learn the shape.';
+          ui.text.style.color = w5Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 7.5, {
           color: w5Color, active: true, hp: 1, moveSpeed: 0
         }));
@@ -404,8 +468,12 @@
       }
 
       if (levelData.id === '5-2') {
-        ui.text.innerText = 'The orb vanishes. Trust your timing.';
-        ui.text.style.color = w5Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'The orb vanishes. Trust your timing.';
+          ui.text.style.color = w5Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8, {
           color: w5Color, active: true, hp: 1, moveSpeed: 0
         }));
@@ -413,8 +481,12 @@
       }
 
       if (levelData.id === '5-3') {
-        ui.text.innerText = 'The zone drifts while you are blind. Predict.';
-        ui.text.style.color = w5Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'The zone drifts while you are blind. Predict.';
+          ui.text.style.color = w5Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const wave53 = Math.max(1, (stageHits || 0) + 1);
         targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8.5, {
           color: w5Color, active: true, hp: 1,
@@ -424,8 +496,12 @@
       }
 
       if (levelData.id === '5-4') {
-        ui.text.innerText = 'Two zones. One darkness. Track both.';
-        ui.text.style.color = w5Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Two zones. One darkness. Track both.';
+          ui.text.style.color = w5Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const base54 = Math.random() * Math.PI * 2;
         const seg54 = Math.PI * 2 / 5;
         targets.push(buildTarget(normalizeAngle(base54), Math.PI / 9, {
@@ -438,8 +514,12 @@
       }
 
       if (levelData.id === '5-5') {
-        ui.text.innerText = 'Maximum pressure. The void is consuming everything.';
-        ui.text.style.color = w5Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Maximum pressure. The void is consuming everything.';
+          ui.text.style.color = w5Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const wave55 = Math.max(1, (stageHits || 0) + 1);
         const pf55 = Math.min(1, wave55 / Math.max(1, levelData.hitsNeeded));
         const sz55 = (Math.PI / 8) * (1 - pf55 * 0.25);
@@ -474,8 +554,12 @@
       // ─── 4-1: Corrupt Signal ───────────────
       // One real target, one phantom. Intro to deception.
       if (levelData.id === '4-1') {
-        ui.text.innerText = 'One zone is real. One is corrupted. Read the signal.';
-        ui.text.style.color = w4Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'One zone is real. One is corrupted. Read the signal.';
+          ui.text.style.color = w4Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const realAngle = Math.random() * Math.PI * 2;
         targets.push(buildTarget(realAngle, Math.PI / 8.5, {
           color: w4Color, active: true, hp: 1
@@ -491,8 +575,12 @@
       // Two real targets moving in opposite directions + one phantom.
       // Phantom offset from the real targets by ~third of the rail.
       if (levelData.id === '4-2') {
-        ui.text.innerText = 'Two live zones. One ghost. All moving.';
-        ui.text.style.color = w4Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Two live zones. One ghost. All moving.';
+          ui.text.style.color = w4Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const baseAngle = Math.random() * Math.PI * 2;
         // Real targets: opposite sides, drifting toward each other
         targets.push(buildTarget(baseAngle, Math.PI / 9, {
@@ -512,8 +600,12 @@
       // Single target that splits on hit + phantom appears after split.
       // Uses the existing split system but W4-coloured.
       if (levelData.id === '4-3') {
-        ui.text.innerText = 'Hit the zone. Fragments scatter. One is a ghost.';
-        ui.text.style.color = w4Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Hit the zone. Fragments scatter. One is a ghost.';
+          ui.text.style.color = w4Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         // Use spawnControlledSplitRoot so the split family system
         // tracks this target properly — prevents ghost-clear bug
         const splitRoot = typeof spawnControlledSplitRoot === 'function'
@@ -547,8 +639,12 @@
       // Two shrinking targets that reverse + one phantom.
       // Hardest regular stage — tests everything learned.
       if (levelData.id === '4-4') {
-        ui.text.innerText = 'Shrinking. Reversing. One is a ghost. Precision is survival.';
-        ui.text.style.color = w4Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Shrinking. Reversing. One is a ghost. Precision is survival.';
+          ui.text.style.color = w4Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         const progressionFactor = Math.min(1, (stageHits || 0) / Math.max(1, levelData.hitsNeeded || 8));
         const shrinkScale = 1.0 - (0.28 * progressionFactor);
         const baseSize = (Math.PI / 8.5) * shrinkScale;
@@ -575,8 +671,12 @@
       // Four real targets, no phantom — pure speed and multi-target overload.
       // Reward: players who mastered phantom detection now face honest chaos.
       if (levelData.id === '4-5') {
-        ui.text.innerText = 'Maximum signal load. No tricks — just survive.';
-        ui.text.style.color = w4Color;
+        if (ui.tutorialTextContainer) {
+          ui.text.innerText = 'Maximum signal load. No tricks — just survive.';
+          ui.text.style.color = w4Color;
+          ui.tutorialTextContainer.style.display = 'block';
+          ui.tutorialTextContainer.style.opacity = '1';
+        }
         // Wave escalation: 3 targets early, builds to 4 on final waves
         const wave = Math.max(1, (stageHits || 0) + 1);
         const count = wave >= 8 ? 4 : 3;
@@ -613,8 +713,12 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-2') {
-      ui.text.innerText = 'Tap when the cyan echo reaches the target.';
-      ui.text.style.color = '#66f0ff';
+      if (ui.tutorialTextContainer) {
+        ui.text.innerText = 'Tap when the cyan echo reaches the target.';
+        ui.text.style.color = '#66f0ff';
+        ui.tutorialTextContainer.style.display = 'block';
+        ui.tutorialTextContainer.style.opacity = '1';
+      }
       const baseAngles = [Math.PI * 0.85, Math.PI * 1.45, Math.PI * 0.2];
       const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
       targets.push(buildTarget(angleToUse, Math.PI / 8, {
@@ -626,8 +730,12 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-3') {
-      ui.text.innerText = 'Orange = real orb. Cyan = delayed echo.';
-      ui.text.style.color = '#ffffff';
+      if (ui.tutorialTextContainer) {
+        ui.text.innerText = 'Orange = real orb. Cyan = delayed echo.';
+        ui.text.style.color = '#ffffff';
+        ui.tutorialTextContainer.style.display = 'block';
+        ui.tutorialTextContainer.style.opacity = '1';
+      }
 
       const baseAngles = [Math.PI * 0.92, Math.PI * 1.52, Math.PI * 0.34, Math.PI * 1.18];
       const angleToUse = baseAngles[(stageHits || 0) % baseAngles.length];
@@ -642,8 +750,12 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-4') {
-      ui.text.innerText = 'Echo Drift: slow movement, mixed final wave.';
-      ui.text.style.color = '#66f0ff';
+      if (ui.tutorialTextContainer) {
+        ui.text.innerText = 'Echo Drift: slow movement, mixed final wave.';
+        ui.text.style.color = '#66f0ff';
+        ui.tutorialTextContainer.style.display = 'block';
+        ui.tutorialTextContainer.style.opacity = '1';
+      }
 
       const wave = Math.max(1, (stageHits || 0) + 1);
       const isFinalWave = wave >= 5;
@@ -665,8 +777,12 @@
       return;
     }
     if (worldNum === 3 && levelData.id === '3-5') {
-      ui.text.innerText = 'Cross Signal: orange + cyan, echo arcs drift.';
-      ui.text.style.color = '#ffffff';
+      if (ui.tutorialTextContainer) {
+        ui.text.innerText = 'Cross Signal: orange + cyan, echo arcs drift.';
+        ui.text.style.color = '#ffffff';
+        ui.tutorialTextContainer.style.display = 'block';
+        ui.tutorialTextContainer.style.opacity = '1';
+      }
 
       const wave = Math.max(1, (stageHits || 0) + 1);
       const count = 4 + Math.min(4, wave);
@@ -692,8 +808,12 @@
       const phaseLabel = phase === 1
         ? 'Resonance Core: track the afterimage.'
         : (phase === 2 ? 'Resonance Core: signal crossover.' : 'Resonance Core: core unstable.');
-      ui.text.innerText = phaseLabel;
-      ui.text.style.color = '#ffffff';
+      if (ui.tutorialTextContainer) {
+        ui.text.innerText = phaseLabel;
+        ui.text.style.color = '#ffffff';
+        ui.tutorialTextContainer.style.display = 'block';
+        ui.tutorialTextContainer.style.opacity = '1';
+      }
 
       if (!world3BossIntroDone && waveIdx === 0) {
         world3BossIntroDone = true;
