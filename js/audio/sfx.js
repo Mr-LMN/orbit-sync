@@ -2,24 +2,88 @@
   const OG = window.OrbitGame;
   const audio = OG.audio;
 
-  function playTone(freq, type, vol, attack, decay, startTime) {
-    if (!audio.sfxEnabled) return;
-    if (audio.shouldThrottleAudio(true)) return;
-    const osc = audio.audioCtx.createOscillator();
-    const gain = audio.makeGain(0.001);
-    osc.connect(gain);
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    gain.gain.linearRampToValueAtTime(vol, startTime + attack);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + attack + decay);
-    osc.start(startTime);
-    osc.stop(startTime + attack + decay + 0.05);
+  // Global Delay/Reverb Bus setup for Tron-like spaciousness
+  let delayNode = null;
+  let delayFeedback = null;
+  let delayFilter = null;
+
+  function initSynthBus() {
+    if (!audio.audioCtx || delayNode) return;
+    try {
+      delayNode = audio.audioCtx.createDelay();
+      delayNode.delayTime.value = 0.25; // 250ms echo
+
+      delayFeedback = audio.audioCtx.createGain();
+      delayFeedback.gain.value = 0.25; // How much echo feedback
+
+      delayFilter = audio.audioCtx.createBiquadFilter();
+      delayFilter.type = 'lowpass';
+      delayFilter.frequency.value = 1500;
+
+      delayNode.connect(delayFilter);
+      delayFilter.connect(delayFeedback);
+      delayFeedback.connect(delayNode);
+
+      const outGain = audio.audioCtx.createGain();
+      outGain.gain.value = 0.4;
+      delayNode.connect(outGain);
+      outGain.connect(audio.audioCtx.destination);
+    } catch (e) {
+      console.warn("Failed to init synth bus", e);
+    }
   }
 
-  function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) {
-    if (!audio.sfxEnabled) return;
-    if (!audio.audioCtx) return;
+  // Powerful retro synth player
+  // Combines oscillators, lowpass filter envelope (pluck), and optional delay
+  function playSynth(freq, type, vol, attack, decay, startTime, filterMod = 0, useDelay = false) {
+    if (!audio.sfxEnabled || !audio.audioCtx) return;
     if (audio.shouldThrottleAudio(true)) return;
+
+    initSynthBus();
+
+    const osc = audio.audioCtx.createOscillator();
+    osc.type = type; // 'square', 'sawtooth', 'triangle', 'sine'
+    osc.frequency.setValueAtTime(freq, startTime);
+
+    const filter = audio.audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+
+    // Filter envelope (analog pluck effect)
+    if (filterMod > 0) {
+      filter.frequency.setValueAtTime(freq + filterMod, startTime);
+      filter.frequency.exponentialRampToValueAtTime(freq, startTime + decay);
+    } else {
+      filter.frequency.setValueAtTime(20000, startTime);
+    }
+
+    const gain = audio.makeGain(0.001);
+
+    osc.connect(filter);
+    filter.connect(gain);
+
+    if (useDelay && delayNode) {
+      gain.connect(delayNode);
+    }
+
+    gain.gain.linearRampToValueAtTime(vol, startTime + attack);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + attack + decay);
+
+    osc.start(startTime);
+    osc.stop(startTime + attack + decay + 0.1);
+  }
+
+  // Legacy fallback + simpler tones
+  function playTone(freq, type, vol, attack, decay, startTime) {
+    if (!audio.sfxEnabled || !audio.audioCtx) return;
+    if (audio.shouldThrottleAudio(true)) return;
+    playSynth(freq, type, vol, attack, decay, startTime, 0, false);
+  }
+
+  // Noise burst for impacts, claps, snares
+  function playNoiseBurst(vol, decay, startTime, filterType = 'bandpass', filterFreq = 1100, q = 0.8) {
+    if (!audio.sfxEnabled || !audio.audioCtx) return;
+    if (audio.shouldThrottleAudio(true)) return;
+
     const bufferSize = Math.max(1, Math.floor(audio.audioCtx.sampleRate * decay));
     const buffer = audio.audioCtx.createBuffer(1, bufferSize, audio.audioCtx.sampleRate);
     const data = buffer.getChannelData(0);
@@ -36,15 +100,20 @@
     const noiseGain = audio.makeGain(0.001);
     noise.connect(filter);
     filter.connect(noiseGain);
+
     noiseGain.gain.linearRampToValueAtTime(vol, startTime + 0.005);
     noiseGain.gain.exponentialRampToValueAtTime(0.001, startTime + decay);
+
     noise.start(startTime);
     noise.stop(startTime + decay + 0.04);
   }
 
+  // ── BOSS DRONE (Tron Style: Deep Filtered Sawtooth with LFO) ─────────────────────────
+  let droneFilterLfo = null;
+  let droneFilter = null;
+
   function startBossDrone() {
-    if (!audio.sfxEnabled) return;
-    if (!audio.audioCtx) return;
+    if (!audio.sfxEnabled || !audio.audioCtx) return;
     if (audio.bossDrone && audio.bossDroneOsc2 && audio.bossDroneGain) return;
     if (audio.bossDroneStopTimeout) {
       clearTimeout(audio.bossDroneStopTimeout);
@@ -56,21 +125,40 @@
     audio.bossDrone = audio.audioCtx.createOscillator();
     const osc2 = audio.audioCtx.createOscillator();
     audio.bossDroneOsc2 = osc2;
+
+    // Synth drone filter
+    droneFilter = audio.audioCtx.createBiquadFilter();
+    droneFilter.type = 'lowpass';
+    droneFilter.frequency.value = 120;
+    droneFilter.Q.value = 2;
+
+    // LFO for the filter (pulsing menace)
+    droneFilterLfo = audio.audioCtx.createOscillator();
+    droneFilterLfo.type = 'sine';
+    droneFilterLfo.frequency.value = 0.5; // 0.5Hz pulse
+    const lfoGain = audio.audioCtx.createGain();
+    lfoGain.gain.value = 80;
+    droneFilterLfo.connect(lfoGain);
+    lfoGain.connect(droneFilter.frequency);
+
     audio.bossDroneGain = audio.makeGain(0);
 
-    audio.bossDrone.connect(audio.bossDroneGain);
-    osc2.connect(audio.bossDroneGain);
+    audio.bossDrone.connect(droneFilter);
+    osc2.connect(droneFilter);
+    droneFilter.connect(audio.bossDroneGain);
 
-    audio.bossDrone.type = 'sine';
-    audio.bossDrone.frequency.setValueAtTime(55, audio.audioCtx.currentTime);
+    // Deep sawtooth synth
+    audio.bossDrone.type = 'sawtooth';
+    audio.bossDrone.frequency.setValueAtTime(41.2, audio.audioCtx.currentTime); // Deep E1
 
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(57.5, audio.audioCtx.currentTime);
+    osc2.type = 'square';
+    osc2.frequency.setValueAtTime(41.4, audio.audioCtx.currentTime);
 
-    audio.bossDroneGain.gain.linearRampToValueAtTime(0.12, audio.audioCtx.currentTime + 1.5);
+    audio.bossDroneGain.gain.linearRampToValueAtTime(0.2, audio.audioCtx.currentTime + 2.0);
 
     audio.bossDrone.start();
     osc2.start();
+    droneFilterLfo.start();
   }
 
   function disposeBossDroneNodes() {
@@ -79,318 +167,274 @@
       audio.bossDroneStopTimeout = null;
     }
     try {
-      if (audio.bossDrone) {
-        try { audio.bossDrone.stop(); } catch (e) {}
-        try { audio.bossDrone.disconnect(); } catch (e) {}
-      }
-    } catch (e) {}
-    try {
-      if (audio.bossDroneOsc2) {
-        try { audio.bossDroneOsc2.stop(); } catch (e) {}
-        try { audio.bossDroneOsc2.disconnect(); } catch (e) {}
-      }
-    } catch (e) {}
-    try {
-      if (audio.bossDroneGain) {
-        try { audio.bossDroneGain.disconnect(); } catch (e) {}
-      }
+      if (audio.bossDrone) { audio.bossDrone.stop(); audio.bossDrone.disconnect(); }
+      if (audio.bossDroneOsc2) { audio.bossDroneOsc2.stop(); audio.bossDroneOsc2.disconnect(); }
+      if (droneFilterLfo) { droneFilterLfo.stop(); droneFilterLfo.disconnect(); }
+      if (droneFilter) { droneFilter.disconnect(); }
+      if (audio.bossDroneGain) { audio.bossDroneGain.disconnect(); }
     } catch (e) {}
     audio.bossDrone = null;
     audio.bossDroneOsc2 = null;
     audio.bossDroneGain = null;
+    droneFilterLfo = null;
+    droneFilter = null;
   }
 
   function stopBossDrone() {
-    if (!audio.bossDrone && !audio.bossDroneOsc2 && !audio.bossDroneGain) return;
-    if (!audio.audioCtx || !audio.bossDroneGain) {
+    if (!audio.bossDroneGain || !audio.audioCtx) {
       disposeBossDroneNodes();
       return;
     }
     const stopToken = ++audio.bossDroneStopToken;
     audio.bossDroneGain.gain.cancelScheduledValues(audio.audioCtx.currentTime);
-    audio.bossDroneGain.gain.linearRampToValueAtTime(0.001, audio.audioCtx.currentTime + 0.8);
+    audio.bossDroneGain.gain.linearRampToValueAtTime(0.001, audio.audioCtx.currentTime + 1.2);
     audio.bossDroneStopTimeout = setTimeout(() => {
       if (stopToken !== audio.bossDroneStopToken) return;
       disposeBossDroneNodes();
       audio.bossDroneStopTimeout = null;
-    }, 900);
+    }, 1300);
   }
 
   function escalateBossDrone() {
     if (!audio.bossDrone || !audio.bossDroneOsc2 || !audio.bossDroneGain || !audio.audioCtx) return;
-    audio.bossDrone.frequency.linearRampToValueAtTime(80, audio.audioCtx.currentTime + 0.5);
-    audio.bossDroneOsc2.frequency.linearRampToValueAtTime(83, audio.audioCtx.currentTime + 0.5);
-    audio.bossDroneGain.gain.linearRampToValueAtTime(0.18, audio.audioCtx.currentTime + 0.5);
+    const t = audio.audioCtx.currentTime;
+    audio.bossDrone.frequency.linearRampToValueAtTime(55, t + 0.5); // G1
+    audio.bossDroneOsc2.frequency.linearRampToValueAtTime(55.2, t + 0.5);
+    if (droneFilterLfo) {
+        droneFilterLfo.frequency.linearRampToValueAtTime(2.0, t + 0.5); // Faster pulse
+    }
+    audio.bossDroneGain.gain.linearRampToValueAtTime(0.25, t + 0.5);
   }
 
+  // ── GAMEPLAY SFX ────────────────────────────────────────────────────────
   function soundOk() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    // Flat buzz: feels like a warning klaxon, not a reward
-    playTone(160, 'square', 0.14, 0.002, 0.07, t);
-    playTone(110, 'sawtooth', 0.12, 0.003, 0.10, t + 0.01);
-    playNoiseBurst(0.04, 0.06, t, 'bandpass', 380, 0.7);
+    // Tight retro click/blip
+    playSynth(300, 'square', 0.1, 0.002, 0.05, t, 400, false);
   }
 
   function soundGood(multiplier) {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
-      ? parseInt(levelData.id.split('-')[0], 10) : 1;
-    const baseFreq = 300 + (multiplier * 30);
-    if (worldNum === 2) {
-      // Crystal — bright, glassy, short
-      playTone(baseFreq * 1.5, 'sine', 0.18, 0.002, 0.07, t);
-      playTone(baseFreq * 2.25, 'sine', 0.08, 0.002, 0.09, t);
-      playNoiseBurst(0.02, 0.04, t, 'highpass', 2800, 2.5);
-    } else if (worldNum === 3) {
-      // Echo/resonance — warm, slightly padded
-      playTone(baseFreq * 0.75, 'sine', 0.2, 0.006, 0.18, t);
-      playTone(baseFreq, 'triangle', 0.12, 0.004, 0.14, t);
-    } else {
-      playTone(baseFreq, 'triangle', 0.22, 0.004, 0.1, t);
-      playTone(baseFreq * 1.5, 'sine', 0.1, 0.004, 0.14, t);
-    }
+    const baseFreq = 220 + (multiplier * 40);
+    // Warm retro chord pluck
+    playSynth(baseFreq, 'sawtooth', 0.12, 0.005, 0.15, t, 1000, true);
+    playSynth(baseFreq * 1.5, 'square', 0.08, 0.005, 0.12, t, 800, false);
   }
 
   function soundPerfect(multiplier) {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
-      ? parseInt(levelData.id.split('-')[0], 10) : 1;
-    const baseFreq = 520 + (multiplier * 40);
-    if (worldNum === 2) {
-      // Crystal — high shimmer, crisp transient
-      playNoiseBurst(0.08, 0.06, t, 'bandpass', 3200, 3.0);
-      playTone(baseFreq * 1.5, 'sine', 0.22, 0.001, 0.07, t);
-      playTone(baseFreq * 3, 'sine', 0.1, 0.001, 0.14, t);
-      playTone(baseFreq * 4.5, 'sine', 0.05, 0.002, 0.22, t + 0.02);
-    } else if (worldNum === 3) {
-      // Echo — warm tone with slight reverb tail
-      playTone(baseFreq * 0.5, 'sine', 0.18, 0.005, 0.28, t);
-      playTone(baseFreq, 'sine', 0.22, 0.002, 0.12, t);
-      playTone(baseFreq * 2, 'sine', 0.1, 0.002, 0.22, t + 0.04);
-      playTone(baseFreq * 2, 'sine', 0.04, 0.002, 0.32, t + 0.18); // echo tail
-    } else {
-      playTone(baseFreq, 'sine', 0.25, 0.002, 0.08, t);
-      playTone(baseFreq * 2, 'sine', 0.12, 0.002, 0.18, t);
-      playTone(baseFreq * 3, 'sine', 0.06, 0.005, 0.35, t);
-    }
+    const baseFreq = 330 + (multiplier * 50);
+    // Bright, rich FM-style bell chime
+    playSynth(baseFreq, 'square', 0.15, 0.002, 0.25, t, 2000, true);
+    playSynth(baseFreq * 2, 'sine', 0.1, 0.002, 0.3, t, 0, true);
+    playSynth(baseFreq * 3.01, 'sine', 0.08, 0.005, 0.4, t, 0, true);
+    playNoiseBurst(0.05, 0.08, t, 'highpass', 4000, 1.0);
   }
 
   function soundCornerBonus(worldNum = 1) {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    const pitchBoost = worldNum === 2 ? 1.12 : 1;
-    playNoiseBurst(worldNum === 2 ? 0.16 : 0.12, 0.08, t, 'bandpass', 1450 * pitchBoost, 1.8);
-    playTone(740 * pitchBoost, 'triangle', 0.2, 0.003, 0.09, t);
-    playTone(980 * pitchBoost, 'sine', 0.12, 0.002, 0.13, t + 0.03);
+    // Sci-fi power up sweep
+    playSynth(600, 'sawtooth', 0.15, 0.01, 0.2, t, 1500, true);
+    playSynth(900, 'square', 0.1, 0.05, 0.3, t + 0.05, 2000, true);
   }
 
   const multiNotes = [0, 0, 262, 294, 330, 370, 415, 466, 523];
   function soundMultiplierUp(multiplier) {
-    if (!audio.audioCtx || multiplier < 2) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || multiplier < 2 || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
     const freq = multiNotes[Math.min(multiplier, 8)];
-    const vol = 0.16 + (Math.min(multiplier, 8) * 0.012); // louder at high mult
-    playTone(freq, 'sine', vol, 0.003, 0.18, t);
-    playTone(freq * 1.5, 'sine', vol * 0.45, 0.003, 0.22, t);
-    if (multiplier >= 6) {
-      // Extra shimmer layer at x6+
-      playTone(freq * 2, 'sine', vol * 0.25, 0.002, 0.28, t + 0.02);
-    }
+    const vol = 0.15 + (Math.min(multiplier, 8) * 0.01);
+
+    // Epic synthwave chord swell
+    playSynth(freq, 'sawtooth', vol, 0.02, 0.3, t, 1500, true);
+    playSynth(freq * 1.5, 'square', vol * 0.6, 0.02, 0.3, t, 1000, true);
+    playSynth(freq * 2, 'sine', vol * 0.4, 0.02, 0.4, t, 0, true);
+
     if (multiplier === 8) {
-      // God mode — brief harmonic burst
-      playNoiseBurst(0.04, 0.08, t, 'bandpass', freq * 3, 1.5);
+      // Max combo explosion
+      playNoiseBurst(0.08, 0.2, t, 'bandpass', freq * 2, 0.5);
     }
   }
 
   function soundFail() {
-    if (!audio.sfxEnabled) return;
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.sfxEnabled || !audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
+    // Deep, gritty descending bass drop
     const osc = audio.audioCtx.createOscillator();
     const gain = audio.makeGain(0.001);
-    osc.connect(gain);
+    const filter = audio.audioCtx.createBiquadFilter();
+
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, t);
-    osc.frequency.exponentialRampToValueAtTime(40, t + 0.3);
-    gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(30, t + 0.4);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, t);
+    filter.frequency.linearRampToValueAtTime(100, t + 0.4);
+
+    osc.connect(filter);
+    filter.connect(gain);
+
+    gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
     osc.start(t);
-    osc.stop(t + 0.35);
+    osc.stop(t + 0.5);
+
+    playNoiseBurst(0.1, 0.3, t, 'lowpass', 600, 1.0);
   }
 
   function soundLifeLost() {
     if (!audio.audioCtx || !audio.sfxEnabled) return;
     const t = audio.audioCtx.currentTime;
-    // Descending alarm — three falling tones, distinct from soundFail
-    playTone(280, 'sawtooth', 0.22, 0.004, 0.09, t);
-    playTone(200, 'sawtooth', 0.18, 0.004, 0.13, t + 0.11);
-    playTone(130, 'sawtooth', 0.16, 0.006, 0.22, t + 0.24);
-    playNoiseBurst(0.07, 0.14, t, 'lowpass', 380, 0.55);
+    // Stuttering glitch failure sound
+    playSynth(200, 'square', 0.2, 0.01, 0.1, t, 800, false);
+    playSynth(180, 'square', 0.2, 0.01, 0.1, t + 0.1, 600, false);
+    playSynth(150, 'sawtooth', 0.2, 0.01, 0.3, t + 0.2, 400, false);
+    playNoiseBurst(0.15, 0.4, t + 0.2, 'lowpass', 500, 0.5);
   }
 
-  // ── LAST-LIFE HEARTBEAT ──────────────────────────────
-  let _heartbeatInterval = null;
+  // ── LAST-LIFE ALARM (Replaces faint heartbeat) ──────────────────────────────
+  let _lastLifeInterval = null;
 
-  function _playHeartThump(freq, vol, delay) {
+  function _playAlarmPulse(freq, vol, delay) {
     if (!audio.audioCtx || !audio.sfxEnabled) return;
     const t = audio.audioCtx.currentTime + delay;
-    const osc = audio.audioCtx.createOscillator();
-    const gain = audio.audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, t);
-    osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.12);
-    gain.gain.setValueAtTime(0.001, t);
-    gain.gain.linearRampToValueAtTime(vol, t + 0.018);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
-    osc.connect(gain);
-    gain.connect(audio.audioCtx.destination);
-    osc.start(t);
-    osc.stop(t + 0.2);
+    playSynth(freq, 'sawtooth', vol, 0.05, 0.3, t, 600, true);
   }
 
   function startLastLifeDrone() {
     if (!audio.audioCtx) return;
     stopLastLifeDrone();
-
-    function beatCycle() {
-      _playHeartThump(50, 0.22, 0);       // lub — low, heavier
-      _playHeartThump(60, 0.14, 0.26);    // dub — slightly higher, softer
+    function pulse() {
+      // Tense, electronic klaxon pulsing
+      _playAlarmPulse(110, 0.15, 0);       // Low warning
+      _playAlarmPulse(110, 0.15, 0.2);     // Double pulse
     }
-    beatCycle();
-    _heartbeatInterval = setInterval(beatCycle, 1400); // matches CSS 1.4s cycle
+    pulse();
+    _lastLifeInterval = setInterval(pulse, 1000); // 1-second urgent repeating pulse
   }
 
   function stopLastLifeDrone() {
-    if (_heartbeatInterval) {
-      clearInterval(_heartbeatInterval);
-      _heartbeatInterval = null;
+    if (_lastLifeInterval) {
+      clearInterval(_lastLifeInterval);
+      _lastLifeInterval = null;
     }
   }
-  // ── END LAST-LIFE HEARTBEAT ──────────────────────────
 
   function soundWaveClear() {
     if (!audio.audioCtx) return;
     const t = audio.audioCtx.currentTime;
-    const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
-      ? parseInt(levelData.id.split('-')[0], 10) : 1;
-    const baseNotes = worldNum === 2 ? [370, 466, 587] : worldNum === 3 ? [294, 370, 466] : [330, 415, 523];
+    const baseNotes = [261.63, 329.63, 392.00, 523.25]; // C Maj arpeggio
     baseNotes.forEach((freq, i) => {
-      playTone(freq, 'sine', 0.18, 0.003, 0.18, t + i * 0.09);
-      playTone(freq * 2, 'sine', 0.07, 0.003, 0.22, t + i * 0.09);
-      playTone(freq * 0.5, 'sine', 0.06, 0.008, 0.28, t + i * 0.09);
+      playSynth(freq, 'square', 0.12, 0.02, 0.2, t + i * 0.1, 1200, true);
+      playSynth(freq * 2, 'sine', 0.08, 0.02, 0.3, t + i * 0.1, 0, true);
     });
-    // Final resonance
-    playTone(baseNotes[2] * 2, 'sine', 0.1, 0.002, 0.4, t + 0.28);
   }
 
   function soundWorldClear() {
     if (!audio.audioCtx) return;
     const t = audio.audioCtx.currentTime;
-    // Rising arpeggio with a punch at the end
-    const melody = [262, 330, 392, 494, 523, 659];
-    melody.forEach((freq, i) => {
-      const delay = i * 0.11;
-      playTone(freq, 'sine', 0.22, 0.004, 0.22, t + delay);
-      playTone(freq * 2, 'sine', 0.06, 0.004, 0.3, t + delay);
+    // Epic Synthwave Victory Chord
+    const chord = [261.63, 329.63, 392.00, 523.25, 659.25];
+    chord.forEach((freq, i) => {
+      const delay = i * 0.1;
+      playSynth(freq, 'sawtooth', 0.15, 0.05, 0.6, t + delay, 2000, true);
     });
-    // Sub bass hit
-    playTone(55, 'sine', 0.28, 0.005, 0.45, t);
-    playTone(82, 'sine', 0.18, 0.005, 0.35, t + 0.06);
-    // Final chord swell
-    [523, 659, 784].forEach((freq, i) => {
-      playTone(freq, 'sine', 0.14, 0.02, 0.6, t + 0.66 + i * 0.04);
-    });
-    playNoiseBurst(0.06, 0.3, t + 0.66, 'lowpass', 800, 0.6);
+    // Huge sub-bass drop
+    playSynth(65.41, 'sawtooth', 0.3, 0.1, 1.5, t + 0.4, 400, false);
+    playNoiseBurst(0.1, 1.5, t + 0.4, 'lowpass', 1000, 0.5);
   }
 
   function soundShieldBreak() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    playNoiseBurst(0.26, 0.24, t, 'bandpass', 950, 1.4);
-    playTone(150, 'square', 0.18, 0.004, 0.18, t);
-    playTone(112, 'sawtooth', 0.2, 0.005, 0.22, t + 0.01);
-    playTone(74, 'sine', 0.22, 0.004, 0.32, t);
+    // Glassy digital shatter
+    playNoiseBurst(0.3, 0.3, t, 'highpass', 2000, 1.5);
+    playSynth(800, 'square', 0.15, 0.01, 0.1, t, 3000, true);
+    playSynth(600, 'sawtooth', 0.2, 0.01, 0.2, t + 0.02, 2000, false);
   }
 
   function soundBossShieldHit(hp) {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
     const danger = Math.max(0, 3 - Math.max(0, hp));
-    const base = 260 + (danger * 24);
-    playNoiseBurst(0.12 + (danger * 0.02), 0.085, t, 'bandpass', 1300 + (danger * 120), 2.2);
-    playTone(base, 'square', 0.13, 0.002, 0.065, t);
-    playTone(base * 0.72, 'triangle', 0.09, 0.002, 0.09, t + 0.004);
+    const base = 150 + (danger * 40);
+    // Heavy metallic chunk
+    playSynth(base, 'square', 0.2, 0.01, 0.15, t, 1500, false);
+    playNoiseBurst(0.15, 0.15, t, 'bandpass', 800 + danger*200, 1.0);
   }
 
   function soundCoreExposed() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    playNoiseBurst(0.16, 0.12, t, 'highpass', 700, 0.7);
-    playTone(220, 'sawtooth', 0.14, 0.006, 0.09, t);
-    playTone(330, 'triangle', 0.18, 0.006, 0.12, t + 0.045);
-    playTone(495, 'sine', 0.2, 0.004, 0.16, t + 0.095);
+    // High-tech power down reveal
+    playSynth(800, 'sawtooth', 0.15, 0.02, 0.4, t, 2500, true);
+    playSynth(400, 'square', 0.15, 0.02, 0.5, t, 1500, true);
+
+    const osc = audio.audioCtx.createOscillator();
+    const gain = audio.makeGain(0.001);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1000, t);
+    osc.frequency.exponentialRampToValueAtTime(100, t + 0.4);
+    osc.connect(gain);
+    gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc.start(t);
+    osc.stop(t + 0.5);
   }
 
   function soundCoreDamage() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    playNoiseBurst(0.2, 0.11, t, 'bandpass', 980, 1.8);
-    playTone(180, 'square', 0.2, 0.003, 0.08, t);
-    playTone(240, 'sawtooth', 0.18, 0.003, 0.1, t + 0.018);
-    playTone(360, 'triangle', 0.16, 0.003, 0.14, t + 0.05);
+    // Crunchy synth impact
+    playSynth(120, 'sawtooth', 0.25, 0.01, 0.15, t, 1500, false);
+    playNoiseBurst(0.2, 0.15, t, 'bandpass', 600, 1.2);
   }
 
   function soundBossDefeated() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    [523, 466, 392, 330, 262].forEach((freq, i) => {
-      playTone(freq, 'sine', 0.2, 0.01, 0.18, t + i * 0.1);
+    // Massive digital explosion sequence
+    playNoiseBurst(0.3, 1.0, t, 'lowpass', 1500, 1.0);
+    playNoiseBurst(0.2, 1.5, t+0.2, 'bandpass', 800, 2.0);
+
+    // Descending failure alarm
+    [400, 300, 200, 100].forEach((freq, i) => {
+      playSynth(freq, 'sawtooth', 0.2, 0.05, 0.3, t + i * 0.15, 1000, true);
     });
+
     setTimeout(() => {
       const t2 = audio.audioCtx.currentTime;
-      [262, 330, 392, 523].forEach((freq, j) => {
-        playTone(freq, 'sine', 0.18, 0.02, 0.5, t2 + j * 0.04);
-      });
-    }, 650);
+      playSynth(50, 'sawtooth', 0.4, 0.1, 2.0, t2, 500, false);
+      playNoiseBurst(0.4, 2.0, t2, 'lowpass', 600, 0.5);
+    }, 800);
   }
 
   function soundLifeZone() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    [523, 659, 784].forEach((freq, i) => {
-      playTone(freq, 'sine', 0.12, 0.005, 0.2, t + i * 0.08);
-    });
+    // Ethereal hum
+    playSynth(440, 'sine', 0.1, 0.1, 0.3, t, 0, true);
+    playSynth(554.37, 'sine', 0.1, 0.1, 0.3, t + 0.1, 0, true);
   }
 
   function soundLifeGained() {
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    playTone(523, 'sine', 0.2, 0.005, 0.1, t);
-    playTone(659, 'sine', 0.2, 0.005, 0.1, t + 0.1);
-    playTone(784, 'sine', 0.22, 0.005, 0.25, t + 0.2);
+    // Joyful synth sequence
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+      playSynth(freq, 'square', 0.15, 0.02, 0.2, t + i * 0.08, 2000, true);
+    });
   }
 
   function soundUIClick() {
-    if (!audio.sfxEnabled) return;
-    if (!audio.audioCtx) return;
-    if (audio.shouldThrottleAudio()) return;
-    playTone(800, 'sine', 0.08, 0.002, 0.04, audio.audioCtx.currentTime);
+    if (!audio.sfxEnabled || !audio.audioCtx || audio.shouldThrottleAudio()) return;
+    playSynth(800, 'square', 0.05, 0.005, 0.05, audio.audioCtx.currentTime, 1200, false);
   }
 
   function playPop(multiplier, isPerfect, isFail = false) {
