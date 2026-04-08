@@ -156,10 +156,16 @@
     <div class="shop-header">
       <h2>Armory</h2>
       <div style="font-size: 1.5rem; color: #ffaa00; font-weight: bold;">🪙 <span id="shopCoinCount">0</span></div>
+      <div style="font-size: 1.2rem; color: #ff33ff; font-weight: bold; margin-left: 15px;">💎 <span id="shopCrystalCount">0</span></div>
       <div id="shopNextGoal" style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:1.5px; color:rgba(255,200,80,0.55); margin-top:2px; text-align:center;"></div>
       <button class="close-btn" aria-label="Close shop" onclick="toggleShop(false)">×</button>
     </div>
     <div class="shop-content">
+      <div class="shop-item" id="item-premium" style="grid-column: 1 / -1; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.4);">
+        <p class="item-name" style="color: #ffd700;">Premium Pack</p>
+        <p style="font-size: 0.6rem; color: #fff; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Remove Ads & Permanently 2x Coins</p>
+        <button class="buy-btn" id="btn-premium" onclick="if(audioCtx) soundUIClick(); purchasePremium();" style="background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700;">BUY £2.99</button>
+      </div>
       <div class="shop-item" id="item-classic">
         <div class="item-preview" data-skin="classic"></div>
         <p class="item-name">Classic Core</p>
@@ -218,6 +224,7 @@
       <div id="runCoinsBox" class="run-coins-box">
         <div id="runCoinsDisplay">0 COINS</div>
         <div id="runCoinsHint" class="run-coins-hint" style="display:none;"></div>
+        <button id="adDoubleCoinsBtn" class="btn" style="display:none; font-size: 0.6rem; margin-top: 6px; padding: 6px 12px; background: rgba(255, 170, 0, 0.15); border: 1px solid rgba(255, 170, 0, 0.4); color: #ffaa00;">📺 DOUBLE COINS</button>
       </div>
       <div id="clearSummary" class="clear-summary" style="display:none;">
         <div class="clear-stat">
@@ -261,6 +268,7 @@
       </div>
       <div id="overlayActionStack" class="overlay-action-stack">
         <div id="overlayButtonGroup" class="overlay-button-group">
+          <button id="adReviveBtn" class="btn" style="display: none; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff;">📺 WATCH AD TO REVIVE</button>
           <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">ONE MORE TRY</button>
           <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">REVIVE (🪙 50)</button>
           <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">PLAY AGAIN</button>
@@ -306,6 +314,12 @@
   <script src="js/ui/menus.js"></script>
   <script src="js/ui/shop.js"></script>
   <script src="js/ui/settings.js"></script>
+  <div id="adSimulationOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:#000; flex-direction:column; align-items:center; justify-content:center;">
+      <div style="font-family:'Orbitron',sans-serif; font-size:1.2rem; color:#fff; letter-spacing:2px; margin-bottom: 20px;">ADVERTISEMENT</div>
+      <div style="width:50px; height:50px; border:4px solid rgba(255,255,255,0.2); border-top:4px solid #fff; border-radius:50%; animation:spin 1s linear infinite;"></div>
+      <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+  </div>
+
   <script src="js/ui/overlay.js"></script>
   <script src="js/ui/share.js"></script>
 

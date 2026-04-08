@@ -56,6 +56,8 @@ function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 
 // --- SAVE SYSTEM ---
 let globalCoins = parseInt(OG.storage.getItem('orbitSync_coins')) || 0;
+let globalCrystals = parseInt(OG.storage.getItem('orbitSync_crystals')) || 0;
+let isPremium = OG.storage.getItem('orbitSync_isPremium') === '1';
 let unlockedSkins = OG.storage.getJSON('orbitSync_unlocks') || ['classic'];
 let activeSkin = OG.storage.getItem('orbitSync_equipped') || 'classic';
 if (!Array.isArray(unlockedSkins)) unlockedSkins = ['classic'];
@@ -172,6 +174,8 @@ let personalBest = {
 
 function saveData() {
   OG.storage.setItem('orbitSync_coins', Math.floor(globalCoins));
+  OG.storage.setItem('orbitSync_crystals', Math.floor(globalCrystals));
+  OG.storage.setItem('orbitSync_isPremium', isPremium ? '1' : '0');
   OG.storage.setJSON('orbitSync_unlocks', unlockedSkins);
   OG.storage.setItem('orbitSync_equipped', activeSkin);
   if (!playerProgress.unlockedWorlds.includes('world1')) playerProgress.unlockedWorlds.unshift('world1');
@@ -206,6 +210,11 @@ function checkAndSavePB(currentScore, currentStreak) {
 function updatePersistentCoinUI() {
   ui.coins.innerText = Math.floor(globalCoins);
   ui.shopCoinCount.innerText = Math.floor(globalCoins);
+
+  const crystalCountEl = document.getElementById('crystalCount');
+  if (crystalCountEl) crystalCountEl.innerText = Math.floor(globalCrystals);
+  const shopCrystalCount = document.getElementById('shopCrystalCount');
+  if (shopCrystalCount) shopCrystalCount.innerText = Math.floor(globalCrystals);
 }
 
 function getPendingRunCoins() {
@@ -261,6 +270,7 @@ let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 let reviveCount = 0;
 let usedLastChance = false;
+let adReviveUsedThisStage = false;
 let scoreAtCheckpoint = 0;
 let scoreAtLevelStart = 0;
 let ringHitFlash = 0;
@@ -1105,6 +1115,7 @@ function resetRunState() {
   runGoodCount = 0;
   runPerfectCount = 0;
   currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
+  adReviveUsedThisStage = false;
   // Iron Shield augment: reset extra revive eligibility
   if (activeAugment === 'iron_shield') usedLastChance = false;
   // (usedLastChance is already false, but this makes the intent explicit)
@@ -1414,6 +1425,7 @@ function loadLevel(idx) {
     return false;
   }
   scoreAtLevelStart = score;
+  adReviveUsedThisStage = false;
   clearRunTransientTimers();
   levelData = campaign[idx];
   ensureCorrectMusicForLevel();
@@ -3783,11 +3795,11 @@ function updatePBDisplay(newRecords) {
 
   // Highlight new records in gold
   ui.pbScoreDisplay.className =
-    newRecords.score ? 'pb-value new-record' : 'pb-value';
+    newRecords.score ? 'pb-value new-record pb-pulse' : 'pb-value';
   ui.pbStreakDisplay.className =
-    newRecords.streak ? 'pb-value new-record' : 'pb-value';
+    newRecords.streak ? 'pb-value new-record pb-pulse' : 'pb-value';
   ui.pbWorldDisplay.className =
-    newRecords.world ? 'pb-value new-record' : 'pb-value';
+    newRecords.world ? 'pb-value new-record pb-pulse' : 'pb-value';
 
   // Show banner if any record was broken
   const anyNew = newRecords.score || newRecords.streak || newRecords.world;
@@ -3795,6 +3807,13 @@ function updatePBDisplay(newRecords) {
   if (newRecordBanner) {
     newRecordBanner.style.display = anyNew ? 'block' : 'none';
     newRecordBanner.innerText = anyNew ? '★ NEW RECORD ★' : '';
+    if (anyNew) {
+        newRecordBanner.style.animation = 'streakPulse 1s infinite alternate';
+        newRecordBanner.style.textShadow = '0 0 20px #ffaa00';
+    } else {
+        newRecordBanner.style.animation = 'none';
+        newRecordBanner.style.textShadow = 'none';
+    }
   }
 }
 
@@ -3888,25 +3907,48 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     ui.subtitle.innerText = subtitleText;
     ui.subtitle.style.display = subtitleText ? 'block' : 'none';
     if (runStatsBlock) runStatsBlock.style.display = 'flex';
+    let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
+
     ui.btn.innerText = pendingCoins > 0 ? `BANK ${pendingCoins} + PLAY AGAIN` : 'PLAY AGAIN';
     ui.btn.onclick = function () {
       bankRunCoins();
       ui.overlay.style.display = 'none';
+      if (adDoubleCoinsBtn) adDoubleCoinsBtn.style.display = 'none';
       restartFromCheckpoint();
     };
     if (pendingCoins > 0) {
       ui.runCoins.innerText = `+${pendingCoins} COINS`;
       if (runCoinsHint) runCoinsHint.style.display = 'none';
       if (runCoinsBox) runCoinsBox.style.display = 'inline-flex';
+
+      if (adDoubleCoinsBtn && !isPremium) {
+          adDoubleCoinsBtn.style.display = 'inline-block';
+          adDoubleCoinsBtn.onclick = function() {
+              if (audioCtx) soundUIClick();
+              if (typeof showSimulatedAd === 'function') {
+                  showSimulatedAd(() => {
+                      runCents *= 2;
+                      const newPending = getPendingRunCoins();
+                      ui.runCoins.innerText = `+${newPending} COINS (DOUBLED!)`;
+                      ui.btn.innerText = `BANK ${newPending} + PLAY AGAIN`;
+                      adDoubleCoinsBtn.style.display = 'none';
+                  });
+              }
+          };
+      } else if (adDoubleCoinsBtn) {
+          adDoubleCoinsBtn.style.display = 'none';
+      }
     } else {
       ui.runCoins.innerText = '';
       if (runCoinsHint) runCoinsHint.style.display = 'none';
       if (runCoinsBox) runCoinsBox.style.display = 'none';
+      if (adDoubleCoinsBtn) adDoubleCoinsBtn.style.display = 'none';
     }
     if (menuBtn) {
       menuBtn.style.display = 'inline-block';
       menuBtn.onclick = function () {
-        if (pendingCoins > 0) bankRunCoins();
+        if (getPendingRunCoins() > 0) bankRunCoins();
+        if (adDoubleCoinsBtn) adDoubleCoinsBtn.style.display = 'none';
         returnToMenu();
       };
     }
@@ -3938,8 +3980,12 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     setOverlayState('gameOver');
     let reviveBtn = ui.reviveBtn;
     let coinReviveBtn = ui.coinReviveBtn;
+    let adReviveBtn = document.getElementById('adReviveBtn');
+
     reviveBtn.style.display = 'block';
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
+    if (adReviveBtn) adReviveBtn.style.display = 'none';
+
     let reviveAvailable = false;
 
     const _ironShieldBonus = (activeAugment === 'iron_shield') && reviveCount === 0 && usedLastChance;
@@ -3966,6 +4012,24 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       };
       reviveAvailable = true;
     }
+
+    // Show Ad Revive if eligible
+    if (adReviveBtn && !isPremium && !adReviveUsedThisStage) {
+        adReviveBtn.style.display = 'block';
+        adReviveBtn.onclick = function () {
+            if (audioCtx) soundUIClick();
+            if (typeof showSimulatedAd === 'function') {
+                showSimulatedAd(() => {
+                    adReviveUsedThisStage = true;
+                    // Provide a free revive without using chance or coins
+                    reviveCount++;
+                    restartCurrentStageAfterRevive();
+                });
+            }
+        };
+        reviveAvailable = true;
+    }
+
     updateFailActionHierarchy(reviveAvailable);
   }
 }
@@ -4898,6 +4962,7 @@ function tap() {
     let centsEarned = _baseEarn * _multContrib;
     if (activeSkin === 'prism') centsEarned *= 1.1; // Prism +10%
     if (activeAugment === 'coin_surge') centsEarned = Math.ceil(centsEarned * 1.5);
+  if (isPremium) centsEarned *= 2; // Premium x2 coins
     runCents += centsEarned;
     markScoreCoinDirty();
     updateMultiplierUI();
@@ -5200,13 +5265,37 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         clearInterval(worldClearTallyInterval);
         worldClearTallyInterval = null;
 
-        // Final Ding & Bank update
+        // Final Ding
         if (audioCtx) playPop(8, true); // High pitch success ding
-        const coinsBanked = bankRunCoins();
 
-        // Flash text & Show Next World button
+        let coinsBanked = bankRunCoins();
+
+        // Flash text
         ui.runCoins.innerText = `+${coinsBanked} BANKED`;
         ui.runCoins.style.textShadow = '0 0 20px #ffaa00';
+
+        // Show Double Coins ad option on Stage Clear if not premium and earned coins
+        let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
+        if (adDoubleCoinsBtn && !isPremium && coinsBanked > 0) {
+            adDoubleCoinsBtn.style.display = 'inline-block';
+            if (ui.runCoinsBox) ui.runCoinsBox.style.display = 'inline-flex';
+
+            adDoubleCoinsBtn.onclick = function() {
+                if (audioCtx) soundUIClick();
+                if (typeof showSimulatedAd === 'function') {
+                    showSimulatedAd(() => {
+                        // Give them the extra coins they just missed out on initially
+                        globalCoins += coinsBanked;
+                        saveData();
+                        updatePersistentCoinUI();
+
+                        ui.runCoins.innerText = `+${coinsBanked * 2} BANKED (DOUBLED!)`;
+                        if (clearCoinsDisplay) clearCoinsDisplay.innerText = `+${coinsBanked * 2}`;
+                        adDoubleCoinsBtn.style.display = 'none';
+                    });
+                }
+            };
+        }
         if (clearCoinsDisplay) clearCoinsDisplay.innerText = `+${coinsBanked}`;
         ui.subtitle.innerText = isCampaignClear
           ? "All worlds synced. Returning to menu."
@@ -5287,6 +5376,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         ui.btn.onclick = function () {
           ui.overlay.style.display = 'none';
           ui.overlay.style.background = 'rgba(10, 10, 15, 0.85)'; // Reset bg
+          if (adDoubleCoinsBtn) adDoubleCoinsBtn.style.display = 'none';
           if (isCampaignClear || nextLevelIdx === null) {
             returnToMenu();
             return;

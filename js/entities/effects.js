@@ -12,6 +12,14 @@
   }
 
   function createPopup(x, y, text, color, hitQuality = null) {
+    const isMobile = window.innerWidth < 768;
+    const useHeavyEffects = !isMobile || (typeof OrbitGame !== 'undefined' && OrbitGame.state && OrbitGame.state.legacy.multiplier > 2);
+
+    // De-clutter strategy: Filter out mundane feedback unless requested heavily
+    if (text === 'SLOPPY' || text === 'EARLY' || text === 'LATE' || text === 'GOOD' || hitQuality === 'ok' || hitQuality === 'good') {
+         if (!useHeavyEffects && Math.random() > 0.3) return null;
+    }
+
     if (popups.length >= MAX_POPUPS) {
       releasePopup(popups.shift());
     }
@@ -22,10 +30,13 @@
     p.color = color;
     p.life = 1;
     p.hitQuality = hitQuality;
+
+    // Faster animations to clear the screen quicker and increase dopamine pace
     p.animType = hitQuality === 'perfect' ? 'perfect' : 'normal';
-    p.riseSpeed = 0.55;
-    p.fadeSpeed = 0.02;
-    p.shadow = 18;
+    p.riseSpeed = hitQuality === 'perfect' ? 1.2 : 0.8;
+    p.fadeSpeed = hitQuality === 'perfect' ? 0.03 : 0.04;
+    p.shadow = hitQuality === 'perfect' ? 24 : 14;
+
     p.scale = 1;
     popups.push(p);
     return p;
