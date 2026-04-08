@@ -1,51 +1,6 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const ui = {
-  score: document.getElementById('scoreDisplay'), stage: document.getElementById('stageDisplay'),
-  combo: document.getElementById('comboDisplay'),
-  text: document.getElementById('tutorialText'), lives: document.getElementById('livesCount'),
-  bigMultiplier: document.getElementById('bigMultiplier'), multiplierCount: document.getElementById('multiplierCount'),
-  coins: document.getElementById('coinCount'), overlay: document.getElementById('screenOverlay'),
-  title: document.getElementById('screenTitle'), subtitle: document.getElementById('screenSubtitle'),
-  btn: document.getElementById('actionBtn'), menuBtn: document.getElementById('menuBtn'), runCoins: document.getElementById('runCoinsDisplay'),
-  topBar: document.getElementById('topBar'), gameUI: document.getElementById('ui'),
-  mainMenu: document.getElementById('mainMenu'), shopModal: document.getElementById('shopModal'),
-  settingsModal: document.getElementById('settingsModal'),
-  shopCoinCount: document.getElementById('shopCoinCount'), streak: document.getElementById('streakCount'),
-  wave: document.getElementById('waveDisplay'), bossUI: document.getElementById('bossUI'),
-  arenaInfo: document.getElementById('arenaInfo'),
-  bossPhase1: document.getElementById('bossPhase1'), bossPhase2: document.getElementById('bossPhase2'),
-  pauseBtn: document.getElementById('pauseBtn'),
-  scorePunchAnim: null,
-    clearCoinsDisplay: document.getElementById('clearCoinsDisplay'),
-    clearScoreDisplay: document.getElementById('clearScoreDisplay'),
-    clearStreakDisplay: document.getElementById('clearStreakDisplay'),
-    clearSummary: document.getElementById('clearSummary'),
-    closeMissBanner: document.getElementById('closeMissBanner'),
-    coinReviveBtn: document.getElementById('coinReviveBtn'),
-    dailyStreakBadge: document.getElementById('dailyStreakBadge'),
-    nearMissMsg: document.getElementById('nearMissMsg'),
-    newRecordBanner: document.getElementById('newRecordBanner'),
-    overlayActionStack: document.getElementById('overlayActionStack'),
-    overlayButtonGroup: document.getElementById('overlayButtonGroup'),
-    overlaySecondaryActions: document.getElementById('overlaySecondaryActions'),
-    pbScoreDisplay: document.getElementById('pbScoreDisplay'),
-    pbStatsBlock: document.getElementById('pbStatsBlock'),
-    pbStreakDisplay: document.getElementById('pbStreakDisplay'),
-    pbWorldDisplay: document.getElementById('pbWorldDisplay'),
-    reviveBtn: document.getElementById('reviveBtn'),
-    runCoinsBox: document.getElementById('runCoinsBox'),
-    runCoinsHint: document.getElementById('runCoinsHint'),
-    runComboDisplay: document.getElementById('runComboDisplay'),
-    runScoreDisplay: document.getElementById('runScoreDisplay'),
-    runStatsBlock: document.getElementById('runStatsBlock'),
-    shareBtn: document.getElementById('shareBtn'),
-    stagePBDisplay: document.getElementById('stagePBDisplay'),
-    stageReplayBtns: document.getElementById('stageReplayBtns'),
-    stageReplayRow: document.getElementById('stageReplayRow'),
-    tutorialMsg: document.getElementById('tutorialMsg'),
-    tutorialOverlay: document.getElementById('tutorialOverlay')
-};
+const ui = window.ui || OrbitGame.dom.ui;
 
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
 // Step 2 extraction: canonical implementations now live in js/audio/* modules.
@@ -382,7 +337,13 @@ Object.defineProperties(stateBridge, {
   targets: { get: () => targets, set: (v) => { targets = v; } },
   particles: { get: () => particles, set: (v) => { particles = v; } },
   effects: { get: () => ({ popups, shockwaves, targetHitRipples }) },
-  bosses: { get: () => targets.filter(t => t.isBossShield || (levelData && levelData.boss)) },
+  bosses: { get: () => {
+    const result = [];
+    for (let i = 0; i < targets.length; i++) {
+      if (targets[i].isBossShield || (levelData && levelData.boss)) result.push(targets[i]);
+    }
+    return result;
+  }},
   score: { get: () => score, set: (v) => { score = v; } },
   streak: { get: () => streak, set: (v) => { streak = v; } },
   multiplier: { get: () => multiplier, set: (v) => { multiplier = v; } },
@@ -1390,30 +1351,39 @@ function updateStreakUI(applyPulse = false, milestone = false) {
   }
 
   // Run-state ladder: body class drives global CSS responses
-  document.body.classList.remove('run-state-heat', 'run-state-locked', 'run-state-overdrive');
-  if (streak >= 20) {
-    document.body.classList.add('run-state-overdrive');
-    ui.combo.style.color = '#ffd84d';
-    ui.combo.style.textShadow = '0 0 28px rgba(255, 216, 77, 1), 0 0 56px rgba(255, 190, 40, 0.5)';
-    ui.combo.style.fontSize = 'clamp(2.6rem, 9.5vw, 3.8rem)';
-  } else if (streak >= 10) {
-    document.body.classList.add('run-state-locked');
-    ui.combo.style.color = '#fff3cf';
-    ui.combo.style.textShadow = '0 0 22px rgba(255, 227, 150, 0.95), 0 0 42px rgba(255, 209, 110, 0.5)';
-    ui.combo.style.fontSize = 'clamp(2.3rem, 8.5vw, 3.4rem)';
-  } else if (streak >= 5) {
-    document.body.classList.add('run-state-heat');
-    ui.combo.style.color = '#ecfdff';
-    ui.combo.style.textShadow = '0 0 18px rgba(0, 237, 255, 0.7), 0 0 34px rgba(0, 229, 255, 0.3)';
-    ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
-  } else if (streak === 0) {
-    ui.combo.style.color = '#c5f6ff';
-    ui.combo.style.textShadow = '0 0 10px rgba(0, 229, 255, 0.28), 0 0 18px rgba(0, 229, 255, 0.12)';
-    ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
-  } else {
-    ui.combo.style.color = '#d9fbff';
-    ui.combo.style.textShadow = '0 0 16px rgba(0, 229, 255, 0.5), 0 0 28px rgba(0, 229, 255, 0.18)';
-    ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
+  // Only update DOM if the streak tier actually changes to save performance during high combos.
+  const getStreakTier = (s) => s >= 20 ? 4 : s >= 10 ? 3 : s >= 5 ? 2 : s === 0 ? 0 : 1;
+  const oldStreakTier = window._lastStreakTier;
+  const newStreakTier = getStreakTier(streak);
+
+  if (oldStreakTier !== newStreakTier) {
+    document.body.classList.remove('run-state-heat', 'run-state-locked', 'run-state-overdrive');
+    window._lastStreakTier = newStreakTier;
+
+    if (newStreakTier === 4) {
+      document.body.classList.add('run-state-overdrive');
+      ui.combo.style.color = '#ffd84d';
+      ui.combo.style.textShadow = '0 0 28px rgba(255, 216, 77, 1), 0 0 56px rgba(255, 190, 40, 0.5)';
+      ui.combo.style.fontSize = 'clamp(2.6rem, 9.5vw, 3.8rem)';
+    } else if (newStreakTier === 3) {
+      document.body.classList.add('run-state-locked');
+      ui.combo.style.color = '#fff3cf';
+      ui.combo.style.textShadow = '0 0 22px rgba(255, 227, 150, 0.95), 0 0 42px rgba(255, 209, 110, 0.5)';
+      ui.combo.style.fontSize = 'clamp(2.3rem, 8.5vw, 3.4rem)';
+    } else if (newStreakTier === 2) {
+      document.body.classList.add('run-state-heat');
+      ui.combo.style.color = '#ecfdff';
+      ui.combo.style.textShadow = '0 0 18px rgba(0, 237, 255, 0.7), 0 0 34px rgba(0, 229, 255, 0.3)';
+      ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
+    } else if (newStreakTier === 0) {
+      ui.combo.style.color = '#c5f6ff';
+      ui.combo.style.textShadow = '0 0 10px rgba(0, 229, 255, 0.28), 0 0 18px rgba(0, 229, 255, 0.12)';
+      ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
+    } else {
+      ui.combo.style.color = '#d9fbff';
+      ui.combo.style.textShadow = '0 0 16px rgba(0, 229, 255, 0.5), 0 0 28px rgba(0, 229, 255, 0.18)';
+      ui.combo.style.fontSize = 'clamp(2.1rem, 7.5vw, 3rem)';
+    }
   }
 
   if (applyPulse) {
@@ -2072,17 +2042,27 @@ function draw() {
   // Boss shield contrast pass: gently recess the base ring directly behind active shields
   // so shield segments remain readable against the bright lane, especially on small screens.
   if (isBoss) {
-    const activeBossShields = targets.filter(t => t.active && t.isBossShield);
-    if (activeBossShields.length > 0) {
+    let hasActiveBossShield = false;
+    for (let i = 0; i < targets.length; i++) {
+      if (targets[i].active && targets[i].isBossShield) {
+        hasActiveBossShield = true;
+        break;
+      }
+    }
+
+    if (hasActiveBossShield) {
       ctx.save();
       ctx.lineCap = 'butt';
-      activeBossShields.forEach(t => {
-        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
-        ctx.strokeStyle = 'rgba(4, 8, 16, 0.42)';
-        ctx.lineWidth = 3.2;
-        ctx.shadowBlur = 0;
-        ctx.stroke();
-      });
+      for (let i = 0; i < targets.length; i++) {
+        const t = targets[i];
+        if (t.active && t.isBossShield) {
+          buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, t.start, t.start + t.size);
+          ctx.strokeStyle = 'rgba(4, 8, 16, 0.42)';
+          ctx.lineWidth = 3.2;
+          ctx.shadowBlur = 0;
+          ctx.stroke();
+        }
+      }
       ctx.restore();
     }
   }
@@ -4245,7 +4225,12 @@ function tap() {
       if (t.hp === 1) t.color = '#ff3366'; // critical
       if (t.hp <= 0) { t.active = false; soundShieldBreak(); }
       createParticles(hitX, hitY, t.color, 14);
-      const shieldsLeft = targets.filter(tgt => tgt.isBossShield && tgt.active).length;
+      let shieldsLeft = 0;
+      for (let j = 0; j < targets.length; j++) {
+        if (targets[j].isBossShield && targets[j].active) {
+          shieldsLeft++;
+        }
+      }
       const shouldShowShieldReadout = levelData.boss !== 'aegis';
       if (shouldShowShieldReadout) {
         if (t.hp > 0) createPopup(hitX, hitY - 18, `${t.hp} HIT${t.hp > 1 ? 'S' : ''}`, t.color);
@@ -4932,10 +4917,17 @@ function tap() {
       createPopup(hitX, hitY - 36, `COMBO x${comboCount}`, '#ffd54a');
     }
     // Only progression-relevant targets should gate wave advancement.
-    const shouldForceHudFlush = targets
-      .filter((tgt) => !tgt.isHeart && !tgt.isLifeZone && !tgt.isPhantom && !tgt.isCornerBonus && !tgt.isAccelerant)
-      .every((tgt) => !tgt.active)
-      || stageHits >= levelData.hitsNeeded;
+    let allProgressionTargetsInactive = true;
+    for (let j = 0; j < targets.length; j++) {
+      const tgt = targets[j];
+      if (!tgt.isHeart && !tgt.isLifeZone && !tgt.isPhantom && !tgt.isCornerBonus && !tgt.isAccelerant) {
+        if (tgt.active) {
+          allProgressionTargetsInactive = false;
+          break;
+        }
+      }
+    }
+    const shouldForceHudFlush = allProgressionTargetsInactive || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
 
     if (shouldForceHudFlush) {
