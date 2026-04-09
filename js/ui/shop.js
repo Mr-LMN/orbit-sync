@@ -22,8 +22,12 @@
   };
 
   function toggleShop(show) {
-    ui.shopModal.style.bottom = show ? '0' : '-100%';
-    updateShopUI();
+    // If shopModal no longer exists, we don't need this bottom animation.
+    // toggleShop is mostly used by the '+' icon to buy premium currencies now.
+    // For now, we'll route it to open the Workshop tab to look at items.
+    if (show && typeof switchMenuTab === 'function') {
+      switchMenuTab('workshop');
+    }
   }
 
   function updateShopUI() {
