@@ -169,6 +169,8 @@
         refreshHubUI();
     } else if (tabId === 'profile') {
         updateProfileView();
+    } else if (tabId === 'workshop') {
+        if (typeof updateShopUI === 'function') updateShopUI();
     }
   }
 
@@ -382,9 +384,7 @@
   }
 
   function showChallengePreview() {
-    const el = document.getElementById('challengePreview');
-    if (!el) return;
-    el.style.display = 'flex';
+    switchMenuTab('event');
     const countdown = document.getElementById('challengeCountdown');
     if (countdown) countdown.innerText = 'SEASON 1 ACTIVE';
   }
@@ -395,8 +395,6 @@
     ui.mainMenu.style.display = 'none';
     document.body.classList.add('state-gameplay');
     document.body.classList.remove('state-hub');
-    const el = document.getElementById('challengePreview');
-    if (el) el.style.display = 'none';
 
     ui.topBar.style.display = 'flex';
     ui.gameUI.style.display = 'block';
