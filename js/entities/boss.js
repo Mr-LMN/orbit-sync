@@ -76,6 +76,7 @@
     const isWorld2BossIntro = levelData.id === '2-6' && levelData.boss === 'prism';
     const isCorruptorIntro = levelData.boss === 'corruptor';
     const isNullGateIntro = levelData.boss === 'null_gate';
+    const isPhoenixIntro = levelData.boss === 'phoenix';
     bossIntroPlaying = true;
     isCinematicIntro = true;
     isPlaying = false;
@@ -252,6 +253,39 @@
         ui.title.innerText = 'THE CORRUPTOR';
         ui.subtitle.innerText = 'ENGAGE';
       });
+    } else if (isPhoenixIntro) {
+      ui.title.style.color = '#ff7a1a';
+      ui.title.innerText = '';
+      ui.subtitle.innerText = '';
+      forceHideOverlayExtras();
+
+      queueIntroStep(80, () => {
+        ui.title.innerText = 'THE PHOENIX';
+        ui.subtitle.innerText = 'BURN';
+        createShockwave('#ff7a1a', 20);
+      });
+      queueIntroStep(620, () => {
+        ui.title.innerText = 'THE PHOENIX';
+        ui.subtitle.innerText = 'RISE';
+        createPopup(centerObj.x, centerObj.y - 72, 'RISE', '#ff9a46');
+        createShockwave('#ff4a22', 28);
+        pulseBrightness(1.24, 130);
+      });
+      queueIntroStep(1260, () => {
+        ui.title.innerText = 'THE PHOENIX';
+        ui.subtitle.innerText = 'ONE REBIRTH';
+        createPopup(centerObj.x, centerObj.y - 24, 'ONE REBIRTH', '#ffd2a1');
+        createShockwave('#b5152a', 36);
+        createParticles(centerObj.x, centerObj.y, '#ff7a1a', 24);
+      });
+      queueIntroStep(2080, () => {
+        ui.title.innerText = 'THE PHOENIX';
+        ui.subtitle.innerText = 'ENGAGE';
+        createPopup(centerObj.x, centerObj.y - 10, 'ENGAGE', '#ffffff');
+        createShockwave('#ff7a1a', 44);
+        pulseBrightness(1.36, 150);
+        vibrate([70, 30, 80]);
+      });
     } else {
       const bossMeta = getBossDisplayMeta();
       ui.title.innerText = bossMeta.name;
@@ -275,7 +309,7 @@
       if (_pbRestore && !inMenu) _pbRestore.style.display = 'flex';
       if (ui.bossUI) ui.bossUI.style.display = 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
-      ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro || isNullGateIntro) ? 'boss-segment' : 'boss-segment active-segment';
+      ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro || isNullGateIntro || isPhoenixIntro) ? 'boss-segment' : 'boss-segment active-segment';
       if (isWorld2BossIntro) {
         world2BossArenaRotationSpeed = world2BossTransitionFrom25 ? 0.0038 : 0.0032;
         world2BossTransitionFrom25 = false;
@@ -284,7 +318,7 @@
       startBossDrone();
       if (audioCtx) updateMusicState(multiplier, true);
       bossIntroTimeout = null;
-    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : (isCorruptorIntro ? 3600 : (isNullGateIntro ? 4200 : 1700))));
+    }, isAegisIntro ? 2850 : (isWorld2BossIntro ? 5050 : (isCorruptorIntro ? 3600 : (isNullGateIntro ? 4200 : (isPhoenixIntro ? 3000 : 1700)))));
   }
 
   function playBossCinematic() {
@@ -310,7 +344,7 @@
     createShockwave('#ff3366', 42);
     createParticles(centerObj.x, centerObj.y, '#ff3366', 42);
 
-    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate' || levelData.boss === 'abyss';
+    const _isRealBoss = levelData.boss === 'aegis' || levelData.boss === 'prism' || levelData.boss === 'corruptor' || levelData.boss === 'null_gate' || levelData.boss === 'phoenix' || levelData.boss === 'abyss';
     if (bossCinematicTimeout) clearTimeout(bossCinematicTimeout);
     bossCinematicTimeout = setTimeout(() => {
       ui.overlay.style.display = 'none';
