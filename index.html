@@ -84,10 +84,10 @@
             <button class="btn btn-play hero-cta" id="heroPlayBtn" onclick="event.stopPropagation(); if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign();">PLAY</button>
           </div>
           <div class="hero-content" id="heroEventContent" style="display:none;">
-            <div class="hero-subtitle">WEEKLY BOSS</div>
-            <div class="hero-title text-gold">THE ABYSS RUN</div>
-            <div class="hero-timer" id="heroEventTimer">ENDS IN: 3D 14H</div>
-            <button class="btn btn-play hero-cta btn-gold" onclick="event.stopPropagation(); if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('event');">CHALLENGE</button>
+            <div class="hero-subtitle" style="color:rgba(255,100,30,0.75);">WEEKLY CHALLENGE</div>
+            <div class="hero-title text-fire">PHOENIX TRIAL</div>
+            <div class="hero-timer" id="heroEventTimer" style="color:#ff6a1a;">ENDS IN: 3D 14H</div>
+            <button class="btn btn-play hero-cta btn-fire" onclick="event.stopPropagation(); if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('event');">ENTER TRIAL</button>
           </div>
         </div>
 
@@ -130,6 +130,11 @@
               <span id="menuWorldLabel">WORLD 1</span>
               <span id="menuWorldSub">ORBIT INIT</span>
               <span id="menuWorldLock" style="display:none;">⬡ LOCKED</span>
+
+              <div class="world-stats-row" id="worldStatsRow">
+                <div class="world-stars-display" id="worldStarsDisplay"></div>
+                <div class="world-high-score" id="worldHighScore"></div>
+              </div>
 
               <div class="campaign-progress">
                 <div class="progress-bar-bg"><div class="progress-bar-fill" id="campaignProgressFill"></div></div>
@@ -277,70 +282,81 @@
         </div>
       </div>
 
-      <!-- EVENT VIEW -->
-      <div id="eventView" class="menu-view" style="display:none; align-items:center;">
-        <div style="font-family:'Orbitron',sans-serif; font-size:0.5rem; letter-spacing:3px; color:rgba(255,170,0,0.7); margin-bottom: 5px;">GLOBAL EVENT</div>
-        <h2 class="view-header" style="color:#ffaa00; text-shadow:0 0 15px rgba(255,170,0,0.6);">THE ABYSS RUN</h2>
+      <!-- EVENT VIEW — PHOENIX TRIAL -->
+      <div id="eventView" class="menu-view phoenix-event-view" style="display:none; align-items:center;">
 
-        <!-- Leaderboard Container -->
-        <div style="width: 100%; max-width: 400px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,170,0,0.15); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto;">
-          <div style="display: flex; justify-content: space-between; font-family: 'Orbitron', sans-serif; font-size: 0.5rem; color: rgba(255,255,255,0.4); padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 5px;">
-            <span style="width: 30px; text-align: center;">RANK</span>
-            <span style="flex-grow: 1; padding-left: 15px;">PLAYER</span>
-            <span style="width: 80px; text-align: right;">SCORE</span>
+        <!-- Phoenix boss identity block -->
+        <div class="phoenix-boss-card">
+          <div class="phoenix-badge">🔥 WEEKLY CHALLENGE</div>
+          <div class="phoenix-boss-name">THE PHOENIX</div>
+          <div class="phoenix-boss-tagline">DIE ONCE. RISE. DO NOT FALL TWICE.</div>
+          <div class="phoenix-mechanics">
+            <span class="phoenix-mech-tag">⚡ SPEED ESCALATION</span>
+            <span class="phoenix-mech-tag">◎ SHRINKING ZONES</span>
+            <span class="phoenix-mech-tag">↺ REVERSAL</span>
+            <span class="phoenix-mech-tag">♦ ONE REBIRTH</span>
+          </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="phoenix-leaderboard">
+          <div class="phoenix-lb-header">
+            <span style="width:30px;text-align:center;">RANK</span>
+            <span style="flex-grow:1;padding-left:14px;">PLAYER</span>
+            <span style="width:70px;text-align:right;">SCORE</span>
           </div>
           <!-- Rank 1 -->
-          <div style="display: flex; align-items: center; background: linear-gradient(90deg, rgba(255,215,0,0.15) 0%, rgba(0,0,0,0) 100%); border-left: 3px solid #ffd700; border-radius: 4px; padding: 8px;">
-            <div style="width: 30px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5);">1</div>
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: #222; border: 2px solid #ffd700; margin: 0 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">👑</div>
-            <div style="flex-grow: 1; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: #fff; font-weight: bold;">SyncMaster99</div>
-            <div style="width: 80px; text-align: right; font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #ffd700; font-weight: bold;">1,420</div>
+          <div class="phoenix-lb-row rank-gold">
+            <div class="phoenix-lb-rank" style="color:#ffd700;">1</div>
+            <div class="phoenix-lb-avatar" style="border-color:#ffd700;">🔥</div>
+            <div class="phoenix-lb-name">AshRisen</div>
+            <div class="phoenix-lb-score" style="color:#ffd700;">2,840</div>
           </div>
           <!-- Rank 2 -->
-          <div style="display: flex; align-items: center; background: linear-gradient(90deg, rgba(192,192,192,0.1) 0%, rgba(0,0,0,0) 100%); border-left: 3px solid #c0c0c0; border-radius: 4px; padding: 8px;">
-            <div style="width: 30px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: #c0c0c0;">2</div>
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: #222; border: 2px solid #c0c0c0; margin: 0 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">💀</div>
-            <div style="flex-grow: 1; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: #fff;">VoidWalker</div>
-            <div style="width: 80px; text-align: right; font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #c0c0c0; font-weight: bold;">1,385</div>
+          <div class="phoenix-lb-row rank-silver">
+            <div class="phoenix-lb-rank" style="color:#c0c0c0;">2</div>
+            <div class="phoenix-lb-avatar" style="border-color:#c0c0c0;">🦅</div>
+            <div class="phoenix-lb-name">FlameWalker</div>
+            <div class="phoenix-lb-score" style="color:#c0c0c0;">2,615</div>
           </div>
           <!-- Rank 3 -->
-          <div style="display: flex; align-items: center; background: linear-gradient(90deg, rgba(205,127,50,0.1) 0%, rgba(0,0,0,0) 100%); border-left: 3px solid #cd7f32; border-radius: 4px; padding: 8px;">
-            <div style="width: 30px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: #cd7f32;">3</div>
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: #222; border: 2px solid #cd7f32; margin: 0 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">⚡</div>
-            <div style="flex-grow: 1; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: #fff;">EchoPulse</div>
-            <div style="width: 80px; text-align: right; font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #cd7f32; font-weight: bold;">1,310</div>
+          <div class="phoenix-lb-row rank-bronze">
+            <div class="phoenix-lb-rank" style="color:#cd7f32;">3</div>
+            <div class="phoenix-lb-avatar" style="border-color:#cd7f32;">💥</div>
+            <div class="phoenix-lb-name">CinderCore</div>
+            <div class="phoenix-lb-score" style="color:#cd7f32;">2,490</div>
           </div>
           <!-- Rank 4 -->
-          <div style="display: flex; align-items: center; padding: 8px;">
-            <div style="width: 30px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; color: rgba(255,255,255,0.5);">4</div>
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: #1a1a1a; margin: 0 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">👾</div>
-            <div style="flex-grow: 1; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: rgba(255,255,255,0.8);">NeonRider</div>
-            <div style="width: 80px; text-align: right; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: rgba(255,255,255,0.8);">1,295</div>
+          <div class="phoenix-lb-row">
+            <div class="phoenix-lb-rank" style="color:rgba(255,255,255,0.45);">4</div>
+            <div class="phoenix-lb-avatar" style="border-color:rgba(255,255,255,0.15);">⚡</div>
+            <div class="phoenix-lb-name" style="color:rgba(255,255,255,0.75);">EmberSync</div>
+            <div class="phoenix-lb-score" style="color:rgba(255,255,255,0.75);">2,310</div>
           </div>
           <!-- Rank 5 -->
-          <div style="display: flex; align-items: center; padding: 8px;">
-            <div style="width: 30px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; color: rgba(255,255,255,0.5);">5</div>
-            <div style="width: 36px; height: 36px; border-radius: 50%; background: #1a1a1a; margin: 0 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🔥</div>
-            <div style="flex-grow: 1; font-family: 'Orbitron', sans-serif; font-size: 0.75rem; color: rgba(255,255,255,0.8);">OrbitJunkie</div>
-            <div style="width: 80px; text-align: right; font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: rgba(255,255,255,0.8);">1,250</div>
+          <div class="phoenix-lb-row">
+            <div class="phoenix-lb-rank" style="color:rgba(255,255,255,0.45);">5</div>
+            <div class="phoenix-lb-avatar" style="border-color:rgba(255,255,255,0.15);">🌋</div>
+            <div class="phoenix-lb-name" style="color:rgba(255,255,255,0.75);">OrbitJunkie</div>
+            <div class="phoenix-lb-score" style="color:rgba(255,255,255,0.75);">2,205</div>
           </div>
         </div>
 
-        <!-- Current Player Rank (Pinned conceptually) -->
-        <div style="width: 100%; max-width: 400px; margin-top: 15px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.4); border-radius: 8px; padding: 12px; display: flex; align-items: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);">
-          <div style="width: 40px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: #00e5ff;">--</div>
-          <div style="flex-grow: 1; padding-left: 15px;">
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.5); letter-spacing: 1px;">YOUR RANK</div>
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: #fff; font-weight: bold;">Unranked</div>
+        <!-- Your rank -->
+        <div class="phoenix-your-rank">
+          <div class="phoenix-your-rank-pos">--</div>
+          <div style="flex-grow:1;padding-left:14px;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:0.5rem;color:rgba(255,255,255,0.4);letter-spacing:1px;">YOUR RANK</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:0.82rem;color:#fff;font-weight:bold;">Unranked</div>
           </div>
-          <div style="text-align: right;">
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.6rem; color: rgba(255,255,255,0.5); letter-spacing: 1px;">SCORE</div>
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #00e5ff; font-weight: bold;">0</div>
+          <div style="text-align:right;">
+            <div style="font-family:'Orbitron',sans-serif;font-size:0.5rem;color:rgba(255,255,255,0.4);letter-spacing:1px;">BEST</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:0.88rem;color:#ff6a1a;font-weight:bold;">0</div>
           </div>
         </div>
 
-        <div style="font-family:'Orbitron',sans-serif; font-size:0.5rem; letter-spacing:2px; color:rgba(255,255,255,0.3); margin-top:20px; margin-bottom: 15px;" id="challengeCountdown">ENDS IN: 3D 14H 22M</div>
-        <button class="btn btn-play" style="width: 100%; max-width: 400px; margin-top: 0; background: linear-gradient(135deg, rgba(255,170,0,0.8) 0%, rgba(255,100,0,0.8) 100%); border-color: #ffaa00; box-shadow: 0 0 20px rgba(255,170,0,0.4);" onclick="if(audioCtx) soundUIClick(); startAbyssRun();">ENTER ABYSS</button>
+        <div class="phoenix-countdown" id="challengeCountdown">ENDS IN: 3D 14H 22M</div>
+        <button class="btn btn-play btn-fire phoenix-enter-btn" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();startPhoenixRun();">ENTER THE TRIAL</button>
       </div>
 
       <!-- PROFILE VIEW -->
