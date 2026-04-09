@@ -125,7 +125,8 @@
             <button class="arrow-btn" aria-label="Previous world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(-1)">◀</button>
 
             <div id="worldSelector" class="world-info-box">
-              <div class="world-bg-glow"></div>
+              <div class="world-accent-bar" id="worldAccentBar"></div>
+              <div class="world-bg-glow" id="worldBgGlow"></div>
               <span id="menuWorldLabel">WORLD 1</span>
               <span id="menuWorldSub">ORBIT INIT</span>
               <span id="menuWorldLock" style="display:none;">⬡ LOCKED</span>
@@ -148,65 +149,130 @@
         </div>
       </div>
 
-      <!-- WORKSHOP VIEW -->
+      <!-- WORKSHOP VIEW — ownership / equip surface -->
       <div id="workshopView" class="menu-view" style="display:none;">
         <h2 class="view-header">WORKSHOP</h2>
-        <div id="shopNextGoal" style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:1.5px; color:rgba(255,200,80,0.55); margin:-10px 0 20px; text-align:center;"></div>
 
-        <div class="shop-content">
-          <!-- We move the items from shopModal into here -->
-          <div class="shop-item" id="item-premium" style="grid-column: 1 / -1; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.4);">
-            <p class="item-name" style="color: #ffd700;">Premium Pack</p>
-            <p style="font-size: 0.6rem; color: #fff; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Remove Ads & Permanently 2x Coins</p>
-            <button class="buy-btn" id="btn-premium" onclick="if(audioCtx) soundUIClick(); purchasePremium();" style="background: rgba(255, 215, 0, 0.2); border-color: #ffd700; color: #ffd700;">BUY £2.99</button>
-          </div>
-          <div class="shop-item" id="item-classic">
+        <!-- Equipped Core Hero -->
+        <div class="workshop-equipped-hero">
+          <div class="workshop-equipped-label">ACTIVE CORE</div>
+          <div class="item-preview workshop-sphere-hero" id="workshopEquippedPreview" data-skin="classic"></div>
+          <div class="workshop-equipped-name" id="workshopEquippedName">CLASSIC CORE</div>
+          <div class="workshop-equipped-perk" id="workshopEquippedPerk">Standard Operations</div>
+        </div>
+
+        <div class="workshop-section-title">YOUR CORES</div>
+
+        <div class="workshop-grid" id="workshopGrid">
+          <div class="workshop-item" id="witem-classic">
             <div class="item-preview" data-skin="classic"></div>
-            <p class="item-name">Classic Core</p>
-            <p style="font-size: 0.6rem; color: #aaa; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Standard Operations</p>
-            <button class="buy-btn" id="btn-classic" onclick="equipSkin('classic')">Equipped</button>
+            <div class="workshop-item-name">Classic Core</div>
+            <div class="workshop-item-perk">Standard Operations</div>
+            <button class="workshop-equip-btn" id="wbtn-classic" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('classic')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-skull">
+          <div class="workshop-item" id="witem-skull">
             <div class="item-preview" data-skin="skull"></div>
-            <p class="item-name">Neon Skull</p>
-            <p style="font-size: 0.6rem; color: #0aff64; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: +1 Max Lives</p>
-            <button class="buy-btn buy-coins" id="btn-skull" onclick="buyItem('skull', 50)">COINS 50</button>
+            <div class="workshop-item-name">Neon Skull</div>
+            <div class="workshop-item-perk" style="color:#0aff64;">+1 Max Lives</div>
+            <button class="workshop-equip-btn" id="wbtn-skull" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('skull')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-prism">
+          <div class="workshop-item" id="witem-prism">
             <div class="item-preview" data-skin="prism"></div>
-            <p class="item-name">Prism Core</p>
-            <p style="font-size: 0.6rem; color: #00ffff; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: +10% Coins</p>
-            <button class="buy-btn buy-coins" id="btn-prism" onclick="buyItem('prism', 150)">COINS 150</button>
+            <div class="workshop-item-name">Prism Core</div>
+            <div class="workshop-item-perk" style="color:#00ffff;">+10% Coins</div>
+            <button class="workshop-equip-btn" id="wbtn-prism" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('prism')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-echo">
+          <div class="workshop-item" id="witem-echo">
             <div class="item-preview" data-skin="echo"></div>
-            <p class="item-name">Echo Trail</p>
-            <p style="font-size: 0.6rem; color: #00eaff; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: +10% Perfect Radius</p>
-            <button class="buy-btn buy-coins" id="btn-echo" onclick="buyItem('echo', 200)">🪙 200</button>
+            <div class="workshop-item-name">Echo Trail</div>
+            <div class="workshop-item-perk" style="color:#00eaff;">+10% Radius</div>
+            <button class="workshop-equip-btn" id="wbtn-echo" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('echo')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-crimson">
+          <div class="workshop-item" id="witem-crimson">
             <div class="item-preview" data-skin="crimson"></div>
-            <p class="item-name">Crimson Rail</p>
-            <p style="font-size: 0.6rem; color: #ff2244; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: Combo +1 on Perfect</p>
-            <button class="buy-btn buy-coins" id="btn-crimson" onclick="buyItem('crimson', 150)">🪙 150</button>
+            <div class="workshop-item-name">Crimson Rail</div>
+            <div class="workshop-item-perk" style="color:#ff2244;">Combo +1 Perfect</div>
+            <button class="workshop-equip-btn" id="wbtn-crimson" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('crimson')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-pulse">
+          <div class="workshop-item" id="witem-pulse">
             <div class="item-preview" data-skin="pulse"></div>
-            <p class="item-name">Pulse Core</p>
-            <p style="font-size: 0.6rem; color: #ffffff; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: Near Miss gives 1 Coin</p>
-            <button class="buy-btn buy-coins" id="btn-pulse" onclick="buyItem('pulse', 300)">🪙 300</button>
+            <div class="workshop-item-name">Pulse Core</div>
+            <div class="workshop-item-perk">Near Miss → 1 Coin</div>
+            <button class="workshop-equip-btn" id="wbtn-pulse" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('pulse')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-ghost">
+          <div class="workshop-item" id="witem-ghost">
             <div class="item-preview" data-skin="ghost"></div>
-            <p class="item-name">Ghost Orb</p>
-            <p style="font-size: 0.6rem; color: #aaaaff; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: Survive 1 Fatal Hit</p>
-            <button class="buy-btn buy-coins" id="btn-ghost" onclick="buyItem('ghost', 400)">🪙 400</button>
+            <div class="workshop-item-name">Ghost Orb</div>
+            <div class="workshop-item-perk" style="color:#aaaaff;">Survive 1 Fatal Hit</div>
+            <button class="workshop-equip-btn" id="wbtn-ghost" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('ghost')">EQUIP</button>
           </div>
-          <div class="shop-item" id="item-storm">
+          <div class="workshop-item" id="witem-storm">
             <div class="item-preview" data-skin="storm"></div>
-            <p class="item-name">Storm Core</p>
-            <p style="font-size: 0.6rem; color: #ffee00; margin: -5px 0 10px; font-family: 'Orbitron', sans-serif;">Perk: +5 Coins on Flawless Wave</p>
-            <button class="buy-btn buy-coins" id="btn-storm" onclick="buyItem('storm', 350)">🪙 350</button>
+            <div class="workshop-item-name">Storm Core</div>
+            <div class="workshop-item-perk" style="color:#ffee00;">+5 Coins Flawless</div>
+            <button class="workshop-equip-btn" id="wbtn-storm" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();equipSkin('storm')">EQUIP</button>
+          </div>
+        </div>
+
+        <div class="workshop-shop-hint">VISIT SHOP TO UNLOCK MORE CORES</div>
+      </div>
+
+      <!-- SHOP VIEW — commerce surface -->
+      <div id="shopView" class="menu-view" style="display:none;">
+        <h2 class="view-header">SHOP</h2>
+
+        <!-- Premium Pack -->
+        <div class="shop-premium-card">
+          <div class="shop-premium-badge">⭐ BEST VALUE</div>
+          <div class="shop-premium-title">PREMIUM PACK</div>
+          <div class="shop-premium-desc">Remove Ads · Permanent 2× Coins</div>
+          <button class="shop-premium-btn" id="btn-premium" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();purchasePremium()">BUY £2.99</button>
+        </div>
+
+        <div class="shop-section-title">UNLOCK CORES</div>
+
+        <div class="shop-buy-grid" id="shopBuyGrid">
+          <div class="shop-buy-card" id="sitem-skull">
+            <div class="item-preview" data-skin="skull"></div>
+            <div class="shop-buy-card-name">Neon Skull</div>
+            <div class="shop-buy-card-perk" style="color:#0aff64;">+1 Max Lives</div>
+            <button class="shop-coin-buy-btn" id="sbtn-skull" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('skull',50)">🪙 50</button>
+          </div>
+          <div class="shop-buy-card" id="sitem-prism">
+            <div class="item-preview" data-skin="prism"></div>
+            <div class="shop-buy-card-name">Prism Core</div>
+            <div class="shop-buy-card-perk" style="color:#00ffff;">+10% Coins</div>
+            <button class="shop-coin-buy-btn" id="sbtn-prism" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('prism',150)">🪙 150</button>
+          </div>
+          <div class="shop-buy-card" id="sitem-echo">
+            <div class="item-preview" data-skin="echo"></div>
+            <div class="shop-buy-card-name">Echo Trail</div>
+            <div class="shop-buy-card-perk" style="color:#00eaff;">+10% Radius</div>
+            <button class="shop-coin-buy-btn" id="sbtn-echo" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('echo',200)">🪙 200</button>
+          </div>
+          <div class="shop-buy-card" id="sitem-crimson">
+            <div class="item-preview" data-skin="crimson"></div>
+            <div class="shop-buy-card-name">Crimson Rail</div>
+            <div class="shop-buy-card-perk" style="color:#ff2244;">Combo +1 Perfect</div>
+            <button class="shop-coin-buy-btn" id="sbtn-crimson" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('crimson',150)">🪙 150</button>
+          </div>
+          <div class="shop-buy-card" id="sitem-pulse">
+            <div class="item-preview" data-skin="pulse"></div>
+            <div class="shop-buy-card-name">Pulse Core</div>
+            <div class="shop-buy-card-perk">Near Miss → 1 Coin</div>
+            <button class="shop-coin-buy-btn" id="sbtn-pulse" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('pulse',300)">🪙 300</button>
+          </div>
+          <div class="shop-buy-card" id="sitem-ghost">
+            <div class="item-preview" data-skin="ghost"></div>
+            <div class="shop-buy-card-name">Ghost Orb</div>
+            <div class="shop-buy-card-perk" style="color:#aaaaff;">Survive 1 Fatal Hit</div>
+            <button class="shop-coin-buy-btn" id="sbtn-ghost" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('ghost',400)">🪙 400</button>
+          </div>
+          <div class="shop-buy-card" id="sitem-storm">
+            <div class="item-preview" data-skin="storm"></div>
+            <div class="shop-buy-card-name">Storm Core</div>
+            <div class="shop-buy-card-perk" style="color:#ffee00;">+5 Coins Flawless</div>
+            <button class="shop-coin-buy-btn" id="sbtn-storm" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();buyItem('storm',350)">🪙 350</button>
           </div>
         </div>
       </div>
@@ -283,7 +349,9 @@
 
         <div class="profile-layout">
           <div class="profile-identity">
-            <div class="profile-avatar">👤</div>
+            <div class="profile-avatar-wrap">
+              <div class="item-preview profile-sphere-preview" id="profileSpherePreview" data-skin="classic"></div>
+            </div>
             <div class="profile-name">MrHench</div>
             <div class="profile-title text-gold" id="profilePremiumStatus">ORBIT RUNNER</div>
           </div>
@@ -325,7 +393,7 @@
         <div class="nav-icon">⚙</div>
         <div class="nav-label">Workshop</div>
       </button>
-      <button class="nav-item" id="nav-shop" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">
+      <button class="nav-item" id="nav-shop" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('shop')">
         <div class="nav-icon">🛒</div>
         <div class="nav-label">Shop</div>
       </button>

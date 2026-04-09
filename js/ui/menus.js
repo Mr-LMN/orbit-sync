@@ -122,6 +122,26 @@
     if (lockedOverlay) {
       lockedOverlay.style.display = isUnlocked ? 'none' : 'flex';
     }
+    // World accent bar + background glow theming
+    const accentBar = document.getElementById('worldAccentBar');
+    if (accentBar) {
+      accentBar.style.background = isUnlocked ? wd.color : 'rgba(255,255,255,0.15)';
+      accentBar.style.boxShadow  = isUnlocked ? `0 0 12px ${wd.color}` : 'none';
+    }
+    const bgGlow = document.getElementById('worldBgGlow');
+    if (bgGlow) {
+      bgGlow.style.background = isUnlocked
+        ? `radial-gradient(circle, ${wd.color}22 0%, transparent 65%)`
+        : 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%)';
+    }
+    const worldBox = document.getElementById('worldSelector');
+    if (worldBox) {
+      worldBox.style.borderColor = isUnlocked ? `${wd.color}55` : 'rgba(255,255,255,0.12)';
+      worldBox.style.boxShadow   = isUnlocked
+        ? `0 10px 30px rgba(0,0,0,0.6), inset 0 0 20px ${wd.color}0d, 0 0 20px ${wd.color}22`
+        : '0 10px 30px rgba(0,0,0,0.6)';
+    }
+
     const _hardBtn = document.getElementById('menuHardModeBtn');
     if (_hardBtn) {
       const _wStarIds = ['1','2','3','4','5'].map(n => `${menuSelectedWorld}-${n}`);
@@ -169,7 +189,11 @@
         refreshHubUI();
     } else if (tabId === 'profile') {
         updateProfileView();
+        // Render equipped sphere on profile
+        if (typeof updateWorkshopUI === 'function') updateWorkshopUI();
     } else if (tabId === 'workshop') {
+        if (typeof updateWorkshopUI === 'function') updateWorkshopUI();
+    } else if (tabId === 'shop') {
         if (typeof updateShopUI === 'function') updateShopUI();
     }
   }
@@ -198,17 +222,18 @@
   }
 
   function refreshHubUI() {
-      // Dynamic Workshop Status
+      // Workshop action card: show equipped skin name
       const workshopStatus = document.getElementById('actionStatusWorkshop');
       if (workshopStatus) {
-          if (typeof globalCoins !== 'undefined' && globalCoins >= 50) {
-              workshopStatus.innerText = 'UPGRADE';
-              workshopStatus.style.color = '#00ff88';
-              workshopStatus.style.borderColor = 'rgba(0,255,136,0.3)';
-              workshopStatus.style.background = 'rgba(0,255,136,0.1)';
-          } else {
-              workshopStatus.innerText = '';
-          }
+          const skinLabels = {
+              classic: 'CLASSIC', skull: 'SKULL', prism: 'PRISM', echo: 'ECHO',
+              crimson: 'CRIMSON', pulse: 'PULSE', ghost: 'GHOST', storm: 'STORM'
+          };
+          const skin = typeof activeSkin !== 'undefined' ? activeSkin : 'classic';
+          workshopStatus.innerText = skinLabels[skin] || skin.toUpperCase();
+          workshopStatus.style.color = '#00e5ff';
+          workshopStatus.style.borderColor = 'rgba(0,229,255,0.25)';
+          workshopStatus.style.background = 'rgba(0,229,255,0.08)';
       }
   }
 
