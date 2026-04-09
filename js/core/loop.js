@@ -624,6 +624,7 @@ function toggleMusicSetting() { return OrbitGame.ui.settings.toggleMusicSetting(
 function toggleSfxSetting() { return OrbitGame.ui.settings.toggleSfxSetting(); }
 function toggleHapticsSetting() { return OrbitGame.ui.settings.toggleHapticsSetting(); }
 function updateShopUI() { return OrbitGame.ui.shop.updateShopUI(); }
+function updateWorkshopUI() { return OrbitGame.ui.shop.updateWorkshopUI(); }
 function buyItem(id, cost) { return OrbitGame.ui.shop.buyItem(id, cost); }
 function equipSkin(id) { return OrbitGame.ui.shop.equipSkin(id); }
 
