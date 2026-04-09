@@ -307,7 +307,7 @@
       if (ui.gameUI) ui.gameUI.style.display = 'block';
       const _pbRestore = ui.pauseBtn;
       if (_pbRestore && !inMenu) _pbRestore.style.display = 'flex';
-      if (ui.bossUI) ui.bossUI.style.display = 'flex';
+      if (ui.bossUI) ui.bossUI.style.display = isPhoenixIntro ? 'none' : 'flex';
       ui.bossPhase1.className = 'boss-segment active-segment';
       ui.bossPhase2.className = (isWorld2BossIntro || isCorruptorIntro || isNullGateIntro || isPhoenixIntro) ? 'boss-segment' : 'boss-segment active-segment';
       if (isWorld2BossIntro) {
