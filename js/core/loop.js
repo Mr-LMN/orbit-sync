@@ -393,7 +393,20 @@ function getWorldNum() {
 
 function computeWorldPalette(level) {
   if (level && level.id === 'abyss') return { primary: '#ffaa00', secondary: '#ff0033', bg: '#08020a' };
-  if (level && level.boss === 'phoenix') return { primary: '#ff7a1a', secondary: '#b5152a', bg: '#110606' };
+  if (level && level.boss === 'phoenix') {
+    let phase = 0;
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss && typeof OrbitGame.systems.phoenixBoss.getPhaseIdx === 'function') {
+      phase = OrbitGame.systems.phoenixBoss.getPhaseIdx();
+    }
+    // Evolve colors to get more intensely fiery as phase increases
+    switch(phase) {
+      case 0: return { primary: '#ff7a1a', secondary: '#b5152a', bg: '#110606' }; // EMBER
+      case 1: return { primary: '#ff5226', secondary: '#d11b1b', bg: '#1a0404' }; // BURN
+      case 2: return { primary: '#ffaa00', secondary: '#ff2200', bg: '#220000' }; // INFERNO
+      case 3: return { primary: '#ff3333', secondary: '#ffaa00', bg: '#2a0000' }; // ASH
+      default: return { primary: '#ff7a1a', secondary: '#b5152a', bg: '#110606' };
+    }
+  }
   const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
   if (level && level.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
   switch (worldNum) {
@@ -410,7 +423,20 @@ function computeWorldPalette(level) {
 function computeWorldShape(level) {
   if (!level || !level.id) return 'circle';
   if (level.id === 'abyss') return 'abyss';
-  if (level.boss === 'phoenix') return 'hexagon';
+  if (level.boss === 'phoenix') {
+    let phase = 0;
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss && typeof OrbitGame.systems.phoenixBoss.getPhaseIdx === 'function') {
+      phase = OrbitGame.systems.phoenixBoss.getPhaseIdx();
+    }
+    // Evolve shape across phases
+    switch(phase) {
+      case 0: return 'triangle'; // EMBER
+      case 1: return 'square';   // BURN
+      case 2: return 'pentagon'; // INFERNO
+      case 3: return 'hexagon';  // ASH
+      default: return 'triangle';
+    }
+  }
   const worldNum = parseInt(String(level.id).split('-')[0], 10);
   if (!Number.isFinite(worldNum)) return 'circle';
   if (worldNum === 1) return 'circle';

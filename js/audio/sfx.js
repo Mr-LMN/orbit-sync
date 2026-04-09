@@ -395,6 +395,42 @@
     playNoiseBurst(0.2, 0.15, t, 'bandpass', 600, 1.2);
   }
 
+  function soundFlameBurst() {
+    if (!audio.audioCtx || !audio.sfxGain) return;
+    const t = audio.audioCtx.currentTime;
+
+    // Create noise buffer for fire roar
+    const bufferSize = audio.audioCtx.sampleRate * 2; // 2 seconds of noise
+    const buffer = audio.audioCtx.createBuffer(1, bufferSize, audio.audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noiseSource = audio.audioCtx.createBufferSource();
+    noiseSource.buffer = buffer;
+
+    // Lowpass filter to muffle the white noise into a "roar"
+    const filter = audio.audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(100, t);
+    filter.frequency.exponentialRampToValueAtTime(1200, t + 0.2); // swell up
+    filter.frequency.exponentialRampToValueAtTime(50, t + 1.5);   // die down
+
+    // Gain envelope for the burst
+    const gainNode = audio.makeGain(0);
+    gainNode.gain.setValueAtTime(0, t);
+    gainNode.gain.linearRampToValueAtTime(1.0, t + 0.1); // Fast attack
+    gainNode.gain.exponentialRampToValueAtTime(0.01, t + 1.5); // Slow fiery decay
+
+    noiseSource.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audio.sfxGain);
+
+    noiseSource.start(t);
+    noiseSource.stop(t + 2);
+  }
+
   function soundBossDefeated() {
     if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
@@ -470,6 +506,7 @@
     soundCoreExposed,
     soundCoreDamage,
     soundBossDefeated,
+    soundFlameBurst,
     soundLifeZone,
     soundLifeGained,
     soundUIClick,
@@ -498,6 +535,7 @@
     soundCoreExposed,
     soundCoreDamage,
     soundBossDefeated,
+    soundFlameBurst,
     soundLifeZone,
     soundLifeGained,
     soundUIClick,
