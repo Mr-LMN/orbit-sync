@@ -7,7 +7,10 @@
   const TIMER_START   = 30;    // seconds to begin with
   const REBIRTH_TIME  = 20;    // timer reset on rebirth
   const BONUS_LIFE_AT = 60;    // earn +1 life at this total elapsed (seconds)
-  const SCORE_PER_SEC = 100;   // score points per second survived
+  const SCORE_PER_SEC = 12;    // score points per second survived (reduced from 100)
+
+  // Wrath pulse: how often (ms) the boss reverses all zones by phase index
+  const WRATH_INTERVAL = [0, 14000, 9000, 6000, 4000];
 
   // Phase thresholds (total elapsed seconds since run start)
   const PHASES = [
@@ -62,6 +65,14 @@
   let _perfectMult   = 1;     // score multiplier (0.5 steps up on perfect, reset on miss)
   let _phoenixScore  = 0;
   let _waveSpawned   = false;
+  // Stats tracking
+  let _perfectHits   = 0;
+  let _totalHits     = 0;
+  let _missCount     = 0;
+  // Wrath state
+  let _wrathNextAt   = 0;
+  let _wrathActive   = false;
+  let _wrathEndsAt   = 0;
 
   // ─── HELPERS ─────────────────────────────────────────────────────────────
   function _phase()   { return PHASES[_phaseIdx]; }
@@ -212,6 +223,9 @@
     _rebirthsLeft--;
     _timer = REBIRTH_TIME;
     _perfectMult = 1;
+    // Sync campaign lives counter
+    lives = _rebirthsLeft;
+    if (typeof ui !== 'undefined' && ui.lives) ui.lives.innerText = lives;
 
     createPopup(centerObj.x, centerObj.y - 56, 'REBIRTH', '#ff9a46');
     createPopup(centerObj.x, centerObj.y - 24, `${_rebirthsLeft} REMAINING`, '#ffffff');
@@ -253,6 +267,36 @@
       _phaseIdx = newPhaseIdx;
       _doPhaseTransition(newPhaseIdx);
     }
+
+    // ─── WRATH PULSE — boss reverses all zone directions briefly ─────────────
+    if (_phaseIdx >= 1) {
+      if (!_wrathActive && frameNow >= _wrathNextAt) {
+        _wrathActive = true;
+        _wrathEndsAt = frameNow + 1800;
+        _wrathNextAt = frameNow + WRATH_INTERVAL[_phaseIdx] + 1800;
+        // Reverse every active zone direction
+        for (let wi = 0; wi < targets.length; wi++) {
+          if (targets[wi].phoenixTarget && targets[wi].active && targets[wi].moveSpeed !== 0) {
+            targets[wi].moveSpeed *= -1;
+          }
+        }
+        createPopup(centerObj.x, centerObj.y - 52, 'WRATH', '#ff3300');
+        createPopup(centerObj.x, centerObj.y - 24, 'REVERSAL', '#ff7a1a');
+        createShockwave('#ff3300', 34);
+        createShockwave('#b5152a', 50);
+        pulseBrightness(1.6, 120);
+        if (typeof vibrate === 'function') vibrate([50, 25, 70, 15, 40]);
+      } else if (_wrathActive && frameNow >= _wrathEndsAt) {
+        _wrathActive = false;
+        // Reverse back to original directions
+        for (let wi = 0; wi < targets.length; wi++) {
+          if (targets[wi].phoenixTarget && targets[wi].active && targets[wi].moveSpeed !== 0) {
+            targets[wi].moveSpeed *= -1;
+          }
+        }
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Ghost alpha updates
     _updateGhosts(frameNow);
@@ -331,9 +375,10 @@
     const timeAdd  = Math.max(0.5, Math.round(dimmed * 10) / 10);
 
     _timer       += timeAdd;
-    if (isPerfect && _perfectMult < 5) _perfectMult = Math.min(5, _perfectMult + 0.5);
+    if (isPerfect) { _perfectHits++; if (_perfectMult < 5) _perfectMult = Math.min(5, _perfectMult + 0.5); }
+    _totalHits++;
 
-    const hitBonus = Math.round(timeAdd * 80 * _perfectMult);
+    const hitBonus = Math.round(timeAdd * 8 * _perfectMult);  // was 80 — 10× reduction
     _phoenixScore += hitBonus;
     score          = _phoenixScore + Math.floor(_elapsed * SCORE_PER_SEC);
 
@@ -365,6 +410,7 @@
 
   // ─── MISS HANDLER ────────────────────────────────────────────────────────
   function onMiss() {
+    _missCount++;
     _perfectMult = 1;
     // Slight timer nudge on a miss (encourages aggression, not just survival)
     _timer = Math.max(0, _timer - 1.5);
@@ -378,26 +424,66 @@
   function endRun(reason) {
     if (!_active) return;
     _active = false;
+    _wrathActive = false;
     _hideUI();
 
-    // Save best
-    const finalScore = score;
-    const prevBest   = parseInt(OG.storage.getItem('orbitSync_phoenixBest') || '0', 10);
-    if (finalScore > prevBest) OG.storage.setItem('orbitSync_phoenixBest', String(finalScore));
+    // Snapshot stats before any async delay
+    const finalScore  = score;
+    const finalElapsed = _elapsed;
+    const finalPerfects = _perfectHits;
+    const finalMisses   = _missCount;
+    const finalHits     = _totalHits;
 
-    const mins = Math.floor(_elapsed / 60);
-    const secs = Math.floor(_elapsed % 60);
+    // Save best
+    const prevBest = parseInt(OG.storage.getItem('orbitSync_phoenixBest') || '0', 10);
+    const isNewBest = finalScore > prevBest;
+    if (isNewBest) OG.storage.setItem('orbitSync_phoenixBest', String(finalScore));
+    const displayBest = isNewBest ? finalScore : prevBest;
+
+    const mins   = Math.floor(finalElapsed / 60);
+    const secs   = Math.floor(finalElapsed % 60);
     const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
+
+    // Loot tier based on score
+    let lootTier, lootCoins, lootColor;
+    if (finalScore >= 1500) {
+      lootTier = 'LEGENDARY'; lootCoins = 80; lootColor = '#ffd84d';
+    } else if (finalScore >= 800) {
+      lootTier = 'EPIC';      lootCoins = 40; lootColor = '#b157ff';
+    } else if (finalScore >= 300) {
+      lootTier = 'RARE';      lootCoins = 20; lootColor = '#00e5ff';
+    } else {
+      lootTier = 'COMMON';    lootCoins = 8;  lootColor = '#aaaaaa';
+    }
+
+    // Worldwide percentile estimate (score-bracket based)
+    let percentile;
+    if (finalScore >= 1500)     percentile = 'TOP  5%';
+    else if (finalScore >= 800) percentile = 'TOP 15%';
+    else if (finalScore >= 300) percentile = 'TOP 40%';
+    else if (finalScore >= 100) percentile = 'TOP 70%';
+    else                        percentile = 'TOP 95%';
+
+    // Award loot coins
+    if (typeof globalCoins !== 'undefined') {
+      globalCoins += lootCoins;
+      if (typeof saveData === 'function') saveData();
+      if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
+    }
 
     if (typeof stopBossDrone === 'function') stopBossDrone();
     if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
     if (typeof updateMusicState === 'function') updateMusicState(1, false);
 
-    // Brief flash before overlay
-    const col = reason === 'survived' ? '#ff9a46' : '#ff3333';
+    const col = reason === 'survived' ? '#ff9a46' : '#ff4422';
     pulseBrightness(2.2, 200);
     createShockwave(col, 40);
+    if (isNewBest) {
+      createShockwave('#ffd84d', 58);
+      createParticles(centerObj.x, centerObj.y, '#ffd84d', 32);
+    }
 
+    const delay = reason === 'survived' ? 900 : 350;
     setTimeout(() => {
       isPlaying = false;
       ui.topBar.style.display = 'none';
@@ -409,22 +495,89 @@
       ui.overlay.style.display = 'flex';
       ui.title.style.color = col;
       ui.title.classList.add('run-title');
-      ui.title.innerText = reason === 'survived' ? 'PHOENIX ENDURED' : 'INCINERATED';
-      if (ui.subtitle) {
-        ui.subtitle.innerText = '';
+      // Title: never "failed" — phoenix is always a survival challenge
+      if (reason === 'survived') {
+        ui.title.innerText = 'PHOENIX ENDURED';
+      } else if (isNewBest) {
+        ui.title.innerText = 'NEW BEST';
+      } else {
+        ui.title.innerText = 'INCINERATED';
       }
-      // Reuse existing run-score display
+
+      if (ui.subtitle) ui.subtitle.innerText = percentile + (isNewBest ? ' · NEW BEST' : '');
+
+      // Summary card: repurpose rows for phoenix stats
+      const summaryCard = document.getElementById('summaryCard');
+      if (summaryCard) summaryCard.style.display = 'block';
+
       const runScoreEl = ui.runScoreDisplay;
       if (runScoreEl) runScoreEl.innerText = finalScore;
-      const runStatsBlock = ui.runStatsBlock;
-      if (runStatsBlock) runStatsBlock.style.display = 'block';
-      // Store time survived for display
+
+      const pbScoreEl = document.getElementById('pbScoreDisplay');
+      if (pbScoreEl) pbScoreEl.innerText = displayBest;
+
+      // Re-label COMBO row to show PERFECTS
+      const comboLabel = document.querySelector('#summaryCard .summary-row:nth-child(3) .summary-label');
+      const comboVal   = ui.runComboDisplay;
+      if (comboLabel) comboLabel.innerText = 'PERFECTS';
+      if (comboVal)   comboVal.innerText   = finalPerfects;
+
+      // Coins row → show loot box reward
+      const runCoinsBox = document.getElementById('runCoinsBox');
+      const runCoinsEl  = ui.runCoins;
+      const runCoinsHint = document.getElementById('runCoinsHint');
+      if (runCoinsBox) runCoinsBox.style.display = 'flex';
+      if (runCoinsEl)  {
+        runCoinsEl.style.color = lootColor;
+        runCoinsEl.innerText = `+${lootCoins}`;
+      }
+      const coinsLabel = runCoinsBox && runCoinsBox.querySelector('.summary-label');
+      if (coinsLabel) { coinsLabel.innerText = `${lootTier} LOOT`; coinsLabel.style.color = lootColor; }
+      if (runCoinsHint) {
+        runCoinsHint.style.display = 'block';
+        runCoinsHint.innerText = `${finalHits} HITS · ${finalMisses} MISSES · ${timeStr} SURVIVED`;
+      }
+
+      // Near miss msg → time survived
       const nearMissEl = ui.nearMissMsg;
       if (nearMissEl) {
-        nearMissEl.innerText = `SURVIVED ${timeStr}`;
+        nearMissEl.innerText = isNewBest ? `PERSONAL BEST — ${timeStr}` : `SURVIVED ${timeStr}`;
         nearMissEl.style.display = 'block';
       }
-    }, reason === 'survived' ? 900 : 350);
+
+      // Hide campaign-only elements that don't apply
+      const newRecordBanner = document.getElementById('newRecordBanner');
+      if (newRecordBanner) newRecordBanner.style.display = 'none';
+      const closeMissBanner = document.getElementById('closeMissBanner');
+      if (closeMissBanner) closeMissBanner.style.display = 'none';
+      const adReviveBtn = document.getElementById('adReviveBtn');
+      if (adReviveBtn) adReviveBtn.style.display = 'none';
+      if (ui.reviveBtn) ui.reviveBtn.style.display = 'none';
+      if (ui.coinReviveBtn) ui.coinReviveBtn.style.display = 'none';
+
+      // Wire PLAY AGAIN to restart phoenix (not campaign restartFromCheckpoint)
+      if (ui.btn) {
+        ui.btn.innerText = 'ENTER AGAIN';
+        ui.btn.onclick = function () {
+          if (audioCtx && typeof soundUIClick === 'function') soundUIClick();
+          ui.overlay.style.display = 'none';
+          ui.title.classList.remove('run-title');
+          if (typeof startPhoenixRun === 'function') startPhoenixRun();
+        };
+      }
+
+      // MENU button
+      const menuBtn = document.getElementById('menuBtn');
+      if (menuBtn) {
+        menuBtn.style.display = 'inline-block';
+        menuBtn.onclick = function () {
+          if (audioCtx && typeof soundUIClick === 'function') soundUIClick();
+          if (typeof returnToMenu === 'function') returnToMenu();
+        };
+      }
+
+      if (typeof setOverlayState === 'function') setOverlayState('gameOver');
+    }, delay);
   }
 
   // ─── START ────────────────────────────────────────────────────────────────
@@ -440,13 +593,20 @@
     _perfectMult    = 1;
     _phoenixScore   = 0;
     _waveSpawned    = false;
+    _perfectHits    = 0;
+    _totalHits      = 0;
+    _missCount      = 0;
+    _wrathActive    = false;
+    _wrathNextAt    = performance.now() + WRATH_INTERVAL[1] + 3000; // first wrath delayed
+    _wrathEndsAt    = 0;
     score           = 0;
+
+    // Sync campaign lives counter to show phoenix rebirths
+    lives = _rebirthsLeft;
+    if (typeof ui !== 'undefined' && ui.lives) ui.lives.innerText = lives;
 
     _showUI();
     _updateUI();
-
-    // First wave spawns after boss intro finishes (intro calls spawnTargets which
-    // we reroute to phoenix-boss.spawnWave)
   }
 
   function stop() {

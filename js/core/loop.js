@@ -5281,6 +5281,10 @@ function returnToMenu() {
   hardModeActive = false;
   activeAugment = null;
   document.body.classList.remove('hard-mode');
+  // Stop phoenix run cleanly if user quits mid-run
+  if (OG.systems && OG.systems.phoenixBoss && OG.systems.phoenixBoss.isActive()) {
+    OG.systems.phoenixBoss.stop();
+  }
   clearRunTransientTimers();
   clearIntensity();
   stopBossDrone();
