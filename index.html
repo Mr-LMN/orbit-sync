@@ -72,7 +72,7 @@
     <div id="menuViews">
 
       <!-- HOME VIEW -->
-      <div id="hubView" class="menu-view active-view">
+      <div id="homeView" class="menu-view active-view">
         <div id="dailyStreakBadge" style="display:none; font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,200,80,0.7); text-align:center; margin-bottom:8px;"></div>
 
         <!-- Main Hero Panel -->
@@ -96,18 +96,22 @@
           <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('workshop')">
             <div class="action-icon">⬡</div>
             <div class="action-label">Workshop</div>
+            <div class="action-status" id="actionStatusWorkshop"></div>
           </div>
           <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startBestScoreRun()">
             <div class="action-icon">⚡</div>
             <div class="action-label">Practice</div>
+            <div class="action-status">TRAIN</div>
           </div>
           <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); alert('Missions coming soon!')">
             <div class="action-icon">📋</div>
             <div class="action-label">Missions</div>
+            <div class="action-status">3 READY</div>
           </div>
           <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); showChallengePreview()">
             <div class="action-icon">🏆</div>
             <div class="action-label">Events</div>
+            <div class="action-status">LIVE</div>
           </div>
         </div>
       </div>
@@ -116,20 +120,31 @@
       <div id="campaignView" class="menu-view" style="display:none;">
         <h2 class="view-header">CAMPAIGN</h2>
 
-        <div id="worldSelector" class="world-carousel">
-          <button class="arrow-btn" aria-label="Previous world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(-1)">◀</button>
-          <div class="world-info-box">
-            <span id="menuWorldLabel">WORLD 1</span>
-            <span id="menuWorldSub">ORBIT INIT</span>
-            <span id="menuWorldLock" style="display:none;">⬡ LOCKED</span>
-          </div>
-          <button class="arrow-btn" aria-label="Next world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(1)">▶</button>
-        </div>
+        <div class="campaign-layout">
+          <div class="campaign-card-wrapper">
+            <button class="arrow-btn" aria-label="Previous world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(-1)">◀</button>
 
-        <div class="campaign-actions">
-          <!-- We keep menuPlayBtn ID here so changeWorld updates it correctly without breaking existing logic -->
-          <button class="btn btn-play" id="menuPlayBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign()">PLAY</button>
-          <button class="btn btn-outline" id="menuHardModeBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startHardModeRun();" style="display:none;">⚠ HARD MODE</button>
+            <div id="worldSelector" class="world-info-box">
+              <div class="world-bg-glow"></div>
+              <span id="menuWorldLabel">WORLD 1</span>
+              <span id="menuWorldSub">ORBIT INIT</span>
+              <span id="menuWorldLock" style="display:none;">⬡ LOCKED</span>
+
+              <div class="campaign-progress">
+                <div class="progress-bar-bg"><div class="progress-bar-fill" id="campaignProgressFill"></div></div>
+                <div class="progress-text" id="campaignProgressText">20% COMPLETION</div>
+              </div>
+
+              <!-- We keep menuPlayBtn ID here so changeWorld updates it correctly without breaking existing logic -->
+              <button class="btn btn-play campaign-card-play" id="menuPlayBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign()">PLAY</button>
+            </div>
+
+            <button class="arrow-btn" aria-label="Next world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(1)">▶</button>
+          </div>
+
+          <div class="campaign-actions">
+            <button class="btn btn-outline" id="menuHardModeBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startHardModeRun();" style="display:none;">⚠ HARD MODE</button>
+          </div>
         </div>
       </div>
 
@@ -145,10 +160,31 @@
       <!-- PROFILE VIEW -->
       <div id="profileView" class="menu-view" style="display:none;">
         <h2 class="view-header">PROFILE</h2>
-        <div class="profile-placeholder">
-          <div class="profile-stats">
-            <div class="stat-box"><div>BEST SCORE</div><div id="profileBestScore">0</div></div>
-            <div class="stat-box"><div>WORLDS CLEARED</div><div id="profileWorldsCleared">0</div></div>
+
+        <div class="profile-layout">
+          <div class="profile-identity">
+            <div class="profile-avatar">👤</div>
+            <div class="profile-name">MrHench</div>
+            <div class="profile-title text-gold" id="profilePremiumStatus">ORBIT RUNNER</div>
+          </div>
+
+          <div class="profile-stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">BEST SCORE</div>
+              <div class="stat-value text-blue" id="profileBestScore">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">WORLDS CLEARED</div>
+              <div class="stat-value text-purple" id="profileWorldsCleared">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">COINS EARNED</div>
+              <div class="stat-value text-gold" id="profileTotalCoins">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">EQUIPPED CORE</div>
+              <div class="stat-value text-green" id="profileEquippedCore" style="text-transform:uppercase;">CLASSIC</div>
+            </div>
           </div>
         </div>
       </div>
@@ -330,8 +366,7 @@
   <div id="shopModal">
     <div class="shop-header">
       <h2>Armory</h2>
-      <div style="font-size: 1.5rem; color: #ffaa00; font-weight: bold;">🪙 <span id="shopCoinCount">0</span></div>
-      <div style="font-size: 1.2rem; color: #ff33ff; font-weight: bold; margin-left: 15px;">💎 <span id="shopCrystalCount">0</span></div>
+      <!-- Currency hidden here to avoid duplication; using Top Bar instead -->
       <div id="shopNextGoal" style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:1.5px; color:rgba(255,200,80,0.55); margin-top:2px; text-align:center;"></div>
       <button class="close-btn" aria-label="Close shop" onclick="toggleShop(false)">×</button>
     </div>

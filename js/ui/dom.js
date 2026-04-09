@@ -23,7 +23,7 @@
     topBar: document.getElementById('topBar'),
     gameUI: document.getElementById('ui'),
     mainMenu: document.getElementById('mainMenu'),
-    hubView: document.getElementById('hubView'),
+    homeView: document.getElementById('homeView'),
     campaignView: document.getElementById('campaignView'),
     workshopView: document.getElementById('workshopView'),
     profileView: document.getElementById('profileView'),

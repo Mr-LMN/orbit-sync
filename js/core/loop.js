@@ -209,12 +209,16 @@ function checkAndSavePB(currentScore, currentStreak) {
 
 function updatePersistentCoinUI() {
   ui.coins.innerText = Math.floor(globalCoins);
-  ui.shopCoinCount.innerText = Math.floor(globalCoins);
+  if (ui.shopCoinCount) ui.shopCoinCount.innerText = Math.floor(globalCoins);
 
   const crystalCountEl = document.getElementById('crystalCount');
   if (crystalCountEl) crystalCountEl.innerText = Math.floor(globalCrystals);
   const shopCrystalCount = document.getElementById('shopCrystalCount');
   if (shopCrystalCount) shopCrystalCount.innerText = Math.floor(globalCrystals);
+
+  // Try to refresh dynamic states in menus
+  if (typeof refreshHubUI === 'function') refreshHubUI();
+  if (typeof updateProfileView === 'function') updateProfileView();
 }
 
 function getPendingRunCoins() {
