@@ -566,9 +566,14 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 
 .campaign-card-play {
-  padding: 15px 50px;
+  padding: 15px 24px;
   font-size: 1.3rem;
   box-shadow: 0 5px 20px rgba(0, 229, 255, 0.3);
+  width: 100%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
 }
 
 .arrow-btn {
@@ -1981,6 +1986,38 @@ body.hard-mode #hardModeBadge { display: block; }
   padding-right: 20px;
 }
 
+/* ── CAMPAIGN — WORLD STARS + SCORE ─────────── */
+.world-stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 10px 0 6px;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.world-stars-display {
+  display: flex;
+  gap: 4px;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.25);
+  transition: color 0.3s;
+  flex: 1;
+}
+.world-stars-display .star-seg {
+  letter-spacing: 2px;
+}
+.world-high-score {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.52rem;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.3);
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+
 /* ── CAMPAIGN — WORLD ACCENT BAR ────────────── */
 .world-accent-bar {
   position: absolute;
@@ -2388,6 +2425,203 @@ body.hard-mode #hardModeBadge { display: block; }
 }
 #eventView h2.view-header {
   margin-bottom: 10px;
+}
+
+/* ── PHOENIX / FIRE THEME ────────────────────── */
+.text-fire {
+  color: #ff5c1a;
+  text-shadow: 0 0 20px rgba(255,80,0,0.9), 0 0 40px rgba(255,40,0,0.5);
+  animation: textGlowFire 2.5s infinite alternate ease-in-out;
+}
+@keyframes textGlowFire {
+  0%   { text-shadow: 0 0 15px rgba(255,80,0,0.7), 0 0 30px rgba(255,40,0,0.35); }
+  100% { text-shadow: 0 0 30px rgba(255,100,0,1),  0 0 60px rgba(255,50,0,0.6); }
+}
+.btn-fire {
+  background: linear-gradient(135deg, rgba(255,80,0,0.15), rgba(255,30,0,0.08));
+  border-color: #ff5c1a;
+  color: #ff7a36;
+  text-shadow: 0 0 8px rgba(255,80,0,0.7);
+  box-shadow: 0 5px 20px rgba(255,60,0,0.35);
+}
+.btn-fire:hover {
+  background: linear-gradient(135deg, rgba(255,80,0,0.28), rgba(255,30,0,0.18));
+  box-shadow: 0 0 28px rgba(255,70,0,0.5);
+}
+
+/* Phoenix event view */
+.phoenix-event-view {
+  gap: 12px;
+}
+.phoenix-boss-card {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(255,60,0,0.12) 0%, rgba(20,10,5,0.7) 100%);
+  border: 1px solid rgba(255,80,0,0.35);
+  border-radius: 20px;
+  padding: 20px 18px 18px;
+  text-align: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 30px rgba(255,60,0,0.12), inset 0 0 24px rgba(255,60,0,0.06);
+  position: relative;
+  overflow: hidden;
+}
+.phoenix-boss-card::before {
+  content: '';
+  position: absolute;
+  top: -60%; left: -60%;
+  width: 220%; height: 220%;
+  background: radial-gradient(circle at 50% 40%, rgba(255,100,0,0.18) 0%, transparent 55%);
+  pointer-events: none;
+  animation: phoenixGlow 4s infinite alternate ease-in-out;
+}
+@keyframes phoenixGlow {
+  0%   { opacity: 0.5; transform: scale(0.95); }
+  100% { opacity: 1;   transform: scale(1.05); }
+}
+.phoenix-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 3px;
+  color: rgba(255,130,30,0.65);
+  margin-bottom: 8px;
+  position: relative;
+}
+.phoenix-boss-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.8rem;
+  letter-spacing: 4px;
+  color: #ff5c1a;
+  text-shadow: 0 0 20px rgba(255,80,0,0.8), 0 0 40px rgba(255,40,0,0.4);
+  animation: textGlowFire 2.5s infinite alternate ease-in-out;
+  line-height: 1;
+  margin-bottom: 6px;
+  position: relative;
+}
+.phoenix-boss-tagline {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.52rem;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 14px;
+  line-height: 1.5;
+  position: relative;
+}
+.phoenix-mechanics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  position: relative;
+}
+.phoenix-mech-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.44rem;
+  letter-spacing: 1px;
+  color: rgba(255,130,40,0.8);
+  background: rgba(255,80,0,0.1);
+  border: 1px solid rgba(255,80,0,0.25);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+/* Phoenix leaderboard */
+.phoenix-leaderboard {
+  width: 100%;
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,80,0,0.12);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.phoenix-lb-header {
+  display: flex;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.46rem;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 1px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  margin-bottom: 4px;
+}
+.phoenix-lb-row {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  padding: 8px 6px;
+}
+.rank-gold   { background: linear-gradient(90deg, rgba(255,215,0,0.12) 0%, transparent 100%); border-left: 3px solid #ffd700; }
+.rank-silver { background: linear-gradient(90deg, rgba(192,192,192,0.08) 0%, transparent 100%); border-left: 3px solid #c0c0c0; }
+.rank-bronze { background: linear-gradient(90deg, rgba(205,127,50,0.08) 0%, transparent 100%); border-left: 3px solid #cd7f32; }
+.phoenix-lb-rank {
+  width: 30px;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.phoenix-lb-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 2px solid rgba(255,255,255,0.15);
+  margin: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+.phoenix-lb-name {
+  flex-grow: 1;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.72rem;
+  color: #fff;
+  font-weight: bold;
+}
+.phoenix-lb-score {
+  width: 70px;
+  text-align: right;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.82rem;
+  font-weight: bold;
+}
+
+/* Phoenix your rank + CTA */
+.phoenix-your-rank {
+  width: 100%;
+  background: rgba(255,80,0,0.07);
+  border: 1px solid rgba(255,80,0,0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(255,60,0,0.1);
+}
+.phoenix-your-rank-pos {
+  width: 40px;
+  text-align: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  color: #ff6a1a;
+}
+.phoenix-countdown {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 2px;
+  color: rgba(255,130,40,0.5);
+  flex-shrink: 0;
+}
+.phoenix-enter-btn {
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 /* ── MISC CONSISTENCY ────────────────────────── */

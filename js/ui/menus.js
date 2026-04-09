@@ -79,15 +79,41 @@
     const wd = worldData[menuSelectedWorld] || worldData[1];
 
     if (label) { label.innerText = wd.name; label.style.color = isUnlocked ? wd.color : 'rgba(255,255,255,0.25)'; }
-    let _subText = wd.sub;
-    if (isUnlocked && typeof playerProgress !== 'undefined' && playerProgress.stageStars) {
-      const _wStarIds = ['1','2','3','4','5'].map(n => `${menuSelectedWorld}-${n}`);
-      const _wStars = _wStarIds.reduce((acc, id) => acc + (playerProgress.stageStars[id] || 0), 0);
-      const _wMax = 15;
-      if (_wStars > 0) _subText = `${wd.sub}  ${_wStars}/${_wMax}★`;
-    }
-    if (sub) { sub.innerText = _subText; sub.style.display = 'block'; }
+    if (sub) { sub.innerText = wd.sub; sub.style.display = 'block'; }
     if (lock) { lock.style.display = isUnlocked ? 'none' : 'block'; }
+
+    // World stars + best score display
+    const starsEl     = document.getElementById('worldStarsDisplay');
+    const highScoreEl = document.getElementById('worldHighScore');
+    const statsRow    = document.getElementById('worldStatsRow');
+    if (statsRow) statsRow.style.display = isUnlocked ? 'flex' : 'none';
+    if (isUnlocked && typeof playerProgress !== 'undefined') {
+      const _stageIds = ['1','2','3','4','5','6'].map(n => `${menuSelectedWorld}-${n}`);
+      // Stars (stages 1-5 only, 3 each = 15 max)
+      const _starIds = _stageIds.slice(0, 5);
+      const _earned  = _starIds.reduce((acc, id) => acc + ((playerProgress.stageStars && playerProgress.stageStars[id]) || 0), 0);
+      if (starsEl) {
+        const _filled = '★'.repeat(_earned);
+        const _empty  = '☆'.repeat(15 - _earned);
+        // Show in groups of 5 for readability
+        starsEl.innerHTML = [0,5,10].map(i => {
+          const seg = (_filled + _empty).slice(i, i + 5);
+          return `<span class="star-seg">${seg}</span>`;
+        }).join('');
+        starsEl.style.color = _earned > 0 ? wd.color : 'rgba(255,255,255,0.2)';
+      }
+      // Best score: max across all stages in this world
+      const _best = _stageIds.reduce((max, id) => {
+        const s = (playerProgress.bestScores && playerProgress.bestScores[id]) || 0;
+        return Math.max(max, s);
+      }, 0);
+      if (highScoreEl) {
+        highScoreEl.innerText = _best > 0 ? `HIGH ${_best}` : 'HIGH —';
+        highScoreEl.style.color = _best > 0 ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.2)';
+      }
+    } else if (starsEl) {
+      starsEl.innerText = '';
+    }
 
     // Update Campaign Progress Bar
     const progressFill = document.getElementById('campaignProgressFill');
@@ -414,7 +440,7 @@
     if (countdown) countdown.innerText = 'SEASON 1 ACTIVE';
   }
 
-  function startAbyssRun() {
+  function _launchBossChallenge(levelOverride) {
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
@@ -428,20 +454,9 @@
     inMenu = false;
     isPlaying = true;
 
-    // Setup Abyss level data
-    window.levelData = {
-        id: 'abyss',
-        title: 'The Abyss',
-        hitsNeeded: 999999, // Endless
-        speed: 0.040,
-        lives: 3,
-        boss: 'abyss',
-        moveSpeed: 0.02,
-        reverse: true,
-        text: 'Survive the endless Abyss.'
-    };
+    window.levelData = levelOverride;
 
-    currentLevelIdx = -1; // -1 denotes Abyss
+    currentLevelIdx = -1;
     resetRunState();
     ui.score.innerText = '0';
     updateStreakUI();
@@ -449,20 +464,33 @@
     if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
 
     setOverlayState('cinematic');
-
-    // Instead of loadLevel, we set things manually for Abyss
     stageHits = 0;
     bossPhase = 1;
     isBossPhaseTwo = false;
-    window.abyssDepth = 0; // custom depth tracker
 
-    // Start Boss intro sequence
     if (OrbitGame.entities && OrbitGame.entities.boss) {
-        OrbitGame.entities.boss.triggerBossIntro();
+      OrbitGame.entities.boss.triggerBossIntro();
     }
-
     OrbitGame.core.loop.startMainLoop();
   }
+
+  function startPhoenixRun() {
+    _launchBossChallenge({
+      id: 'phoenix',
+      title: 'Phoenix Trial',
+      hitsNeeded: 999999,
+      speed: 0.052,           // Faster than abyss
+      lives: 2,               // One rebirth: die once, rise once, then it's over
+      boss: 'phoenix',
+      moveSpeed: 0.022,
+      reverse: true,
+      shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 6 }, // Zones shrink — fire intensifies
+      text: 'PHOENIX TRIAL: Die once, rise once. Fall twice and you are ash.'
+    });
+  }
+
+  // Legacy alias kept for safety
+  function startAbyssRun() { startPhoenixRun(); }
 
 
   function showLockedWorldPreview(worldNum) {
@@ -492,8 +520,9 @@
   window.selectAugment = selectAugment;
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
-  window.startAbyssRun = startAbyssRun;
-  window.switchMenuTab = switchMenuTab;
+  window.startAbyssRun   = startAbyssRun;
+  window.startPhoenixRun = startPhoenixRun;
+  window.switchMenuTab   = switchMenuTab;
   window.handleHeroPanelClick = handleHeroPanelClick;
 
   // Initial body class

@@ -10,6 +10,9 @@
     if (levelData.boss === 'abyss') {
       return { name: 'THE ABYSS', tagline: 'ENDLESS // EVOLVING' };
     }
+    if (levelData.boss === 'phoenix') {
+      return { name: 'THE PHOENIX', tagline: 'DIE ONCE. RISE. DO NOT FALL TWICE.' };
+    }
     if (levelData.boss === 'aegis') {
       return { name: 'THE AEGIS CORE', tagline: 'Break the shields. Expose the core.' };
     }
