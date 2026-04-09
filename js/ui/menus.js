@@ -89,6 +89,19 @@
     if (sub) { sub.innerText = _subText; sub.style.display = 'block'; }
     if (lock) { lock.style.display = isUnlocked ? 'none' : 'block'; }
 
+    // Update Campaign Progress Bar
+    const progressFill = document.getElementById('campaignProgressFill');
+    const progressText = document.getElementById('campaignProgressText');
+    const completionPct = Math.min(100, Math.max(0, Math.floor((maxUnlocked / 5) * 100)));
+    if (progressFill) {
+        progressFill.style.width = `${completionPct}%`;
+        progressFill.style.background = isUnlocked ? wd.color : 'rgba(255,255,255,0.2)';
+        progressFill.style.boxShadow = isUnlocked ? `0 0 10px ${wd.color}` : 'none';
+    }
+    if (progressText) {
+        progressText.innerText = `${completionPct}% COMPLETION`;
+    }
+
     if (playBtn) {
       playBtn.disabled = !isUnlocked;
       playBtn.style.opacity = isUnlocked ? '1' : '0.35';
@@ -150,6 +163,51 @@
     if (targetNav) {
       targetNav.classList.add('active');
     }
+
+    // Refresh specific view data if needed
+    if (tabId === 'home') {
+        refreshHubUI();
+    } else if (tabId === 'profile') {
+        updateProfileView();
+    }
+  }
+
+  function updateProfileView() {
+      const bestScoreEl = document.getElementById('profileBestScore');
+      const worldsClearedEl = document.getElementById('profileWorldsCleared');
+      const totalCoinsEl = document.getElementById('profileTotalCoins');
+      const equippedCoreEl = document.getElementById('profileEquippedCore');
+      const premiumStatusEl = document.getElementById('profilePremiumStatus');
+
+      if (bestScoreEl && typeof highScore !== 'undefined') bestScoreEl.innerText = highScore;
+      if (worldsClearedEl && typeof maxWorldUnlocked !== 'undefined') worldsClearedEl.innerText = Math.max(0, maxWorldUnlocked - 1);
+      if (totalCoinsEl && typeof globalCoins !== 'undefined') totalCoinsEl.innerText = globalCoins; // Fallback to current coins since total isn't cleanly tracked
+      if (equippedCoreEl && typeof activeSkin !== 'undefined') equippedCoreEl.innerText = activeSkin;
+
+      if (premiumStatusEl) {
+          if (typeof isPremium !== 'undefined' && isPremium) {
+              premiumStatusEl.innerText = 'PREMIUM MEMBER';
+              premiumStatusEl.style.color = '#ff33ff';
+          } else {
+              premiumStatusEl.innerText = 'ORBIT RUNNER';
+              premiumStatusEl.style.color = '#ffaa00';
+          }
+      }
+  }
+
+  function refreshHubUI() {
+      // Dynamic Workshop Status
+      const workshopStatus = document.getElementById('actionStatusWorkshop');
+      if (workshopStatus) {
+          if (typeof globalCoins !== 'undefined' && globalCoins >= 50) {
+              workshopStatus.innerText = 'UPGRADE';
+              workshopStatus.style.color = '#00ff88';
+              workshopStatus.style.borderColor = 'rgba(0,255,136,0.3)';
+              workshopStatus.style.background = 'rgba(0,255,136,0.1)';
+          } else {
+              workshopStatus.innerText = '';
+          }
+      }
   }
 
   function handleHeroPanelClick() {
@@ -417,6 +475,9 @@
 
   // Initial body class
   document.body.classList.add('state-hub');
+
+  // Initial UI refresh
+  setTimeout(refreshHubUI, 100);
 
   // Check for weekly event priority (e.g. if Abyss is unlocked)
   // For now, let's enable it if Hard Mode is unlocked (simulating a weekly event condition)
