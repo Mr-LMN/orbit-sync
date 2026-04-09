@@ -78,7 +78,9 @@
   function _phase()   { return PHASES[_phaseIdx]; }
 
   // Diminishing returns multiplier based on total elapsed
-  function _dimMult() { return Math.max(0.40, 1.0 - _elapsed * 0.0042); }
+  // Drops off more sharply to prevent infinite runs.
+  // At 60s, mult is ~0.61. At 120s, it's ~0.37. Minimum 0.15.
+  function _dimMult() { return Math.max(0.15, Math.exp(-_elapsed * 0.008)); }
 
   function _el(id)    { return document.getElementById(id); }
 
@@ -209,9 +211,26 @@
     createPopup(centerObj.x, centerObj.y - 46, ph.name, '#ffffff');
     createShockwave(col, 36);
     createShockwave(col, 54);
-    createParticles(centerObj.x, centerObj.y, col, 28);
-    pulseBrightness(1.5 + newIdx * 0.18, 150);
-    if (typeof vibrate === 'function') vibrate([40, 20, 70]);
+    createShockwave(col, 80);
+    createParticles(centerObj.x, centerObj.y, col, 60);
+    pulseBrightness(2.2 + newIdx * 0.3, 250);
+
+    // Extreme canvas flash
+    if (typeof canvas !== 'undefined' && canvas.style) {
+      canvas.style.boxShadow = `inset 0 0 100px ${col}, 0 0 50px ${col}`;
+      setTimeout(() => { canvas.style.boxShadow = 'none'; }, 300);
+    }
+
+    if (typeof vibrate === 'function') vibrate([60, 30, 100]);
+    if (typeof soundFlameBurst === 'function') soundFlameBurst();
+
+    // Update global shape and colors dynamically for the new phase
+    if (typeof computeWorldShape === 'function') {
+      window.currentWorldShape = computeWorldShape({ boss: 'phoenix' });
+    }
+    if (typeof computeWorldPalette === 'function') {
+      window.currentWorldPalette = computeWorldPalette({ boss: 'phoenix' });
+    }
 
     // Brief pause, then spawn the new wave
     stageClearHoldUntil = performance.now() + 700;
@@ -616,6 +635,8 @@
 
   function isActive() { return _active; }
 
+  function getPhaseIdx() { return _phaseIdx; }
+
   // ─── EXPORTS ─────────────────────────────────────────────────────────────
   OG.systems.phoenixBoss = {
     start,
@@ -625,7 +646,8 @@
     onTargetHit,
     onMiss,
     endRun,
-    isActive
+    isActive,
+    getPhaseIdx
   };
 
 })(window);
