@@ -455,14 +455,15 @@
     inMenu = false;
     isPlaying = true;
 
-    window.levelData = levelOverride;
+    levelData = levelOverride;
 
     currentLevelIdx = -1;
     resetRunState();
     ui.score.innerText = '0';
     updateStreakUI();
     markScoreCoinDirty(true);
-    if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
+    // Phoenix has its own timer/phase UI — hide campaign arena info
+    if (ui.arenaInfo) ui.arenaInfo.style.display = 'none';
 
     setOverlayState('cinematic');
     stageHits = 0;
