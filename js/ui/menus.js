@@ -19,7 +19,9 @@
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
-    ui.topBar.style.display = 'flex';
+    document.body.classList.add('state-gameplay');
+    document.body.classList.remove('state-hub');
+    ui.topBar.style.display = 'flex'; // Ensure top bar remains visible for gameplay
     ui.gameUI.style.display = 'block';
     ui.bigMultiplier.style.display = 'block';
     ui.text.style.display = 'none';
@@ -63,6 +65,10 @@
     const lock = document.getElementById('menuWorldLock');
     const playBtn = document.getElementById('menuPlayBtn');
 
+    const heroSubtitle = document.getElementById('heroSubtitle');
+    const heroTitle = document.getElementById('heroTitle');
+    const heroPlayBtn = document.getElementById('heroPlayBtn');
+
     const worldData = {
       1: { name: 'WORLD 1', sub: 'ORBIT INIT', color: '#00ff88' },
       2: { name: 'WORLD 2', sub: 'PRISM BREAK', color: '#2ff6ff' },
@@ -82,12 +88,23 @@
     }
     if (sub) { sub.innerText = _subText; sub.style.display = 'block'; }
     if (lock) { lock.style.display = isUnlocked ? 'none' : 'block'; }
+
     if (playBtn) {
       playBtn.disabled = !isUnlocked;
       playBtn.style.opacity = isUnlocked ? '1' : '0.35';
       playBtn.style.cursor = isUnlocked ? 'pointer' : 'not-allowed';
-      playBtn.innerText = isUnlocked ? 'Play' : 'LOCKED';
+      playBtn.innerText = isUnlocked ? 'PLAY' : 'LOCKED';
     }
+
+    if (heroSubtitle) { heroSubtitle.innerText = `${wd.name} • ${_subText}`; }
+    if (heroTitle) { heroTitle.innerText = wd.sub; }
+    if (heroPlayBtn) {
+      heroPlayBtn.disabled = !isUnlocked;
+      heroPlayBtn.style.opacity = isUnlocked ? '1' : '0.35';
+      heroPlayBtn.style.cursor = isUnlocked ? 'pointer' : 'not-allowed';
+      heroPlayBtn.innerText = isUnlocked ? 'PLAY' : 'LOCKED';
+    }
+
     const lockedOverlay = document.getElementById('lockedWorldOverlay');
     if (lockedOverlay) {
       lockedOverlay.style.display = isUnlocked ? 'none' : 'flex';
@@ -109,12 +126,49 @@
     if (rightArrow) rightArrow.disabled = menuSelectedWorld >= 5;
   }
 
+  function switchMenuTab(tabId) {
+    // Hide all views
+    document.querySelectorAll('.menu-view').forEach(view => {
+      view.style.display = 'none';
+      view.classList.remove('active-view');
+    });
+
+    // Reset all nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('active');
+    });
+
+    // Show selected view and activate nav item
+    const targetView = document.getElementById(`${tabId}View`);
+    const targetNav = document.getElementById(`nav-${tabId}`);
+
+    if (targetView) {
+      targetView.style.display = 'flex';
+      // tiny delay to allow display:flex to apply before adding class for transition
+      setTimeout(() => targetView.classList.add('active-view'), 10);
+    }
+    if (targetNav) {
+      targetNav.classList.add('active');
+    }
+  }
+
+  function handleHeroPanelClick() {
+    const isEventActive = document.getElementById('heroEventContent').style.display !== 'none';
+    if (isEventActive) {
+      showChallengePreview();
+    } else {
+      startCampaign();
+    }
+  }
+
   function _launchBestScore() {
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
+    document.body.classList.add('state-gameplay');
+    document.body.classList.remove('state-hub');
     ui.topBar.style.display = 'flex';
     ui.gameUI.style.display = 'block';
     ui.bigMultiplier.style.display = 'block';
@@ -159,6 +213,8 @@
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
+    document.body.classList.add('state-gameplay');
+    document.body.classList.remove('state-hub');
     const augOverlay = document.getElementById('augmentSelect');
     if (augOverlay) augOverlay.style.display = 'none';
 
@@ -279,6 +335,8 @@
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
+    document.body.classList.add('state-gameplay');
+    document.body.classList.remove('state-hub');
     const el = document.getElementById('challengePreview');
     if (el) el.style.display = 'none';
 
@@ -354,4 +412,32 @@
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
   window.startAbyssRun = startAbyssRun;
+  window.switchMenuTab = switchMenuTab;
+  window.handleHeroPanelClick = handleHeroPanelClick;
+
+  // Initial body class
+  document.body.classList.add('state-hub');
+
+  // Check for weekly event priority (e.g. if Abyss is unlocked)
+  // For now, let's enable it if Hard Mode is unlocked (simulating a weekly event condition)
+  setTimeout(() => {
+     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
+     const hasSeenHm = OG.storage.getItem('orbitSync_hm_tutorial') === '1';
+     if (hasSeenHm || maxUnlocked >= 4) { // Mock condition for event
+        const hc = document.getElementById('heroCampaignContent');
+        const he = document.getElementById('heroEventContent');
+        if(hc && he) {
+            hc.style.display = 'none';
+            he.style.display = 'block';
+
+            // Also swap out the events card icon/action to avoid redundancy
+            const actionCards = document.querySelectorAll('.action-card');
+            if(actionCards.length > 3) {
+                 actionCards[3].innerHTML = '<div class="action-icon">🎮</div><div class="action-label">Mini Games</div>';
+                 actionCards[3].onclick = () => alert('Mini Games coming soon!');
+            }
+        }
+     }
+  }, 100);
+
 })(window);
