@@ -393,6 +393,7 @@ function getWorldNum() {
 
 function computeWorldPalette(level) {
   if (level && level.id === 'abyss') return { primary: '#ffaa00', secondary: '#ff0033', bg: '#08020a' };
+  if (level && level.boss === 'phoenix') return { primary: '#ff7a1a', secondary: '#b5152a', bg: '#110606' };
   const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);
   if (level && level.boss) return { primary: '#ffffff', secondary: '#ff3366', bg: '#1a0000' };
   switch (worldNum) {
@@ -409,6 +410,7 @@ function computeWorldPalette(level) {
 function computeWorldShape(level) {
   if (!level || !level.id) return 'circle';
   if (level.id === 'abyss') return 'abyss';
+  if (level.boss === 'phoenix') return 'hexagon';
   const worldNum = parseInt(String(level.id).split('-')[0], 10);
   if (!Number.isFinite(worldNum)) return 'circle';
   if (worldNum === 1) return 'circle';
@@ -428,6 +430,15 @@ function getWorldVisualTheme(level) {
       targetGlowColor: '#ff3366',
       targetCoreColor: '#ffffff',
       railGlowScale: 1.2
+    };
+  }
+  if (level && level.boss === 'phoenix') {
+    return {
+      railColor: '#ff7a1a',
+      targetColor: '#ff4a22',
+      targetGlowColor: '#ff9a46',
+      targetCoreColor: '#ffe6c9',
+      railGlowScale: 1.12
     };
   }
   const worldNum = parseInt(level ? level.id.split('-')[0] : '1', 10);

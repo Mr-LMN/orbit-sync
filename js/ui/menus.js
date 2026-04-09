@@ -89,18 +89,19 @@
     if (statsRow) statsRow.style.display = isUnlocked ? 'flex' : 'none';
     if (isUnlocked && typeof playerProgress !== 'undefined') {
       const _stageIds = ['1','2','3','4','5','6'].map(n => `${menuSelectedWorld}-${n}`);
-      // Stars (stages 1-5 only, 3 each = 15 max)
+      // World mastery stars (strict 0-3 across stages 1-5, non-boss only)
       const _starIds = _stageIds.slice(0, 5);
-      const _earned  = _starIds.reduce((acc, id) => acc + ((playerProgress.stageStars && playerProgress.stageStars[id]) || 0), 0);
+      const _stageStars = _starIds.map((id) => ((playerProgress.stageStars && playerProgress.stageStars[id]) || 0));
+      const _completedCount = _stageStars.filter((v) => v > 0).length;
+      const _allThree = _stageStars.length > 0 && _stageStars.every((v) => v >= 3);
+      const _allTwo = _stageStars.length > 0 && _stageStars.every((v) => v >= 2);
+      let _worldMasteryStars = 0;
+      if (_allThree) _worldMasteryStars = 3;
+      else if (_allTwo) _worldMasteryStars = 2;
+      else if (_completedCount > 0) _worldMasteryStars = 1;
       if (starsEl) {
-        const _filled = '★'.repeat(_earned);
-        const _empty  = '☆'.repeat(15 - _earned);
-        // Show in groups of 5 for readability
-        starsEl.innerHTML = [0,5,10].map(i => {
-          const seg = (_filled + _empty).slice(i, i + 5);
-          return `<span class="star-seg">${seg}</span>`;
-        }).join('');
-        starsEl.style.color = _earned > 0 ? wd.color : 'rgba(255,255,255,0.2)';
+        starsEl.innerText = '★'.repeat(_worldMasteryStars) + '☆'.repeat(3 - _worldMasteryStars);
+        starsEl.style.color = _worldMasteryStars > 0 ? wd.color : 'rgba(255,255,255,0.2)';
       }
       // Best score: max across all stages in this world
       const _best = _stageIds.reduce((max, id) => {
@@ -135,7 +136,7 @@
       playBtn.innerText = isUnlocked ? 'PLAY' : 'LOCKED';
     }
 
-    if (heroSubtitle) { heroSubtitle.innerText = `${wd.name} • ${_subText}`; }
+    if (heroSubtitle) { heroSubtitle.innerText = `${wd.name} • ${wd.sub}`; }
     if (heroTitle) { heroTitle.innerText = wd.sub; }
     if (heroPlayBtn) {
       heroPlayBtn.disabled = !isUnlocked;

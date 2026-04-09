@@ -2,6 +2,7 @@
   const OG = window.OrbitGame;
   OG.systems = OG.systems || {};
   OG.systems.spawning = OG.systems.spawning || {};
+  let phoenixRebirthCueShown = false;
 
   function spawnTargets() {
     targets = [];
@@ -10,6 +11,93 @@
     }
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
+
+    // ─── PHOENIX EVENT BOSS ──────
+    if (levelData.boss === 'phoenix') {
+      const isPhaseTwo = (typeof reviveCount !== 'undefined' && reviveCount >= 1);
+      const phaseColorPrimary = '#ff7a1a';
+      const phaseColorSecondary = '#b5152a';
+      const now = performance.now();
+
+      if (!isPhaseTwo) phoenixRebirthCueShown = false;
+
+      if (ui.tutorialTextContainer) {
+        ui.text.innerText = isPhaseTwo ? 'REBIRTH. THE ASHES TURN.' : 'BURN THROUGH THE EMBERS.';
+        ui.text.style.color = isPhaseTwo ? '#ffd2a1' : '#ff9a46';
+        ui.tutorialTextContainer.style.display = 'block';
+        ui.tutorialTextContainer.style.opacity = '1';
+      }
+
+      if (isPhaseTwo && !phoenixRebirthCueShown) {
+        phoenixRebirthCueShown = true;
+        createPopup(centerObj.x, centerObj.y - 54, 'REBIRTH', '#ff9a46');
+        createShockwave('#ff7a1a', 30);
+        createShockwave('#b5152a', 44);
+        pulseBrightness(1.22, 120);
+      }
+
+      if (!isPhaseTwo) {
+        const realCount = Math.random() > 0.62 ? 3 : 2;
+        const baseOffset = Math.random() * Math.PI * 2;
+        const windowSize = Math.PI / (realCount === 3 ? 7.2 : 6.6);
+        const speedBase = 0.010 + (Math.min(stageHits, 10) * 0.0013);
+        const reverse = Math.random() > 0.74 ? -1 : 1;
+        for (let i = 0; i < realCount; i++) {
+          const target = buildTarget(
+            normalizeAngle(baseOffset + (i * (Math.PI * 2 / realCount))),
+            windowSize,
+            {
+              color: i % 2 === 0 ? phaseColorPrimary : '#ff5226',
+              active: true,
+              hp: 1,
+              isBossShield: true,
+              moveSpeed: speedBase * (i % 2 === 0 ? reverse : -reverse),
+              nextDirectionSwapAt: now + 1700 + (i * 240)
+            }
+          );
+          target.phoenixReal = true;
+          targets.push(target);
+        }
+      } else {
+        const realCount = 3;
+        const baseOffset = Math.random() * Math.PI * 2;
+        const windowSize = Math.PI / 9.4;
+        const speedBase = 0.022 + (Math.min(stageHits, 14) * 0.0016);
+        for (let i = 0; i < realCount; i++) {
+          const dir = i % 2 === 0 ? 1 : -1;
+          const target = buildTarget(
+            normalizeAngle(baseOffset + (i * (Math.PI * 2 / realCount))),
+            windowSize,
+            {
+              color: i % 2 === 0 ? '#ff7a1a' : phaseColorSecondary,
+              active: true,
+              hp: 1,
+              isBossShield: true,
+              moveSpeed: speedBase * dir,
+              nextDirectionSwapAt: now + 900 + (i * 180)
+            }
+          );
+          target.phoenixReal = true;
+          targets.push(target);
+        }
+
+        const phantom = buildTarget(
+          normalizeAngle(baseOffset + (Math.PI / 3)),
+          Math.PI / 10.2,
+          {
+            color: '#ffb07a',
+            active: true,
+            isPhantom: true,
+            hp: 1,
+            moveSpeed: -0.018
+          }
+        );
+        phantom.alpha = 0.42;
+        phantom.phoenixAshDecoy = true;
+        targets.push(phantom);
+      }
+      return;
+    }
 
     // ─── THE ABYSS (Endless Challenge) ──────
     if (levelData.id === 'abyss') {
