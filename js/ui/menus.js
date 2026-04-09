@@ -456,6 +456,10 @@
     isPlaying = true;
 
     levelData = levelOverride;
+    // Apply visual theme so ring uses phoenix colours/shape, not last campaign level
+    currentWorldPalette = computeWorldPalette(levelData);
+    currentWorldShape = computeWorldShape(levelData);
+    currentWorldVisualTheme = getWorldVisualTheme(levelData);
 
     currentLevelIdx = -1;
     resetRunState();
