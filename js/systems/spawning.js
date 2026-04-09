@@ -37,44 +37,42 @@
       }
 
       if (!isPhaseTwo) {
-        const realCount = Math.random() > 0.62 ? 3 : 2;
-        const baseOffset = Math.random() * Math.PI * 2;
-        const windowSize = Math.PI / (realCount === 3 ? 7.2 : 6.6);
-        const speedBase = 0.010 + (Math.min(stageHits, 10) * 0.0013);
-        const reverse = Math.random() > 0.74 ? -1 : 1;
-        for (let i = 0; i < realCount; i++) {
+        const baseOffset = -Math.PI / 2;
+        const windowSize = Math.PI / 6.25; // keep mobile-readable timing window
+        const slowClockwiseSpeed = 0.008 + (Math.min(stageHits, 8) * 0.0008);
+        const synchronizedReverseAt = now + 2200;
+        for (let i = 0; i < 2; i++) {
           const target = buildTarget(
-            normalizeAngle(baseOffset + (i * (Math.PI * 2 / realCount))),
+            normalizeAngle(baseOffset + (i * Math.PI)),
             windowSize,
             {
-              color: i % 2 === 0 ? phaseColorPrimary : '#ff5226',
+              color: i === 0 ? phaseColorPrimary : '#ff5226',
               active: true,
               hp: 1,
               isBossShield: true,
-              moveSpeed: speedBase * (i % 2 === 0 ? reverse : -reverse),
-              nextDirectionSwapAt: now + 1700 + (i * 240)
+              moveSpeed: slowClockwiseSpeed,
+              nextDirectionSwapAt: synchronizedReverseAt
             }
           );
           target.phoenixReal = true;
           targets.push(target);
         }
       } else {
-        const realCount = 3;
-        const baseOffset = Math.random() * Math.PI * 2;
-        const windowSize = Math.PI / 9.4;
-        const speedBase = 0.022 + (Math.min(stageHits, 14) * 0.0016);
-        for (let i = 0; i < realCount; i++) {
-          const dir = i % 2 === 0 ? 1 : -1;
+        const baseOffset = -Math.PI / 2;
+        const windowSize = Math.PI / 8.7; // readable but tighter than phase 1
+        const phaseTwoSpeed = 0.018 + (Math.min(stageHits, 12) * 0.0011);
+        const rhythmBeat = 1350;
+        for (let i = 0; i < 3; i++) {
           const target = buildTarget(
-            normalizeAngle(baseOffset + (i * (Math.PI * 2 / realCount))),
+            normalizeAngle(baseOffset + (i * (Math.PI * 2 / 3))),
             windowSize,
             {
               color: i % 2 === 0 ? '#ff7a1a' : phaseColorSecondary,
               active: true,
               hp: 1,
               isBossShield: true,
-              moveSpeed: speedBase * dir,
-              nextDirectionSwapAt: now + 900 + (i * 180)
+              moveSpeed: phaseTwoSpeed * (i % 2 === 0 ? 1 : -1),
+              nextDirectionSwapAt: now + rhythmBeat + (i * 110)
             }
           );
           target.phoenixReal = true;
@@ -83,13 +81,13 @@
 
         const phantom = buildTarget(
           normalizeAngle(baseOffset + (Math.PI / 3)),
-          Math.PI / 10.2,
+          Math.PI / 9.8,
           {
             color: '#ffb07a',
             active: true,
             isPhantom: true,
             hp: 1,
-            moveSpeed: -0.018
+            moveSpeed: -phaseTwoSpeed
           }
         );
         phantom.alpha = 0.42;
