@@ -48,6 +48,18 @@
     </div>
   </div>
 
+  <!-- PHOENIX EVENT BOSS HUD (shown only during Phoenix Trial) -->
+  <div id="phoenixGameUI" style="display:none;">
+    <div id="phoenixTimerBlock">
+      <div id="phoenixPhaseName">EMBER</div>
+      <div id="phoenixTimer">0:30.0</div>
+    </div>
+    <div id="phoenixStatusRow">
+      <span id="phoenixLives">◆◆◇</span>
+      <span id="phoenixMult">×1.0</span>
+    </div>
+  </div>
+
   <div id="ui" style="display: none;">
     <h1 id="scoreDisplay">0</h1>
     <div id="stagePBDisplay" style="font-family:'Orbitron',sans-serif; font-size:0.52rem; letter-spacing:2.5px; color:rgba(255,255,255,0.22); margin:-4px 0 4px; display:none;">BEST —</div>
@@ -594,6 +606,7 @@
   <script src="js/systems/scoring.js"></script>
   <script src="js/systems/spawning.js"></script>
   <script src="js/systems/progression.js"></script>
+  <script src="js/systems/phoenix-boss.js"></script>
   <script src="js/systems/rendering.js"></script>
 
   <script src="js/ui/hud.js"></script>

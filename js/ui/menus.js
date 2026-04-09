@@ -476,18 +476,27 @@
   }
 
   function startPhoenixRun() {
+    // Stop any previous phoenix run
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
+      OrbitGame.systems.phoenixBoss.stop();
+    }
     _launchBossChallenge({
       id: 'phoenix',
       title: 'Phoenix Trial',
-      hitsNeeded: 999999,
-      speed: 0.052,           // Faster than abyss
-      lives: 2,               // One rebirth: die once, rise once, then it's over
+      hitsNeeded: 999999, // Phoenix manages its own termination
+      speed: 0.040,       // Orb base speed (phoenix zones manage their own moveSpeed)
+      lives: 2,           // Displayed lives; actual phoenix rebirths managed by phoenix-boss.js
       boss: 'phoenix',
-      moveSpeed: 0.022,
-      reverse: true,
-      shrink: { startScale: 1.0, endScale: 0.72, distance: Math.PI * 6 }, // Zones shrink — fire intensifies
-      text: 'PHOENIX TRIAL: Die once, rise once. Fall twice and you are ash.'
+      moveSpeed: 0,       // Phoenix zones set their own per-zone speed in spawnWave()
+      reverse: false,     // Phoenix manages direction per-zone
+      shrink: null,
+      blackout: null,
+      text: ''
     });
+    // Start the phoenix boss system (runs the timer, phases, scoring)
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
+      OrbitGame.systems.phoenixBoss.start();
+    }
   }
 
   // Legacy alias kept for safety

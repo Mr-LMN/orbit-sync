@@ -2677,3 +2677,81 @@ body.hard-mode #hardModeBadge { display: block; }
 .shop-buy-grid::-webkit-scrollbar { display: none; }
 .workshop-grid,
 .shop-buy-grid { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── PHOENIX EVENT BOSS HUD ───────────────────── */
+#phoenixGameUI {
+  position: absolute;
+  bottom: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(80vw, 380px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 6;
+  pointer-events: none;
+}
+#phoenixTimerBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+#phoenixPhaseName {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 4px;
+  color: rgba(255, 140, 40, 0.75);
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 100, 0, 0.5);
+}
+#phoenixTimer {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(3.2rem, 12vw, 4.8rem);
+  line-height: 1;
+  letter-spacing: 2px;
+  color: #ff8c28;
+  text-shadow: 0 0 20px rgba(255, 120, 0, 0.6), 0 0 48px rgba(255, 80, 0, 0.25);
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+#phoenixTimer.phoenix-timer-critical {
+  color: #ff2e2e;
+  text-shadow: 0 0 22px rgba(255, 0, 0, 0.75), 0 0 50px rgba(255, 0, 0, 0.3);
+  animation: phoenix-pulse 0.6s ease-in-out infinite alternate;
+}
+@keyframes phoenix-pulse {
+  from { transform: scale(1);   opacity: 1;    }
+  to   { transform: scale(1.06); opacity: 0.82; }
+}
+#phoenixStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 14px;
+  box-sizing: border-box;
+  background: rgba(8, 12, 22, 0.72);
+  border: 1px solid rgba(255, 130, 40, 0.18);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+}
+#phoenixLives {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 4px;
+  color: #ff8c28;
+  text-shadow: 0 0 10px rgba(255, 120, 0, 0.5);
+}
+#phoenixMult {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+  color: rgba(255, 230, 180, 0.85);
+  text-shadow: 0 0 10px rgba(255, 180, 80, 0.4);
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+#phoenixMult.mult-high {
+  color: #ffe566;
+  text-shadow: 0 0 14px rgba(255, 230, 80, 0.7);
+}
