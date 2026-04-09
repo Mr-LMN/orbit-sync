@@ -354,4 +354,9 @@
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
   window.startAbyssRun = startAbyssRun;
+
+  OG.ui.menus.showCampaignView = showCampaignView;
+  OG.ui.menus.hideCampaignView = hideCampaignView;
+  window.showCampaignView = showCampaignView;
+  window.hideCampaignView = hideCampaignView;
 })(window);
