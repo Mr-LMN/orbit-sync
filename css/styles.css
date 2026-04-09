@@ -153,8 +153,56 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 #tutorialText { display: none; margin: 5px 0; color: #aaa; font-size: 1rem; }
 
-#mainMenu { position: absolute; text-align: center; z-index: 10; background: rgba(15,15,19,0.85); width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
-.title { font-size: 4rem; margin: 0; color: #00ff88; text-shadow: 0 0 20px rgba(0,255,136,0.5); font-weight: 900; letter-spacing: 2px;}
+#mainMenu {
+  position: absolute;
+  text-align: center;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top, #1a0b2e 0%, #080312 60%, #000000 100%);
+}
+
+#mainMenu::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.title {
+  font-size: 4.5rem;
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: 4px;
+  line-height: 0.9;
+}
+
+#orbitTitle {
+  color: #fff;
+  text-shadow:
+    0 0 10px rgba(0, 255, 255, 0.8),
+    0 0 20px rgba(0, 255, 255, 0.5),
+    0 0 40px rgba(0, 255, 255, 0.3);
+  margin-top: 20px;
+}
+
+#syncTitle {
+  color: #ff00ff;
+  text-shadow:
+    0 0 10px rgba(255, 0, 255, 0.8),
+    0 0 20px rgba(255, 0, 255, 0.5),
+    0 0 40px rgba(255, 0, 255, 0.3);
+  margin-bottom: 40px;
+}
 /* Settings modal compact */
 #settingsModal {
   height: auto;
@@ -295,10 +343,77 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 .settings-btn:active { transform: scale(0.94); }
 
 
-.btn { padding: 15px 40px; font-size: 1.5rem; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin: 0; transition: transform 0.1s; width: 250px;}
-.btn:active { transform: scale(0.95); }
-.btn-play { background: #00ff88; color: #0f0f13; box-shadow: 0 0 15px rgba(0,255,136,0.6); }
-.btn-shop { background: transparent; color: #00e5ff; border: 2px solid #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
+.btn {
+  padding: 15px 40px;
+  font-size: 1.2rem;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  background: rgba(10, 10, 20, 0.6);
+  backdrop-filter: blur(5px);
+  border-radius: 4px; /* Sci-fi angular look instead of pills */
+  font-weight: bold;
+  cursor: pointer;
+  text-transform: uppercase;
+  margin: 0;
+  transition: all 0.2s ease;
+  width: 280px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1), inset 0 0 15px rgba(0, 255, 255, 0.05);
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 2px;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 200%;
+}
+
+.btn:hover {
+  border-color: rgba(0, 255, 255, 0.8);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 20px rgba(0, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: scale(0.96) translateY(0);
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.2);
+}
+
+.btn-play {
+  background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1));
+  border: 2px solid #00ffff;
+  color: #00ffff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2), inset 0 0 15px rgba(0, 255, 255, 0.1);
+  font-size: 1.5rem;
+  padding: 18px 40px;
+}
+
+.btn-play:hover {
+  background: linear-gradient(135deg, rgba(255, 0, 255, 0.2), rgba(0, 255, 255, 0.2));
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.4), inset 0 0 25px rgba(0, 255, 255, 0.2);
+}
+
+.btn-shop {
+  border-color: #ff00ff;
+  color: #ff00ff;
+  text-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
+  box-shadow: 0 0 15px rgba(255, 0, 255, 0.1), inset 0 0 15px rgba(255, 0, 255, 0.05);
+}
+
+.btn-shop:hover {
+  border-color: #ff00ff;
+  box-shadow: 0 0 25px rgba(255, 0, 255, 0.3), inset 0 0 25px rgba(255, 0, 255, 0.15);
+}
 
 #shopModal { position: absolute; bottom: -100%; left: 0; width: 100%; height: 85%; background: #15151c; border-top-left-radius: 30px; border-top-right-radius: 30px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8); transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; z-index: 20; }
 .shop-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -870,11 +985,11 @@ body.last-life.arena-charge-3 #gameCanvas {
 
 /* World Selector Main Menu */
 .arrow-btn {
-  background: transparent;
-  border: 2px solid rgba(255,255,255,0.2);
-  color: #fff;
+  background: rgba(10, 10, 20, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  color: #00ffff;
   font-size: 1.2rem;
-  border-radius: 50%;
+  border-radius: 4px; /* Sci-fi square instead of circle */
   width: 45px;
   height: 45px;
   cursor: pointer;
@@ -882,8 +997,11 @@ body.last-life.arena-charge-3 #gameCanvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
 }
-.arrow-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.1); }
+
+.arrow-btn:hover { border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
+
 
 @media (max-width: 768px) {
   #ui { top: 16%; }
@@ -994,11 +1112,11 @@ body.last-life.arena-charge-3 #gameCanvas {
 
 /* World Selector Main Menu */
 .arrow-btn {
-  background: transparent;
-  border: 2px solid rgba(255,255,255,0.2);
-  color: #fff;
+  background: rgba(10, 10, 20, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  color: #00ffff;
   font-size: 1.2rem;
-  border-radius: 50%;
+  border-radius: 4px; /* Sci-fi square instead of circle */
   width: 45px;
   height: 45px;
   cursor: pointer;
@@ -1006,8 +1124,11 @@ body.last-life.arena-charge-3 #gameCanvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
 }
-.arrow-btn:active { transform: scale(0.85); background: rgba(255,255,255,0.1); }
+
+.arrow-btn:hover { border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
+
 
 @media (max-width: 768px) {
   #ui { top: 16%; }
