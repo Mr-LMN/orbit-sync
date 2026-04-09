@@ -2,7 +2,6 @@
   const OG = window.OrbitGame;
   OG.systems = OG.systems || {};
   OG.systems.spawning = OG.systems.spawning || {};
-  let phoenixRebirthCueShown = false;
 
   function spawnTargets() {
     targets = [];
@@ -12,87 +11,10 @@
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
 
-    // ─── PHOENIX EVENT BOSS ──────
+    // ─── PHOENIX EVENT BOSS — fully delegated to phoenix-boss.js ──────
     if (levelData.boss === 'phoenix') {
-      const isPhaseTwo = (typeof reviveCount !== 'undefined' && reviveCount >= 1);
-      const phaseColorPrimary = '#ff7a1a';
-      const phaseColorSecondary = '#b5152a';
-      const now = performance.now();
-
-      if (!isPhaseTwo) phoenixRebirthCueShown = false;
-
-      if (ui.tutorialTextContainer) {
-        ui.text.innerText = isPhaseTwo ? 'REBIRTH. THE ASHES TURN.' : 'BURN THROUGH THE EMBERS.';
-        ui.text.style.color = isPhaseTwo ? '#ffd2a1' : '#ff9a46';
-        ui.tutorialTextContainer.style.display = 'block';
-        ui.tutorialTextContainer.style.opacity = '1';
-      }
-
-      if (isPhaseTwo && !phoenixRebirthCueShown) {
-        phoenixRebirthCueShown = true;
-        createPopup(centerObj.x, centerObj.y - 54, 'REBIRTH', '#ff9a46');
-        createShockwave('#ff7a1a', 30);
-        createShockwave('#b5152a', 44);
-        pulseBrightness(1.22, 120);
-      }
-
-      if (!isPhaseTwo) {
-        const baseOffset = -Math.PI / 2;
-        const windowSize = Math.PI / 6.25; // keep mobile-readable timing window
-        const slowClockwiseSpeed = 0.008 + (Math.min(stageHits, 8) * 0.0008);
-        const synchronizedReverseAt = now + 2200;
-        for (let i = 0; i < 2; i++) {
-          const target = buildTarget(
-            normalizeAngle(baseOffset + (i * Math.PI)),
-            windowSize,
-            {
-              color: i === 0 ? phaseColorPrimary : '#ff5226',
-              active: true,
-              hp: 1,
-              isBossShield: true,
-              moveSpeed: slowClockwiseSpeed,
-              nextDirectionSwapAt: synchronizedReverseAt
-            }
-          );
-          target.phoenixReal = true;
-          targets.push(target);
-        }
-      } else {
-        const baseOffset = -Math.PI / 2;
-        const windowSize = Math.PI / 8.7; // readable but tighter than phase 1
-        const phaseTwoSpeed = 0.018 + (Math.min(stageHits, 12) * 0.0011);
-        const rhythmBeat = 1350;
-        for (let i = 0; i < 3; i++) {
-          const target = buildTarget(
-            normalizeAngle(baseOffset + (i * (Math.PI * 2 / 3))),
-            windowSize,
-            {
-              color: i % 2 === 0 ? '#ff7a1a' : phaseColorSecondary,
-              active: true,
-              hp: 1,
-              isBossShield: true,
-              moveSpeed: phaseTwoSpeed * (i % 2 === 0 ? 1 : -1),
-              nextDirectionSwapAt: now + rhythmBeat + (i * 110)
-            }
-          );
-          target.phoenixReal = true;
-          targets.push(target);
-        }
-
-        const phantom = buildTarget(
-          normalizeAngle(baseOffset + (Math.PI / 3)),
-          Math.PI / 9.8,
-          {
-            color: '#ffb07a',
-            active: true,
-            isPhantom: true,
-            hp: 1,
-            moveSpeed: -phaseTwoSpeed
-          }
-        );
-        phantom.alpha = 0.42;
-        phantom.phoenixAshDecoy = true;
-        targets.push(phantom);
+      if (OG.systems.phoenixBoss && OG.systems.phoenixBoss.isActive()) {
+        OG.systems.phoenixBoss.spawnWave();
       }
       return;
     }

@@ -3458,6 +3458,14 @@ function update() {
   const worldShape = currentWorldShape;
   const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
 
+  // ─── PHOENIX BOSS TICK ───────────────────────────────────────────────────
+  if (levelData && levelData.boss === 'phoenix' &&
+      OrbitGame.systems && OrbitGame.systems.phoenixBoss &&
+      OrbitGame.systems.phoenixBoss.isActive()) {
+    OrbitGame.systems.phoenixBoss.tick(frameNow);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   const _hmSpeedMult = hardModeActive ? 1.35 : 1.0;
   let moveStep = (inMenu ? 0.02 : levelData.speed * _hmSpeedMult) * direction;
   if (!inMenu) {
@@ -4296,6 +4304,22 @@ function tap() {
     comboTimer = 1600;
     comboGlow = Math.min(1.4, comboGlow + 0.2);
 
+    // ─── PHOENIX EVENT BOSS — custom hit handling ─────────────────────────
+    if (t.phoenixTarget && levelData.boss === 'phoenix' &&
+        OrbitGame.systems && OrbitGame.systems.phoenixBoss &&
+        OrbitGame.systems.phoenixBoss.isActive()) {
+      const _isPhoenixPerfect = hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect';
+      const _handled = OrbitGame.systems.phoenixBoss.onTargetHit(t, hitX, hitY, _isPhoenixPerfect);
+      if (!_handled) {
+        // Ghost tapped while invisible — treat as miss feedback but no life deducted
+        ringHitFlash = Math.max(ringHitFlash, 0.18);
+      }
+      updateStreakUI();
+      updateMultiplierUI();
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     if (levelData.boss && !isBossPhaseTwo && t.isBossShield) {
       const isWorld2PrismBoss = levelData.id === '2-6' && levelData.boss === 'prism';
       if (isWorld2PrismBoss && bossPhase === 2 && Number.isFinite(t.sequenceIndex)) {
@@ -5071,6 +5095,9 @@ function tap() {
     const shouldForceHudFlush = allProgressionTargetsInactive || stageHits >= levelData.hitsNeeded;
     if (shouldForceHudFlush) flushScoreCoinUI();
 
+    // Phoenix handles wave progression in its own tick — skip campaign logic entirely
+    if (levelData.boss === 'phoenix') return;
+
     if (shouldForceHudFlush) {
       const isResonanceFinalHit = levelData
         && levelData.id === '3-6'
@@ -5136,6 +5163,22 @@ function tap() {
     const isSurvivalNearMissShock = lives > 1
       && nearMissAvailable
       && nearestEdgeDistance <= NEAR_MISS_SURVIVAL_THRESHOLD;
+
+    // ─── PHOENIX MISS — timer penalty only, no life deducted ──────────────
+    if (levelData.boss === 'phoenix' &&
+        OrbitGame.systems && OrbitGame.systems.phoenixBoss &&
+        OrbitGame.systems.phoenixBoss.isActive()) {
+      if (nearestTarget) {
+        const _nearestCenter = normalizeAngle(nearestTarget.start + (nearestTarget.size / 2));
+        const _missDir = signedAngularDistance(angle, _nearestCenter);
+        createPopup(hitX, hitY - 38, _missDir > 0 ? 'TOO LATE' : 'TOO EARLY', '#ff9a46');
+      } else {
+        createPopup(hitX, hitY - 38, 'MISS', '#ff9a46');
+      }
+      OrbitGame.systems.phoenixBoss.onMiss();
+      return;
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     if (isNearMiss) {
       lastNearMissAt = now;
