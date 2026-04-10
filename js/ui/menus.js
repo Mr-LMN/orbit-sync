@@ -553,7 +553,9 @@
 
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
-    const radius = 70;
+    // Per-shape radii so each shape feels consistently sized in the preview zone
+    const shapeRadii = { circle: 66, diamond: 62, triangle: 66, square: 58, pentagon: 64, hexagon: 64, octagon: 63 };
+    const radius = shapeRadii[currentWorldShape] || 66;
 
     ctx.save();
     if (isLocked) {
@@ -561,7 +563,7 @@
       ctx.lineWidth = 3;
       ctx.setLineDash([5, 5]);
       ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 66, 0, Math.PI * 2);
       ctx.stroke();
 
       ctx.fillStyle = '#666';
@@ -577,6 +579,12 @@
       ctx.beginPath();
       if (currentWorldShape === 'square') {
         ctx.rect(cx - radius, cy - radius, radius*2, radius*2);
+      } else if (currentWorldShape === 'diamond') {
+        ctx.moveTo(cx,          cy - radius); // top
+        ctx.lineTo(cx + radius, cy);          // right
+        ctx.lineTo(cx,          cy + radius); // bottom
+        ctx.lineTo(cx - radius, cy);          // left
+        ctx.closePath();
       } else if (currentWorldShape === 'triangle') {
         ctx.moveTo(cx, cy - radius);
         ctx.lineTo(cx + radius*0.866, cy + radius*0.5);
