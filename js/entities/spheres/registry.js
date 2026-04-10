@@ -1,104 +1,154 @@
 // js/entities/spheres/registry.js
+// Sphere definitions: rarity tiers, XP progression curves, passive effects.
+//
+// Design contract (do not inflate):
+//   COMMON:    maxLevel  2  |  maxPerkSlots 0
+//   UNCOMMON:  maxLevel  3  |  maxPerkSlots 1
+//   RARE:      maxLevel  5  |  maxPerkSlots 1
+//   EPIC:      maxLevel  7  |  maxPerkSlots 2
+//   LEGENDARY: maxLevel 10  |  maxPerkSlots 3
+//
+// xpCurve:  Array of length = maxLevel.
+//   xpCurve[0]  = 0           (always — the floor of level 1)
+//   xpCurve[n]  = cumulative XP required to have reached level (n+1)
+//   Example: maxLevel 3, xpCurve [0, 300, 700]
+//     level 1 → xp in [0, 300)
+//     level 2 → xp in [300, 700)
+//     level 3 → xp >= 700 (max — bar shows full)
+//
+// perkSlotsAtLevel: maps level thresholds to cumulative unlocked slot count.
+//   Slots ramp up as you level so there is always a reason to progress.
+//
+// passive: Sphere-bound, always-active, non-swappable effect.
+//   effects = plain object of effectKey → value.
+//   Boolean effects are treated as flags (present = active).
+//   Numeric effects are additive deltas (see runtime.js getCombinedValue).
 
 (function(window) {
   const OG = window.OrbitGame = window.OrbitGame || {};
   OG.entities = OG.entities || {};
   OG.entities.spheres = OG.entities.spheres || {};
 
-  const spheres = {
+  const SPHERES = {
+
+    // ── COMMON ────────────────────────────────────────────────────
     'classic': {
       id: 'classic',
       name: 'CLASSIC CORE',
       rarity: 'COMMON',
-      maxLevel: 5,
-      xpCurve: [0, 100, 250, 500, 1000],
-      perkSlotsAtLevel: {
-        1: 0,
-        2: 1,
-        3: 1,
-        4: 2,
-        5: 2
-      },
-      passiveAbilities: []
+      maxLevel: 2,
+      xpCurve: [0, 200],
+      perkSlotsAtLevel: { 1: 0, 2: 0 },
+      passive: {
+        id: 'classic_passive',
+        label: 'Standard Operations',
+        effects: {}
+      }
     },
+
+    // ── UNCOMMON ──────────────────────────────────────────────────
     'skull': {
       id: 'skull',
       name: 'NEON SKULL',
       rarity: 'UNCOMMON',
-      maxLevel: 10,
-      xpCurve: [0, 150, 400, 800, 1500, 2500, 4000, 6000, 8500, 12000],
-      perkSlotsAtLevel: {
-        1: 0, 2: 1, 4: 2, 6: 3, 8: 4, 10: 4
-      },
-      passiveAbilities: ['lives_1']
+      maxLevel: 3,
+      xpCurve: [0, 300, 700],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1 },
+      passive: {
+        id: 'skull_passive',
+        label: '+1 Max Lives',
+        effects: { maxLivesBonus: 1 }
+      }
     },
+
+    // ── RARE ──────────────────────────────────────────────────────
     'prism': {
       id: 'prism',
       name: 'PRISM CORE',
       rarity: 'RARE',
-      maxLevel: 15,
-      xpCurve: [0, 200, 500, 1000, 1800, 3000, 4500, 6500, 9000, 12000, 16000, 21000, 27000, 34000, 42000],
-      perkSlotsAtLevel: {
-        1: 0, 3: 1, 6: 2, 9: 3, 12: 4, 15: 5
-      },
-      passiveAbilities: ['coin_bonus_1']
+      maxLevel: 5,
+      xpCurve: [0, 200, 500, 1000, 2000],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 },
+      passive: {
+        id: 'prism_passive',
+        label: '+10% Coins Earned',
+        effects: { coinMultiplierBonus: 0.10 }
+      }
     },
+
     'echo': {
       id: 'echo',
       name: 'ECHO TRAIL',
       rarity: 'RARE',
-      maxLevel: 15,
-      xpCurve: [0, 200, 500, 1000, 1800, 3000, 4500, 6500, 9000, 12000, 16000, 21000, 27000, 34000, 42000],
-      perkSlotsAtLevel: {
-         1: 0, 3: 1, 6: 2, 9: 3, 12: 4, 15: 5
-      },
-      passiveAbilities: ['radius_1']
+      maxLevel: 5,
+      xpCurve: [0, 200, 500, 1000, 2000],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 },
+      passive: {
+        id: 'echo_passive',
+        label: '+10% Hit Radius',
+        effects: { hitRadiusBonus: 0.10 }
+      }
     },
+
+    // ── EPIC ──────────────────────────────────────────────────────
     'crimson': {
       id: 'crimson',
       name: 'CRIMSON RAIL',
       rarity: 'EPIC',
-      maxLevel: 20,
-      xpCurve: [0, 300, 750, 1500, 2500, 4000, 6000, 8500, 11500, 15000, 19000, 24000, 30000, 37000, 45000, 54000, 64000, 75000, 87000, 100000],
-      perkSlotsAtLevel: {
-        1: 1, 4: 2, 8: 3, 12: 4, 16: 5, 20: 6
-      },
-      passiveAbilities: ['combo_perfect']
+      maxLevel: 7,
+      xpCurve: [0, 300, 700, 1400, 2400, 3800, 5600],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2 },
+      passive: {
+        id: 'crimson_passive',
+        label: 'Combo +1 on Perfect Hit',
+        effects: { comboPerfectBonus: true }
+      }
     },
+
     'pulse': {
       id: 'pulse',
       name: 'PULSE CORE',
       rarity: 'EPIC',
-      maxLevel: 20,
-      xpCurve: [0, 300, 750, 1500, 2500, 4000, 6000, 8500, 11500, 15000, 19000, 24000, 30000, 37000, 45000, 54000, 64000, 75000, 87000, 100000],
-      perkSlotsAtLevel: {
-         1: 1, 4: 2, 8: 3, 12: 4, 16: 5, 20: 6
-      },
-      passiveAbilities: ['near_miss_coin']
+      maxLevel: 7,
+      xpCurve: [0, 300, 700, 1400, 2400, 3800, 5600],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2 },
+      passive: {
+        id: 'pulse_passive',
+        label: 'Near Miss grants +1 Coin',
+        effects: { nearMissCoin: true }
+      }
     },
+
+    // ── LEGENDARY ─────────────────────────────────────────────────
     'ghost': {
       id: 'ghost',
       name: 'GHOST ORB',
       rarity: 'LEGENDARY',
-      maxLevel: 30,
-      xpCurve: [0, 500, 1200, 2200, 3500, 5000, 7000, 9500, 12500, 16000, 20000, 25000, 31000, 38000, 46000, 55000, 65000, 76000, 88000, 101000, 115000, 130000, 146000, 163000, 181000, 200000, 220000, 241000, 263000, 286000],
-      perkSlotsAtLevel: {
-        1: 2, 5: 3, 10: 4, 15: 5, 20: 6, 25: 7, 30: 8
-      },
-      passiveAbilities: ['ghost_save']
+      maxLevel: 10,
+      xpCurve: [0, 400, 900, 1800, 3000, 4700, 6800, 9500, 13000, 17500],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 3 },
+      passive: {
+        id: 'ghost_passive',
+        label: 'Survive 1 Fatal Hit per Run',
+        effects: { ghostSave: true }
+      }
     },
+
     'storm': {
       id: 'storm',
       name: 'STORM CORE',
       rarity: 'LEGENDARY',
-      maxLevel: 30,
-      xpCurve: [0, 500, 1200, 2200, 3500, 5000, 7000, 9500, 12500, 16000, 20000, 25000, 31000, 38000, 46000, 55000, 65000, 76000, 88000, 101000, 115000, 130000, 146000, 163000, 181000, 200000, 220000, 241000, 263000, 286000],
-      perkSlotsAtLevel: {
-        1: 2, 5: 3, 10: 4, 15: 5, 20: 6, 25: 7, 30: 8
-      },
-      passiveAbilities: ['flawless_bonus']
+      maxLevel: 10,
+      xpCurve: [0, 400, 900, 1800, 3000, 4700, 6800, 9500, 13000, 17500],
+      perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 3 },
+      passive: {
+        id: 'storm_passive',
+        label: '+5 Coins on Flawless Stage',
+        effects: { flawlessBonus: 5 }
+      }
     }
+
   };
 
-  OG.entities.spheres.registry = spheres;
+  OG.entities.spheres.registry = SPHERES;
 })(window);

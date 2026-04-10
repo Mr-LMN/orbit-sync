@@ -3,21 +3,37 @@
   OG.ui = OG.ui || {};
   OG.ui.shop = OG.ui.shop || {};
 
-  const SKIN_NAMES = {
-    classic: 'CLASSIC CORE', skull: 'NEON SKULL', prism: 'PRISM CORE', echo: 'ECHO TRAIL',
-    crimson: 'CRIMSON RAIL', pulse: 'PULSE CORE', ghost: 'GHOST ORB', storm: 'STORM CORE'
+  // Rarity color palette — single source used by both workshop and shop.
+  const RARITY_COLOR = {
+    COMMON:    '#aaaaaa',
+    UNCOMMON:  '#0aff64',
+    RARE:      '#00eaff',
+    EPIC:      '#bd00ff',
+    LEGENDARY: '#ffaa00'
   };
-  const SKIN_PERKS = {
-    classic: 'Standard Operations',
-    skull: 'Perk: +1 Max Lives',
-    prism: 'Perk: +10% Coins',
-    echo: 'Perk: +10% Perfect Radius',
-    crimson: 'Perk: Combo +1 on Perfect',
-    pulse: 'Perk: Near Miss → 1 Coin',
-    ghost: 'Perk: Survive 1 Fatal Hit',
-    storm: 'Perk: +5 Coins on Flawless'
+
+  const SHOP_COSTS = {
+    skull: 50, prism: 150, echo: 200,
+    crimson: 150, pulse: 300, ghost: 400, storm: 350
   };
-  const SHOP_COSTS = { skull: 50, prism: 150, echo: 200, crimson: 150, pulse: 300, ghost: 400, storm: 350 };
+
+  // Convenience: sphere registry shortcut.
+  function _reg() {
+    return OG.entities && OG.entities.spheres && OG.entities.spheres.registry
+      ? OG.entities.spheres.registry : {};
+  }
+
+  // Convenience: perk registry shortcut.
+  function _perkReg() {
+    return OG.entities && OG.entities.perks && OG.entities.perks.registry
+      ? OG.entities.perks.registry : {};
+  }
+
+  // Convenience: runtime shortcut.
+  function _sr() {
+    return OG.entities && OG.entities.spheres && OG.entities.spheres.runtime
+      ? OG.entities.spheres.runtime : null;
+  }
 
   // ── PURCHASE / EQUIP ─────────────────────────────────────────
 
@@ -53,112 +69,68 @@
     updateShopUI();
   }
 
-  // ── SHOP VIEW (commerce) ──────────────────────────────────────
-
-  function updateShopUI() {
-    updatePersistentCoinUI();
-
-    // Premium button
-    const premiumBtn = document.getElementById('btn-premium');
-    if (premiumBtn) {
-      if (typeof isPremium !== 'undefined' && isPremium) {
-        premiumBtn.innerText = 'OWNED ✓';
-        premiumBtn.disabled = true;
-        premiumBtn.style.opacity = '0.55';
-      } else {
-        premiumBtn.innerText = 'BUY £2.99';
-        premiumBtn.disabled = false;
-        premiumBtn.style.opacity = '1';
-      }
-    }
-
-    // Shop buy grid items
-    const shopSkins = ['skull', 'prism', 'echo', 'crimson', 'pulse', 'ghost', 'storm'];
-    shopSkins.forEach(id => {
-      const btn = document.getElementById('sbtn-' + id);
-      const card = document.getElementById('sitem-' + id);
-      const preview = card ? card.querySelector('.item-preview') : null;
-      if (!btn) return;
-
-      if (preview && typeof renderShopOrbPreview === 'function') renderShopOrbPreview(preview, id);
-
-      const isOwned = (typeof unlockedSkins !== 'undefined' && unlockedSkins.includes(id)) ||
-                      (typeof activeSkin !== 'undefined' && activeSkin === id);
-
-      if (isOwned) {
-        btn.innerText = 'OWNED ✓';
-        btn.disabled = true;
-        btn.classList.add('already-owned');
-      } else {
-        btn.innerText = '🪙 ' + SHOP_COSTS[id];
-        btn.disabled = false;
-        btn.classList.remove('already-owned');
-      }
-    });
-  }
-
-  // ── WORKSHOP VIEW (ownership / equip) ─────────────────────────
+  // ── PERK SELECTION MODAL ──────────────────────────────────────
 
   function openPerkSelectionModal(slotIndex) {
     const modal = document.getElementById('perkSelectionModal');
-    const list = document.getElementById('perkSelectionList');
+    const list  = document.getElementById('perkSelectionList');
     if (!modal || !list) return;
 
     list.innerHTML = '';
 
-    // Get unlocked perks from storage
-    const storageData = typeof OrbitGame !== 'undefined' && OrbitGame.storage ? OrbitGame.storage.getJSON() : {};
-    const unlockedPerks = storageData.unlockedPerks || [];
+    const sr         = _sr();
+    const perkReg    = _perkReg();
+    const skinId     = typeof activeSkin !== 'undefined' ? activeSkin : 'classic';
+    const unlocked   = sr ? sr.getUnlockedPerks() : [];
+    const equipped   = sr ? sr.getEquippedPerksForSphere(skinId) : [];
 
-    // Equipped perks
-    const equippedPerks = (storageData.sphereProgression && storageData.sphereProgression[activeSkin] && storageData.sphereProgression[activeSkin].perks) || [];
-
-    const allPerks = (typeof OrbitGame !== 'undefined' && OrbitGame.entities.perks.registry) ? OrbitGame.entities.perks.registry : {};
-
-    if (unlockedPerks.length === 0) {
-      list.innerHTML = '<div style="color: #aaa; text-align: center; padding: 20px;">No perks unlocked yet.</div>';
+    if (unlocked.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'color:#aaa; text-align:center; padding:20px; font-size:0.8rem;';
+      empty.textContent = 'No perks unlocked yet.';
+      list.appendChild(empty);
     } else {
-      unlockedPerks.forEach(perkId => {
-        const perk = allPerks[perkId];
+      unlocked.forEach(function(perkId) {
+        const perk = perkReg[perkId];
         if (!perk) return;
 
-        const isEquipped = equippedPerks.includes(perkId);
-
+        const isEquipped = equipped.includes(perkId);
         const btn = document.createElement('button');
-        btn.className = `btn btn-outline ${isEquipped ? 'equipped' : ''}`;
-        btn.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 12px; text-align: left;';
+        btn.className = 'btn btn-outline' + (isEquipped ? ' equipped' : '');
+        btn.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px; text-align:left; width:100%;';
         btn.disabled = isEquipped;
-
-        btn.innerHTML = `
-          <div>
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem;">${perk.icon} ${perk.name}</div>
-            <div style="font-size: 0.7rem; color: #aaa; margin-top: 4px;">${perk.description}</div>
-          </div>
-          <div>${isEquipped ? 'EQUIPPED' : 'SELECT'}</div>
-        `;
+        btn.innerHTML =
+          '<div>' +
+            '<div style="font-family:\'Orbitron\',sans-serif; font-size:0.9rem;">' + perk.icon + ' ' + perk.name + '</div>' +
+            '<div style="font-size:0.7rem; color:#aaa; margin-top:4px;">' + perk.description + '</div>' +
+          '</div>' +
+          '<div style="margin-left:12px; white-space:nowrap;">' + (isEquipped ? 'EQUIPPED' : 'SELECT') + '</div>';
 
         if (!isEquipped) {
-          btn.onclick = () => {
-            if (typeof audioCtx !== 'undefined' && audioCtx) soundUIClick();
-            equipPerkToSlot(activeSkin, slotIndex, perkId);
-            modal.style.display = 'none';
-          };
+          btn.onclick = (function(pid) {
+            return function() {
+              if (typeof audioCtx !== 'undefined' && audioCtx) soundUIClick();
+              if (_sr()) _sr().equipPerk(skinId, slotIndex, pid);
+              modal.style.display = 'none';
+              updateWorkshopUI();
+            };
+          })(perkId);
         }
-
         list.appendChild(btn);
       });
     }
 
-    // Add unequip option if slot is not empty
-    if (equippedPerks[slotIndex]) {
+    // Unequip option if this slot has something in it
+    if (equipped[slotIndex]) {
       const unequipBtn = document.createElement('button');
       unequipBtn.className = 'btn btn-outline';
-      unequipBtn.style.cssText = 'margin-top: 10px; border-color: #ff4444; color: #ff4444;';
-      unequipBtn.innerText = 'UNEQUIP PERK';
-      unequipBtn.onclick = () => {
+      unequipBtn.style.cssText = 'margin-top:10px; border-color:#ff4444; color:#ff4444; width:100%;';
+      unequipBtn.textContent = 'UNEQUIP';
+      unequipBtn.onclick = function() {
         if (typeof audioCtx !== 'undefined' && audioCtx) soundUIClick();
-        equipPerkToSlot(activeSkin, slotIndex, null);
+        if (_sr()) _sr().equipPerk(skinId, slotIndex, null);
         modal.style.display = 'none';
+        updateWorkshopUI();
       };
       list.appendChild(unequipBtn);
     }
@@ -166,156 +138,124 @@
     modal.style.display = 'flex';
   }
 
-  function equipPerkToSlot(skinId, slotIndex, perkId) {
-    if (typeof OrbitGame === 'undefined' || !OrbitGame.storage) return;
+  // ── WORKSHOP HERO DETAIL (level, XP bar, perk slots) ─────────
 
-    let data = OrbitGame.storage.getJSON() || {};
-    data.sphereProgression = data.sphereProgression || {};
-    data.sphereProgression[skinId] = data.sphereProgression[skinId] || { level: 1, xp: 0, perks: [] };
+  function _updateWorkshopEquippedDetails(sphereId) {
+    const sr       = _sr();
+    const meta     = _reg()[sphereId];
+    if (!meta) return;
 
-    let perks = data.sphereProgression[skinId].perks || [];
+    const rarityEl         = document.getElementById('workshopEquippedRarity');
+    const levelEl          = document.getElementById('workshopEquippedLevel');
+    const xpBarEl          = document.getElementById('workshopEquippedXPBar');
+    const passiveEl        = document.getElementById('workshopEquippedPassive');
+    const perkSlotsEl      = document.getElementById('workshopEquippedPerkSlots');
 
-    if (perkId === null) {
-      perks.splice(slotIndex, 1);
-    } else {
-      perks[slotIndex] = perkId;
-    }
-
-    data.sphereProgression[skinId].perks = perks;
-    OrbitGame.storage.setJSON(data);
-
-    updateWorkshopUI();
-  }
-
-  function updateWorkshopEquippedDetails(equipped) {
-    const registry = (typeof OrbitGame !== 'undefined' && OrbitGame.entities.spheres.registry) ? OrbitGame.entities.spheres.registry : {};
-    const sphereMeta = registry[equipped];
-
-    if (!sphereMeta) return;
-
-    const rarityEl = document.getElementById('workshopEquippedRarity');
-    const levelEl = document.getElementById('workshopEquippedLevel');
-    const xpBarEl = document.getElementById('workshopEquippedXPBar');
-    const perkSlotsContainer = document.getElementById('workshopEquippedPerkSlots');
-
+    // Rarity badge
     if (rarityEl) {
-      rarityEl.innerText = sphereMeta.rarity;
-      let color = '#aaa';
-      switch(sphereMeta.rarity) {
-        case 'UNCOMMON': color = '#0aff64'; break;
-        case 'RARE': color = '#00eaff'; break;
-        case 'EPIC': color = '#bd00ff'; break;
-        case 'LEGENDARY': color = '#ffaa00'; break;
-      }
-      rarityEl.style.color = color;
+      rarityEl.textContent = meta.rarity;
+      rarityEl.style.color = RARITY_COLOR[meta.rarity] || '#aaa';
     }
 
-    // Get current progression
-    let currentLevel = 1;
-    let currentXP = 0;
-    let equippedPerks = [];
+    const prog         = sr ? sr.getSphereProgress(sphereId) : { level: 1, xp: 0 };
+    const currentLevel = prog.level || 1;
+    const currentXP    = prog.xp   || 0;
 
-    if (typeof OrbitGame !== 'undefined' && OrbitGame.storage) {
-      const data = OrbitGame.storage.getJSON() || {};
-      if (data.sphereProgression && data.sphereProgression[equipped]) {
-         currentLevel = data.sphereProgression[equipped].level || 1;
-         currentXP = data.sphereProgression[equipped].xp || 0;
-         equippedPerks = data.sphereProgression[equipped].perks || [];
-      }
-    }
+    // Level label
+    if (levelEl) levelEl.textContent = 'LV ' + currentLevel + ' / ' + meta.maxLevel;
 
-    if (levelEl) {
-      levelEl.innerText = `LEVEL ${currentLevel}/${sphereMeta.maxLevel}`;
-    }
-
+    // XP bar
     if (xpBarEl) {
-      if (currentLevel >= sphereMeta.maxLevel) {
-        xpBarEl.style.width = '100%';
+      if (currentLevel >= meta.maxLevel) {
+        xpBarEl.style.width     = '100%';
         xpBarEl.style.background = '#0aff64';
       } else {
-        const xpNeeded = sphereMeta.xpCurve[currentLevel] || 1;
-        const prevXpNeeded = sphereMeta.xpCurve[currentLevel - 1] || 0;
-        const progress = Math.max(0, Math.min(100, ((currentXP - prevXpNeeded) / (xpNeeded - prevXpNeeded)) * 100));
-        xpBarEl.style.width = `${progress}%`;
+        const lo  = meta.xpCurve[currentLevel - 1] || 0;
+        const hi  = meta.xpCurve[currentLevel]     || 1;
+        const pct = Math.max(0, Math.min(100, ((currentXP - lo) / (hi - lo)) * 100));
+        xpBarEl.style.width     = pct + '%';
         xpBarEl.style.background = '#00e5ff';
       }
     }
 
-    // Render Perk Slots
-    if (perkSlotsContainer) {
-      perkSlotsContainer.innerHTML = '';
+    // Passive label
+    if (passiveEl) {
+      passiveEl.textContent = meta.passive ? meta.passive.label : '';
+    }
 
-      // Determine max slots available for this level
-      let maxSlots = 0;
-      for (const [lvlStr, slots] of Object.entries(sphereMeta.perkSlotsAtLevel)) {
-        if (parseInt(lvlStr) <= currentLevel) {
-           maxSlots = Math.max(maxSlots, slots);
-        }
-      }
+    // Perk slots
+    if (!perkSlotsEl) return;
+    perkSlotsEl.innerHTML = '';
 
-      // Also get absolute max slots for UI visual hints
-      let absoluteMaxSlots = 0;
-      for (const slots of Object.values(sphereMeta.perkSlotsAtLevel)) {
-         absoluteMaxSlots = Math.max(absoluteMaxSlots, slots);
-      }
+    const unlockedSlots = sr ? sr.getUnlockedPerkSlotsForSphere(sphereId) : 0;
+    const maxSlots      = sr ? sr.getMaxPerkSlotsForSphere(sphereId)      : 0;
 
-      const allPerks = (typeof OrbitGame !== 'undefined' && OrbitGame.entities.perks.registry) ? OrbitGame.entities.perks.registry : {};
+    if (maxSlots === 0) return; // Common — no slots
 
-      for (let i = 0; i < absoluteMaxSlots; i++) {
-        const slotDiv = document.createElement('div');
-        slotDiv.className = 'perk-slot';
+    const equippedPerks = sr ? sr.getEquippedPerksForSphere(sphereId) : [];
+    const perkReg       = _perkReg();
 
-        if (i < maxSlots) {
-           // Slot is unlocked
-           if (equippedPerks[i] && allPerks[equippedPerks[i]]) {
-             const p = allPerks[equippedPerks[i]];
-             slotDiv.innerHTML = `<span style="font-size: 1.2rem;" title="${p.name}">${p.icon}</span>`;
-             slotDiv.style.border = '1px solid #00e5ff';
-             slotDiv.style.background = 'rgba(0, 229, 255, 0.1)';
-             slotDiv.onclick = () => openPerkSelectionModal(i);
-             slotDiv.style.cursor = 'pointer';
-           } else {
-             slotDiv.innerHTML = '<span style="color: #666; font-size: 1.2rem;">+</span>';
-             slotDiv.className += ' empty';
-             slotDiv.style.border = '1px dashed #666';
-             slotDiv.onclick = () => openPerkSelectionModal(i);
-             slotDiv.style.cursor = 'pointer';
-           }
+    for (let i = 0; i < maxSlots; i++) {
+      const slotDiv = document.createElement('div');
+      slotDiv.style.cssText =
+        'width:44px; height:44px; display:flex; align-items:center; justify-content:center;' +
+        'border-radius:8px; box-sizing:border-box;';
+
+      if (i < unlockedSlots) {
+        // Unlocked slot
+        const pid  = equippedPerks[i];
+        const perk = pid ? perkReg[pid] : null;
+        if (perk) {
+          slotDiv.innerHTML = '<span style="font-size:1.3rem;" title="' + perk.name + '">' + perk.icon + '</span>';
+          slotDiv.style.border     = '1.5px solid #00e5ff';
+          slotDiv.style.background = 'rgba(0,229,255,0.1)';
         } else {
-           // Slot is locked
-           slotDiv.innerHTML = '<span style="color: #333; font-size: 1rem;">🔒</span>';
-           slotDiv.style.border = '1px solid #333';
-           slotDiv.style.background = 'rgba(0,0,0,0.5)';
-           slotDiv.title = 'Reach higher level to unlock';
+          slotDiv.innerHTML = '<span style="color:#555; font-size:1.4rem; line-height:1;">+</span>';
+          slotDiv.style.border = '1.5px dashed #444';
         }
-
-        slotDiv.style.width = '40px';
-        slotDiv.style.height = '40px';
-        slotDiv.style.display = 'flex';
-        slotDiv.style.alignItems = 'center';
-        slotDiv.style.justifyContent = 'center';
-        slotDiv.style.borderRadius = '8px';
-
-        perkSlotsContainer.appendChild(slotDiv);
+        slotDiv.style.cursor = 'pointer';
+        slotDiv.addEventListener('click', (function(idx) {
+          return function() { openPerkSelectionModal(idx); };
+        })(i));
+      } else {
+        // Locked slot — shows at what level it unlocks
+        let unlockAt = meta.maxLevel;
+        const slotMap = meta.perkSlotsAtLevel || {};
+        for (const lvl of Object.keys(slotMap).map(Number).sort((a, b) => a - b)) {
+          if (slotMap[lvl] > i) { unlockAt = lvl; break; }
+        }
+        slotDiv.innerHTML =
+          '<span style="font-size:0.6rem; color:#333; text-align:center; line-height:1.2; font-family:\'Orbitron\',sans-serif;">' +
+          '🔒<br>LV' + unlockAt + '</span>';
+        slotDiv.style.border     = '1.5px solid #222';
+        slotDiv.style.background = 'rgba(0,0,0,0.4)';
+        slotDiv.title = 'Reach Level ' + unlockAt + ' to unlock';
       }
+
+      perkSlotsEl.appendChild(slotDiv);
     }
   }
 
+  // ── WORKSHOP GRID + HERO UPDATE ───────────────────────────────
+
   function updateWorkshopUI() {
     const equipped = typeof activeSkin !== 'undefined' ? activeSkin : 'classic';
+    const reg      = _reg();
+    const sr       = _sr();
 
-    // Equipped hero section
+    // Hero section
     const heroPreview = document.getElementById('workshopEquippedPreview');
     const heroName    = document.getElementById('workshopEquippedName');
-    const heroPerk    = document.getElementById('workshopEquippedPerk');
     if (heroPreview) {
       heroPreview.dataset.skin = equipped;
       if (typeof renderShopOrbPreview === 'function') renderShopOrbPreview(heroPreview, equipped);
     }
-    if (heroName) heroName.innerText = SKIN_NAMES[equipped] || equipped.toUpperCase();
-    if (heroPerk) heroPerk.innerText = SKIN_PERKS[equipped] || '';
+    if (heroName) {
+      const meta = reg[equipped];
+      heroName.textContent = meta ? meta.name : equipped.toUpperCase();
+    }
 
-    updateWorkshopEquippedDetails(equipped);
+    _updateWorkshopEquippedDetails(equipped);
 
     // Profile sphere preview (if on profile view)
     const profilePreview = document.getElementById('profileSpherePreview');
@@ -324,20 +264,30 @@
       if (typeof renderShopOrbPreview === 'function') renderShopOrbPreview(profilePreview, equipped);
     }
 
-    // Workshop grid items
+    // Workshop grid cards
     const allSkins = ['classic', 'skull', 'prism', 'echo', 'crimson', 'pulse', 'ghost', 'storm'];
-    allSkins.forEach(id => {
+    allSkins.forEach(function(id) {
       const card    = document.getElementById('witem-' + id);
       const btn     = document.getElementById('wbtn-' + id);
-      const preview = card ? card.querySelector('.item-preview') : null;
       if (!card || !btn) return;
 
+      const preview = card.querySelector('.item-preview');
       if (preview && typeof renderShopOrbPreview === 'function') renderShopOrbPreview(preview, id);
 
-      const isEquipped = equipped === id;
+      // Update passive label from registry
+      const perkEl = card.querySelector('.workshop-item-perk');
+      if (perkEl) {
+        const meta = reg[id];
+        if (meta && meta.passive) {
+          perkEl.textContent    = meta.passive.label;
+          perkEl.style.color    = RARITY_COLOR[meta.rarity] || '#aaa';
+        }
+      }
+
+      const isEquipped = (equipped === id);
       const isOwned    = isEquipped ||
-                         (typeof unlockedSkins !== 'undefined' && unlockedSkins.includes(id)) ||
-                         id === 'classic';
+        (typeof unlockedSkins !== 'undefined' && unlockedSkins.includes(id)) ||
+        id === 'classic';
 
       card.classList.remove('is-equipped', 'is-locked');
       btn.classList.remove('equipped-state', 'owned-state', 'locked-state');
@@ -347,21 +297,73 @@
       if (isEquipped) {
         card.classList.add('is-equipped');
         btn.classList.add('equipped-state');
-        btn.innerText = 'EQUIPPED';
-        btn.disabled  = true;
+        btn.textContent = 'EQUIPPED';
+        btn.disabled    = true;
       } else if (isOwned) {
         btn.classList.add('owned-state');
-        btn.innerText = 'EQUIP';
-        const _id = id;
-        btn.onclick = () => {
-          if (typeof audioCtx !== 'undefined' && audioCtx) soundUIClick();
-          equipSkin(_id);
-        };
+        btn.textContent = 'EQUIP';
+        btn.onclick = (function(_id) {
+          return function() {
+            if (typeof audioCtx !== 'undefined' && audioCtx) soundUIClick();
+            equipSkin(_id);
+          };
+        })(id);
       } else {
         card.classList.add('is-locked');
         btn.classList.add('locked-state');
-        btn.innerText = '🔒 LOCKED';
-        btn.disabled  = true;
+        btn.textContent = '🔒 LOCKED';
+        btn.disabled    = true;
+      }
+    });
+  }
+
+  // ── SHOP VIEW (commerce) ──────────────────────────────────────
+
+  function updateShopUI() {
+    updatePersistentCoinUI();
+
+    const reg = _reg();
+
+    // Premium button
+    const premiumBtn = document.getElementById('btn-premium');
+    if (premiumBtn) {
+      const owned = typeof isPremium !== 'undefined' && isPremium;
+      premiumBtn.textContent  = owned ? 'OWNED ✓' : 'BUY £2.99';
+      premiumBtn.disabled     = owned;
+      premiumBtn.style.opacity = owned ? '0.55' : '1';
+    }
+
+    // Shop buy grid
+    const shopSkins = ['skull', 'prism', 'echo', 'crimson', 'pulse', 'ghost', 'storm'];
+    shopSkins.forEach(function(id) {
+      const card   = document.getElementById('sitem-' + id);
+      const btn    = document.getElementById('sbtn-' + id);
+      if (!btn) return;
+
+      const preview = card ? card.querySelector('.item-preview') : null;
+      if (preview && typeof renderShopOrbPreview === 'function') renderShopOrbPreview(preview, id);
+
+      // Passive label from registry
+      const perkEl = card ? card.querySelector('.shop-buy-card-perk') : null;
+      if (perkEl) {
+        const meta = reg[id];
+        if (meta && meta.passive) {
+          perkEl.textContent = meta.passive.label;
+          perkEl.style.color = RARITY_COLOR[meta.rarity] || '#aaa';
+        }
+      }
+
+      const isOwned = (typeof unlockedSkins !== 'undefined' && unlockedSkins.includes(id)) ||
+                      (typeof activeSkin !== 'undefined' && activeSkin === id);
+
+      if (isOwned) {
+        btn.textContent = 'OWNED ✓';
+        btn.disabled    = true;
+        btn.classList.add('already-owned');
+      } else {
+        btn.textContent = '🪙 ' + SHOP_COSTS[id];
+        btn.disabled    = false;
+        btn.classList.remove('already-owned');
       }
     });
   }
@@ -369,9 +371,7 @@
   // ── NAVIGATION ────────────────────────────────────────────────
 
   function toggleShop(show) {
-    if (show && typeof switchMenuTab === 'function') {
-      switchMenuTab('shop');
-    }
+    if (show && typeof switchMenuTab === 'function') switchMenuTab('shop');
   }
 
   // ── EXPORTS ───────────────────────────────────────────────────

@@ -176,15 +176,23 @@
           <div class="workshop-equipped-label">ACTIVE CORE</div>
           <div class="item-preview workshop-sphere-hero" id="workshopEquippedPreview" data-skin="classic"></div>
           <div class="workshop-equipped-name" id="workshopEquippedName">CLASSIC CORE</div>
-          <div class="workshop-equipped-perk" id="workshopEquippedPerk">Standard Operations</div>
-          <div class="workshop-equipped-stats" style="display:flex; justify-content:space-between; width:100%; margin-top:8px;">
-            <div id="workshopEquippedRarity" style="font-family:'Orbitron',sans-serif; font-size:0.5rem; color:#aaa;">COMMON</div>
-            <div id="workshopEquippedLevel" style="font-family:'Orbitron',sans-serif; font-size:0.5rem; color:#aaa;">LEVEL 1/5</div>
+
+          <!-- Rarity + level row -->
+          <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:6px;">
+            <div id="workshopEquippedRarity" style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:2px; color:#aaa;">COMMON</div>
+            <div id="workshopEquippedLevel"  style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:1px; color:#aaa;">LV 1 / 2</div>
           </div>
-          <div class="workshop-xp-bar" style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; margin-top:4px; overflow:hidden;">
-            <div id="workshopEquippedXPBar" style="width:0%; height:100%; background:#00e5ff;"></div>
+
+          <!-- XP bar -->
+          <div style="width:100%; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; margin-top:4px; overflow:hidden;">
+            <div id="workshopEquippedXPBar" style="width:0%; height:100%; background:#00e5ff; border-radius:3px; transition:width 0.3s ease;"></div>
           </div>
-          <div id="workshopEquippedPerkSlots" style="display:flex; gap:8px; margin-top:12px; width:100%; justify-content:center;">
+
+          <!-- Passive text -->
+          <div id="workshopEquippedPassive" style="font-family:'Orbitron',sans-serif; font-size:0.6rem; color:#666; letter-spacing:1px; margin-top:8px; text-align:center; width:100%;">Standard Operations</div>
+
+          <!-- Perk slots -->
+          <div id="workshopEquippedPerkSlots" style="display:flex; gap:8px; margin-top:10px; width:100%; justify-content:center; flex-wrap:wrap;">
           </div>
         </div>
 
@@ -593,6 +601,7 @@
   <script src="js/core/globals.js"></script>
   <script src="js/entities/perks/registry.js"></script>
   <script src="js/entities/spheres/registry.js"></script>
+  <script src="js/entities/spheres/runtime.js"></script>
   <script src="js/core/config.js"></script>
   <script src="js/core/state.js"></script>
   <script src="js/core/utils.js"></script>
