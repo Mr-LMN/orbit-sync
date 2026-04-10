@@ -651,13 +651,6 @@
         if(hc && he) {
             hc.style.display = 'none';
             he.style.display = 'block';
-
-            // Also swap out the events card icon/action to avoid redundancy
-            const actionCards = document.querySelectorAll('.action-card');
-            if(actionCards.length > 3) {
-                 actionCards[3].innerHTML = '<div class="action-icon">🎮</div><div class="action-label">Mini Games</div>';
-                 actionCards[3].onclick = () => alert('Mini Games coming soon!');
-            }
         }
      }
   }, 100);

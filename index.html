@@ -158,7 +158,7 @@
               </div>
 
               <!-- We keep menuPlayBtn ID here so changeWorld updates it correctly without breaking existing logic -->
-              <button class="btn btn-play campaign-card-play" id="menuPlayBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign()">PLAY</button>
+              <button class="campaign-card-play" id="menuPlayBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign()">PLAY</button>
             </div>
 
             <button class="arrow-btn" aria-label="Next world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(1)">▶</button>

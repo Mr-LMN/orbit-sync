@@ -342,8 +342,8 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   max-width: 100%;
   margin: 0 auto;
   width: 100%;
-  flex: 0 0 36%;
-  min-height: 160px;
+  flex: none;
+  min-height: 148px;
   border-radius: 20px;
   background: rgba(15, 18, 30, 0.7);
   border: 1px solid rgba(0, 229, 255, 0.3);
@@ -412,7 +412,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   line-height: 1;
   color: #fff;
   letter-spacing: 2px;
-  margin-bottom: 18px;
+  margin-bottom: 8px;
   text-shadow: 0 0 20px rgba(0, 229, 255, 0.8), 0 0 40px rgba(0, 229, 255, 0.4);
   animation: textGlowPulse 3s infinite alternate ease-in-out;
 }
@@ -563,7 +563,8 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 6px;
 }
 
 .world-bg-glow {
@@ -630,7 +631,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
     0 0 20px rgba(0, 229, 255, 0.1);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
   box-sizing: border-box;
-  margin: 10px auto 0;
+  margin-top: auto;
   display: block;
 }
 .campaign-card-play::before {
@@ -2071,25 +2072,19 @@ body.hard-mode #hardModeBadge { display: block; }
    HUB PATCH — REFINEMENT LAYER
    ═══════════════════════════════════════════════ */
 
-/* ── ACTION ROW FIX ─────────────────────────── */
-/* Slightly narrower cards so the row edge-hint is visible */
+/* ── ACTION ROW — 2×2 GRID ──────────────────── */
+/* Enforce grid items: remove old narrow-card scroll overrides */
 .action-card {
-  flex: 0 0 calc(28% - 6px);
-  min-width: 88px;
-  max-width: 110px;
+  min-width: 0;
+  max-width: none;
+  min-height: 78px;
 }
-/* Soft fade at right edge to hint scrollability */
+/* Remove old scroll-hint fade */
 #hubActionRow::after {
-  content: '';
-  position: absolute;
-  right: 0; top: 0; bottom: 10px;
-  width: 32px;
-  background: linear-gradient(to right, transparent, rgba(4,5,12,0.6));
-  pointer-events: none;
+  display: none;
 }
 #hubActionRow {
-  position: relative;
-  padding-right: 20px;
+  padding-right: 0;
 }
 
 /* ── CAMPAIGN — WORLD STARS + SCORE ─────────── */
@@ -2841,15 +2836,15 @@ body.hard-mode #hardModeBadge { display: block; }
   }
 
   .hero-panel {
-    flex: 0 0 32%;
-    min-height: 148px;
+    flex: none;
+    min-height: 132px;
     padding: 14px 16px;
     margin-bottom: 8px;
   }
 
   .hero-title {
     font-size: 2.4rem;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
   .hero-cta {
