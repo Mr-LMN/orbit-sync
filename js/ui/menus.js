@@ -553,7 +553,7 @@
 
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
-    const radius = 60;
+    const radius = 70;
 
     ctx.save();
     if (isLocked) {
@@ -570,11 +570,10 @@
       ctx.textBaseline = 'middle';
       ctx.fillText('?', cx, cy);
     } else {
-      ctx.strokeStyle = currentWorldPalette.color1 || '#00ff88';
-      ctx.lineWidth = 4;
+      const shapeColor = currentWorldPalette.color1 || '#00ff88';
       ctx.setLineDash([]);
 
-      // Simple shape drawing (or could call OrbitGame.systems.rendering.buildShapePath)
+      // Build the shape path
       ctx.beginPath();
       if (currentWorldShape === 'square') {
         ctx.rect(cx - radius, cy - radius, radius*2, radius*2);
@@ -596,8 +595,17 @@
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       }
 
-      ctx.shadowColor = currentWorldPalette.color1 || '#00ff88';
-      ctx.shadowBlur = 15;
+      // Subtle fill for shape interior presence
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = shapeColor;
+      ctx.fill();
+      ctx.globalAlpha = 1.0;
+
+      // Glowing stroke
+      ctx.strokeStyle = shapeColor;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = shapeColor;
+      ctx.shadowBlur = 24;
       ctx.stroke();
     }
     ctx.restore();
