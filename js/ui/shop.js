@@ -190,6 +190,9 @@
     const unlockedSlots = sr ? sr.getUnlockedPerkSlotsForSphere(sphereId) : 0;
     const maxSlots      = sr ? sr.getMaxPerkSlotsForSphere(sphereId)      : 0;
 
+    // Show or hide the perks section based on whether this core has slots
+    const perkSection = document.querySelector('.workshop-perks-section');
+    if (perkSection) perkSection.style.display = maxSlots === 0 ? 'none' : '';
     if (maxSlots === 0) return; // Common — no slots
 
     const equippedPerks = sr ? sr.getEquippedPerksForSphere(sphereId) : [];
@@ -197,23 +200,19 @@
 
     for (let i = 0; i < maxSlots; i++) {
       const slotDiv = document.createElement('div');
-      slotDiv.style.cssText =
-        'width:44px; height:44px; display:flex; align-items:center; justify-content:center;' +
-        'border-radius:8px; box-sizing:border-box;';
+      slotDiv.className = 'workshop-perk-slot';
 
       if (i < unlockedSlots) {
         // Unlocked slot
         const pid  = equippedPerks[i];
         const perk = pid ? perkReg[pid] : null;
         if (perk) {
+          slotDiv.className += ' slot-filled';
           slotDiv.innerHTML = '<span style="font-size:1.3rem;" title="' + perk.name + '">' + perk.icon + '</span>';
-          slotDiv.style.border     = '1.5px solid #00e5ff';
-          slotDiv.style.background = 'rgba(0,229,255,0.1)';
         } else {
+          slotDiv.className += ' slot-empty';
           slotDiv.innerHTML = '<span style="color:#555; font-size:1.4rem; line-height:1;">+</span>';
-          slotDiv.style.border = '1.5px dashed #444';
         }
-        slotDiv.style.cursor = 'pointer';
         slotDiv.addEventListener('click', (function(idx) {
           return function() { openPerkSelectionModal(idx); };
         })(i));
@@ -224,11 +223,10 @@
         for (const lvl of Object.keys(slotMap).map(Number).sort((a, b) => a - b)) {
           if (slotMap[lvl] > i) { unlockAt = lvl; break; }
         }
+        slotDiv.className += ' slot-locked';
         slotDiv.innerHTML =
-          '<span style="font-size:0.6rem; color:#333; text-align:center; line-height:1.2; font-family:\'Orbitron\',sans-serif;">' +
+          '<span style="font-size:0.5rem; color:#333; text-align:center; line-height:1.3; font-family:\'Orbitron\',sans-serif;">' +
           '🔒<br>LV' + unlockAt + '</span>';
-        slotDiv.style.border     = '1.5px solid #222';
-        slotDiv.style.background = 'rgba(0,0,0,0.4)';
         slotDiv.title = 'Reach Level ' + unlockAt + ' to unlock';
       }
 
