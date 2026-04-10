@@ -590,6 +590,28 @@
     }
   }
 
+  function startPhoenixRunV2() {
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
+      OrbitGame.systems.phoenixBossV2.stop();
+    }
+    _launchBossChallenge({
+      id: 'phoenix',
+      title: 'Phoenix V2 Trial',
+      hitsNeeded: 999999,
+      speed: 0.040,
+      lives: 2,
+      boss: 'phoenix',
+      moveSpeed: 0,
+      reverse: false,
+      shrink: null,
+      blackout: null,
+      text: ''
+    });
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
+      OrbitGame.systems.phoenixBossV2.start();
+    }
+  }
+
   // Legacy alias kept for safety
   function startAbyssRun() { startPhoenixRun(); }
 
@@ -712,6 +734,7 @@
   window.showChallengePreview = showChallengePreview;
   window.startAbyssRun    = startAbyssRun;
   window.startPhoenixRun  = startPhoenixRun;
+  window.startPhoenixRunV2 = startPhoenixRunV2;
   window.switchMenuTab    = switchMenuTab;
   window.handleHeroPanelClick = handleHeroPanelClick;
   window.startContinueRun = startContinueRun;

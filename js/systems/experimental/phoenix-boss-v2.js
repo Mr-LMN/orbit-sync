@@ -503,7 +503,7 @@
             ui.overlay.style.display = 'none';
             ui.title.classList.remove('run-title');
             if (typeof audioCtx!=='undefined'&&audioCtx) soundUIClick();
-            start();
+            startPhoenixRunV2();
           };
         }
 
@@ -523,12 +523,6 @@
   function start() {
     // Only works if the game isn't already playing another mode
     if (typeof isPlaying !== 'undefined' && isPlaying) return;
-
-    if (typeof ui !== 'undefined') {
-       ui.menu.style.display = 'none';
-       ui.title.classList.remove('run-title');
-    }
-    if (typeof isPlaying !== 'undefined') isPlaying = true;
     
     // Reset environment
     if (typeof levelData !== 'undefined') {
