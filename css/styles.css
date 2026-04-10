@@ -267,7 +267,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   top: 0; left: 0; width: 100%; height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 90px 20px 140px; /* Top padding clears #topBar safely */
+  padding: 88px 18px 110px; /* Top clears #topBar; bottom clears slim nav + buffer */
   box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
@@ -283,15 +283,54 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   transform: translateY(0);
 }
 
+/* Sub-view header row (title + back button) */
+.view-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin: 0 0 14px;
+  flex-shrink: 0;
+}
+
+.view-back-btn {
+  position: absolute;
+  left: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.view-back-btn:hover {
+  color: #00e5ff;
+  border-color: rgba(0, 229, 255, 0.3);
+  background: rgba(0, 229, 255, 0.06);
+}
+
+.view-back-btn:active {
+  transform: scale(0.94);
+}
+
 .view-header {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   color: rgba(255, 255, 255, 0.9);
   letter-spacing: 4px;
-  margin: 0 0 20px;
+  margin: 0;
   text-align: center;
   text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
-  flex-shrink: 0; /* Ensure titles don't get squished */
+  flex-shrink: 0;
 }
 
 /* ── HUB / HOME VIEW ───────────────────── */
@@ -300,11 +339,12 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 .hero-panel {
   position: relative;
   z-index: 1;
-  max-width: 90%;
+  max-width: 100%;
   margin: 0 auto;
   width: 100%;
-  flex: 0 0 50%;
-  border-radius: 24px;
+  flex: 0 0 42%;
+  min-height: 180px;
+  border-radius: 20px;
   background: rgba(15, 18, 30, 0.7);
   border: 1px solid rgba(0, 229, 255, 0.3);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(0, 229, 255, 0.1);
@@ -312,10 +352,10 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 30px;
+  padding: 22px 20px;
   box-sizing: border-box;
   cursor: pointer;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
 }
 
@@ -420,35 +460,24 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 .action-row {
   position: relative;
   z-index: 1;
-  display: flex;
-  justify-content: center;
-  max-width: 90%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
   margin: 0 auto;
-  gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 10px;
-  /* Hide scrollbar */
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.action-row::-webkit-scrollbar {
-  display: none;
 }
 
 .action-card {
-  flex: 0 0 calc(30% - 8px);
-  min-width: 95px;
   background: rgba(20, 25, 40, 0.6);
   border: 1px solid rgba(0, 229, 255, 0.15);
-  border-radius: 16px;
-  padding: 16px 10px;
+  border-radius: 14px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  scroll-snap-align: start;
   transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
   box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.05);
   position: relative;
@@ -467,14 +496,15 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 
 .action-icon {
-  font-size: 1.6rem;
-  margin-bottom: 6px;
+  font-size: 1.4rem;
+  margin-bottom: 5px;
   color: #00ffff;
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
 }
 
 .action-label {
-  font-size: 0.65rem;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.58rem;
   letter-spacing: 1.5px;
   color: rgba(255, 255, 255, 0.9);
   text-transform: uppercase;
@@ -504,33 +534,36 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   flex-direction: column;
   flex: 1;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: 4px;
 }
 
 .campaign-card-wrapper {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 15px;
+  gap: 10px;
   width: 100%;
-  max-width: 400px;
-  margin-bottom: 30px;
+  max-width: 420px;
+  flex: 1;
+  margin-bottom: 12px;
 }
 
 .world-info-box {
   position: relative;
-  max-width: 85%;
+  max-width: 100%;
   margin: 0 auto;
-  background: rgba(10, 14, 26, 0.92);
-  border: 1px solid rgba(0, 229, 255, 0.22);
-  border-radius: 20px;
-  padding: 36px 22px 28px;
+  background: rgba(10, 14, 26, 0.94);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 18px;
+  padding: 24px 20px 20px;
   text-align: center;
   flex: 1;
-  box-shadow: 0 14px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(0, 229, 255, 0.15), inset 0 0 28px rgba(0, 229, 255, 0.06);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(0, 229, 255, 0.2), inset 0 0 28px rgba(0, 229, 255, 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .world-bg-glow {
@@ -549,7 +582,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 
 .campaign-progress {
-  margin: 16px 0 0;
+  margin: 12px 0 0;
   width: 100%;
 }
 
@@ -580,24 +613,24 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 
 .campaign-card-play {
   width: calc(100% - 4px);
-  min-height: 44px;
-  padding: 12px 16px;
-  font-size: 0.9rem;
+  min-height: 46px;
+  padding: 13px 16px;
+  font-size: 1rem;
   font-weight: bold;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   line-height: 1;
   border-radius: 12px;
-  border: 1.5px solid rgba(0, 229, 255, 0.55);
-  background: linear-gradient(160deg, rgba(0, 70, 90, 0.85) 0%, rgba(0, 25, 40, 0.95) 100%);
-  color: #b8f4ff;
-  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+  border: 1.5px solid rgba(0, 229, 255, 0.65);
+  background: linear-gradient(160deg, rgba(0, 80, 105, 0.9) 0%, rgba(0, 30, 50, 0.97) 100%);
+  color: #c8f8ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.7);
   box-shadow:
-    inset 0 1px 0 rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2),
     0 8px 24px rgba(0, 0, 0, 0.4),
-    0 0 0 0 rgba(0, 229, 255, 0);
+    0 0 20px rgba(0, 229, 255, 0.1);
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
   box-sizing: border-box;
-  margin: 20px auto 0;
+  margin: 14px auto 0;
   display: block;
 }
 .campaign-card-play::before {
@@ -633,16 +666,17 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   color: rgba(255,255,255,0.7);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .arrow-btn:hover {
@@ -715,10 +749,10 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 .bottom-nav {
   position: absolute;
   bottom: 0; left: 0; width: 100%;
-  height: 70px;
-  background: rgba(10, 12, 20, 0.85);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  height: 52px;
+  background: rgba(8, 10, 18, 0.92);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -729,13 +763,13 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 .nav-item {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.35);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 5px 0;
   flex: 1;
   transition: color 0.2s, transform 0.2s;
 }
@@ -749,15 +783,34 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 
 .nav-icon {
-  font-size: 1.4rem;
-  margin-bottom: 4px;
+  font-size: 1.15rem;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+
+/* Active nav item indicator dot */
+.nav-item.active .nav-icon::after {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 4px;
+  background: #00e5ff;
+  border-radius: 50%;
+  margin: 2px auto 0;
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.8);
 }
 
 .nav-label {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.55rem;
-  letter-spacing: 1px;
+  font-size: 0.44rem;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
+  /* Hide labels on inactive items to save space */
+  display: none;
+}
+
+.nav-item.active .nav-label {
+  display: block;
 }
 /* Settings modal compact */
 #settingsModal {
@@ -2131,18 +2184,18 @@ body.hard-mode #hardModeBadge { display: block; }
   align-items: center;
   background: rgba(0, 229, 255, 0.04);
   border: 1px solid rgba(0, 229, 255, 0.18);
-  border-radius: 20px;
-  padding: 20px 16px 18px;
-  margin-bottom: 14px;
+  border-radius: 16px;
+  padding: 12px 14px 12px;
+  margin-bottom: 8px;
   flex-shrink: 0;
   box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.06);
 }
 .workshop-sphere-hero {
-  width: 80px !important;
-  height: 80px !important;
-  box-shadow: 0 0 28px rgba(0, 229, 255, 0.45), inset 0 0 20px rgba(0, 229, 255, 0.12) !important;
+  width: 62px !important;
+  height: 62px !important;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.45), inset 0 0 16px rgba(0, 229, 255, 0.12) !important;
   animation: workshopGlowPulse 3s infinite alternate ease-in-out;
-  margin-bottom: 12px !important;
+  margin-bottom: 8px !important;
 }
 @keyframes workshopGlowPulse {
   0%   { box-shadow: 0 0 18px rgba(0,229,255,0.3), inset 0 0 14px rgba(0,229,255,0.1); }
@@ -2150,18 +2203,18 @@ body.hard-mode #hardModeBadge { display: block; }
 }
 .workshop-equipped-label {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.48rem;
+  font-size: 0.44rem;
   letter-spacing: 3px;
   color: rgba(0, 229, 255, 0.45);
-  margin-bottom: 10px;
+  margin-bottom: 6px;
 }
 .workshop-equipped-name {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   letter-spacing: 2px;
   color: #fff;
   text-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 .workshop-equipped-perk {
   font-family: 'Orbitron', sans-serif;
@@ -2275,11 +2328,12 @@ body.hard-mode #hardModeBadge { display: block; }
 .shop-premium-card {
   background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,120,0,0.05) 100%);
   border: 1px solid rgba(255,215,0,0.35);
-  border-radius: 18px;
-  padding: 18px 20px;
+  border-radius: 16px;
+  padding: 14px 16px;
   text-align: center;
   flex-shrink: 0;
   box-shadow: 0 0 24px rgba(255,215,0,0.08), inset 0 0 20px rgba(255,215,0,0.04);
+  margin-bottom: 2px;
 }
 .shop-premium-badge {
   font-family: 'Orbitron', sans-serif;
@@ -2333,17 +2387,17 @@ body.hard-mode #hardModeBadge { display: block; }
 
 .shop-section-title {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.5rem;
+  font-size: 0.48rem;
   letter-spacing: 3px;
   color: rgba(255,255,255,0.3);
   text-align: center;
-  margin: 14px 0 10px;
+  margin: 10px 0 8px;
   flex-shrink: 0;
 }
 .shop-buy-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -2352,24 +2406,24 @@ body.hard-mode #hardModeBadge { display: block; }
 .shop-buy-card {
   background: rgba(20, 25, 40, 0.65);
   border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
-  padding: 12px 10px;
+  border-radius: 12px;
+  padding: 10px 6px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: border-color 0.2s, transform 0.15s;
 }
 .shop-buy-card:active { transform: scale(0.97); }
 .shop-buy-card .item-preview {
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
 }
 .shop-buy-card-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.6rem;
-  letter-spacing: 0.5px;
+  font-size: 0.48rem;
+  letter-spacing: 0.3px;
   color: rgba(255,255,255,0.85);
   font-weight: bold;
   text-transform: uppercase;
@@ -2377,16 +2431,21 @@ body.hard-mode #hardModeBadge { display: block; }
 }
 .shop-buy-card-perk {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.46rem;
+  font-size: 0.4rem;
   color: rgba(255,255,255,0.38);
   line-height: 1.3;
 }
+
+/* Hide premium card when already owned */
+.shop-premium-card.is-owned {
+  display: none;
+}
 .shop-coin-buy-btn {
   width: 100%;
-  padding: 7px 4px;
-  border-radius: 8px;
-  font-size: 0.58rem;
-  letter-spacing: 1px;
+  padding: 6px 2px;
+  border-radius: 7px;
+  font-size: 0.5rem;
+  letter-spacing: 0.5px;
   font-weight: bold;
   cursor: pointer;
   border: 1px solid rgba(255,170,0,0.45);
@@ -2770,7 +2829,7 @@ body.hard-mode #hardModeBadge { display: block; }
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 0;
-  opacity: 0.25;
+  opacity: 0.35;
   pointer-events: none;
 }
 
@@ -2778,26 +2837,47 @@ body.hard-mode #hardModeBadge { display: block; }
 /* ── MOBILE / SMALL SCREEN OVERRIDES ───────────────────── */
 @media (max-width: 600px), (max-height: 800px) {
   .menu-view {
-    padding: 70px 10px 100px; /* Less top/bottom padding to give more vertical space */
+    padding: 72px 12px 80px; /* Tighter for small screens — nav is now 52px */
   }
 
   .hero-panel {
-    flex: 1 1 auto;
-    min-height: 250px; /* Allow it to shrink, but keep a minimum */
-    padding: 20px;
+    flex: 0 0 38%;
+    min-height: 160px;
+    padding: 18px 16px;
     margin-bottom: 10px;
   }
 
   .hero-title {
-    font-size: 3rem; /* Scale down hero text slightly */
+    font-size: 2.6rem;
+    margin-bottom: 16px;
   }
 
-  .action-row {
-    padding-bottom: 5px;
+  .hero-cta {
+    padding: 12px 16px;
+    font-size: 1rem;
   }
 
   .campaign-layout {
     margin-top: 0;
+    padding-top: 0;
+  }
+
+  .world-info-box {
+    padding: 18px 14px 16px;
+  }
+
+  .view-header {
+    font-size: 1.9rem;
+  }
+
+  /* Workshop tighter on small screens */
+  .workshop-equipped-hero {
+    padding: 10px 12px;
+  }
+
+  .workshop-sphere-hero {
+    width: 54px !important;
+    height: 54px !important;
   }
 }
 

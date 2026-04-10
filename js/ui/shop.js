@@ -324,13 +324,14 @@
 
     const reg = _reg();
 
-    // Premium button
-    const premiumBtn = document.getElementById('btn-premium');
+    // Premium card — hide entirely when owned
+    const premiumBtn  = document.getElementById('btn-premium');
+    const premiumCard = premiumBtn ? premiumBtn.closest('.shop-premium-card') : null;
     if (premiumBtn) {
       const owned = typeof isPremium !== 'undefined' && isPremium;
-      premiumBtn.textContent  = owned ? 'OWNED ✓' : 'BUY £2.99';
-      premiumBtn.disabled     = owned;
-      premiumBtn.style.opacity = owned ? '0.55' : '1';
+      premiumBtn.textContent   = owned ? 'OWNED ✓' : 'BUY £2.99';
+      premiumBtn.disabled      = owned;
+      if (premiumCard) premiumCard.classList.toggle('is-owned', owned);
     }
 
     // Shop buy grid
