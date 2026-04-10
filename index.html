@@ -83,49 +83,85 @@
     <!-- View Container (Swaps between Home, Campaign, Workshop, Profile) -->
     <div id="menuViews">
 
-      <!-- HOME VIEW -->
+      <!-- HOME VIEW — PLAYER HUB CORE -->
       <div id="homeView" class="menu-view active-view">
-        <div id="dailyStreakBadge" style="display:none; font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,200,80,0.7); text-align:center; margin-bottom:8px;"></div>
 
-        <!-- Main Hero Panel -->
-        <div id="hubHeroPanel" class="hero-panel" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); handleHeroPanelClick();">
-          <div class="hero-bg-anim"></div>
-          <div class="hero-content" id="heroCampaignContent">
-            <div class="hero-subtitle" id="heroSubtitle">World 1 • Stage 1</div>
-            <div class="hero-title" id="heroTitle">ORBIT INIT</div>
-            <button class="btn btn-play hero-cta" id="heroPlayBtn" onclick="event.stopPropagation(); if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign();">PLAY</button>
+        <!-- Daily Streak Badge (shown when active) -->
+        <div id="dailyStreakBadge" style="display:none; font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,200,80,0.7); text-align:center; flex-shrink:0; margin-bottom:4px;"></div>
+
+        <!-- Hub Center Stack: Rank · Orb · Brand · Stats -->
+        <div id="hubCenterStack" class="hub-center-stack">
+
+          <!-- Player Rank Pill -->
+          <div class="hub-rank-pill">
+            <span id="hubRankLabel">ORBIT RUNNER</span>
+            <span class="hub-rank-sep">·</span>
+            <span id="hubRankNum">RANK 01</span>
           </div>
-          <div class="hero-content" id="heroEventContent" style="display:none;">
-            <div class="hero-subtitle" style="color:rgba(255,100,30,0.75);">WEEKLY CHALLENGE</div>
-            <div class="hero-title text-fire">PHOENIX TRIAL</div>
-            <div class="hero-timer" id="heroEventTimer" style="color:#ff6a1a;">ENDS IN: 3D 14H</div>
-            <button class="btn btn-play hero-cta btn-fire" onclick="event.stopPropagation(); if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('event');">ENTER TRIAL</button>
+
+          <!-- Orb / Core Centerpiece -->
+          <div id="hubOrbStage" class="hub-orb-stage">
+            <div class="hub-orb-halo"></div>
+            <div class="hub-orb-ring"></div>
+            <div id="hubOrbCore" class="hub-orb-core" data-skin="classic">
+              <div class="hub-orb-inner"></div>
+            </div>
+            <div class="hub-orb-particles">
+              <div class="hub-particle p1"></div>
+              <div class="hub-particle p2"></div>
+              <div class="hub-particle p3"></div>
+              <div class="hub-particle p4"></div>
+            </div>
           </div>
+
+          <!-- Active Core Name -->
+          <div id="hubCoreName" class="hub-core-name">CLASSIC CORE</div>
+
+          <!-- Branded Title -->
+          <div class="hub-brand-title">
+            <span class="hub-brand-deco">◆</span>
+            <span class="hub-brand-text">ORBIT SYNC</span>
+            <span class="hub-brand-deco">◆</span>
+          </div>
+
+          <!-- Status Strip: Campaign · Best Score · Event -->
+          <div class="hub-status-strip">
+            <div class="hub-stat-panel">
+              <div class="hub-stat-label">CAMPAIGN</div>
+              <div class="hub-stat-value" id="hubStatCampaign">W1 · S1</div>
+            </div>
+            <div class="hub-stat-divider"></div>
+            <div class="hub-stat-panel">
+              <div class="hub-stat-label">BEST SCORE</div>
+              <div class="hub-stat-value" id="hubStatBest">—</div>
+            </div>
+            <div class="hub-stat-divider"></div>
+            <div class="hub-stat-panel hub-stat-panel--event" id="hubStatEventPanel">
+              <div class="hub-stat-label">EVENT</div>
+              <div class="hub-stat-value" id="hubStatEvent">LOCKED</div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Secondary Action Row -->
-        <div id="hubActionRow" class="action-row">
-          <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('workshop')">
-            <div class="action-icon">⬡</div>
-            <div class="action-label">Workshop</div>
-            <div class="action-status" id="actionStatusWorkshop"></div>
-          </div>
-          <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startBestScoreRun()">
-            <div class="action-icon">⚡</div>
-            <div class="action-label">Practice</div>
-            <div class="action-status">TRAIN</div>
-          </div>
-          <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); alert('Missions coming soon!')">
-            <div class="action-icon">📋</div>
-            <div class="action-label">Missions</div>
-            <div class="action-status">3 READY</div>
-          </div>
-          <div class="action-card" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('event')">
-            <div class="action-icon">🏆</div>
-            <div class="action-label">Events</div>
-            <div class="action-status">LIVE</div>
-          </div>
+        <!-- Primary CTA -->
+        <button class="btn btn-play hub-primary-cta" id="hubContinueBtn"
+          onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();startContinueRun();">
+          &#9654; CONTINUE
+        </button>
+
+        <!-- Secondary Actions -->
+        <div class="hub-secondary-row">
+          <button class="hub-secondary-btn"
+            onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('workshop')">
+            ⬡ WORKSHOP
+          </button>
+          <button class="hub-secondary-btn hub-secondary-btn--event" id="hubEventBtn"
+            onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('event')">
+            🔥 EVENT
+          </button>
         </div>
+
       </div>
 
       <!-- CAMPAIGN VIEW -->
