@@ -299,8 +299,11 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 /* Hero Panel */
 .hero-panel {
   position: relative;
+  z-index: 1;
+  max-width: 90%;
+  margin: 0 auto;
   width: 100%;
-  height: 55%; /* ~60% minus margins */
+  flex: 0 0 50%;
   border-radius: 24px;
   background: rgba(15, 18, 30, 0.7);
   border: 1px solid rgba(0, 229, 255, 0.3);
@@ -415,7 +418,12 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 
 /* Secondary Action Row */
 .action-row {
+  position: relative;
+  z-index: 1;
   display: flex;
+  justify-content: center;
+  max-width: 90%;
+  margin: 0 auto;
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
@@ -511,6 +519,8 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 
 .world-info-box {
   position: relative;
+  max-width: 85%;
+  margin: 0 auto;
   background: rgba(10, 14, 26, 0.92);
   border: 1px solid rgba(0, 229, 255, 0.22);
   border-radius: 20px;
@@ -569,29 +579,25 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 
 .campaign-card-play {
-  width: 100%;
-  min-height: 52px;
-  padding: 14px 18px;
-  font-size: 1rem;
-  letter-spacing: 3px;
+  width: calc(100% - 4px);
+  min-height: 44px;
+  padding: 12px 16px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  letter-spacing: 2px;
   line-height: 1;
   border-radius: 12px;
   border: 1.5px solid rgba(0, 229, 255, 0.55);
   background: linear-gradient(160deg, rgba(0, 70, 90, 0.85) 0%, rgba(0, 25, 40, 0.95) 100%);
   color: #b8f4ff;
-  text-shadow: 0 0 14px rgba(0, 229, 255, 0.55);
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
   box-shadow:
-    inset 0 1px 0 rgba(0, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 100, 140, 0.3),
-    0 6px 24px rgba(0, 180, 220, 0.22),
+    inset 0 1px 0 rgba(0, 255, 255, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.4),
     0 0 0 0 rgba(0, 229, 255, 0);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease,
-              background 0.18s ease, color 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
   box-sizing: border-box;
-  margin-top: 22px;
-  margin-left: 0;
-  margin-right: 0;
-  margin-bottom: 0;
+  margin: 20px auto 0;
   display: block;
 }
 .campaign-card-play::before {
@@ -2754,4 +2760,51 @@ body.hard-mode #hardModeBadge { display: block; }
 #phoenixMult.mult-high {
   color: #ffe566;
   text-shadow: 0 0 14px rgba(255, 230, 80, 0.7);
+}
+
+
+/* World Preview Canvas */
+#worldPreviewCanvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+
+/* ── MOBILE / SMALL SCREEN OVERRIDES ───────────────────── */
+@media (max-width: 600px), (max-height: 800px) {
+  .menu-view {
+    padding: 70px 10px 100px; /* Less top/bottom padding to give more vertical space */
+  }
+
+  .hero-panel {
+    flex: 1 1 auto;
+    min-height: 250px; /* Allow it to shrink, but keep a minimum */
+    padding: 20px;
+    margin-bottom: 10px;
+  }
+
+  .hero-title {
+    font-size: 3rem; /* Scale down hero text slightly */
+  }
+
+  .action-row {
+    padding-bottom: 5px;
+  }
+
+  .campaign-layout {
+    margin-top: 0;
+  }
+}
+
+/* Fix login bonus notification stacking order */
+@keyframes streakFadeOut {
+  0% { opacity: 0; transform: translate(-50%, -40%); }
+  10% { opacity: 1; transform: translate(-50%, -50%); }
+  80% { opacity: 1; transform: translate(-50%, -50%); }
+  100% { opacity: 0; transform: translate(-50%, -60%); }
 }

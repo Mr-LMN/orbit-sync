@@ -69,6 +69,13 @@
     const heroTitle = document.getElementById('heroTitle');
     const heroPlayBtn = document.getElementById('heroPlayBtn');
 
+    // Refresh Canvas whenever UI updates
+    if (isUnlocked) {
+      refreshMenuWorldPreview();
+    } else {
+      showLockedWorldPreview(menuSelectedWorld);
+    }
+
     const worldData = {
       1: { name: 'WORLD 1', sub: 'ORBIT INIT', color: '#00ff88' },
       2: { name: 'WORLD 2', sub: 'PRISM BREAK', color: '#2ff6ff' },
@@ -207,6 +214,16 @@
       // tiny delay to allow display:flex to apply before adding class for transition
       setTimeout(() => targetView.classList.add('active-view'), 10);
     }
+
+    if (tabId === 'campaign') {
+      const isUnlocked = menuSelectedWorld <= (Number(maxWorldUnlocked) || 1);
+      if (isUnlocked) {
+        refreshMenuWorldPreview();
+      } else {
+        showLockedWorldPreview(menuSelectedWorld);
+      }
+    }
+
     if (targetNav) {
       targetNav.classList.add('active');
     }
@@ -508,16 +525,84 @@
   function startAbyssRun() { startPhoenixRun(); }
 
 
-  function showLockedWorldPreview(worldNum) {
-    // Load world 1 data as base so canvas isn't blank
-    const w1Idx = getStartingIndexForWorld(1);
-    levelData = campaign[w1Idx] || campaign[0];
+
+  function refreshMenuWorldPreview() {
+    const startIdx = getStartingIndexForWorld(menuSelectedWorld);
+    levelData = campaign[startIdx] || campaign[0];
     currentWorldPalette = computeWorldPalette(levelData);
     currentWorldShape = computeWorldShape(levelData);
     currentWorldVisualTheme = getWorldVisualTheme(levelData);
-    // Clear targets — locked world shows empty ring
-    if (typeof targets !== 'undefined') targets = [];
+
+    drawWorldPreviewCanvas(false);
   }
+
+  function showLockedWorldPreview(worldNum) {
+    levelData = campaign[0];
+    currentWorldPalette = { color1: '#444', color2: '#222' };
+    currentWorldShape = 'circle';
+    currentWorldVisualTheme = { type: 'grid' };
+
+    drawWorldPreviewCanvas(true);
+  }
+
+  function drawWorldPreviewCanvas(isLocked) {
+    const canvas = document.getElementById('worldPreviewCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = 60;
+
+    ctx.save();
+    if (isLocked) {
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = '#666';
+      ctx.font = '40px "Orbitron", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('?', cx, cy);
+    } else {
+      ctx.strokeStyle = currentWorldPalette.color1 || '#00ff88';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([]);
+
+      // Simple shape drawing (or could call OrbitGame.systems.rendering.buildShapePath)
+      ctx.beginPath();
+      if (currentWorldShape === 'square') {
+        ctx.rect(cx - radius, cy - radius, radius*2, radius*2);
+      } else if (currentWorldShape === 'triangle') {
+        ctx.moveTo(cx, cy - radius);
+        ctx.lineTo(cx + radius*0.866, cy + radius*0.5);
+        ctx.lineTo(cx - radius*0.866, cy + radius*0.5);
+        ctx.closePath();
+      } else if (currentWorldShape === 'pentagon' || currentWorldShape === 'hexagon' || currentWorldShape === 'octagon') {
+        const sides = currentWorldShape === 'pentagon' ? 5 : (currentWorldShape === 'hexagon' ? 6 : 8);
+        for(let i=0; i<sides; i++){
+          const angle = i * (Math.PI*2)/sides - Math.PI/2;
+          const x = cx + Math.cos(angle)*radius;
+          const y = cy + Math.sin(angle)*radius;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+      } else {
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      }
+
+      ctx.shadowColor = currentWorldPalette.color1 || '#00ff88';
+      ctx.shadowBlur = 15;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
 
   OG.ui.menus.toggleShop = toggleShop;
   OG.ui.menus.toggleSettings = toggleSettings;
@@ -529,6 +614,7 @@
   OG.ui.menus.showAugmentPicker = showAugmentPicker;
   OG.ui.menus.selectAugment = selectAugment;
   OG.ui.menus.showLockedWorldPreview = showLockedWorldPreview;
+  OG.ui.menus.refreshMenuWorldPreview = refreshMenuWorldPreview;
   window.startBestScoreRun = startBestScoreRun;
   window.startHardModeRun = startHardModeRun;
   window.showAugmentPicker = showAugmentPicker;
