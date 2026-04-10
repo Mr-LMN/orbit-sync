@@ -183,6 +183,13 @@ function saveData() {
   if (maxWorldUnlocked >= 3 && !playerProgress.unlockedWorlds.includes('world3')) playerProgress.unlockedWorlds.push('world3');
   OG.storage.setJSON('orbitSync_playerProgress', playerProgress);
   OG.storage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
+
+  // Save sphere progression, fragments, unlocked perks (merged with base data logic in main refactor but here as fallback)
+  let data = OG.storage.getJSON() || {};
+  data.sphereProgression = data.sphereProgression || {};
+  data.unlockedPerks = data.unlockedPerks || [];
+  data.globalCoreFragments = typeof window.globalCoreFragments !== 'undefined' ? window.globalCoreFragments : 0;
+  OG.storage.setJSON(data);
 }
 
 function checkAndSavePB(currentScore, currentStreak) {
