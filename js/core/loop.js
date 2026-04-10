@@ -436,18 +436,7 @@ function computeWorldShape(level) {
   if (!level || !level.id) return 'circle';
   if (level.id === 'abyss') return 'abyss';
   if (level.boss === 'phoenix') {
-    let phase = 0;
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss && typeof OrbitGame.systems.phoenixBoss.getPhaseIdx === 'function') {
-      phase = OrbitGame.systems.phoenixBoss.getPhaseIdx();
-    }
-    // Evolve shape across phases
-    switch(phase) {
-      case 0: return 'triangle'; // EMBER
-      case 1: return 'square';   // BURN
-      case 2: return 'pentagon'; // INFERNO
-      case 3: return 'hexagon';  // ASH
-      default: return 'triangle';
-    }
+    return 'phoenix';
   }
   const worldNum = parseInt(String(level.id).split('-')[0], 10);
   if (!Number.isFinite(worldNum)) return 'circle';

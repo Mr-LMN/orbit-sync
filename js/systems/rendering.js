@@ -61,6 +61,40 @@
       return getTrianglePoint(t, cx, cy, radius);
     }
 
+    if (shape === 'phoenix') {
+      const sides = 10;
+      const rotation = -Math.PI / 2;
+      const corners = [];
+      let phase = 0;
+      if (typeof window.OrbitGame !== 'undefined' && window.OrbitGame.systems) {
+         if (window.OrbitGame.systems.phoenixBossV2 && window.OrbitGame.systems.phoenixBossV2.isActive()) {
+            phase = window.OrbitGame.systems.phoenixBossV2.getPhaseIdx() || 0;
+         } else if (window.OrbitGame.systems.phoenixBoss && window.OrbitGame.systems.phoenixBoss.isActive()) {
+            phase = window.OrbitGame.systems.phoenixBoss.getPhaseIdx() || 0;
+         }
+      }
+      for (let i = 0; i < sides; i++) {
+        const a = rotation + (i * Math.PI * 2 / sides);
+        // Odd points dip inwards creating a spiky 'wings/flame' shape
+        // Higher phase = sharper spikes / deeper dips
+        const dip = Math.max(0.2, 0.7 - (phase * 0.1)); 
+        const rAdjust = (i % 2 === 0) ? radius * 1.05 : radius * dip;
+        corners.push({ x: cx + Math.cos(a) * rAdjust, y: cy + Math.sin(a) * rAdjust });
+      }
+      
+      let normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
+      const sectorSize = Math.PI * 2 / sides;
+      const rawIdx = Math.floor(normalized / sectorSize);
+      const sectorIdx = rawIdx % sides;
+      const progress = (normalized - rawIdx * sectorSize) / sectorSize;
+      const p1 = corners[sectorIdx];
+      const p2 = corners[(sectorIdx + 1) % sides];
+      let ptX = p1?.x + (p2?.x - p1?.x) * progress;
+      let ptY = p1?.y + (p2?.y - p1?.y) * progress;
+      return { x: ptX || cx, y: ptY || cy };
+    }
+
     if (shape === 'pentagon' || shape === 'hexagon' || shape === 'abyss') {
       const sides = (shape === 'pentagon') ? 5 : (shape === 'hexagon') ? 6 : (3 + Math.floor((window.abyssDepth || 0) / 10));
       const rotation = -Math.PI / 2 + ((window.abyssDepth || 0) * 0.1);

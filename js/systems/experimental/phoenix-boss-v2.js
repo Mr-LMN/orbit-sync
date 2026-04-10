@@ -4,10 +4,7 @@
   OG.systems = OG.systems || {};
 
   // ─── CONFIG V2 ───────────────────────────────────────────────────────────
-  const TIMER_START   = 30;    // seconds to begin with
-  const REBIRTH_TIME  = 20;    // timer reset on rebirth
   const BONUS_LIFE_AT = 60;    // earn +1 life at this total elapsed (seconds)
-  const SCORE_PER_SEC = 25;    // score points per second survived (increased for V2)
   const FIGHT_END_AT  = 120;   // The fight ends at 120 seconds (VICTORY)
 
   // Wrath pulse: how often (ms) the boss reverses all zones by phase index
@@ -31,7 +28,6 @@
   let _startAt       = 0;
   let _lastFrameAt   = 0;
   let _elapsed       = 0;
-  let _timer         = TIMER_START;
   let _phaseIdx      = 0;
   let _rebirthsLeft  = 3; // Start with 3 lives for max completion rewards
   let _bonusLifeGiven = false;
@@ -116,14 +112,12 @@
   }
 
   function _updateUI() {
-    const remaining = Math.max(0, _timer);
-    const mins = Math.floor(remaining / 60);
-    const secs = Math.floor(remaining % 60);
-    const ms   = Math.floor((remaining % 1) * 10);
     const timerEl = _el('phoenixTimer');
     if (timerEl) {
-      timerEl.textContent = `${mins}:${String(secs).padStart(2, '0')}.${ms}`;
-      timerEl.classList.toggle('phoenix-timer-critical', remaining < 8);
+      timerEl.innerHTML = `<span style="font-size:0.5em; opacity:0.75; letter-spacing: 2px;">DAMAGE OUTPUT</span><br/>${Math.floor(_phoenixScore).toLocaleString()}`;
+      timerEl.style.lineHeight = '0.9';
+      timerEl.style.textShadow = '0 0 20px #ff3300';
+      timerEl.classList.remove('phoenix-timer-critical');
     }
     const phaseEl = _el('phoenixPhaseName');
     if (phaseEl) phaseEl.textContent = _phase().name + " (V2 BETA)";
@@ -258,15 +252,19 @@
 
   function _triggerRebirth() {
     _rebirthsLeft--;
-    _timer = REBIRTH_TIME;
     _perfectMult = 1;
     lives = _rebirthsLeft;
     if (typeof ui !== 'undefined' && ui.lives) ui.lives.innerText = lives;
 
-    createPopup(centerObj.x, centerObj.y - 56, 'REBIRTH', '#ff9a46');
-    _pulseCore(1.5, '#ff3300');
-    pulseBrightness(1.8, 200);
+    createPopup(centerObj.x, centerObj.y - 56, 'FATAL STRIKE!', '#ff0000');
+    _pulseCore(1.8, '#ff0000');
+    pulseBrightness(2.2, 300);
     if (typeof vibrate === 'function') vibrate([50, 25, 80]);
+
+    if (_rebirthsLeft < 0) {
+      endRun('death');
+      return;
+    }
 
     stageClearHoldUntil = performance.now() + 600;
     setTimeout(() => { if (_active) spawnWave(); }, 600);
@@ -279,7 +277,6 @@
     _lastFrameAt = frameNow;
 
     if (frameNow > stageClearHoldUntil) {
-      _timer -= dt;
       _elapsed += dt;
     }
 
@@ -324,7 +321,7 @@
     _updateGhosts(frameNow);
 
     // V2 MILESTONES
-    score = _phoenixScore + Math.floor(_elapsed * SCORE_PER_SEC);
+    score = _phoenixScore;
     if (score >= 300 && !_milestones[300]) { _milestones[300] = true; _showMilestoneUI("RARE CHEST", "#00e5ff"); }
     if (score >= 800 && !_milestones[800]) { _milestones[800] = true; _showMilestoneUI("EPIC CHEST", "#b157ff"); }
     if (score >= 1500 && !_milestones[1500]) { _milestones[1500] = true; _showMilestoneUI("LEGENDARY CHEST", "#ffd84d"); }
@@ -348,10 +345,7 @@
       }
     }
 
-    if (_timer <= 0) {
-      if (_rebirthsLeft > 0) _triggerRebirth();
-      else endRun('timeout');
-    }
+
     _updateUI();
   }
 
@@ -365,11 +359,9 @@
        _pulseCore(1.2, '#ffffff');
        if (t.meteorHp > 0) {
           createPopup(hitX, hitY - 20, `${t.meteorHp} LEFT`, '#ffffff');
-          _timer += 0.5; // micro addition per tap
           return true;
        }
        // Dead!
-       _timer += 8;
        _phoenixScore += 500 * _perfectMult;
        if (isPerfect) _perfectMult = Math.min(5, _perfectMult + 1);
        t.active = false;
@@ -385,31 +377,30 @@
     }
 
     if (type === 'ash') {
-      _timer = Math.max(0, _timer + ZONE_TIME_ADD.ash);
       _perfectMult = 1;
       t.active = false;
       createPopup(hitX, hitY - 24, 'ASH DECOY', '#ff3333');
       _pulseCore(1.1, '#ff3333');
       if (typeof soundFail === 'function') soundFail();
+      _triggerRebirth();
       _updateUI();
       return true;
     }
 
-    const baseAdd = ZONE_TIME_ADD[type] || 3;
-    const perfAdd = isPerfect ? ZONE_PERFECT_BONUS : 0;
-    const timeAdd = Math.max(0.5, Math.round((baseAdd + perfAdd) * _dimMult() * 10) / 10);
+    const baseDmg = (type === 'inferno' ? 120 : (type === 'ghost' ? 80 : 50));
+    const perfMult = isPerfect ? 2.5 : 1.0;
+    const dmg = Math.round(baseDmg * perfMult * _perfectMult);
 
-    _timer += timeAdd;
     if (isPerfect) { _perfectHits++; if (_perfectMult < 5) _perfectMult = Math.min(5, _perfectMult + 0.5); }
     _totalHits++;
 
-    _phoenixScore += Math.round(timeAdd * 12 * _perfectMult); 
+    _phoenixScore += dmg; 
     t.active = false;
 
     createParticles(hitX, hitY, t.color, 14);
     createShockwave(t.color, 22);
 
-    const addLabel = `+${timeAdd.toFixed(1)}s`;
+    const addLabel = `+${dmg}`;
     createPopup(hitX, hitY - 20, addLabel, t.color);
     if (isPerfect) createPopup(hitX, hitY - 44, 'PERFECT', '#ffffff');
     if (typeof markScoreCoinDirty === 'function') markScoreCoinDirty();
@@ -420,11 +411,11 @@
   function onMiss() {
     _missCount++;
     _perfectMult = 1;
-    _timer = Math.max(0, _timer - 2.0); // harsher penalty in V2
     if (typeof canvas !== 'undefined') {
        canvas.style.boxShadow = 'inset 0 0 40px #ff3300';
        setTimeout(() => { canvas.style.boxShadow = 'none'; }, 130);
     }
+    _triggerRebirth();
     _updateUI();
   }
 
@@ -532,7 +523,7 @@
     _active = true;
     _startAt = performance.now();
     _lastFrameAt = performance.now();
-    _elapsed = 0; _timer = TIMER_START; _phaseIdx = 0;
+    _elapsed = 0; _phaseIdx = 0;
     _rebirthsLeft = 3; _bonusLifeGiven = false;
     _perfectMult = 1; _phoenixScore = 0; _waveSpawned = false; _waveCount = 0;
     _perfectHits = 0; _totalHits = 0; _missCount = 0;
