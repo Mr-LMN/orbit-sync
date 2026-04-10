@@ -1532,6 +1532,24 @@ function loadLevel(idx) {
   adReviveUsedThisStage = false;
   clearRunTransientTimers();
   levelData = campaign[idx];
+  // If we just came from the Phoenix event boss, ensure its UI is fully cleared
+  if (OG.systems && OG.systems.phoenixBossV2 && OG.systems.phoenixBossV2.isActive()) {
+    OG.systems.phoenixBossV2.stop();
+  }
+  // Hide any lingering Phoenix UI overlays
+  const pbUI = document.getElementById('phoenixGameUI');
+  if (pbUI) pbUI.style.display = 'none';
+  const timerEl = document.getElementById('phoenixTimer');
+  if (timerEl) timerEl.style.display = 'none';
+  const phaseEl = document.getElementById('phoenixPhaseName');
+  if (phaseEl) phaseEl.style.display = 'none';
+  const multEl = document.getElementById('phoenixMult');
+  if (multEl) multEl.style.display = 'none';
+  const livesEl = document.getElementById('phoenixLives');
+  if (livesEl) livesEl.style.display = 'none';
+  // Ensure core element is hidden
+  const coreEl = document.getElementById('phoenixCoreObjV2');
+  if (coreEl) coreEl.style.display = 'none';
   if (OrbitGame.systems && OrbitGame.systems.tutorial) {
      OrbitGame.systems.tutorial.handleLevelStart(levelData.id);
   }
