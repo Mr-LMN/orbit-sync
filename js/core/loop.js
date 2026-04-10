@@ -1032,7 +1032,44 @@ function renderShopOrbPreview(previewEl, skinId) {
   }
   const pctx = canvasEl.getContext('2d');
   pctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-  drawMiniOrbPreview(pctx, canvasEl.width / 2, canvasEl.height / 2, skinId, 9.5);
+
+  const RARITY_COLOR = { COMMON: '#aaaaaa', UNCOMMON: '#0aff64', RARE: '#00eaff', EPIC: '#bd00ff', LEGENDARY: '#ffaa00' };
+  const reg = OrbitGame.entities && OrbitGame.entities.spheres && OrbitGame.entities.spheres.registry;
+  const meta = reg ? reg[skinId] : null;
+  const rColor = (meta && RARITY_COLOR[meta.rarity]) ? RARITY_COLOR[meta.rarity] : '#aaaaaa';
+  
+  const sr = OrbitGame.entities.spheres.runtime;
+  const prog = sr ? sr.getSphereProgress(skinId) : {stars: 1};
+  
+  const cx = canvasEl.width / 2;
+  const cy = canvasEl.height / 2;
+  
+  // Ambient glow based on rarity and evolution stars
+  pctx.save();
+  const radiusGlow = 20 + ((prog.stars || 1) * 3);
+  const grad = pctx.createRadialGradient(cx, cy, 0, cx, cy, radiusGlow);
+  grad.addColorStop(0, rColor + '66');
+  grad.addColorStop(1, 'transparent');
+  pctx.fillStyle = grad;
+  pctx.beginPath();
+  pctx.arc(cx, cy, radiusGlow, 0, Math.PI * 2);
+  pctx.fill();
+  
+  // Legendary distinct rotating aura
+  if (meta && meta.rarity === 'LEGENDARY') {
+      pctx.strokeStyle = rColor;
+      pctx.lineWidth = 1;
+      pctx.setLineDash([2, 4]);
+      pctx.beginPath();
+      // Use time seeded logic for spinning (handled by UI tick if we keep calling this)
+      // We'll just draw a static intricate dashed ring since this is a static render (usually)
+      pctx.arc(cx, cy, radiusGlow * 0.8, 0, Math.PI * 2);
+      pctx.stroke();
+      pctx.setLineDash([]);
+  }
+  pctx.restore();
+
+  drawMiniOrbPreview(pctx, cx, cy, skinId, 9.5);
 }
 
 const particlePool = [];

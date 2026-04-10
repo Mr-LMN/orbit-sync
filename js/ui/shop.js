@@ -69,6 +69,28 @@
     updateShopUI();
   }
 
+  window.ascendEquippedSphere = function() {
+    const sr = _sr();
+    if (!sr) return;
+    const skinId = typeof activeSkin !== 'undefined' ? activeSkin : 'classic';
+    const cost = 150; // Flat evolution cost
+    if (globalCoins < cost) {
+      alert('Not enough coins to Evolve! Need 🪙 ' + cost);
+      return;
+    }
+    const success = sr.ascendSphere(skinId);
+    if (success) {
+      globalCoins -= cost;
+      if (typeof audioCtx !== 'undefined') playPop(10, true);
+      saveData();
+      updateWorkshopUI();
+      if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
+      if (typeof createPopup === 'function' && typeof centerObj !== 'undefined') {
+         createPopup(centerObj.x, centerObj.y - 40, 'CORE EVOLVED!', '#ffaa00');
+      }
+    }
+  };
+
   // ── PERK SELECTION MODAL ──────────────────────────────────────
 
   function openPerkSelectionModal(slotIndex) {
@@ -150,6 +172,8 @@
     const xpBarEl          = document.getElementById('workshopEquippedXPBar');
     const passiveEl        = document.getElementById('workshopEquippedPassive');
     const perkSlotsEl      = document.getElementById('workshopEquippedPerkSlots');
+    const starsEl          = document.getElementById('workshopEquippedStars');
+    const ascendBtn        = document.getElementById('workshopAscendBtn');
 
     // Rarity badge
     if (rarityEl) {
@@ -157,12 +181,32 @@
       rarityEl.style.color = RARITY_COLOR[meta.rarity] || '#aaa';
     }
 
-    const prog         = sr ? sr.getSphereProgress(sphereId) : { level: 1, xp: 0 };
+    const prog         = sr ? sr.getSphereProgress(sphereId) : { level: 1, xp: 0, stars: 1 };
     const currentLevel = prog.level || 1;
     const currentXP    = prog.xp   || 0;
+    const currentStars = prog.stars || 1;
+    const maxStars     = meta.maxStars || 1;
 
     // Level label
     if (levelEl) levelEl.textContent = 'LV ' + currentLevel + ' / ' + meta.maxLevel;
+
+    // Stars & Ascend Button
+    if (starsEl) {
+      if (maxStars > 1) {
+        starsEl.style.display = 'block';
+        starsEl.innerHTML = '★'.repeat(currentStars) + '☆'.repeat(maxStars - currentStars);
+      } else {
+        starsEl.style.display = 'none';
+      }
+    }
+
+    if (ascendBtn) {
+      if (currentLevel >= meta.maxLevel && currentStars < maxStars) {
+        ascendBtn.style.display = 'block';
+      } else {
+        ascendBtn.style.display = 'none';
+      }
+    }
 
     // XP bar
     if (xpBarEl) {
