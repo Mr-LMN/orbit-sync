@@ -12,11 +12,11 @@
 
   // Phase thresholds (total elapsed seconds since run start)
   const PHASES = [
-    { name: 'EMBER',   threshold: 0,   speed: 0.010, zoneBase: Math.PI / 5.8, types: ['ember', 'ember'], reverseChance: 0 },
-    { name: 'BURN',    threshold: 25,  speed: 0.015, zoneBase: Math.PI / 7.0, types: ['ember', 'ember', 'ghost'], reverseChance: 0.30 },
-    { name: 'INFERNO', threshold: 50,  speed: 0.021, zoneBase: Math.PI / 8.8, types: ['ember', 'ember', 'ghost', 'inferno'], reverseChance: 0.50, blackout: { duration: 1300, interval: 7000, firstAt: 2500 } },
-    { name: 'ASH',     threshold: 80,  speed: 0.029, zoneBase: Math.PI / 11.5, types: ['ember', 'ember', 'ghost', 'inferno', 'ash'], reverseChance: 0.60, blackout: { duration: 1600, interval: 4500, firstAt: 1000 } },
-    { name: 'SUPERNOVA', threshold: 100, speed: 0.038, zoneBase: Math.PI / 12, types: ['ash', 'ash', 'ash', 'inferno'], reverseChance: 0.80, blackout: { duration: 800, interval: 2000, firstAt: 500 } }
+    { name: 'EMBER',   threshold: 0,   speed: 0.007, zoneBase: Math.PI / 5.8, types: ['ember', 'ember'], reverseChance: 0 },
+    { name: 'BURN',    threshold: 25,  speed: 0.012, zoneBase: Math.PI / 7.0, types: ['ember', 'ember', 'ghost'], reverseChance: 0.30 },
+    { name: 'INFERNO', threshold: 50,  speed: 0.018, zoneBase: Math.PI / 8.8, types: ['ember', 'ember', 'ghost', 'inferno'], reverseChance: 0.50, blackout: { duration: 1300, interval: 7000, firstAt: 2500 } },
+    { name: 'ASH',     threshold: 80,  speed: 0.025, zoneBase: Math.PI / 11.5, types: ['ember', 'ember', 'ghost', 'inferno', 'ash'], reverseChance: 0.60, blackout: { duration: 1600, interval: 4500, firstAt: 1000 } },
+    { name: 'SUPERNOVA', threshold: 100, speed: 0.033, zoneBase: Math.PI / 12, types: ['ash', 'ash', 'ash', 'inferno'], reverseChance: 0.80, blackout: { duration: 800, interval: 2000, firstAt: 500 } }
   ];
 
   const ZONE_COLORS = { ember: '#ff7a1a', ghost: '#ffb85a', inferno: '#ffe570', ash: '#7a2020' };
@@ -59,7 +59,7 @@
       _coreEl.id = 'phoenixCoreObjV2';
       _coreEl.style.cssText = `
         position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
-        width: 160px; height: 160px; border-radius: 50%;
+        width: 80px; height: 80px; border-radius: 50%;
         background: radial-gradient(circle, #ffe570 0%, #ff7a1a 40%, #7a2020 80%, transparent 100%);
         box-shadow: 0 0 80px #ff3300, inset 0 0 40px #ffffff;
         pointer-events: none; z-index: 5;

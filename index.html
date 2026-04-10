@@ -695,6 +695,12 @@
   <script src="js/ui/menus.js"></script>
   <script src="js/ui/shop.js"></script>
   <script src="js/ui/settings.js"></script>
+  <script src="js/systems/tutorial.js"></script>
+  <div id="tutorialOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,5,15,0.92); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;">
+    <h2 id="tutorialTitle" style="color:#00e5ff; font-size:2rem; font-family:'Orbitron',sans-serif; text-shadow:0 0 20px #00e5ff; margin-bottom:15px; letter-spacing:2px;">TUTORIAL</h2>
+    <p id="tutorialDesc" style="color:#fff; font-size:1rem; max-width:400px; margin:10px auto; line-height:1.6; opacity:0.9;"></p>
+    <button id="tutorialBtn" class="btn" style="background:#00e5ff; color:#000; padding:15px 40px; margin-top:30px; font-weight:bold; letter-spacing:2px; border:none; box-shadow:0 0 15px #00e5ff;">CONFIRM</button>
+  </div>
   <div id="adSimulationOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:#000; flex-direction:column; align-items:center; justify-content:center;">
       <div style="font-family:'Orbitron',sans-serif; font-size:1.2rem; color:#fff; letter-spacing:2px; margin-bottom: 20px;">ADVERTISEMENT</div>
       <div style="width:50px; height:50px; border:4px solid rgba(255,255,255,0.2); border-top:4px solid #fff; border-radius:50%; animation:spin 1s linear infinite;"></div>

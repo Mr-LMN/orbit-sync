@@ -40,7 +40,7 @@
     {
       id: '3-2',
       title: 'Echo Field',
-      hitsNeeded: 4,
+      hitsNeeded: 3,
       speed: 0.032,
       lives: 3,
       targets: 1,
@@ -52,7 +52,7 @@
     {
       id: '3-3',
       title: 'Split Field',
-      hitsNeeded: 6,
+      hitsNeeded: 4,
       speed: 0.034,
       lives: 3,
       targets: 1,
@@ -64,7 +64,7 @@
     {
       id: '3-4',
       title: 'Echo Drift',
-      hitsNeeded: 5,
+      hitsNeeded: 4,
       speed: 0.035,
       lives: 3,
       targets: 1,
@@ -76,7 +76,7 @@
     {
       id: '3-5',
       title: 'Cross Signal',
-      hitsNeeded: 8,
+      hitsNeeded: 5,
       speed: 0.036,
       lives: 3,
       targets: 1,
@@ -88,7 +88,7 @@
     {
       id: '3-6',
       title: 'Resonance Core',
-      hitsNeeded: 10,
+      hitsNeeded: 8,
       speed: 0.037,
       lives: 3,
       boss: 'spectre',

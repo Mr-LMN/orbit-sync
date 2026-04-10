@@ -1532,6 +1532,9 @@ function loadLevel(idx) {
   adReviveUsedThisStage = false;
   clearRunTransientTimers();
   levelData = campaign[idx];
+  if (OrbitGame.systems && OrbitGame.systems.tutorial) {
+     OrbitGame.systems.tutorial.handleLevelStart(levelData.id);
+  }
   ensureCorrectMusicForLevel();
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
@@ -5375,6 +5378,11 @@ function returnToMenu() {
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
   refreshMenuWorldPreview();
+  if (OrbitGame.systems && OrbitGame.systems.tutorial) {
+      setTimeout(() => {
+          OrbitGame.systems.tutorial.checkMenuRouting();
+      }, 300); // small delay to let UI settle
+  }
 
   // Daily streak badge
   const _streakBadge = ui.dailyStreakBadge;

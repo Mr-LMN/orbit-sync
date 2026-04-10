@@ -144,6 +144,10 @@
          }
       }
 
+      if (typeof hardModeActive !== 'undefined' && hardModeActive && levelData.id === '1-1') {
+         if (OG.systems && OG.systems.tutorial) OG.systems.tutorial.handleHardModeClear();
+      }
+
       saveData();
 
       if (wasBoss || worldAdvanced || campaignComplete) {

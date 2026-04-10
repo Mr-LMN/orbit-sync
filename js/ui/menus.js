@@ -667,7 +667,7 @@
       ctx.textBaseline = 'middle';
       ctx.fillText('?', cx, cy);
     } else {
-      const shapeColor = currentWorldPalette.color1 || '#00ff88';
+      const shapeColor = currentWorldPalette.primary || currentWorldPalette.color1 || '#00ff88';
       ctx.setLineDash([]);
 
       // Build the shape path
