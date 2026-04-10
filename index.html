@@ -225,12 +225,15 @@
 
           <div class="workshop-core-identity">
             <div class="workshop-equipped-name" id="workshopEquippedName">CLASSIC CORE</div>
-            <div class="workshop-core-meta">
+            <div id="workshopEquippedStars" style="color:#ffaa00; font-size:0.8rem; letter-spacing:2px; margin-top:4px;">★☆☆☆☆</div>
+            <div class="workshop-core-meta" style="margin-top:6px;">
               <span id="workshopEquippedRarity" class="workshop-rarity-label">COMMON</span>
               <span class="workshop-meta-sep">·</span>
               <span id="workshopEquippedLevel" class="workshop-level-label">LV 1 / 2</span>
             </div>
           </div>
+
+          <button id="workshopAscendBtn" class="btn btn-outline" style="display:none; margin:8px auto; border-color:#ffaa00; color:#ffaa00; width:80%;" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();ascendEquippedSphere();">EVOLVE (🪙 150)</button>
 
           <div class="workshop-xp-row">
             <div class="workshop-xp-track">

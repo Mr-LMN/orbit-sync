@@ -133,6 +133,17 @@
           maxWorldUnlocked = unlockedNum;
         }
       }
+
+      if (typeof activeSkin !== 'undefined' && activeSkin && OG.entities && OG.entities.spheres && OG.entities.spheres.runtime) {
+         let xpAmount = wasBoss ? 150 : 50;
+         if (levelData.id === 'abyss') xpAmount = 10;
+         const xpResult = OG.entities.spheres.runtime.grantXP(activeSkin, xpAmount);
+         if (xpResult && xpResult.leveled && typeof createPopup !== 'undefined') {
+             const _pop = createPopup(centerObj.x, centerObj.y - orbitRadius - 60, `CORE LVL ${xpResult.newLevel}!`, '#ffaa00');
+             _pop.life = 2.5;
+         }
+      }
+
       saveData();
 
       if (wasBoss || worldAdvanced || campaignComplete) {

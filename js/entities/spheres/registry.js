@@ -37,6 +37,7 @@
       name: 'CLASSIC CORE',
       rarity: 'COMMON',
       maxLevel: 2,
+      maxStars: 1,
       xpCurve: [0, 200],
       perkSlotsAtLevel: { 1: 0, 2: 0 },
       passive: {
@@ -52,6 +53,7 @@
       name: 'NEON SKULL',
       rarity: 'UNCOMMON',
       maxLevel: 3,
+      maxStars: 2,
       xpCurve: [0, 300, 700],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1 },
       passive: {
@@ -67,6 +69,7 @@
       name: 'PRISM CORE',
       rarity: 'RARE',
       maxLevel: 5,
+      maxStars: 3,
       xpCurve: [0, 200, 500, 1000, 2000],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 },
       passive: {
@@ -81,6 +84,7 @@
       name: 'ECHO TRAIL',
       rarity: 'RARE',
       maxLevel: 5,
+      maxStars: 3,
       xpCurve: [0, 200, 500, 1000, 2000],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 1 },
       passive: {
@@ -96,6 +100,7 @@
       name: 'CRIMSON RAIL',
       rarity: 'EPIC',
       maxLevel: 7,
+      maxStars: 4,
       xpCurve: [0, 300, 700, 1400, 2400, 3800, 5600],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2 },
       passive: {
@@ -110,6 +115,7 @@
       name: 'PULSE CORE',
       rarity: 'EPIC',
       maxLevel: 7,
+      maxStars: 4,
       xpCurve: [0, 300, 700, 1400, 2400, 3800, 5600],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 2 },
       passive: {
@@ -125,6 +131,7 @@
       name: 'GHOST ORB',
       rarity: 'LEGENDARY',
       maxLevel: 10,
+      maxStars: 5,
       xpCurve: [0, 400, 900, 1800, 3000, 4700, 6800, 9500, 13000, 17500],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 3 },
       passive: {
@@ -139,6 +146,7 @@
       name: 'STORM CORE',
       rarity: 'LEGENDARY',
       maxLevel: 10,
+      maxStars: 5,
       xpCurve: [0, 400, 900, 1800, 3000, 4700, 6800, 9500, 13000, 17500],
       perkSlotsAtLevel: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 3 },
       passive: {

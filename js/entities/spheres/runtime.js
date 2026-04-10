@@ -92,7 +92,7 @@
     getSphereProgress: function(sphereId) {
       const blob = _readBlob();
       const prog = blob.sphereProgression || {};
-      return Object.assign({ level: 1, xp: 0 }, prog[sphereId] || {});
+      return Object.assign({ level: 1, xp: 0, stars: 1 }, prog[sphereId] || {});
     },
 
     getActiveSphereProgress: function() {
@@ -113,7 +113,8 @@
           slots = Math.max(slots, slotMap[lvlStr]);
         }
       }
-      return slots;
+      const stars = this.getSphereProgress(sphereId).stars || 1;
+      return slots + (stars - 1);
     },
 
     // Max perk slots a sphere can ever have (at max level).
@@ -227,6 +228,12 @@
         ? passive.effects[effectKey]
         : undefined;
 
+      const stars = this.getSphereProgress(id).stars || 1;
+      if (typeof passiveVal === 'number') {
+        // Apply star multiplier: +15% effectiveness per star above 1
+        passiveVal = passiveVal * (1 + (stars - 1) * 0.15);
+      }
+
       // Perk contribution
       const perkEffects = this.getEquippedPerkEffects(id);
       let perkVal = (perkEffects[effectKey] !== undefined) ? perkEffects[effectKey] : undefined;
@@ -257,6 +264,30 @@
       _writeBlob(blob);
     },
 
+    // Ascend a sphere, increasing its star rating and resetting level
+    ascendSphere: function(sphereId) {
+      const meta = this.getSphereMeta(sphereId);
+      if (!meta) return false;
+      
+      const blob = _readBlob();
+      blob.sphereProgression = blob.sphereProgression || {};
+      const prog = Object.assign({ level: 1, xp: 0, stars: 1 }, blob.sphereProgression[sphereId] || {});
+      
+      const maxStars = meta.maxStars || 1;
+      if (prog.level < meta.maxLevel || prog.stars >= maxStars) {
+        return false;
+      }
+      
+      // We assume cost has been paid outside
+      prog.stars++;
+      prog.level = 1;
+      prog.xp = 0;
+      
+      blob.sphereProgression[sphereId] = prog;
+      _writeBlob(blob);
+      return true;
+    },
+
     // Grant XP to a sphere and level it up if the threshold is met.
     // Returns { leveled: boolean, newLevel: number }
     grantXP: function(sphereId, amount) {
@@ -265,7 +296,7 @@
 
       const blob = _readBlob();
       blob.sphereProgression = blob.sphereProgression || {};
-      const prog = Object.assign({ level: 1, xp: 0 }, blob.sphereProgression[sphereId] || {});
+      const prog = Object.assign({ level: 1, xp: 0, stars: 1 }, blob.sphereProgression[sphereId] || {});
 
       if (prog.level >= meta.maxLevel) {
         return { leveled: false, newLevel: prog.level };
