@@ -2173,120 +2173,230 @@ body.hard-mode #hardModeBadge { display: block; }
 }
 
 /* ── WORKSHOP VIEW ───────────────────────────── */
+/* ── WORKSHOP — ACTIVE CORE BAY ─────────────── */
 .workshop-equipped-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
   background: rgba(0, 229, 255, 0.04);
-  border: 1px solid rgba(0, 229, 255, 0.18);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 16px;
-  padding: 12px 14px 12px;
-  margin-bottom: 8px;
+  padding: 14px 14px 12px;
+  margin-bottom: 10px;
   flex-shrink: 0;
-  box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.06);
+  box-shadow: inset 0 0 28px rgba(0, 229, 255, 0.06), 0 0 16px rgba(0, 229, 255, 0.04);
 }
-.workshop-sphere-hero {
-  width: 62px !important;
-  height: 62px !important;
-  box-shadow: 0 0 22px rgba(0, 229, 255, 0.45), inset 0 0 16px rgba(0, 229, 255, 0.12) !important;
-  animation: workshopGlowPulse 3s infinite alternate ease-in-out;
-  margin-bottom: 8px !important;
-}
-@keyframes workshopGlowPulse {
-  0%   { box-shadow: 0 0 18px rgba(0,229,255,0.3), inset 0 0 14px rgba(0,229,255,0.1); }
-  100% { box-shadow: 0 0 36px rgba(0,229,255,0.6), inset 0 0 24px rgba(0,229,255,0.18); }
-}
-.workshop-equipped-label {
+.workshop-core-badge {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.44rem;
   letter-spacing: 3px;
-  color: rgba(0, 229, 255, 0.45);
-  margin-bottom: 6px;
+  color: rgba(0, 229, 255, 0.5);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.workshop-core-spotlight {
+  margin-bottom: 10px;
+}
+.workshop-sphere-hero {
+  width: 68px !important;
+  height: 68px !important;
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.5), inset 0 0 20px rgba(0, 229, 255, 0.12) !important;
+  animation: workshopGlowPulse 3s infinite alternate ease-in-out;
+}
+@keyframes workshopGlowPulse {
+  0%   { box-shadow: 0 0 18px rgba(0,229,255,0.3), inset 0 0 14px rgba(0,229,255,0.1); }
+  100% { box-shadow: 0 0 40px rgba(0,229,255,0.68), inset 0 0 28px rgba(0,229,255,0.2); }
+}
+.workshop-core-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
 }
 .workshop-equipped-name {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.4rem;
-  letter-spacing: 2px;
+  font-size: 1.55rem;
+  letter-spacing: 2.5px;
   color: #fff;
-  text-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
-  margin-bottom: 2px;
+  text-shadow: 0 0 14px rgba(0, 229, 255, 0.4);
+  line-height: 1;
 }
-.workshop-equipped-perk {
+.workshop-core-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.workshop-rarity-label {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.52rem;
-  letter-spacing: 1px;
-  color: rgba(255,255,255,0.4);
+  font-size: 0.5rem;
+  letter-spacing: 2px;
+  color: #aaa; /* overridden per-rarity by JS */
 }
+.workshop-meta-sep {
+  color: rgba(255,255,255,0.2);
+  font-size: 0.65rem;
+  line-height: 1;
+}
+.workshop-level-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.45);
+}
+.workshop-xp-row {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.workshop-xp-track {
+  width: 100%;
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.workshop-xp-fill {
+  width: 0%;
+  height: 100%;
+  background: #00e5ff;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.workshop-passive-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.54rem;
+  color: rgba(255,255,255,0.38);
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 10px;
+  width: 100%;
+}
+.workshop-perks-section {
+  width: 100%;
+  border-top: 1px solid rgba(0, 229, 255, 0.1);
+  padding-top: 9px;
+}
+.workshop-perks-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.4rem;
+  letter-spacing: 3px;
+  color: rgba(0, 229, 255, 0.4);
+  margin-bottom: 7px;
+  text-align: center;
+}
+.workshop-perk-slots {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+/* Perk slot states — applied by JS via className */
+.workshop-perk-slot {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+.workshop-perk-slot.slot-filled {
+  border: 1.5px solid #00e5ff;
+  background: rgba(0, 229, 255, 0.1);
+  cursor: pointer;
+}
+.workshop-perk-slot.slot-empty {
+  border: 1.5px dashed #444;
+  cursor: pointer;
+}
+.workshop-perk-slot.slot-locked {
+  border: 1.5px solid #222;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* ── WORKSHOP — SECTION TITLE ────────────────── */
 .workshop-section-title {
   font-family: 'Orbitron', sans-serif;
   font-size: 0.5rem;
   letter-spacing: 3px;
   color: rgba(255,255,255,0.3);
   text-align: center;
-  margin: 8px 0 10px;
+  margin: 0 0 8px;
   flex-shrink: 0;
 }
+
+/* ── WORKSHOP — CORE ROSTER GRID ─────────────── */
 .workshop-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   padding-bottom: 4px;
 }
 .workshop-item {
-  background: rgba(20, 25, 40, 0.65);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
-  padding: 12px 10px;
+  background: rgba(20, 25, 40, 0.7);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 10px 8px 8px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .workshop-item.is-equipped {
-  border-color: rgba(0, 255, 136, 0.45);
-  box-shadow: inset 0 0 16px rgba(0,255,136,0.07), 0 0 12px rgba(0,255,136,0.12);
+  border-color: rgba(0, 255, 136, 0.5);
+  box-shadow: inset 0 0 14px rgba(0,255,136,0.08), 0 0 10px rgba(0,255,136,0.1);
 }
 .workshop-item.is-locked {
-  opacity: 0.38;
+  opacity: 0.35;
 }
 .workshop-item .item-preview {
-  width: 54px;
-  height: 54px;
+  width: 40px;
+  height: 40px;
 }
 .workshop-item-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.6rem;
-  letter-spacing: 0.5px;
+  font-size: 0.52rem;
+  letter-spacing: 0.3px;
   color: rgba(255,255,255,0.85);
   font-weight: bold;
   text-transform: uppercase;
   line-height: 1.2;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .workshop-item-perk {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.46rem;
-  letter-spacing: 0.3px;
-  color: rgba(255,255,255,0.38);
-  line-height: 1.3;
+  font-size: 0.42rem;
+  letter-spacing: 0.2px;
+  color: rgba(255,255,255,0.32);
+  line-height: 1.2;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .workshop-equip-btn {
   width: 100%;
-  padding: 7px 4px;
-  border-radius: 8px;
-  font-size: 0.54rem;
-  letter-spacing: 1.5px;
+  padding: 5px 4px;
+  border-radius: 7px;
+  font-size: 0.48rem;
+  letter-spacing: 1px;
   font-weight: bold;
   cursor: pointer;
   border: 1px solid;
   text-transform: uppercase;
   transition: all 0.15s;
   font-family: 'Orbitron', sans-serif;
-  margin-top: 2px;
+  margin-top: auto;
 }
 .workshop-equip-btn.equipped-state {
   background: rgba(0, 255, 136, 0.12);
@@ -2304,9 +2414,9 @@ body.hard-mode #hardModeBadge { display: block; }
   background: rgba(0, 229, 255, 0.18);
 }
 .workshop-equip-btn.locked-state {
-  background: rgba(255,255,255,0.03);
-  border-color: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.02);
+  border-color: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.2);
   cursor: default;
 }
 .workshop-shop-hint {
@@ -2893,12 +3003,12 @@ body.hard-mode #hardModeBadge { display: block; }
 
   /* Workshop tighter on small screens */
   .workshop-equipped-hero {
-    padding: 10px 12px;
+    padding: 12px 12px 10px;
   }
 
   .workshop-sphere-hero {
-    width: 54px !important;
-    height: 54px !important;
+    width: 60px !important;
+    height: 60px !important;
   }
 }
 
