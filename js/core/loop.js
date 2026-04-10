@@ -3496,10 +3496,12 @@ function update() {
   const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
 
   // ─── PHOENIX BOSS TICK ───────────────────────────────────────────────────
-  if (levelData && levelData.boss === 'phoenix' &&
-      OrbitGame.systems && OrbitGame.systems.phoenixBoss &&
-      OrbitGame.systems.phoenixBoss.isActive()) {
-    OrbitGame.systems.phoenixBoss.tick(frameNow);
+  if (levelData && levelData.boss === 'phoenix') {
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2 && OrbitGame.systems.phoenixBossV2.isActive()) {
+      OrbitGame.systems.phoenixBossV2.tick(frameNow);
+    } else if (OrbitGame.systems && OrbitGame.systems.phoenixBoss && OrbitGame.systems.phoenixBoss.isActive()) {
+      OrbitGame.systems.phoenixBoss.tick(frameNow);
+    }
   }
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -4343,18 +4345,21 @@ function tap() {
     comboGlow = Math.min(1.4, comboGlow + 0.2);
 
     // ─── PHOENIX EVENT BOSS — custom hit handling ─────────────────────────
-    if (t.phoenixTarget && levelData.boss === 'phoenix' &&
-        OrbitGame.systems && OrbitGame.systems.phoenixBoss &&
-        OrbitGame.systems.phoenixBoss.isActive()) {
-      const _isPhoenixPerfect = hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect';
-      const _handled = OrbitGame.systems.phoenixBoss.onTargetHit(t, hitX, hitY, _isPhoenixPerfect);
-      if (!_handled) {
-        // Ghost tapped while invisible — treat as miss feedback but no life deducted
-        ringHitFlash = Math.max(ringHitFlash, 0.18);
+    if (t.phoenixTarget && levelData.boss === 'phoenix') {
+      const _v2Active = OrbitGame.systems && OrbitGame.systems.phoenixBossV2 && OrbitGame.systems.phoenixBossV2.isActive();
+      const _v1Active = OrbitGame.systems && OrbitGame.systems.phoenixBoss && OrbitGame.systems.phoenixBoss.isActive();
+      if (_v2Active || _v1Active) {
+        const _bossMod = _v2Active ? OrbitGame.systems.phoenixBossV2 : OrbitGame.systems.phoenixBoss;
+        const _isPhoenixPerfect = hitTimingTier === 'filthy-perfect' || hitTimingTier === 'perfect';
+        const _handled = _bossMod.onTargetHit(t, hitX, hitY, _isPhoenixPerfect);
+        if (!_handled) {
+          // Ghost tapped while invisible — treat as miss feedback but no life deducted
+          ringHitFlash = Math.max(ringHitFlash, 0.18);
+        }
+        updateStreakUI();
+        updateMultiplierUI();
+        return;
       }
-      updateStreakUI();
-      updateMultiplierUI();
-      return;
     }
     // ─────────────────────────────────────────────────────────────────────
 
@@ -5205,18 +5210,21 @@ function tap() {
       && nearestEdgeDistance <= NEAR_MISS_SURVIVAL_THRESHOLD;
 
     // ─── PHOENIX MISS — timer penalty only, no life deducted ──────────────
-    if (levelData.boss === 'phoenix' &&
-        OrbitGame.systems && OrbitGame.systems.phoenixBoss &&
-        OrbitGame.systems.phoenixBoss.isActive()) {
-      if (nearestTarget) {
-        const _nearestCenter = normalizeAngle(nearestTarget.start + (nearestTarget.size / 2));
-        const _missDir = signedAngularDistance(angle, _nearestCenter);
-        createPopup(hitX, hitY - 38, _missDir > 0 ? 'TOO LATE' : 'TOO EARLY', '#ff9a46');
-      } else {
-        createPopup(hitX, hitY - 38, 'MISS', '#ff9a46');
+    if (levelData.boss === 'phoenix') {
+      const _v2Active = OrbitGame.systems && OrbitGame.systems.phoenixBossV2 && OrbitGame.systems.phoenixBossV2.isActive();
+      const _v1Active = OrbitGame.systems && OrbitGame.systems.phoenixBoss && OrbitGame.systems.phoenixBoss.isActive();
+      if (_v2Active || _v1Active) {
+        const _bossMod = _v2Active ? OrbitGame.systems.phoenixBossV2 : OrbitGame.systems.phoenixBoss;
+        if (nearestTarget) {
+          const _nearestCenter = normalizeAngle(nearestTarget.start + (nearestTarget.size / 2));
+          const _missDir = signedAngularDistance(angle, _nearestCenter);
+          createPopup(hitX, hitY - 38, _missDir > 0 ? 'TOO LATE' : 'TOO EARLY', '#ff9a46');
+        } else {
+          createPopup(hitX, hitY - 38, 'MISS', '#ff9a46');
+        }
+        _bossMod.onMiss();
+        return;
       }
-      OrbitGame.systems.phoenixBoss.onMiss();
-      return;
     }
     // ─────────────────────────────────────────────────────────────────────
 
@@ -5324,6 +5332,9 @@ function returnToMenu() {
   // Stop phoenix run cleanly if user quits mid-run
   if (OG.systems && OG.systems.phoenixBoss && OG.systems.phoenixBoss.isActive()) {
     OG.systems.phoenixBoss.stop();
+  }
+  if (OG.systems && OG.systems.phoenixBossV2 && OG.systems.phoenixBossV2.isActive()) {
+    OG.systems.phoenixBossV2.stop();
   }
   clearRunTransientTimers();
   clearIntensity();
