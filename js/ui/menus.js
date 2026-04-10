@@ -266,23 +266,92 @@
   }
 
   function refreshHubUI() {
-      // Workshop action card: show equipped skin name
-      const workshopStatus = document.getElementById('actionStatusWorkshop');
-      if (workshopStatus) {
-          const skinLabels = {
-              classic: 'CLASSIC', skull: 'SKULL', prism: 'PRISM', echo: 'ECHO',
-              crimson: 'CRIMSON', pulse: 'PULSE', ghost: 'GHOST', storm: 'STORM'
-          };
-          const skin = typeof activeSkin !== 'undefined' ? activeSkin : 'classic';
-          workshopStatus.innerText = skinLabels[skin] || skin.toUpperCase();
-          workshopStatus.style.color = '#00e5ff';
-          workshopStatus.style.borderColor = 'rgba(0,229,255,0.25)';
-          workshopStatus.style.background = 'rgba(0,229,255,0.08)';
+      const world = Math.max(1, Number(typeof maxWorldUnlocked !== 'undefined' ? maxWorldUnlocked : 1) || 1);
+
+      // ── Rank Pill ──────────────────────────────────────────────────────────
+      const RANK_TITLES = { 1: 'ORBIT RUNNER', 2: 'SYNC PILOT', 3: 'RESONANCE KNIGHT', 4: 'GLITCH HUNTER', 5: 'VOID SEEKER' };
+      const RANK_NUMS   = { 1: 'RANK 01',      2: 'RANK 04',    3: 'RANK 08',          4: 'RANK 15',      5: 'RANK 28' };
+      const rankLabel = document.getElementById('hubRankLabel');
+      const rankNum   = document.getElementById('hubRankNum');
+      if (rankLabel) rankLabel.innerText = RANK_TITLES[world] || 'ORBIT RUNNER';
+      if (rankNum)   rankNum.innerText   = RANK_NUMS[world]   || 'RANK 01';
+
+      // ── Orb Skin ───────────────────────────────────────────────────────────
+      const skin = typeof activeSkin !== 'undefined' ? activeSkin : 'classic';
+      const SKIN_COLORS = {
+          classic: '#00e5ff', skull: '#ff3366', prism: '#b157ff', echo: '#00ffcc',
+          crimson: '#ff2244', pulse: '#ff8c00', ghost: '#c8d6e5', storm: '#4fc3f7'
+      };
+      const SKIN_LABELS = {
+          classic: 'CLASSIC CORE', skull: 'NEON SKULL',   prism: 'PRISM CORE',  echo: 'ECHO TRAIL',
+          crimson: 'CRIMSON RAIL', pulse: 'PULSE CORE',   ghost: 'GHOST ORB',   storm: 'STORM CORE'
+      };
+      const orbColor = SKIN_COLORS[skin] || '#00e5ff';
+      const orbStage = document.getElementById('hubOrbStage');
+      const orbCore  = document.getElementById('hubOrbCore');
+      const coreName = document.getElementById('hubCoreName');
+      if (orbStage) orbStage.style.setProperty('--orb-color', orbColor);
+      if (orbCore)  orbCore.setAttribute('data-skin', skin);
+      if (coreName) coreName.innerText = SKIN_LABELS[skin] || 'CLASSIC CORE';
+
+      // ── Campaign Progress ──────────────────────────────────────────────────
+      const campaignEl = document.getElementById('hubStatCampaign');
+      if (campaignEl) {
+          let lastStage = 1;
+          if (typeof playerProgress !== 'undefined' && playerProgress.completedStages) {
+              for (let s = 6; s >= 1; s--) {
+                  if (playerProgress.completedStages[`${world}-${s}`]) {
+                      lastStage = Math.min(s + 1, 6);
+                      break;
+                  }
+              }
+          }
+          campaignEl.innerText = `W${world} \u00b7 S${lastStage}`;
+      }
+
+      // ── Best Score ─────────────────────────────────────────────────────────
+      const bestEl = document.getElementById('hubStatBest');
+      if (bestEl) {
+          const best = (typeof personalBest !== 'undefined' && personalBest.score > 0)
+              ? personalBest.score
+              : (typeof highScore !== 'undefined' ? highScore : 0);
+          bestEl.innerText = best > 0 ? String(best) : '\u2014';
+      }
+
+      // ── Event Status ───────────────────────────────────────────────────────
+      const hasSeenHm   = OG.storage.getItem('orbitSync_hm_tutorial') === '1';
+      const eventActive = hasSeenHm || world >= 4;
+      const eventPanel  = document.getElementById('hubStatEventPanel');
+      const eventValEl  = document.getElementById('hubStatEvent');
+      const eventBtn    = document.getElementById('hubEventBtn');
+      if (eventValEl) {
+          eventValEl.innerText = eventActive ? '3D 14H' : 'LOCKED';
+          eventValEl.style.color = eventActive ? '' : 'rgba(255,255,255,0.25)';
+      }
+      if (eventPanel) eventPanel.style.opacity = eventActive ? '1' : '0.45';
+      if (eventBtn) {
+          eventBtn.style.opacity = eventActive ? '1' : '0.4';
+          eventBtn.style.pointerEvents = eventActive ? 'auto' : 'none';
+      }
+
+      // ── Primary CTA label ──────────────────────────────────────────────────
+      const ctaBtn = document.getElementById('hubContinueBtn');
+      if (ctaBtn) {
+          const hasProgress = typeof playerProgress !== 'undefined'
+              && playerProgress.completedStages
+              && Object.keys(playerProgress.completedStages).length > 0;
+          ctaBtn.innerHTML = hasProgress ? '&#9654; CONTINUE' : '&#9654; PLAY';
       }
   }
 
+  function startContinueRun() {
+      menuSelectedWorld = Math.max(1, Number(typeof maxWorldUnlocked !== 'undefined' ? maxWorldUnlocked : 1) || 1);
+      startCampaign();
+  }
+
   function handleHeroPanelClick() {
-    const isEventActive = document.getElementById('heroEventContent').style.display !== 'none';
+    const heroEventContent = document.getElementById('heroEventContent');
+    const isEventActive = heroEventContent && heroEventContent.style.display !== 'none';
     if (isEventActive) {
       showChallengePreview();
     } else {
@@ -637,10 +706,11 @@
   window.selectAugment = selectAugment;
   OG.ui.menus.showChallengePreview = showChallengePreview;
   window.showChallengePreview = showChallengePreview;
-  window.startAbyssRun   = startAbyssRun;
-  window.startPhoenixRun = startPhoenixRun;
-  window.switchMenuTab   = switchMenuTab;
+  window.startAbyssRun    = startAbyssRun;
+  window.startPhoenixRun  = startPhoenixRun;
+  window.switchMenuTab    = switchMenuTab;
   window.handleHeroPanelClick = handleHeroPanelClick;
+  window.startContinueRun = startContinueRun;
 
   // Initial body class
   document.body.classList.add('state-hub');
@@ -648,19 +718,9 @@
   // Initial UI refresh
   setTimeout(refreshHubUI, 100);
 
-  // Check for weekly event priority (e.g. if Abyss is unlocked)
-  // For now, let's enable it if Hard Mode is unlocked (simulating a weekly event condition)
+  // Re-run hub refresh after state is fully loaded to pick up saved progress
   setTimeout(() => {
-     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
-     const hasSeenHm = OG.storage.getItem('orbitSync_hm_tutorial') === '1';
-     if (hasSeenHm || maxUnlocked >= 4) { // Mock condition for event
-        const hc = document.getElementById('heroCampaignContent');
-        const he = document.getElementById('heroEventContent');
-        if(hc && he) {
-            hc.style.display = 'none';
-            he.style.display = 'block';
-        }
-     }
-  }, 100);
+     refreshHubUI();
+  }, 150);
 
 })(window);

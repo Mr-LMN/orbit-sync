@@ -528,6 +528,340 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   display: none;
 }
 
+/* ══════════════════════════════════════════
+   HUB HOME — PLAYER HUB CORE
+   ══════════════════════════════════════════ */
+
+/* Hub: full-height flex column, scroll only if content overflows */
+#homeView {
+  overflow-y: auto;
+}
+
+/* Center stack fills remaining height and centers its content */
+.hub-center-stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+/* ── Rank Pill ────────────────────────────────── */
+.hub-rank-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 255, 0.07);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 20px;
+  padding: 5px 16px;
+  margin-bottom: 18px;
+}
+
+.hub-rank-pill span {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.46rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#hubRankLabel {
+  color: #00e5ff;
+  font-weight: bold;
+}
+
+.hub-rank-sep {
+  color: rgba(255, 255, 255, 0.18);
+}
+
+#hubRankNum {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── Orb Stage ────────────────────────────────── */
+.hub-orb-stage {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  margin-bottom: 8px;
+  --orb-color: #00e5ff;
+}
+
+/* Ambient glow halo behind orb */
+.hub-orb-halo {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 170px; height: 170px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--orb-color) 0%, transparent 65%);
+  opacity: 0.22;
+  animation: hubHaloPulse 3.5s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes hubHaloPulse {
+  0%   { opacity: 0.14; transform: translate(-50%, -50%) scale(0.92); }
+  100% { opacity: 0.32; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+/* Thin orbital ring around the orb */
+.hub-orb-ring {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 150px; height: 150px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.05);
+  border-top-color: rgba(0, 229, 255, 0.55);
+  border-right-color: rgba(0, 229, 255, 0.2);
+  animation: hubRingSpin 7s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes hubRingSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Orb sphere */
+.hub-orb-core {
+  position: relative;
+  z-index: 2;
+  width: 112px; height: 112px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 20px var(--orb-color),
+    0 0 55px var(--orb-color),
+    inset 0 0 14px rgba(0, 0, 0, 0.4);
+  animation: hubOrbBob 3.5s ease-in-out infinite alternate,
+             hubOrbGlow 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes hubOrbBob {
+  0%   { transform: translateY(0px); }
+  100% { transform: translateY(-6px); }
+}
+
+@keyframes hubOrbGlow {
+  0%   { box-shadow: 0 0 16px var(--orb-color), 0 0 42px var(--orb-color), inset 0 0 14px rgba(0,0,0,0.4); }
+  100% { box-shadow: 0 0 28px var(--orb-color), 0 0 72px var(--orb-color), inset 0 0 14px rgba(0,0,0,0.4); }
+}
+
+/* 3D-lit sphere surface */
+.hub-orb-inner {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 36% 32%,
+    rgba(255, 255, 255, 0.55) 0%,
+    var(--orb-color) 38%,
+    rgba(0, 0, 0, 0.52) 100%
+  );
+}
+
+/* Floating energy particles */
+.hub-orb-particles {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+.hub-particle {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--orb-color);
+  opacity: 0;
+  animation: hubParticleDrift 4s ease-in-out infinite;
+}
+
+.hub-particle.p1 { top: 21%; left: 13%; animation-delay: 0s; }
+.hub-particle.p2 { top: 17%; right: 15%; animation-delay: 1.3s; }
+.hub-particle.p3 { bottom: 22%; left: 17%; animation-delay: 2.5s; }
+.hub-particle.p4 { bottom: 19%; right: 13%; animation-delay: 3.4s; }
+
+@keyframes hubParticleDrift {
+  0%, 100% { opacity: 0; transform: translate(0, 0); }
+  30%       { opacity: 0.7; }
+  50%       { opacity: 0.4; transform: translate(2px, -8px); }
+  75%       { opacity: 0.6; }
+}
+
+/* Active core name label */
+.hub-core-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.36);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* ── Brand Title ──────────────────────────────── */
+.hub-brand-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.hub-brand-text {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.3rem;
+  letter-spacing: 6px;
+  color: #fff;
+  animation: hubBrandPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes hubBrandPulse {
+  0%   { text-shadow: 0 0 16px rgba(0,229,255,0.7), 0 0 40px rgba(0,229,255,0.25); }
+  100% { text-shadow: 0 0 28px rgba(0,229,255,1.0), 0 0 70px rgba(0,229,255,0.45), 0 0 110px rgba(0,229,255,0.15); }
+}
+
+.hub-brand-deco {
+  font-size: 0.6rem;
+  color: rgba(0, 229, 255, 0.45);
+  line-height: 2.4rem;
+}
+
+/* ── Status Strip ─────────────────────────────── */
+.hub-status-strip {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  max-width: 310px;
+  background: rgba(8, 12, 24, 0.65);
+  border: 1px solid rgba(0, 229, 255, 0.1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.hub-stat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 6px;
+  gap: 3px;
+}
+
+.hub-stat-divider {
+  width: 1px;
+  background: rgba(0, 229, 255, 0.08);
+  flex-shrink: 0;
+  margin: 8px 0;
+}
+
+.hub-stat-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.36rem;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.28);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hub-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.68rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+}
+
+.hub-stat-panel--event .hub-stat-value {
+  color: #ff8844;
+}
+
+/* ── Primary CTA ──────────────────────────────── */
+.hub-primary-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 310px;
+  margin: 0 auto 10px;
+  padding: 14px 20px;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  border-radius: 16px;
+  flex-shrink: 0;
+  box-shadow: 0 6px 30px rgba(0, 229, 255, 0.35);
+}
+
+/* ── Secondary Row ────────────────────────────── */
+.hub-secondary-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 310px;
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+.hub-secondary-btn {
+  flex: 1;
+  background: rgba(18, 22, 36, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1.5px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.hub-secondary-btn:hover {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.38);
+  color: #00e5ff;
+}
+
+.hub-secondary-btn:active {
+  transform: scale(0.95);
+}
+
+.hub-secondary-btn--event {
+  border-color: rgba(255, 100, 26, 0.22);
+  color: rgba(255, 130, 60, 0.65);
+}
+
+.hub-secondary-btn--event:hover {
+  background: rgba(255, 100, 26, 0.1);
+  border-color: rgba(255, 100, 26, 0.38);
+  color: #ff8844;
+}
+
+/* ── Home Nav Icon Emphasis ───────────────────── */
+#nav-home.active .nav-icon {
+  transform: scale(1.18);
+  filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.65));
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+/* ── Small Screen Hub Overrides ───────────────── */
+@media (max-height: 680px) {
+  .hub-orb-stage  { width: 148px; height: 148px; margin-bottom: 4px; }
+  .hub-orb-core   { width: 90px; height: 90px; }
+  .hub-orb-halo   { width: 138px; height: 138px; }
+  .hub-orb-ring   { width: 122px; height: 122px; }
+  .hub-rank-pill  { margin-bottom: 12px; }
+  .hub-brand-text { font-size: 1.85rem; }
+  .hub-center-stack { padding-bottom: 4px; }
+}
+
 /* ── CAMPAIGN VIEW ─────────────────────── */
 .campaign-layout {
   display: flex;
