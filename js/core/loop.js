@@ -184,12 +184,17 @@ function saveData() {
   OG.storage.setJSON('orbitSync_playerProgress', playerProgress);
   OG.storage.setItem('orbitSync_maxWorld', maxWorldUnlocked);
 
-  // Save sphere progression, fragments, unlocked perks (merged with base data logic in main refactor but here as fallback)
-  let data = OG.storage.getJSON() || {};
+  // Save sphere progression, equipped perks, unlocked perks, core fragments.
+  // Uses the explicit key 'orbitSync_progression' (previously stored under
+  // the accidental 'undefined' key — runtime.js migrates legacy data on read).
+  let data = OG.storage.getJSON('orbitSync_progression', null);
+  if (data === null) data = OG.storage.getJSON('undefined', {});
+  data = data || {};
   data.sphereProgression = data.sphereProgression || {};
+  data.equippedPerks = data.equippedPerks || {};
   data.unlockedPerks = data.unlockedPerks || [];
   data.globalCoreFragments = typeof window.globalCoreFragments !== 'undefined' ? window.globalCoreFragments : 0;
-  OG.storage.setJSON(data);
+  OG.storage.setJSON('orbitSync_progression', data);
 }
 
 function checkAndSavePB(currentScore, currentStreak) {
@@ -1163,7 +1168,8 @@ function clearRunTransientTimers() {
 }
 function resetRunState() {
   clearRunTransientTimers();
-  maxLives = activeSkin === 'skull' ? 4 : 3;
+  const _sr = OrbitGame.entities.spheres.runtime;
+  maxLives = 3 + (_sr ? _sr.getCombinedValue('maxLivesBonus') : 0);
   score = 0; stageHits = 0; lives = (hardModeActive ? 2 : maxLives); multiplier = 1; streak = 0;
   timeScale = 1.0;
   targetTimeScale = 1.0;
@@ -1230,7 +1236,8 @@ function loseLife(reason) {
     setTimeout(() => canvas.style.boxShadow = 'none', 200);
     return;
   }
-  if (activeSkin === 'ghost' && window.ghostShieldActive) {
+  const _sr = OrbitGame.entities.spheres.runtime;
+  if (window.ghostShieldActive && (_sr ? _sr.getCombinedValue('ghostSave') : false)) {
     window.ghostShieldActive = false;
     createPopup(centerObj.x, centerObj.y - 80, 'GHOST SAVIOR', '#aaaaff');
     createShockwave('#aaaaff', 40);
@@ -1569,11 +1576,8 @@ function loadLevel(idx) {
     ui.lives.innerText = lives;
   }
 
-  if (activeSkin === 'ghost') {
-    window.ghostShieldActive = true;
-  } else {
-    window.ghostShieldActive = false;
-  }
+  window.ghostShieldActive = !!(OrbitGame.entities.spheres.runtime &&
+    OrbitGame.entities.spheres.runtime.getCombinedValue('ghostSave'));
 
   ui.lives.innerText = lives;
   updateLastLifeState();
@@ -4281,7 +4285,8 @@ function tap() {
     const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);
     const hitTimingAccuracy = Math.abs(hitTimingOffset);
     const _augWideMult = (activeAugment === 'wide_sync') ? 1.2 : 1.0;
-    const _skinEchoMult = (activeSkin === 'echo') ? 1.1 : 1.0;
+    const _hitRadiusBonus = OrbitGame.entities.spheres.runtime ? OrbitGame.entities.spheres.runtime.getCombinedValue('hitRadiusBonus') : 0;
+    const _skinEchoMult = 1.0 + _hitRadiusBonus;
     const _hmTightMult = (hardModeActive) ? 0.82 : 1.0;
 
     // Grace scale: 1-1 starts at 1.25x (25% more forgiving),
@@ -4896,7 +4901,7 @@ function tap() {
       }
       ringHitFlash = Math.max(ringHitFlash, 0.55 + Math.min(multiplier, 8) * 0.055);
       multiplier = Math.min(multiplier + 1, 8);
-      if (activeSkin === 'crimson') {
+      if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('comboPerfectBonus')) {
           comboCount++;
           streak++;
       }
@@ -4966,7 +4971,7 @@ function tap() {
       }
       ringHitFlash = Math.max(ringHitFlash, 0.45 + Math.min(multiplier, 8) * 0.04);
       multiplier = Math.min(multiplier + 1, 8);
-      if (activeSkin === 'crimson') {
+      if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('comboPerfectBonus')) {
           comboCount++;
           streak++;
       }
@@ -5093,7 +5098,8 @@ function tap() {
     // Multiplier contribution softened — logarithmic feel
     const _multContrib = 1 + Math.log2(Math.max(1, multiplier)) * 0.4;
     let centsEarned = _baseEarn * _multContrib;
-    if (activeSkin === 'prism') centsEarned *= 1.1; // Prism +10%
+    const _coinBonus = OrbitGame.entities.spheres.runtime ? OrbitGame.entities.spheres.runtime.getCombinedValue('coinMultiplierBonus') : 0;
+    if (_coinBonus > 0) centsEarned *= (1 + _coinBonus);
     if (activeAugment === 'coin_surge') centsEarned = Math.ceil(centsEarned * 1.5);
   if (isPremium) centsEarned *= 2; // Premium x2 coins
     runCents += centsEarned;
@@ -5137,9 +5143,10 @@ function tap() {
         && stageHits === (levelData.hitsNeeded - 1)
         && !world3BossCollapseTriggered;
 
-      if (activeSkin === 'storm' && runPerfectHitsOnly) {
-          runCents += 5;
-          createPopup(centerObj.x, centerObj.y - orbitRadius - 50, "STORM FLAWLESS +5", "#ffee00");
+      const _flawlessBonus = OrbitGame.entities.spheres.runtime ? OrbitGame.entities.spheres.runtime.getCombinedValue('flawlessBonus') : 0;
+      if (_flawlessBonus > 0 && runPerfectHitsOnly) {
+          runCents += _flawlessBonus;
+          createPopup(centerObj.x, centerObj.y - orbitRadius - 50, `FLAWLESS +${_flawlessBonus}`, "#ffee00");
           markScoreCoinDirty();
       }
       if (isResonanceFinalHit) {
@@ -5237,7 +5244,7 @@ function tap() {
         canvas.style.boxShadow = `inset 0 0 32px #ffaa00`;
         setTimeout(() => canvas.style.boxShadow = 'none', 100);
         if (navigator.vibrate) vibrate(12);
-        if (activeSkin === 'pulse') {
+        if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('nearMissCoin')) {
           runCents += 1;
           createPopup(hitX, hitY - 44, "+1 COIN", "#ffffff");
           markScoreCoinDirty();

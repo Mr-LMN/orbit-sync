@@ -1,79 +1,70 @@
 // js/entities/perks/registry.js
+// Perks are equippable bonuses that are SEPARATE from sphere passives.
+//
+// Key design rules:
+//   - Perks are unlocked independently and socketed into perk slots.
+//   - A perk can be equipped on any sphere that has an available slot.
+//   - Perk effect keys match the same keys defined in sphere passives
+//     so getCombinedValue() in runtime.js aggregates both sources cleanly.
+//   - Numeric effects are additive deltas (e.g. coinMultiplierBonus: 0.15 = +15%).
+//   - Boolean effects are OR'd with the passive (either source activates it).
+//
+// Do NOT re-add passive IDs (lives_1, ghost_save, coin_bonus_1 etc.) here.
+// Those live exclusively in spheres/registry.js as sphere passive objects.
 
 (function(window) {
   const OG = window.OrbitGame = window.OrbitGame || {};
   OG.entities = OG.entities || {};
   OG.entities.perks = OG.entities.perks || {};
 
-  const perks = {
-    // --- LIVES ---
-    'lives_1': {
-      id: 'lives_1',
-      name: 'Life Core I',
+  const PERKS = {
+
+    // +1 max life — stacks with skull passive's maxLivesBonus: 1
+    'vital_core': {
+      id: 'vital_core',
+      name: 'Vital Core',
       description: '+1 Max Lives',
-      icon: '❤️'
-    },
-    'lives_2': {
-      id: 'lives_2',
-      name: 'Life Core II',
-      description: '+2 Max Lives',
-      icon: '❤️❤️'
+      icon: '❤️',
+      effects: { maxLivesBonus: 1 }
     },
 
-    // --- COIN BOOSTS ---
-    'coin_bonus_1': {
-      id: 'coin_bonus_1',
-      name: 'Coin Magnet I',
-      description: '+10% Coins Earned',
-      icon: '🪙'
-    },
-    'coin_bonus_2': {
-      id: 'coin_bonus_2',
-      name: 'Coin Magnet II',
-      description: '+25% Coins Earned',
-      icon: '🪙'
+    // +15% coin multiplier — stacks with prism passive's coinMultiplierBonus: 0.10
+    'magnet_core': {
+      id: 'magnet_core',
+      name: 'Magnet Core',
+      description: '+15% Coins Earned',
+      icon: '🪙',
+      effects: { coinMultiplierBonus: 0.15 }
     },
 
-    // --- RADIUS ---
-    'radius_1': {
-      id: 'radius_1',
-      name: 'Echo Trail I',
+    // +10% hit radius — stacks with echo passive's hitRadiusBonus: 0.10
+    'arc_expander': {
+      id: 'arc_expander',
+      name: 'Arc Expander',
       description: '+10% Hit Radius',
-      icon: '🔵'
-    },
-    'radius_2': {
-      id: 'radius_2',
-      name: 'Echo Trail II',
-      description: '+20% Hit Radius',
-      icon: '🔵'
+      icon: '🔵',
+      effects: { hitRadiusBonus: 0.10 }
     },
 
-    // --- GAMEPLAY TWEAKS ---
-    'combo_perfect': {
-      id: 'combo_perfect',
-      name: 'Crimson Rail',
+    // Combo +1 on perfect — same effect as crimson passive, equippable on any sphere
+    'edge_sync': {
+      id: 'edge_sync',
+      name: 'Edge Sync',
       description: 'Combo +1 on Perfect Hit',
-      icon: '🔥'
+      icon: '🔥',
+      effects: { comboPerfectBonus: true }
     },
-    'near_miss_coin': {
-      id: 'near_miss_coin',
-      name: 'Pulse Core',
-      description: 'Near Miss gives 1 Coin',
-      icon: '⚡'
-    },
-    'ghost_save': {
-      id: 'ghost_save',
-      name: 'Ghost Orb',
-      description: 'Survive 1 Fatal Hit per Run',
-      icon: '👻'
-    },
-    'flawless_bonus': {
-      id: 'flawless_bonus',
-      name: 'Storm Core',
-      description: '+5 Coins on Flawless Stage',
-      icon: '🌩️'
+
+    // Near miss +1 coin — same effect as pulse passive, equippable on any sphere
+    'pulse_chip': {
+      id: 'pulse_chip',
+      name: 'Pulse Chip',
+      description: 'Near Miss grants +1 Coin',
+      icon: '⚡',
+      effects: { nearMissCoin: true }
     }
+
   };
 
-  OG.entities.perks.registry = perks;
+  OG.entities.perks.registry = PERKS;
 })(window);
