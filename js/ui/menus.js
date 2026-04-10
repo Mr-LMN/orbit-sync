@@ -625,6 +625,10 @@
     // Per-shape radii so each shape feels consistently sized in the preview zone
     const shapeRadii = { circle: 66, diamond: 62, triangle: 66, square: 58, pentagon: 64, hexagon: 64, octagon: 63 };
     const radius = shapeRadii[currentWorldShape] || 66;
+    // Per-shape vertical nudge: triangle is top-heavy (visual CoM sits above geometric center),
+    // so shift it down so it reads as centered in the clipped preview zone.
+    const shapeYNudge = { circle: 0, diamond: 0, triangle: 14, square: 0, pentagon: 0, hexagon: 0, octagon: 0 };
+    const drawCy = cy + (shapeYNudge[currentWorldShape] || 0);
 
     ctx.save();
     if (isLocked) {
@@ -647,29 +651,29 @@
       // Build the shape path
       ctx.beginPath();
       if (currentWorldShape === 'square') {
-        ctx.rect(cx - radius, cy - radius, radius*2, radius*2);
+        ctx.rect(cx - radius, drawCy - radius, radius*2, radius*2);
       } else if (currentWorldShape === 'diamond') {
-        ctx.moveTo(cx,          cy - radius); // top
-        ctx.lineTo(cx + radius, cy);          // right
-        ctx.lineTo(cx,          cy + radius); // bottom
-        ctx.lineTo(cx - radius, cy);          // left
+        ctx.moveTo(cx,          drawCy - radius); // top
+        ctx.lineTo(cx + radius, drawCy);          // right
+        ctx.lineTo(cx,          drawCy + radius); // bottom
+        ctx.lineTo(cx - radius, drawCy);          // left
         ctx.closePath();
       } else if (currentWorldShape === 'triangle') {
-        ctx.moveTo(cx, cy - radius);
-        ctx.lineTo(cx + radius*0.866, cy + radius*0.5);
-        ctx.lineTo(cx - radius*0.866, cy + radius*0.5);
+        ctx.moveTo(cx, drawCy - radius);
+        ctx.lineTo(cx + radius*0.866, drawCy + radius*0.5);
+        ctx.lineTo(cx - radius*0.866, drawCy + radius*0.5);
         ctx.closePath();
       } else if (currentWorldShape === 'pentagon' || currentWorldShape === 'hexagon' || currentWorldShape === 'octagon') {
         const sides = currentWorldShape === 'pentagon' ? 5 : (currentWorldShape === 'hexagon' ? 6 : 8);
         for(let i=0; i<sides; i++){
           const angle = i * (Math.PI*2)/sides - Math.PI/2;
           const x = cx + Math.cos(angle)*radius;
-          const y = cy + Math.sin(angle)*radius;
+          const y = drawCy + Math.sin(angle)*radius;
           if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
         }
         ctx.closePath();
       } else {
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.arc(cx, drawCy, radius, 0, Math.PI * 2);
       }
 
       // Subtle fill for shape interior presence
