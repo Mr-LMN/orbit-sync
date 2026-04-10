@@ -710,24 +710,55 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   align-items: center;
   gap: 10px;
   margin-bottom: 18px;
+  position: relative;
+}
+
+/* Soft ambient bloom behind the title text */
+.hub-brand-title::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 72px;
+  background: radial-gradient(ellipse at center, rgba(0, 210, 255, 0.14) 0%, rgba(0, 120, 220, 0.07) 45%, transparent 72%);
+  pointer-events: none;
+  border-radius: 50%;
+  animation: hubBrandHaze 4s ease-in-out infinite alternate;
+}
+
+@keyframes hubBrandHaze {
+  0%   { opacity: 0.65; }
+  100% { opacity: 1.0; }
 }
 
 .hub-brand-text {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 2.3rem;
-  letter-spacing: 6px;
-  color: #fff;
+  font-size: 2.5rem;
+  letter-spacing: 7px;
+  color: #ecfeff;
   animation: hubBrandPulse 4s ease-in-out infinite alternate;
 }
 
 @keyframes hubBrandPulse {
-  0%   { text-shadow: 0 0 16px rgba(0,229,255,0.7), 0 0 40px rgba(0,229,255,0.25); }
-  100% { text-shadow: 0 0 28px rgba(0,229,255,1.0), 0 0 70px rgba(0,229,255,0.45), 0 0 110px rgba(0,229,255,0.15); }
+  0% {
+    text-shadow:
+      0 0 12px rgba(0,229,255,0.9),
+      0 0 35px rgba(0,229,255,0.45),
+      0 0 70px rgba(0,200,255,0.18);
+  }
+  100% {
+    text-shadow:
+      0 0 16px rgba(0,240,255,1.0),
+      0 0 50px rgba(0,229,255,0.72),
+      0 0 100px rgba(0,200,255,0.36),
+      0 0 165px rgba(0,160,255,0.13);
+  }
 }
 
 .hub-brand-deco {
-  font-size: 0.6rem;
-  color: rgba(0, 229, 255, 0.45);
+  font-size: 0.65rem;
+  color: rgba(0, 229, 255, 0.62);
   line-height: 2.4rem;
 }
 
@@ -858,7 +889,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   .hub-orb-halo   { width: 138px; height: 138px; }
   .hub-orb-ring   { width: 122px; height: 122px; }
   .hub-rank-pill  { margin-bottom: 12px; }
-  .hub-brand-text { font-size: 1.85rem; }
+  .hub-brand-text { font-size: 2.05rem; }
   .hub-center-stack { padding-bottom: 4px; }
 }
 
@@ -890,7 +921,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   background: rgba(10, 14, 26, 0.94);
   border: 1px solid rgba(0, 229, 255, 0.28);
   border-radius: 18px;
-  padding: 18px 16px 14px;
+  padding: 14px 16px 12px;
   text-align: center;
   flex: 1;
   box-shadow: 0 14px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(0, 229, 255, 0.2), inset 0 0 28px rgba(0, 229, 255, 0.08);
@@ -898,7 +929,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 6px;
+  gap: 4px;
 }
 
 .world-bg-glow {
@@ -917,7 +948,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 }
 
 .campaign-progress {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   width: 100%;
 }
 
@@ -2427,7 +2458,7 @@ body.hard-mode #hardModeBadge { display: block; }
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin: 6px 0 4px;
+  margin: 4px 0 3px;
   gap: 8px;
   position: relative;
   z-index: 1;
@@ -3265,7 +3296,7 @@ body.hard-mode #hardModeBadge { display: block; }
 .world-preview-zone {
   position: relative;
   width: 100%;
-  height: 140px;
+  height: 122px;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -3314,7 +3345,7 @@ body.hard-mode #hardModeBadge { display: block; }
   }
 
   .world-info-box {
-    padding: 14px 12px 12px;
+    padding: 12px 12px 10px;
   }
 
   .campaign-card-play {
@@ -3324,7 +3355,7 @@ body.hard-mode #hardModeBadge { display: block; }
   }
 
   .world-stats-row {
-    margin: 4px 0 3px;
+    margin: 3px 0 2px;
   }
 
   #menuWorldLabel {
