@@ -5398,6 +5398,8 @@ function returnToMenu() {
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
+  const lockedOverlay = document.getElementById('lockedWorldOverlay');
+  if (lockedOverlay) lockedOverlay.style.display = 'none';
   if (
     OrbitGame.ui &&
     OrbitGame.ui.menus &&

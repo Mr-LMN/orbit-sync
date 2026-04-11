@@ -2,7 +2,40 @@
   const OG = window.OrbitGame = window.OrbitGame || {};
   OG.systems = OG.systems || {};
 
+  function cleanupEventBossState() {
+    const lockedOverlay = document.getElementById('lockedWorldOverlay');
+    if (lockedOverlay) lockedOverlay.style.display = 'none';
+
+    const phoenixGameUI = document.getElementById('phoenixGameUI');
+    if (phoenixGameUI) phoenixGameUI.style.display = 'none';
+
+    const phoenixTimer = document.getElementById('phoenixTimer');
+    if (phoenixTimer) phoenixTimer.style.display = 'none';
+
+    const phoenixPhaseName = document.getElementById('phoenixPhaseName');
+    if (phoenixPhaseName) phoenixPhaseName.style.display = 'none';
+
+    const phoenixMult = document.getElementById('phoenixMult');
+    if (phoenixMult) phoenixMult.style.display = 'none';
+
+    const phoenixLives = document.getElementById('phoenixLives');
+    if (phoenixLives) phoenixLives.style.display = 'none';
+
+    const phoenixCoreObjV2 = document.getElementById('phoenixCoreObjV2');
+    if (phoenixCoreObjV2) phoenixCoreObjV2.style.display = 'none';
+
+    if (OG.systems && OG.systems.phoenixBoss && typeof OG.systems.phoenixBoss.stop === 'function') {
+      OG.systems.phoenixBoss.stop();
+    }
+    if (OG.systems && OG.systems.phoenixBossV2 && typeof OG.systems.phoenixBossV2.stop === 'function') {
+      OG.systems.phoenixBossV2.stop();
+    }
+  }
+
   function launchBossChallenge(levelOverride) {
+    console.debug('[event-runner] launchBossChallenge', levelOverride && levelOverride.title);
+    cleanupEventBossState();
+
     if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.suspendTutorialUI === 'function') {
       OG.systems.tutorial.suspendTutorialUI();
     }
@@ -24,6 +57,13 @@
     currentWorldPalette = computeWorldPalette(levelData);
     currentWorldShape = computeWorldShape(levelData);
     currentWorldVisualTheme = getWorldVisualTheme(levelData);
+    if (typeof bossPhase !== 'undefined') bossPhase = 1;
+    if (typeof isBossPhaseTwo !== 'undefined') isBossPhaseTwo = false;
+    if (typeof stageHits !== 'undefined') stageHits = 0;
+    if (typeof canvas !== 'undefined' && canvas && canvas.style) {
+      canvas.style.boxShadow = 'none';
+      canvas.style.filter = '';
+    }
 
     currentLevelIdx = -1;
     resetRunState();
@@ -45,9 +85,13 @@
   }
 
   function startPhoenixRun() {
+    console.debug('[event-runner] startPhoenixRun');
     // Stop any previous phoenix run
     if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
       OrbitGame.systems.phoenixBoss.stop();
+    }
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
+      OrbitGame.systems.phoenixBossV2.stop();
     }
     launchBossChallenge({
       id: 'phoenix',
@@ -69,6 +113,10 @@
   }
 
   function startPhoenixRunV2() {
+    console.debug('[event-runner] startPhoenixRunV2');
+    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
+      OrbitGame.systems.phoenixBoss.stop();
+    }
     if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
       OrbitGame.systems.phoenixBossV2.stop();
     }
