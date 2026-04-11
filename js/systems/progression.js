@@ -3,6 +3,32 @@
   OG.systems = OG.systems || {};
   OG.systems.progression = OG.systems.progression || {};
 
+  const STAR_THRESHOLDS = {
+    default: {
+      twoStarPerfectRate: 0.60,
+      threeStarPerfectRate: 0.85
+    },
+    earlyWorldFairness: {
+      '1-1': { twoStarPerfectRate: 0.55, threeStarPerfectRate: 0.80 },
+      '1-2': { twoStarPerfectRate: 0.55, threeStarPerfectRate: 0.80 }
+    }
+  };
+
+  let stageRunStatStart = { perfect: 0, good: 0, ok: 0 };
+
+  function markStageStartRunStats() {
+    const stats = OG.state && OG.state.legacy && OG.state.legacy.runStats;
+    stageRunStatStart = {
+      perfect: Number((stats && stats.runPerfectCount) || 0),
+      good: Number((stats && stats.runGoodCount) || 0),
+      ok: Number((stats && stats.runOkCount) || 0)
+    };
+  }
+
+  function getStarThresholdsForStage(stageId) {
+    return STAR_THRESHOLDS.earlyWorldFairness[stageId] || STAR_THRESHOLDS.default;
+  }
+
   function getCheckpointIndex() {
     // Try saved stage first
     const savedIdx = parseInt(OG.storage.getItem('orbitSync_checkpointIdx') || '-1', 10);
@@ -85,23 +111,19 @@
           }
         }
         // Star rating
-        const PAR_SCORES = {
-          '1-1':8,'1-2':12,'1-3':16,'1-4':22,'1-5':30,
-          '2-1':14,'2-2':16,'2-3':18,'2-4':20,'2-5':28,
-          '3-1':8,'3-2':12,'3-3':18,'3-4':22,'3-5':30,
-          '4-1':14,'4-2':18,'4-3':20,'4-4':26,'4-5':32,
-          '5-1':18,'5-2':22,'5-3':24,'5-4':28,'5-5':36,
-          '6-1':20,'6-2':24,'6-3':26,'6-4':30,'6-5':40
-        };
         if (!levelData.boss && typeof reviveCount !== 'undefined') {
-          const _par = PAR_SCORES[levelData.id] || 10;
-          const _noRevive = reviveCount === 0;
-          const _abovePar = _stageScore >= _par;
-          const _perfectOnly = typeof OrbitGame !== 'undefined' &&
-            OrbitGame.state && OrbitGame.state.runPerfectHitsOnly;
+          const _currentRunStats = OG.state && OG.state.legacy && OG.state.legacy.runStats;
+          const _stagePerfectHits = Math.max(0, Number((_currentRunStats && _currentRunStats.runPerfectCount) || 0) - stageRunStatStart.perfect);
+          const _stageGoodHits = Math.max(0, Number((_currentRunStats && _currentRunStats.runGoodCount) || 0) - stageRunStatStart.good);
+          const _stageOkHits = Math.max(0, Number((_currentRunStats && _currentRunStats.runOkCount) || 0) - stageRunStatStart.ok);
+          const _validScorableHits = _stagePerfectHits + _stageGoodHits + _stageOkHits;
+          const _perfectRate = _validScorableHits > 0 ? (_stagePerfectHits / _validScorableHits) : 0;
+          const _thresholds = getStarThresholdsForStage(levelData.id);
+
           let _stars = 1;
-          if (_noRevive && _abovePar) _stars = 2;
-          if (_stars === 2 && _perfectOnly) _stars = 3;
+          if (_perfectRate >= _thresholds.twoStarPerfectRate) _stars = 2;
+          if (_perfectRate >= _thresholds.threeStarPerfectRate) _stars = 3;
+
           if (!playerProgress.stageStars) playerProgress.stageStars = {};
           const _prevStars = playerProgress.stageStars[levelData.id] || 0;
           if (_stars > _prevStars) {
@@ -219,6 +241,7 @@
   }
 
   OG.systems.progression.getCheckpointIndex = getCheckpointIndex;
+  OG.systems.progression.markStageStartRunStats = markStageStartRunStats;
   OG.systems.progression.updateWaveUI = updateWaveUI;
   OG.systems.progression.triggerStageClear = triggerStageClear;
 })(window);
