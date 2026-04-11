@@ -631,6 +631,10 @@
     });
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (!isLocked) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+    }
 
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
@@ -718,7 +722,7 @@
       ctx.textBaseline = 'bottom';
       ctx.shadowColor = shapeColor;
       ctx.shadowBlur = 8;
-      ctx.fillText(`PREVIEW: ${currentWorldShape}`, cx, canvas.height - 10);
+      ctx.fillText(`PREVIEW: ${currentWorldShape}`, cx, canvas.height - 24);
       ctx.restore();
     }
     ctx.restore();
