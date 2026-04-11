@@ -52,7 +52,9 @@
   <div id="phoenixGameUI" style="display:none;">
     <div id="phoenixTimerBlock">
       <div id="phoenixPhaseName">EMBER</div>
-      <div id="phoenixTimer">0:30.0</div>
+      <div id="phoenixTimer">0</div>
+      <!-- Phase progress bar -->
+      <div id="phoenixPhaseBarTrack"><div id="phoenixPhaseBar"></div></div>
     </div>
     <div id="phoenixStatusRow">
       <span id="phoenixLives">◆◆◇</span>
@@ -442,8 +444,7 @@
         </div>
 
         <div class="phoenix-countdown" id="challengeCountdown">ENDS IN: 3D 14H 22M</div>
-        <button class="btn btn-play btn-fire phoenix-enter-btn" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();startPhoenixRun();">ENTER THE TRIAL</button>
-        <button class="btn btn-play phoenix-enter-btn" style="background:rgba(255,0,255,0.2); border-color:#ff00ff; color:#ff00ff; margin-top:10px;" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); startPhoenixRunV2();">TEST V2 BETA</button>
+        <button class="btn btn-play phoenix-enter-btn" style="background:linear-gradient(135deg,rgba(255,0,180,0.22),rgba(120,0,80,0.18)); border-color:#ff00cc; color:#ff00cc; box-shadow:0 0 22px rgba(255,0,200,0.35);" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); startPhoenixRunV2();">🔥 ENTER THE TRIAL</button>
       </div>
 
       <!-- PROFILE VIEW -->

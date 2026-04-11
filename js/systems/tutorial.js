@@ -3,27 +3,33 @@
   OG.systems = OG.systems || {};
 
   const STORAGE_KEY = 'orbitSync_masterTutorial_v2';
-  const LEGACY_KEY = 'orbitSync_masterTutorial';
+  const LEGACY_KEY  = 'orbitSync_masterTutorial';
 
   const PHASES = {
-    DISMISSED: 'dismissed',
-    WELCOME: 'welcome',
-    CAMPAIGN_GATE: 'campaign_gate',
-    WORLD_PREVIEW: 'world_preview',
-    WORLD_LADDER: 'world_ladder',
-    FIRST_PLAY: 'first_play',
+    DISMISSED:       'dismissed',
+    WELCOME:         'welcome',
+    ORBIT_LOOP:      'orbit_loop',     // NEW: core mechanic explainer
+    CAMPAIGN_GATE:   'campaign_gate',
+    WORLD_PREVIEW:   'world_preview',
+    WORLD_LADDER:    'world_ladder',
+    FIRST_PLAY:      'first_play',
     HARD_MODE_INTRO: 'hard_mode_intro',
     HARD_MODE_CLEAR: 'hard_mode_clear',
-    ECONOMY_ROUTE: 'economy_route',
-    OWNERSHIP_ACTION: 'ownership_action',
-    COMPLETE: 'complete'
+    ECONOMY_ROUTE:   'economy_route',
+    OWNERSHIP_ACTION:'ownership_action',
+    COMPLETE:        'complete'
   };
 
   const COPY = {
     welcome: {
       label: 'SYSTEM NOTICE',
       title: 'ORBIT SYNC ONLINE',
-      body: 'Orbit Sync is built on timing, control, and survival. Each world adds a new layer. Learn the orbit. Then break it.'
+      body: 'Your orb rides the ring. Score by landing inside a glowing zone at the right moment.\n\nMaster the timing. The ring never forgives twice.'
+    },
+    orbitLoop: {
+      label: 'CORE MECHANICS',
+      title: 'THE ORBIT LOOP',
+      body: 'Zones drift around the ring. Tap to launch your orb.\n\nHit DEAD CENTER = PERFECT — maximum damage, multiplier climbs.\nHit the EDGE = GOOD — scores, but no streak.\nMiss entirely = lose a LIFE.\n\nThe faster the ring, the smaller your window.'
     },
     campaign: {
       label: 'COMMAND',
@@ -59,7 +65,7 @@
     economy: {
       label: 'COMMAND',
       title: 'BUILD YOUR LOADOUT',
-      body: 'Cores change how you survive. Buy them. Equip them. Upgrade when ready.'
+      body: 'Cores aren\'t cosmetic. Each one changes how you fight.\n\nTime to build your loadout.'
     },
     done: {
       label: 'SYSTEM NOTICE',
@@ -75,6 +81,11 @@
       label: 'SYSTEM NOTICE',
       title: 'RECOVERY WINDOW',
       body: 'Chain 6 PERFECT hits in a row and you restore 1 LIFE. Precision is not just score. It keeps you alive.'
+    },
+    zoneTypes: {
+      label: 'WORLD FILE',
+      title: 'KNOW YOUR ZONES',
+      body: '🟠 EMBER — Safe. Hit for points. Your bread and butter.\n\n🟡 GHOST — Appears and disappears. Only hits when visible.\n\n⚡ INFERNO — Tiny, moves fast. Massive reward for precision.\n\n⬛ ASH — A TRAP. Hitting ash costs you a LIFE. Avoid it.'
     }
   };
 
@@ -83,14 +94,15 @@
     completed: false,
     pending: {
       firstCampaignMilestone: false,
-      hardModeUnlocked: false,
-      hardModeCleared: false,
-      economyRoute: null,
-      ownershipDone: false
+      hardModeUnlocked:       false,
+      hardModeCleared:        false,
+      economyRoute:           null,
+      ownershipDone:          false
     },
     tutorialCards: {
-      starRatingShown: false,
-      recoveryWindowShown: false
+      starRatingShown:       false,
+      recoveryWindowShown:   false,
+      zoneTypesShown:        false
     }
   };
 
@@ -101,107 +113,103 @@
   let started = false;
   let tutorialPausedGameplay = false;
 
+  // In-game tip timer handle
+  let _tipTimer = null;
+
   const els = {
-    mask: null,
-    ring: null,
-    card: null,
-    label: null,
-    title: null,
-    body: null,
-    btn: null,
-    hint: null
+    mask: null, ring: null, card: null,
+    label: null, title: null, body: null,
+    btn: null, hint: null
   };
 
   function hydrateEls() {
-    els.mask = document.getElementById('tutorialMask');
-    els.ring = document.getElementById('tutorialHighlightRing');
-    els.card = document.getElementById('tutorialCard');
+    els.mask  = document.getElementById('tutorialMask');
+    els.ring  = document.getElementById('tutorialHighlightRing');
+    els.card  = document.getElementById('tutorialCard');
     els.label = document.getElementById('tutorialCardLabel');
     els.title = document.getElementById('tutorialCardTitle');
-    els.body = document.getElementById('tutorialCardBody');
-    els.btn = document.getElementById('tutorialCardBtn');
-    els.hint = document.getElementById('tutorialTapHint');
+    els.body  = document.getElementById('tutorialCardBody');
+    els.btn   = document.getElementById('tutorialCardBtn');
+    els.hint  = document.getElementById('tutorialTapHint');
   }
 
   function pauseGameplayForTutorial() {
     if (typeof isPlaying !== 'undefined' && isPlaying) {
       tutorialPausedGameplay = true;
       if (typeof targetTimeScale !== 'undefined') targetTimeScale = 0;
-      if (typeof timeScale !== 'undefined') timeScale = 0;
+      if (typeof timeScale       !== 'undefined') timeScale       = 0;
     }
   }
 
   function resumeGameplayFromTutorial() {
     if (!tutorialPausedGameplay) return;
     if (typeof targetTimeScale !== 'undefined') targetTimeScale = 1;
-    if (typeof timeScale !== 'undefined') timeScale = 1;
+    if (typeof timeScale       !== 'undefined') timeScale       = 1;
     tutorialPausedGameplay = false;
   }
 
-  function getStorage() {
-    return OG.storage || window.localStorage;
-  }
+  function getStorage() { return OG.storage || window.localStorage; }
 
   function loadState() {
     const storage = getStorage();
-    const raw = storage.getItem(STORAGE_KEY);
+    const raw     = storage.getItem(STORAGE_KEY);
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
         return {
           ...DEFAULT_STATE,
           ...parsed,
-          pending: {
-            ...DEFAULT_STATE.pending,
-            ...(parsed && parsed.pending ? parsed.pending : {})
-          },
-          tutorialCards: {
-            ...DEFAULT_STATE.tutorialCards,
-            ...(parsed && parsed.tutorialCards ? parsed.tutorialCards : {})
-          }
+          pending: { ...DEFAULT_STATE.pending, ...(parsed && parsed.pending ? parsed.pending : {}) },
+          tutorialCards: { ...DEFAULT_STATE.tutorialCards, ...(parsed && parsed.tutorialCards ? parsed.tutorialCards : {}) }
         };
-      } catch (e) {
-        // fallback below
-      }
+      } catch (e) { /* fallback below */ }
     }
-
     const legacyPhase = parseInt(storage.getItem(LEGACY_KEY), 10);
     if (Number.isFinite(legacyPhase) && legacyPhase >= 6) {
       return Object.assign({}, DEFAULT_STATE, { phase: PHASES.COMPLETE, completed: true });
     }
-
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
   }
 
-  function persistState() {
-    const storage = getStorage();
-    storage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
+  function persistState() { getStorage().setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-  function setMasterTutorialPhase(phase) {
-    state.phase = phase;
-    persistState();
-  }
-
-  function getMasterTutorialPhase() {
-    return state.phase;
-  }
+  function setMasterTutorialPhase(phase) { state.phase = phase; persistState(); }
+  function getMasterTutorialPhase()       { return state.phase; }
 
   function completeMasterTutorial() {
     state.completed = true;
-    state.phase = PHASES.COMPLETE;
+    state.phase     = PHASES.COMPLETE;
     persistState();
     getStorage().setItem('orbitSync_tutorialDone', '1');
     clearGuidedHighlight();
     hideCard();
   }
 
+  // ─── IN-GAME TIP (non-blocking, overlay) ─────────────────────────────────
+  function showInGameTip(text, duration) {
+    duration = duration || 3200;
+    const overlay = document.getElementById('tutorialOverlay');
+    const msg     = document.getElementById('tutorialMsg');
+    if (!overlay || !msg) return;
+    if (_tipTimer) clearTimeout(_tipTimer);
+    msg.textContent        = text;
+    overlay.style.display  = 'block';
+    overlay.style.opacity  = '1';
+    _tipTimer = setTimeout(function() {
+      overlay.style.opacity = '0';
+      setTimeout(function() {
+        overlay.style.display = 'none';
+        overlay.style.opacity = '1';
+      }, 400);
+      _tipTimer = null;
+    }, duration);
+  }
+
+  // ─── FREEZE-FRAME CARDS ──────────────────────────────────────────────────
   function showCard(config, onDone) {
     hydrateEls();
     if (!els.mask || !els.card) return;
 
-    // Freeze-frame cards should block and pause gameplay; guided highlight blocks input
-    // but does not necessarily pause simulation unless a card explicitly requests it.
     if (config.pauseGameplay) pauseGameplayForTutorial();
 
     els.mask.classList.add('is-visible');
@@ -210,30 +218,23 @@
 
     els.label.textContent = config.label || 'SYSTEM NOTICE';
     els.title.textContent = config.title || '';
-    els.body.textContent = config.body || '';
-    const buttonText = config.buttonText || 'CONTINUE';
-    els.btn.style.display = config.hideButton ? 'none' : 'block';
-    els.btn.textContent = buttonText;
-    els.hint.style.display = config.hideTapHint ? 'none' : 'block';
+    els.body.textContent  = config.body  || '';
+    const buttonText      = config.buttonText || 'CONTINUE';
+    els.btn.style.display  = config.hideButton  ? 'none'  : 'block';
+    els.btn.textContent    = buttonText;
+    els.hint.style.display = config.hideTapHint ? 'none'  : 'block';
 
     cardResolver = onDone || null;
 
     const close = function() {
       resumeGameplayFromTutorial();
-      if (cardResolver) {
-        const fn = cardResolver;
-        cardResolver = null;
-        fn();
-      }
+      if (cardResolver) { const fn = cardResolver; cardResolver = null; fn(); }
     };
 
     els.mask.onclick = function(event) {
-      if (event.target === els.mask) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
+      if (event.target === els.mask) { event.preventDefault(); event.stopPropagation(); }
     };
-    els.btn.onclick = close;
+    els.btn.onclick  = close;
     els.card.onclick = config.tapAnywhere ? close : null;
   }
 
@@ -244,28 +245,21 @@
     els.mask.classList.remove('is-visible');
     els.mask.classList.remove('is-guided');
     if (els.ring) els.ring.style.display = 'none';
-    if (els.card) {
-      els.card.onclick = null;
-      els.btn.onclick = null;
-    }
+    if (els.card) { els.card.onclick = null; els.btn.onclick = null; }
     els.mask.onclick = null;
     cardResolver = null;
   }
 
   function showFreezeFrame(title, description, buttonText, onComplete, label) {
     showCard({
-      title,
-      body: description,
+      title, body: description,
       buttonText: buttonText || 'CONTINUE',
       label: label || 'SYSTEM NOTICE',
-      tapAnywhere: true,
-      pauseGameplay: true
-    }, function() {
-      hideCard();
-      if (typeof onComplete === 'function') onComplete();
-    });
+      tapAnywhere: true, pauseGameplay: true
+    }, function() { hideCard(); if (typeof onComplete === 'function') onComplete(); });
   }
 
+  // ─── GUIDED HIGHLIGHT ────────────────────────────────────────────────────
   function clearInteractionGuard() {
     if (interactionGuard) {
       document.removeEventListener('pointerdown', interactionGuard, true);
@@ -275,14 +269,12 @@
 
   function blockAllExcept(selectorOrElement) {
     const target = typeof selectorOrElement === 'string'
-      ? document.querySelector(selectorOrElement)
-      : selectorOrElement;
+      ? document.querySelector(selectorOrElement) : selectorOrElement;
     if (!target) return false;
     clearInteractionGuard();
     interactionGuard = function(event) {
       if (!target.contains(event.target) && event.target !== target) {
-        event.preventDefault();
-        event.stopPropagation();
+        event.preventDefault(); event.stopPropagation();
       }
     };
     document.addEventListener('pointerdown', interactionGuard, true);
@@ -294,10 +286,10 @@
     if (!els.ring || !target) return;
     const r = target.getBoundingClientRect();
     els.ring.style.display = 'block';
-    els.ring.style.left = `${Math.max(6, r.left - 6)}px`;
-    els.ring.style.top = `${Math.max(6, r.top - 6)}px`;
-    els.ring.style.width = `${Math.max(36, r.width + 12)}px`;
-    els.ring.style.height = `${Math.max(36, r.height + 12)}px`;
+    els.ring.style.left    = `${Math.max(6, r.left - 8)}px`;
+    els.ring.style.top     = `${Math.max(6, r.top  - 8)}px`;
+    els.ring.style.width   = `${Math.max(36, r.width  + 16)}px`;
+    els.ring.style.height  = `${Math.max(36, r.height + 16)}px`;
   }
 
   function clearGuidedHighlight() {
@@ -331,20 +323,16 @@
     hydrateEls();
     if (!els.mask || !els.ring) return;
 
-    const maxRetry = Number.isFinite(options.retry) ? options.retry : 8;
-    const retryMs = Number.isFinite(options.retryMs) ? options.retryMs : 220;
+    const maxRetry = Number.isFinite(options.retry)   ? options.retry   : 8;
+    const retryMs  = Number.isFinite(options.retryMs) ? options.retryMs : 220;
     let tries = 0;
 
     const attempt = function() {
       const target = typeof options.target === 'string'
-        ? document.querySelector(options.target)
-        : options.target;
+        ? document.querySelector(options.target) : options.target;
       if (!target) {
         tries += 1;
-        if (tries <= maxRetry) {
-          setTimeout(attempt, retryMs);
-          return;
-        }
+        if (tries <= maxRetry) { setTimeout(attempt, retryMs); return; }
         safeGuidedFallback(options.fallbackCopy || COPY.campaign, options.onFallback);
         return;
       }
@@ -378,19 +366,14 @@
     attempt();
   }
 
+  // ─── TUTORIAL FLOW ───────────────────────────────────────────────────────
   function maybeOpenCampaignGate() {
     if (state.phase !== PHASES.CAMPAIGN_GATE) return;
     showFreezeFrame(COPY.campaign.title, COPY.campaign.body, 'OPEN CAMPAIGN', function() {
       showGuidedHighlight({
         target: '#nav-campaign',
-        onSuccess: function() {
-          setMasterTutorialPhase(PHASES.WORLD_PREVIEW);
-          advanceMasterTutorial();
-        },
-        onFallback: function() {
-          setMasterTutorialPhase(PHASES.WORLD_PREVIEW);
-          advanceMasterTutorial();
-        },
+        onSuccess:  function() { setMasterTutorialPhase(PHASES.WORLD_PREVIEW); advanceMasterTutorial(); },
+        onFallback: function() { setMasterTutorialPhase(PHASES.WORLD_PREVIEW); advanceMasterTutorial(); },
         fallbackCopy: COPY.campaign
       });
     }, COPY.campaign.label);
@@ -403,8 +386,8 @@
 
   function isNewPlayerProfile() {
     const worldUnlocked = Math.max(1, Number(window.maxWorldUnlocked) || 1);
-    const hasExtraCore = ownMoreThanDefault();
-    const hasCompleted = state.completed || state.phase === PHASES.COMPLETE;
+    const hasExtraCore  = ownMoreThanDefault();
+    const hasCompleted  = state.completed || state.phase === PHASES.COMPLETE;
     return worldUnlocked <= 1 && !hasExtraCore && !hasCompleted;
   }
 
@@ -424,43 +407,34 @@
       if (btn.classList.contains('already-owned')) continue;
       return btn;
     }
-
-    const anyBtn = Array.from(document.querySelectorAll('.shop-coin-buy-btn'))
-      .find(function(btn) { return isVisibleElement(btn) && !btn.disabled; });
-    return anyBtn || null;
+    return Array.from(document.querySelectorAll('.shop-coin-buy-btn'))
+      .find(function(btn) { return isVisibleElement(btn) && !btn.disabled; }) || null;
   }
 
   function findFirstWorkshopEquipTarget() {
-    const preferred = Array.from(document.querySelectorAll('.workshop-equip-btn[id^=\"wbtn-\"]')).find(function(btn) {
+    const preferred = Array.from(document.querySelectorAll('.workshop-equip-btn[id^="wbtn-"]')).find(function(btn) {
       if (!isVisibleElement(btn) || btn.disabled) return false;
       if (btn.id === 'wbtn-classic') return false;
       return btn.textContent && btn.textContent.trim().toUpperCase() === 'EQUIP';
     });
     if (preferred) return preferred;
-
-    return Array.from(document.querySelectorAll('.workshop-equip-btn[id^=\"wbtn-\"]')).find(function(btn) {
+    return Array.from(document.querySelectorAll('.workshop-equip-btn[id^="wbtn-"]')).find(function(btn) {
       return isVisibleElement(btn) && btn.id !== 'wbtn-classic';
     }) || null;
   }
 
   function routeEconomyPhase() {
     if (state.phase !== PHASES.ECONOMY_ROUTE) return;
-    const route = ownMoreThanDefault() ? 'workshop' : 'shop';
+    const route    = ownMoreThanDefault() ? 'workshop' : 'shop';
     state.pending.economyRoute = route;
     persistState();
 
     const targetNav = route === 'workshop' ? '#nav-workshop' : '#nav-shop';
-    showFreezeFrame(COPY.economy.title, COPY.economy.body, 'ROUTE', function() {
+    showFreezeFrame(COPY.economy.title, COPY.economy.body, 'LET\'S GO', function() {
       showGuidedHighlight({
-        target: targetNav,
-        onSuccess: function() {
-          setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION);
-          advanceMasterTutorial();
-        },
-        onFallback: function() {
-          setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION);
-          advanceMasterTutorial();
-        },
+        target:     targetNav,
+        onSuccess:  function() { setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION); advanceMasterTutorial(); },
+        onFallback: function() { setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION); advanceMasterTutorial(); },
         fallbackCopy: COPY.economy
       });
     }, COPY.economy.label);
@@ -469,12 +443,8 @@
   function startMasterTutorialIfNeeded() {
     if (started) return;
     const midProgress = !state.completed && state.phase !== PHASES.WELCOME && state.phase !== PHASES.COMPLETE;
-    if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') {
-      return;
-    }
-    if (!midProgress && !isNewPlayerProfile()) {
-      return;
-    }
+    if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') return;
+    if (!midProgress && !isNewPlayerProfile()) return;
     started = true;
     setTimeout(advanceMasterTutorial, 180);
   }
@@ -483,10 +453,18 @@
     if (state.completed) return;
 
     if (state.phase === PHASES.WELCOME) {
-      showFreezeFrame(COPY.welcome.title, COPY.welcome.body, 'CONTINUE', function() {
-        setMasterTutorialPhase(PHASES.CAMPAIGN_GATE);
+      showFreezeFrame(COPY.welcome.title, COPY.welcome.body, 'UNDERSTOOD', function() {
+        setMasterTutorialPhase(PHASES.ORBIT_LOOP);
         advanceMasterTutorial();
       }, COPY.welcome.label);
+      return;
+    }
+
+    if (state.phase === PHASES.ORBIT_LOOP) {
+      showFreezeFrame(COPY.orbitLoop.title, COPY.orbitLoop.body, 'GOT IT', function() {
+        setMasterTutorialPhase(PHASES.CAMPAIGN_GATE);
+        advanceMasterTutorial();
+      }, COPY.orbitLoop.label);
       return;
     }
 
@@ -508,11 +486,7 @@
       const cards = COPY.ladder.slice();
       const nextCard = function() {
         const text = cards.shift();
-        if (!text) {
-          setMasterTutorialPhase(PHASES.FIRST_PLAY);
-          advanceMasterTutorial();
-          return;
-        }
+        if (!text) { setMasterTutorialPhase(PHASES.FIRST_PLAY); advanceMasterTutorial(); return; }
         showFreezeFrame('WORLD LADDER', text, 'NEXT', nextCard, 'WORLD FILE');
       };
       nextCard();
@@ -524,10 +498,7 @@
         showGuidedHighlight({
           target: '#menuPlayBtn',
           fallbackCopy: COPY.firstPlay,
-          onSuccess: function() {
-            setMasterTutorialPhase(PHASES.HARD_MODE_INTRO);
-            persistState();
-          }
+          onSuccess: function() { setMasterTutorialPhase(PHASES.HARD_MODE_INTRO); persistState(); }
         });
       }, COPY.firstPlay.label);
       return;
@@ -551,16 +522,10 @@
       return;
     }
 
-    if (state.phase === PHASES.ECONOMY_ROUTE) {
-      routeEconomyPhase();
-      return;
-    }
+    if (state.phase === PHASES.ECONOMY_ROUTE) { routeEconomyPhase(); return; }
 
     if (state.phase === PHASES.OWNERSHIP_ACTION) {
-      if (state.pending.ownershipDone) {
-        setMasterTutorialPhase(PHASES.COMPLETE);
-        advanceMasterTutorial();
-      }
+      if (state.pending.ownershipDone) { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }
       return;
     }
 
@@ -571,6 +536,7 @@
     }
   }
 
+  // ─── EVENT HOOKS ─────────────────────────────────────────────────────────
   function onMenuTabOpened(tabId) {
     if (state.completed) return;
 
@@ -594,24 +560,24 @@
       const target = isShop ? findFirstShopPurchaseTarget() : findFirstWorkshopEquipTarget();
       showFreezeFrame(
         isShop ? 'ACQUIRE YOUR FIRST CORE' : 'EQUIP YOUR NEXT CORE',
-        isShop ? 'Purchase one core to unlock the ownership layer.' : 'Equip a non-default owned core to confirm your first loadout action.',
+        isShop
+          ? 'Purchase one core to unlock the ownership layer.'
+          : 'Equip a non-default owned core to confirm your first loadout action.',
         'READY',
         function() {
           if (!target) {
             showFreezeFrame(
               isShop ? 'OPEN SHOP' : 'OPEN WORKSHOP',
-              isShop ? 'Could not lock a specific purchase button. Buy any available core to continue.' : 'Could not lock a specific equip button. Equip any non-default core to continue.',
+              isShop
+                ? 'Could not lock a specific purchase button. Buy any available core to continue.'
+                : 'Could not lock a specific equip button. Equip any non-default core to continue.',
               'CONTINUE',
               function() { suspendTutorialUI(); },
               'SYSTEM NOTICE'
             );
             return;
           }
-          showGuidedHighlight({
-            target: target,
-            fallbackCopy: COPY.economy,
-            onFallback: suspendTutorialUI
-          });
+          showGuidedHighlight({ target, fallbackCopy: COPY.economy, onFallback: suspendTutorialUI });
         },
         'COMMAND'
       );
@@ -623,16 +589,9 @@
       state.tutorialCards.starRatingShown = true;
       persistState();
       setTimeout(function() {
-        showFreezeFrame(
-          COPY.starRating.title,
-          COPY.starRating.body,
-          'UNDERSTOOD',
-          function() {},
-          COPY.starRating.label
-        );
+        showFreezeFrame(COPY.starRating.title, COPY.starRating.body, 'UNDERSTOOD', function() {}, COPY.starRating.label);
       }, 180);
     }
-
     if (state.phase === PHASES.HARD_MODE_INTRO) {
       state.pending.firstCampaignMilestone = true;
       persistState();
@@ -642,6 +601,21 @@
   function handleLevelStart(stageId) {
     const isHardMode = !!(OG.state && OG.state.legacy && OG.state.legacy.hardMode);
     if (isHardMode) return;
+
+    // In-game contextual tips — non-blocking, appear at bottom of screen
+    if (stageId === '1-1') {
+      setTimeout(function() {
+        showInGameTip('TAP WHEN YOUR ORB IS INSIDE A GLOWING ZONE', 3500);
+      }, 1200);
+    }
+
+    if (stageId === '1-2') {
+      setTimeout(function() {
+        showInGameTip('SMALLER ZONES = HIGHER REWARD — AIM FOR THE CENTER', 3500);
+      }, 1000);
+    }
+
+    // Recovery window card at 1-4
     if (stageId !== '1-4') return;
     if (state.tutorialCards.recoveryWindowShown) return;
 
@@ -650,10 +624,17 @@
 
     setTimeout(function() {
       showFreezeFrame(
-        COPY.recoveryWindow.title,
-        COPY.recoveryWindow.body,
-        'LOCKED IN',
-        function() {},
+        COPY.recoveryWindow.title, COPY.recoveryWindow.body, 'LOCKED IN',
+        function() {
+          // Chain: zone types card immediately follows
+          if (!state.tutorialCards.zoneTypesShown) {
+            state.tutorialCards.zoneTypesShown = true;
+            persistState();
+            setTimeout(function() {
+              showFreezeFrame(COPY.zoneTypes.title, COPY.zoneTypes.body, 'GOT IT', function() {}, COPY.zoneTypes.label);
+            }, 120);
+          }
+        },
         COPY.recoveryWindow.label
       );
     }, 350);
@@ -667,9 +648,7 @@
 
   function onHardModeCleared() {
     state.pending.hardModeCleared = true;
-    if (state.phase === PHASES.HARD_MODE_INTRO) {
-      setMasterTutorialPhase(PHASES.HARD_MODE_CLEAR);
-    }
+    if (state.phase === PHASES.HARD_MODE_INTRO) setMasterTutorialPhase(PHASES.HARD_MODE_CLEAR);
     persistState();
     setTimeout(advanceMasterTutorial, 120);
   }
@@ -713,8 +692,7 @@
   }
 
   OG.systems.tutorial = {
-    PHASES,
-    COPY,
+    PHASES, COPY,
     startMasterTutorialIfNeeded,
     advanceMasterTutorial,
     setMasterTutorialPhase,
@@ -724,6 +702,7 @@
     showGuidedHighlight,
     clearGuidedHighlight,
     blockAllExcept,
+    showInGameTip,
     onMenuTabOpened,
     onCampaignMilestone,
     onHardModeUnlocked,
@@ -736,11 +715,10 @@
     findFirstShopPurchaseTarget,
     findFirstWorkshopEquipTarget,
     isNewPlayerProfile,
-
     // Legacy bridge methods
     handleLevelStart,
     handleHardModeClear: onHardModeCleared,
-    checkMenuRouting: startMasterTutorialIfNeeded,
-    completePhase: function() {}
+    checkMenuRouting:    startMasterTutorialIfNeeded,
+    completePhase:       function() {}
   };
 })(window, document);

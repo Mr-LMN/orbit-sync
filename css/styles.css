@@ -3579,3 +3579,277 @@ body.hard-mode #hardModeBadge { display: block; }
   80% { opacity: 1; transform: translate(-50%, -50%); }
   100% { opacity: 0; transform: translate(-50%, -60%); }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PHOENIX V2 BOSS HUD
+   ══════════════════════════════════════════════════════════════ */
+
+#phoenixGameUI {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: rgba(10, 3, 0, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 100, 30, 0.22);
+  border-radius: 18px;
+  padding: 10px 22px 8px;
+  min-width: 210px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), 0 0 24px rgba(255, 80, 0, 0.1);
+}
+
+#phoenixTimerBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+#phoenixPhaseName {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.46rem;
+  letter-spacing: 3px;
+  color: #ff9f5d;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 140, 60, 0.6);
+}
+
+#phoenixTimer {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.7rem;
+  color: #fff;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+/* Phase progress bar */
+#phoenixPhaseBarTrack {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+#phoenixPhaseBar {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: #ff9f5d;
+  box-shadow: 0 0 8px #ff9f5d;
+  transition: width 0.6s linear, background 0.4s ease, box-shadow 0.4s ease;
+}
+
+#phoenixStatusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 14px;
+  margin-top: 2px;
+}
+
+#phoenixLives {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 4px;
+  color: #fff;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+#phoenixMult {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  color: #ffffff;
+  letter-spacing: 1px;
+  transition: color 0.2s ease;
+}
+
+/* ── Wrath pre-warning strobe ────────────────────────────────── */
+@keyframes wrathStrobeWarning {
+  0%   { box-shadow: none; }
+  15%  { box-shadow: inset 0 0 60px rgba(255, 50, 0, 0.55); }
+  30%  { box-shadow: none; }
+  50%  { box-shadow: inset 0 0 80px rgba(255, 50, 0, 0.65); }
+  65%  { box-shadow: none; }
+  82%  { box-shadow: inset 0 0 50px rgba(255, 50, 0, 0.45); }
+  100% { box-shadow: none; }
+}
+
+#gameCanvas.wrath-warning {
+  animation: wrathStrobeWarning 0.45s ease-in-out 3;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TUTORIAL CARD SYSTEM — FULL VISUAL POLISH
+   ══════════════════════════════════════════════════════════════ */
+
+#tutorialMask {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 9000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 5, 16, 0.90);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+#tutorialMask.is-visible {
+  display: flex;
+}
+
+#tutorialMask.is-guided {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Guided highlight ring — spotlight effect */
+#tutorialHighlightRing {
+  position: fixed;
+  border: 2px solid rgba(0, 229, 255, 0.75);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 9999px rgba(4, 5, 16, 0.86),
+    0 0 22px rgba(0, 229, 255, 0.45);
+  pointer-events: none;
+  display: none;
+  z-index: 9001;
+  animation: tutRingPulse 1.3s ease-in-out infinite;
+}
+
+@keyframes tutRingPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 9999px rgba(4, 5, 16, 0.86), 0 0 16px rgba(0, 229, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 9999px rgba(4, 5, 16, 0.86), 0 0 32px rgba(0, 229, 255, 0.65);
+  }
+}
+
+/* The card itself */
+#tutorialCard {
+  background: rgba(8, 10, 24, 0.98);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 22px;
+  padding: 30px 26px 24px;
+  max-width: min(88vw, 360px);
+  width: 100%;
+  text-align: center;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 0 0 1px rgba(0, 229, 255, 0.06),
+    inset 0 0 40px rgba(0, 229, 255, 0.03);
+  position: relative;
+  z-index: 9002;
+  animation: tutCardEntrance 0.32s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards;
+}
+
+@keyframes tutCardEntrance {
+  from { opacity: 0; transform: scale(0.90) translateY(16px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* Label badge — SYSTEM NOTICE / COMMAND / WORLD FILE */
+#tutorialCardLabel {
+  display: inline-block;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.42rem;
+  letter-spacing: 3px;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 20px;
+  padding: 5px 14px;
+  margin-bottom: 18px;
+  text-transform: uppercase;
+}
+
+#tutorialCardTitle {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  color: #ffffff;
+  letter-spacing: 2px;
+  margin: 0 0 14px;
+  line-height: 1.05;
+  text-shadow: 0 0 28px rgba(0, 229, 255, 0.2);
+}
+
+#tutorialCardBody {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.57rem;
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.62);
+  letter-spacing: 0.4px;
+  margin: 0 0 24px;
+  white-space: pre-line;
+  text-align: left;
+}
+
+#tutorialCardBtn {
+  width: 100%;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  padding: 14px 20px;
+  background: rgba(0, 229, 255, 0.09);
+  border: 1px solid rgba(0, 229, 255, 0.38);
+  border-radius: 12px;
+  color: #00e5ff;
+  cursor: pointer;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.1s ease;
+  text-transform: uppercase;
+  box-sizing: border-box;
+}
+
+#tutorialCardBtn:hover {
+  background: rgba(0, 229, 255, 0.18);
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.32);
+}
+
+#tutorialCardBtn:active {
+  transform: scale(0.96);
+}
+
+#tutorialTapHint {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.38rem;
+  letter-spacing: 2.5px;
+  color: rgba(255, 255, 255, 0.18);
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+
+/* Focused element during guided highlight */
+.tutorial-focus-target {
+  position: relative;
+  z-index: 9001 !important;
+}
+
+/* ── In-game tip overlay ──────────────────────────────────────── */
+#tutorialOverlay {
+  transition: opacity 0.4s ease;
+}
+
+#tutorialMsg {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.75), 0 0 30px rgba(0, 229, 255, 0.35);
+  letter-spacing: 2px;
+  line-height: 1.5;
+  padding: 0 28px;
+  text-align: center;
+}
