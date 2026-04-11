@@ -1,130 +1,579 @@
-(function initTutorial(window) {
+(function initTutorial(window, document) {
   const OG = window.OrbitGame || {};
   OG.systems = OG.systems || {};
 
-  let currentPhase = parseInt(OG.storage.getItem('orbitSync_masterTutorial')) || 0;
-  // 0 = intro needed
-  // 1 = W1 done, W2 needed
-  // 2 = W2 done, W3 needed
-  // 3 = W3 done, ready for Hard mode intro
-  // 4 = Hard mode W1 done, shop purchase needed
-  // 5 = Shop purchase done, workshop perk needed
-  // 6 = Tutorial entirely complete
+  const STORAGE_KEY = 'orbitSync_masterTutorial_v2';
+  const LEGACY_KEY = 'orbitSync_masterTutorial';
 
-  let onCompleteCallback = null;
+  const PHASES = {
+    DISMISSED: 'dismissed',
+    WELCOME: 'welcome',
+    CAMPAIGN_GATE: 'campaign_gate',
+    WORLD_PREVIEW: 'world_preview',
+    WORLD_LADDER: 'world_ladder',
+    FIRST_PLAY: 'first_play',
+    HARD_MODE_INTRO: 'hard_mode_intro',
+    HARD_MODE_CLEAR: 'hard_mode_clear',
+    ECONOMY_ROUTE: 'economy_route',
+    OWNERSHIP_ACTION: 'ownership_action',
+    COMPLETE: 'complete'
+  };
 
-  function showFreezeFrame(title, description, buttonText, onComplete) {
-    const overlay = document.getElementById('tutorialOverlay');
-    const titleEl = document.getElementById('tutorialTitle');
-    const descEl = document.getElementById('tutorialDesc');
-    const btnEl = document.getElementById('tutorialBtn');
-    if (!overlay) return;
+  const COPY = {
+    welcome: {
+      label: 'SYSTEM NOTICE',
+      title: 'ORBIT SYNC ONLINE',
+      body: 'Orbit Sync is built on timing, control, and survival. Each world adds a new layer. Learn the orbit. Then break it.'
+    },
+    campaign: {
+      label: 'COMMAND',
+      title: 'CAMPAIGN IS YOUR ASCENT',
+      body: 'Worlds are your progression path. Clear worlds, earn stars, and unlock higher threat patterns.'
+    },
+    worldPreview: {
+      label: 'WORLD FILE',
+      title: 'READ THE WORLD CARD',
+      body: 'Preview, completion, stars, and Hard Mode access all live here. Learn the panel. Then push forward.'
+    },
+    ladder: [
+      'World 1 — Learn the rhythm. Pure timing. No excuses.',
+      'World 2 — Precision starts here. Split reads and cleaner hits.',
+      'World 3 — Echoes, resonance, delayed reads. Stay calm.',
+      'World 4+ — Systems destabilize. Expect mutation, speed, and pressure.'
+    ],
+    firstPlay: {
+      label: 'COMMAND',
+      title: 'BEGIN WORLD 1',
+      body: 'Launch your first campaign run. Survive the pattern. Return stronger.'
+    },
+    hardMode: {
+      label: 'SYSTEM NOTICE',
+      title: 'HARD MODE',
+      body: 'Hard Mode is not a remix. It is a verdict. Better rewards. Less mercy.'
+    },
+    hardClear: {
+      label: 'WORLD FILE',
+      title: 'YOU SURVIVED THE FRACTURE',
+      body: 'Mastery confirmed. Next layer: ownership. Cores define how you survive.'
+    },
+    economy: {
+      label: 'COMMAND',
+      title: 'BUILD YOUR LOADOUT',
+      body: 'Cores change how you survive. Buy them. Equip them. Upgrade when ready.'
+    },
+    done: {
+      label: 'SYSTEM NOTICE',
+      title: 'LOOP UNDERSTOOD',
+      body: 'You understand the loop now. Master the worlds. Hunt the bosses. Evolve the core.'
+    }
+  };
 
-    if (typeof isPlaying !== 'undefined' && isPlaying) {
-       if (typeof targetTimeScale !== 'undefined') targetTimeScale = 0;
-       if (typeof timeScale !== 'undefined') timeScale = 0;
+  const DEFAULT_STATE = {
+    phase: PHASES.WELCOME,
+    completed: false,
+    pending: {
+      firstCampaignMilestone: false,
+      hardModeUnlocked: false,
+      hardModeCleared: false,
+      economyRoute: null,
+      ownershipDone: false
+    }
+  };
+
+  let state = loadState();
+  let cardResolver = null;
+  let interactionGuard = null;
+  let activeTarget = null;
+  let started = false;
+
+  const els = {
+    mask: null,
+    ring: null,
+    card: null,
+    label: null,
+    title: null,
+    body: null,
+    btn: null,
+    hint: null
+  };
+
+  function hydrateEls() {
+    els.mask = document.getElementById('tutorialMask');
+    els.ring = document.getElementById('tutorialHighlightRing');
+    els.card = document.getElementById('tutorialCard');
+    els.label = document.getElementById('tutorialCardLabel');
+    els.title = document.getElementById('tutorialCardTitle');
+    els.body = document.getElementById('tutorialCardBody');
+    els.btn = document.getElementById('tutorialCardBtn');
+    els.hint = document.getElementById('tutorialTapHint');
+  }
+
+  function getStorage() {
+    return OG.storage || window.localStorage;
+  }
+
+  function loadState() {
+    const storage = getStorage();
+    const raw = storage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        return Object.assign({}, DEFAULT_STATE, JSON.parse(raw));
+      } catch (e) {
+        // fallback below
+      }
     }
 
-    titleEl.innerHTML = title;
-    descEl.innerHTML = description;
-    btnEl.innerText = buttonText || 'CONFIRM';
-    overlay.style.display = 'flex';
-    onCompleteCallback = onComplete;
+    const legacyPhase = parseInt(storage.getItem(LEGACY_KEY), 10);
+    if (Number.isFinite(legacyPhase) && legacyPhase >= 6) {
+      return Object.assign({}, DEFAULT_STATE, { phase: PHASES.COMPLETE, completed: true });
+    }
 
-    btnEl.onclick = function() {
-       if (typeof audioCtx !== 'undefined') soundUIClick();
-       overlay.style.display = 'none';
-       
-       if (typeof isPlaying !== 'undefined' && isPlaying) {
-          if (typeof targetTimeScale !== 'undefined') targetTimeScale = 1;
-          if (typeof timeScale !== 'undefined') timeScale = 1;
-       }
+    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+  }
 
-       if (onCompleteCallback) onCompleteCallback();
-       onCompleteCallback = null;
+  function persistState() {
+    const storage = getStorage();
+    storage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function setMasterTutorialPhase(phase) {
+    state.phase = phase;
+    persistState();
+  }
+
+  function getMasterTutorialPhase() {
+    return state.phase;
+  }
+
+  function completeMasterTutorial() {
+    state.completed = true;
+    state.phase = PHASES.COMPLETE;
+    persistState();
+    clearGuidedHighlight();
+    hideCard();
+  }
+
+  function showCard(config, onDone) {
+    hydrateEls();
+    if (!els.mask || !els.card) return;
+
+    els.mask.classList.add('is-visible');
+    els.mask.classList.remove('is-guided');
+    els.ring.style.display = 'none';
+
+    els.label.textContent = config.label || 'SYSTEM NOTICE';
+    els.title.textContent = config.title || '';
+    els.body.textContent = config.body || '';
+    const buttonText = config.buttonText || 'CONTINUE';
+    els.btn.style.display = config.hideButton ? 'none' : 'block';
+    els.btn.textContent = buttonText;
+    els.hint.style.display = config.hideTapHint ? 'none' : 'block';
+
+    cardResolver = onDone || null;
+
+    const close = function() {
+      if (cardResolver) {
+        const fn = cardResolver;
+        cardResolver = null;
+        fn();
+      }
     };
+
+    els.btn.onclick = close;
+    els.card.onclick = config.tapAnywhere ? close : null;
   }
 
-  function completePhase(phaseNum) {
-    if (currentPhase < phaseNum) {
-      currentPhase = phaseNum;
-      OG.storage.setItem('orbitSync_masterTutorial', currentPhase);
+  function hideCard() {
+    hydrateEls();
+    if (!els.mask) return;
+    els.mask.classList.remove('is-visible');
+    els.mask.classList.remove('is-guided');
+    if (els.ring) els.ring.style.display = 'none';
+    if (els.card) {
+      els.card.onclick = null;
+      els.btn.onclick = null;
+    }
+    cardResolver = null;
+  }
+
+  function showFreezeFrame(title, description, buttonText, onComplete, label) {
+    showCard({
+      title,
+      body: description,
+      buttonText: buttonText || 'CONTINUE',
+      label: label || 'SYSTEM NOTICE'
+    }, function() {
+      hideCard();
+      if (typeof onComplete === 'function') onComplete();
+    });
+  }
+
+  function clearInteractionGuard() {
+    if (interactionGuard) {
+      document.removeEventListener('pointerdown', interactionGuard, true);
+      interactionGuard = null;
     }
   }
 
-  function handleLevelStart(levelId) {
-    if (currentPhase >= 6) return;
-
-    if (levelId === '1-1' && currentPhase === 0) {
-       showFreezeFrame(
-         'WELCOME PROTOCOL', 
-         'Your objective is simple: Tap when the Core aligns with the highlighted target zones.<br><br>Miss a zone, and you lose a life. Clear all zones to advance.', 
-         'START CALIBRATION',
-         () => completePhase(1)
-       );
-    } 
-    else if (levelId === '2-1' && currentPhase === 1) {
-       showFreezeFrame(
-         'CORNER GEOMETRY',
-         'The core now travels along angled paths.<br><br><span style="color:#00e5ff;">PRO TIP:</span> Striking exactly on the sharp corners triggers a PERFECT hit, scoring double points.',
-         'INITIATE',
-         () => completePhase(2)
-       );
-    }
-    else if (levelId === '3-1' && currentPhase === 2) {
-       showFreezeFrame(
-         'ECHO GHOSTS',
-         'Cyan zones are <span style="color:#00eaff;">ECHO ZONES</span>.<br><br>Your physical core will pass right through them. You must wait for your cyan <span style="font-style:italic;">ghost trail</span> to enter the zone before you tap!',
-         'UNDERSTOOD',
-         () => completePhase(3)
-       );
-    }
-    else if (levelId === '1-1' && typeof hardModeActive !== 'undefined' && hardModeActive && currentPhase === 3) {
-       showFreezeFrame(
-         'HARD MODE UNLOCKED',
-         'Welcome to Hard Mode. Speeds are increased, patterns are tighter, and mistakes cost you dearly.<br><br>Survive to earn maximum Coins.',
-         'BRING IT ON',
-         () => {} 
-       );
-    }
+  function blockAllExcept(selectorOrElement) {
+    const target = typeof selectorOrElement === 'string'
+      ? document.querySelector(selectorOrElement)
+      : selectorOrElement;
+    if (!target) return false;
+    clearInteractionGuard();
+    interactionGuard = function(event) {
+      if (!target.contains(event.target) && event.target !== target) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener('pointerdown', interactionGuard, true);
+    return true;
   }
 
-  function handleHardModeClear() {
-     if (currentPhase === 3) {
-        completePhase(4);
-     }
+  function placeRing(target) {
+    hydrateEls();
+    if (!els.ring || !target) return;
+    const r = target.getBoundingClientRect();
+    els.ring.style.display = 'block';
+    els.ring.style.left = `${Math.max(6, r.left - 6)}px`;
+    els.ring.style.top = `${Math.max(6, r.top - 6)}px`;
+    els.ring.style.width = `${Math.max(36, r.width + 12)}px`;
+    els.ring.style.height = `${Math.max(36, r.height + 12)}px`;
   }
 
-  function checkMenuRouting() {
-     if (currentPhase === 4) {
-        showFreezeFrame(
-          'SPHERE REQUISITION',
-          'Excellent work! You have earned enough coins to unlock a new Core.<br><br>Visit the Shop now to requisition a new Sphere.',
-          'TO THE SHOP',
-          () => {
-             if (typeof switchMenuTab === 'function') switchMenuTab('shop');
+  function clearGuidedHighlight() {
+    clearInteractionGuard();
+    if (activeTarget) activeTarget.classList.remove('tutorial-focus-target');
+    activeTarget = null;
+    hydrateEls();
+    if (els.ring) els.ring.style.display = 'none';
+    if (els.mask) els.mask.classList.remove('is-guided');
+  }
+
+  function safeGuidedFallback(copy, advanceFn) {
+    clearGuidedHighlight();
+    showFreezeFrame(copy.title, copy.body, 'CONTINUE', advanceFn, copy.label);
+  }
+
+  function showGuidedHighlight(options) {
+    hydrateEls();
+    if (!els.mask || !els.ring) return;
+
+    const maxRetry = Number.isFinite(options.retry) ? options.retry : 8;
+    const retryMs = Number.isFinite(options.retryMs) ? options.retryMs : 220;
+    let tries = 0;
+
+    const attempt = function() {
+      const target = typeof options.target === 'string'
+        ? document.querySelector(options.target)
+        : options.target;
+      if (!target) {
+        tries += 1;
+        if (tries <= maxRetry) {
+          setTimeout(attempt, retryMs);
+          return;
+        }
+        safeGuidedFallback(options.fallbackCopy || COPY.campaign, options.onFallback);
+        return;
+      }
+
+      clearGuidedHighlight();
+      activeTarget = target;
+      activeTarget.classList.add('tutorial-focus-target');
+
+      els.mask.classList.add('is-visible');
+      els.mask.classList.add('is-guided');
+      placeRing(target);
+      blockAllExcept(target);
+
+      const onResize = function() {
+        if (!activeTarget || !document.body.contains(activeTarget)) {
+          window.removeEventListener('resize', onResize);
+          safeGuidedFallback(options.fallbackCopy || COPY.campaign, options.onFallback);
+          return;
+        }
+        placeRing(activeTarget);
+      };
+      window.addEventListener('resize', onResize, { once: true });
+
+      target.addEventListener('click', function clickHandler() {
+        target.removeEventListener('click', clickHandler);
+        clearGuidedHighlight();
+        if (typeof options.onSuccess === 'function') options.onSuccess();
+      }, { once: true });
+    };
+
+    attempt();
+  }
+
+  function maybeOpenCampaignGate() {
+    if (state.phase !== PHASES.CAMPAIGN_GATE) return;
+    showFreezeFrame(COPY.campaign.title, COPY.campaign.body, 'OPEN CAMPAIGN', function() {
+      showGuidedHighlight({
+        target: '#nav-campaign',
+        onSuccess: function() {
+          setMasterTutorialPhase(PHASES.WORLD_PREVIEW);
+          advanceMasterTutorial();
+        },
+        onFallback: function() {
+          setMasterTutorialPhase(PHASES.WORLD_PREVIEW);
+          advanceMasterTutorial();
+        },
+        fallbackCopy: COPY.campaign
+      });
+    }, COPY.campaign.label);
+  }
+
+  function ownMoreThanDefault() {
+    const unlocked = Array.isArray(window.unlockedSkins) ? window.unlockedSkins : [];
+    return unlocked.some(function(id) { return id && id !== 'classic'; });
+  }
+
+  function routeEconomyPhase() {
+    if (state.phase !== PHASES.ECONOMY_ROUTE) return;
+    const route = ownMoreThanDefault() ? 'workshop' : 'shop';
+    state.pending.economyRoute = route;
+    persistState();
+
+    const targetNav = route === 'workshop' ? '#nav-workshop' : '#nav-shop';
+    showFreezeFrame(COPY.economy.title, COPY.economy.body, 'ROUTE', function() {
+      showGuidedHighlight({
+        target: targetNav,
+        onSuccess: function() {
+          setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION);
+          advanceMasterTutorial();
+        },
+        onFallback: function() {
+          setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION);
+          advanceMasterTutorial();
+        },
+        fallbackCopy: COPY.economy
+      });
+    }, COPY.economy.label);
+  }
+
+  function startMasterTutorialIfNeeded() {
+    if (started) return;
+    started = true;
+    if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') {
+      return;
+    }
+    setTimeout(advanceMasterTutorial, 180);
+  }
+
+  function advanceMasterTutorial() {
+    if (state.completed) return;
+
+    if (state.phase === PHASES.WELCOME) {
+      showFreezeFrame(COPY.welcome.title, COPY.welcome.body, 'CONTINUE', function() {
+        setMasterTutorialPhase(PHASES.CAMPAIGN_GATE);
+        advanceMasterTutorial();
+      }, COPY.welcome.label);
+      return;
+    }
+
+    if (state.phase === PHASES.CAMPAIGN_GATE) {
+      maybeOpenCampaignGate();
+      return;
+    }
+
+    if (state.phase === PHASES.WORLD_PREVIEW) {
+      if (!document.getElementById('campaignView') || document.getElementById('campaignView').style.display === 'none') return;
+      showFreezeFrame(COPY.worldPreview.title, COPY.worldPreview.body, 'CONTINUE', function() {
+        setMasterTutorialPhase(PHASES.WORLD_LADDER);
+        advanceMasterTutorial();
+      }, COPY.worldPreview.label);
+      return;
+    }
+
+    if (state.phase === PHASES.WORLD_LADDER) {
+      const cards = COPY.ladder.slice();
+      const nextCard = function() {
+        const text = cards.shift();
+        if (!text) {
+          setMasterTutorialPhase(PHASES.FIRST_PLAY);
+          advanceMasterTutorial();
+          return;
+        }
+        showFreezeFrame('WORLD LADDER', text, 'NEXT', nextCard, 'WORLD FILE');
+      };
+      nextCard();
+      return;
+    }
+
+    if (state.phase === PHASES.FIRST_PLAY) {
+      showFreezeFrame(COPY.firstPlay.title, COPY.firstPlay.body, 'PLAY', function() {
+        showGuidedHighlight({
+          target: '#menuPlayBtn',
+          fallbackCopy: COPY.firstPlay,
+          onSuccess: function() {
+            setMasterTutorialPhase(PHASES.HARD_MODE_INTRO);
+            persistState();
           }
-        );
-     }
-     else if (currentPhase === 5) {
-        showFreezeFrame(
-          'WORKSHOP CALIBRATION',
-          'Your new Core is ready. Now, visit the Workshop to inspect its loadout and equip powerful Perks.',
-          'TO THE WORKSHOP',
-          () => {
-             if (typeof switchMenuTab === 'function') switchMenuTab('workshop');
-             completePhase(6); 
-          }
-        );
-     }
+        });
+      }, COPY.firstPlay.label);
+      return;
+    }
+
+    if (state.phase === PHASES.HARD_MODE_INTRO && state.pending.hardModeUnlocked) {
+      showFreezeFrame(COPY.hardMode.title, COPY.hardMode.body, 'UNDERSTOOD', function() {
+        const hmBtn = document.getElementById('menuHardModeBtn');
+        if (hmBtn && hmBtn.style.display !== 'none') {
+          showGuidedHighlight({ target: hmBtn, fallbackCopy: COPY.hardMode });
+        }
+      }, COPY.hardMode.label);
+      return;
+    }
+
+    if (state.phase === PHASES.HARD_MODE_CLEAR && state.pending.hardModeCleared) {
+      showFreezeFrame(COPY.hardClear.title, COPY.hardClear.body, 'CONTINUE', function() {
+        setMasterTutorialPhase(PHASES.ECONOMY_ROUTE);
+        routeEconomyPhase();
+      }, COPY.hardClear.label);
+      return;
+    }
+
+    if (state.phase === PHASES.ECONOMY_ROUTE) {
+      routeEconomyPhase();
+      return;
+    }
+
+    if (state.phase === PHASES.OWNERSHIP_ACTION) {
+      if (state.pending.ownershipDone) {
+        setMasterTutorialPhase(PHASES.COMPLETE);
+        advanceMasterTutorial();
+      }
+      return;
+    }
+
+    if (state.phase === PHASES.COMPLETE) {
+      showFreezeFrame(COPY.done.title, COPY.done.body, 'DISMISS', function() {
+        completeMasterTutorial();
+      }, COPY.done.label);
+    }
+  }
+
+  function onMenuTabOpened(tabId) {
+    if (state.completed) return;
+
+    if (state.phase === PHASES.WORLD_PREVIEW && tabId === 'campaign') {
+      setTimeout(advanceMasterTutorial, 150);
+      return;
+    }
+
+    if (state.phase === PHASES.HARD_MODE_INTRO && tabId === 'campaign') {
+      const hardModeBtn = document.getElementById('menuHardModeBtn');
+      if (hardModeBtn && hardModeBtn.style.display !== 'none') {
+        state.pending.hardModeUnlocked = true;
+        persistState();
+        setTimeout(advanceMasterTutorial, 120);
+      }
+      return;
+    }
+
+    if (state.phase === PHASES.OWNERSHIP_ACTION && tabId === state.pending.economyRoute) {
+      const isShop = tabId === 'shop';
+      const target = isShop ? '.shop-coin-buy-btn:not(.already-owned)' : '.workshop-equip-btn.owned-state';
+      showFreezeFrame(
+        isShop ? 'ACQUIRE YOUR FIRST CORE' : 'EQUIP YOUR NEXT CORE',
+        isShop ? 'Purchase one core to unlock the ownership layer.' : 'Equip a non-default owned core to confirm your first loadout action.',
+        'READY',
+        function() {
+          showGuidedHighlight({
+            target: target,
+            fallbackCopy: COPY.economy
+          });
+        },
+        'COMMAND'
+      );
+    }
+  }
+
+  function onCampaignMilestone() {
+    if (state.phase === PHASES.HARD_MODE_INTRO) {
+      state.pending.firstCampaignMilestone = true;
+      persistState();
+    }
+  }
+
+  function onHardModeUnlocked() {
+    state.pending.hardModeUnlocked = true;
+    persistState();
+    if (state.phase === PHASES.HARD_MODE_INTRO) setTimeout(advanceMasterTutorial, 120);
+  }
+
+  function onHardModeCleared() {
+    state.pending.hardModeCleared = true;
+    if (state.phase === PHASES.HARD_MODE_INTRO) {
+      setMasterTutorialPhase(PHASES.HARD_MODE_CLEAR);
+    }
+    persistState();
+    setTimeout(advanceMasterTutorial, 120);
+  }
+
+  function onCorePurchased(coreId) {
+    if (!coreId) return;
+    if (state.phase === PHASES.OWNERSHIP_ACTION) {
+      state.pending.ownershipDone = true;
+      persistState();
+      setMasterTutorialPhase(PHASES.COMPLETE);
+      advanceMasterTutorial();
+    }
+  }
+
+  function onCoreEquipped(coreId) {
+    if (!coreId || coreId === 'classic') return;
+    if (state.phase === PHASES.OWNERSHIP_ACTION) {
+      state.pending.ownershipDone = true;
+      persistState();
+      setMasterTutorialPhase(PHASES.COMPLETE);
+      advanceMasterTutorial();
+    }
+  }
+
+  function onUpgradePerformed() {
+    if (state.phase === PHASES.OWNERSHIP_ACTION) {
+      state.pending.ownershipDone = true;
+      persistState();
+      setMasterTutorialPhase(PHASES.COMPLETE);
+      advanceMasterTutorial();
+    }
+  }
+
+  function resetMasterTutorial() {
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    persistState();
+    clearGuidedHighlight();
+    hideCard();
+    started = false;
   }
 
   OG.systems.tutorial = {
+    PHASES,
+    COPY,
+    startMasterTutorialIfNeeded,
+    advanceMasterTutorial,
+    setMasterTutorialPhase,
+    getMasterTutorialPhase,
+    completeMasterTutorial,
     showFreezeFrame,
-    completePhase,
-    handleLevelStart,
-    handleHardModeClear,
-    checkMenuRouting,
-    getPhase: () => currentPhase
+    showGuidedHighlight,
+    clearGuidedHighlight,
+    blockAllExcept,
+    onMenuTabOpened,
+    onCampaignMilestone,
+    onHardModeUnlocked,
+    onHardModeCleared,
+    onCorePurchased,
+    onCoreEquipped,
+    onUpgradePerformed,
+    resetMasterTutorial,
+
+    // Legacy bridge methods
+    handleLevelStart: function() {},
+    handleHardModeClear: onHardModeCleared,
+    checkMenuRouting: startMasterTutorialIfNeeded,
+    completePhase: function() {}
   };
-})(window);
+})(window, document);

@@ -697,10 +697,15 @@
   <script src="js/ui/shop.js"></script>
   <script src="js/ui/settings.js"></script>
   <script src="js/systems/tutorial.js"></script>
-  <div id="tutorialOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,5,15,0.92); z-index:10000; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;">
-    <h2 id="tutorialTitle" style="color:#00e5ff; font-size:2rem; font-family:'Orbitron',sans-serif; text-shadow:0 0 20px #00e5ff; margin-bottom:15px; letter-spacing:2px;">TUTORIAL</h2>
-    <p id="tutorialDesc" style="color:#fff; font-size:1rem; max-width:400px; margin:10px auto; line-height:1.6; opacity:0.9;"></p>
-    <button id="tutorialBtn" class="btn" style="background:#00e5ff; color:#000; padding:15px 40px; margin-top:30px; font-weight:bold; letter-spacing:2px; border:none; box-shadow:0 0 15px #00e5ff;">CONFIRM</button>
+  <div id="tutorialMask" aria-hidden="true">
+    <div id="tutorialHighlightRing"></div>
+    <div id="tutorialCard" role="dialog" aria-live="polite">
+      <div id="tutorialCardLabel">SYSTEM NOTICE</div>
+      <h2 id="tutorialCardTitle">WELCOME</h2>
+      <p id="tutorialCardBody"></p>
+      <button id="tutorialCardBtn" class="btn">CONTINUE</button>
+      <div id="tutorialTapHint">TAP TO CONTINUE</div>
+    </div>
   </div>
   <div id="adSimulationOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:#000; flex-direction:column; align-items:center; justify-content:center;">
       <div style="font-family:'Orbitron',sans-serif; font-size:1.2rem; color:#fff; letter-spacing:2px; margin-bottom: 20px;">ADVERTISEMENT</div>

@@ -57,6 +57,9 @@
       saveData();
       updatePersistentCoinUI();
       equipSkin(id);
+      if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onCorePurchased === 'function') {
+        OG.systems.tutorial.onCorePurchased(id);
+      }
     } else {
       alert('Not enough coins! Play the campaign to earn more.');
     }
@@ -67,6 +70,9 @@
     saveData();
     updateWorkshopUI();
     updateShopUI();
+    if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onCoreEquipped === 'function') {
+      OG.systems.tutorial.onCoreEquipped(id);
+    }
   }
 
   window.ascendEquippedSphere = function() {
@@ -87,6 +93,9 @@
       if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
       if (typeof createPopup === 'function' && typeof centerObj !== 'undefined') {
          createPopup(centerObj.x, centerObj.y - 40, 'CORE EVOLVED!', '#ffaa00');
+      }
+      if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onUpgradePerformed === 'function') {
+        OG.systems.tutorial.onUpgradePerformed({ type: 'ascend', skinId });
       }
     }
   };

@@ -201,6 +201,9 @@
         : 0;
       const _hardUnlocked = isUnlocked && _wStarsTotal >= 10;
       _hardBtn.style.display = _hardUnlocked ? 'inline-block' : 'none';
+      if (_hardUnlocked && OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onHardModeUnlocked === 'function') {
+        OG.systems.tutorial.onHardModeUnlocked();
+      }
     }
 
     // Dim arrows at boundaries
@@ -257,6 +260,13 @@
         if (typeof updateWorkshopUI === 'function') updateWorkshopUI();
     } else if (tabId === 'shop') {
         if (typeof updateShopUI === 'function') updateShopUI();
+    }
+
+    if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onMenuTabOpened === 'function') {
+      OG.systems.tutorial.onMenuTabOpened(tabId);
+    }
+    if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.startMasterTutorialIfNeeded === 'function') {
+      OG.systems.tutorial.startMasterTutorialIfNeeded();
     }
   }
 
