@@ -372,6 +372,12 @@
               && Object.keys(playerProgress.completedStages).length > 0;
           ctaBtn.innerHTML = hasProgress ? '&#9654; CONTINUE' : '&#9654; PLAY';
       }
+
+      // ── Challenges & Streak ────────────────────────────────────────────────
+      if (OG.systems && OG.systems.challenges) {
+        OG.systems.challenges.refreshChallengesUI();
+        OG.systems.challenges.refreshStreakUI();
+      }
   }
 
   function startContinueRun() {

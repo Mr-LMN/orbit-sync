@@ -3853,3 +3853,227 @@ body.hard-mode #hardModeBadge { display: block; }
   padding: 0 28px;
   text-align: center;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   DAILY CHALLENGES PANEL
+   ══════════════════════════════════════════════════════════════ */
+
+.daily-challenges-panel {
+  width: 100%;
+  max-width: 360px;
+  margin: 10px auto 0;
+  background: rgba(6, 8, 18, 0.72);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 16px;
+  padding: 12px 14px 10px;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.03), 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.daily-challenges-panel.challenges-complete {
+  border-color: rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.12), inset 0 0 20px rgba(255, 215, 0, 0.04);
+}
+
+.challenges-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.challenges-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.48rem;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+}
+
+.challenges-reset {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.38rem;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.22);
+  text-transform: uppercase;
+}
+
+/* ── Streak strip ─────────────────────────────────────────── */
+.hub-streak-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 170, 0, 0.08);
+  border: 1px solid rgba(255, 170, 0, 0.18);
+  border-radius: 8px;
+  padding: 5px 10px;
+  margin-bottom: 8px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.streak-flame { font-size: 0.75rem; }
+
+.streak-count {
+  font-size: 0.52rem;
+  letter-spacing: 2px;
+  color: #ffaa00;
+  font-weight: bold;
+}
+
+.streak-sep {
+  color: rgba(255, 255, 255, 0.15);
+  font-size: 0.5rem;
+}
+
+.streak-next {
+  font-size: 0.42rem;
+  letter-spacing: 1px;
+  color: rgba(255, 200, 120, 0.65);
+  flex: 1;
+  text-align: right;
+}
+
+/* ── Challenge list ───────────────────────────────────────── */
+.challenges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.challenge-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 7px 10px 6px;
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.challenge-item.challenge-done {
+  background: rgba(0, 255, 120, 0.06);
+  border-color: rgba(0, 255, 120, 0.22);
+}
+
+.challenge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+}
+
+.challenge-check {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.challenge-item.challenge-done .challenge-check {
+  color: #00ff88;
+}
+
+.challenge-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.44rem;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.7);
+  flex: 1;
+}
+
+.challenge-item.challenge-done .challenge-label {
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: line-through;
+}
+
+.challenge-xp {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.38rem;
+  letter-spacing: 1px;
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid rgba(255, 170, 0, 0.25);
+  border-radius: 4px;
+  padding: 2px 5px;
+  flex-shrink: 0;
+}
+
+.challenge-bar-track {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.challenge-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff, #00ff88);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.challenge-item.challenge-done .challenge-bar-fill {
+  background: #00ff88;
+}
+
+/* ── Claim chest button ────────────────────────────────────── */
+.challenge-claim-btn {
+  display: none;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 215, 0, 0.7);
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.28);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  box-sizing: border-box;
+}
+
+.challenge-claim-btn.challenge-claim-ready {
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.14);
+  border-color: rgba(255, 215, 0, 0.55);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+  animation: claimPulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes claimPulse {
+  0%   { box-shadow: 0 0 14px rgba(255, 215, 0, 0.15); }
+  100% { box-shadow: 0 0 28px rgba(255, 215, 0, 0.40); }
+}
+
+.challenge-claim-btn:active { transform: scale(0.96); }
+
+/* ══════════════════════════════════════════════════════════════
+   JUICE PASS — PERFECT HIT FLASH & COMBO ESCALATION
+   ══════════════════════════════════════════════════════════════ */
+
+/* Perfect hit screen flash — body class added for 80ms */
+@keyframes perfectHitFlash {
+  0%   { filter: brightness(1); }
+  30%  { filter: brightness(2.4) saturate(1.4); }
+  100% { filter: brightness(1); }
+}
+
+body.perfect-flash #gameCanvas {
+  animation: perfectHitFlash 80ms ease-out forwards;
+}
+
+/* High-combo canvas edge glow (class driven by multiplier in scoring.js) */
+body.combo-3 #gameCanvas  { box-shadow: inset 0 0 30px rgba(0, 255, 136, 0.12); }
+body.combo-5 #gameCanvas  { box-shadow: inset 0 0 55px rgba(0, 229, 255, 0.22); }
+body.combo-7 #gameCanvas  { box-shadow: inset 0 0 80px rgba(180, 100, 255, 0.28); }
+body.combo-8 #gameCanvas  {
+  box-shadow: inset 0 0 110px rgba(255, 0, 255, 0.32),
+              inset 0 0 200px rgba(180, 0, 255, 0.12);
+  animation: comboMaxPulse 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes comboMaxPulse {
+  0%   { box-shadow: inset 0 0 90px rgba(255, 0, 255, 0.28), inset 0 0 180px rgba(180, 0, 255, 0.10); }
+  100% { box-shadow: inset 0 0 130px rgba(255, 0, 255, 0.40), inset 0 0 240px rgba(180, 0, 255, 0.16); }
+}

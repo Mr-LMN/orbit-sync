@@ -3,6 +3,28 @@
   OG.systems = OG.systems || {};
   OG.systems.scoring = OG.systems.scoring || {};
 
+  // Juice pass — body combo classes for canvas glow escalation
+  const COMBO_CLASSES = ['combo-3', 'combo-5', 'combo-7', 'combo-8'];
+  function _setComboClass(mult) {
+    COMBO_CLASSES.forEach(c => document.body.classList.remove(c));
+    if (mult >= 8) document.body.classList.add('combo-8');
+    else if (mult >= 7) document.body.classList.add('combo-7');
+    else if (mult >= 5) document.body.classList.add('combo-5');
+    else if (mult >= 3) document.body.classList.add('combo-3');
+  }
+
+  let _perfectFlashTimer = null;
+  function triggerPerfectFlash() {
+    if (_perfectFlashTimer) { clearTimeout(_perfectFlashTimer); document.body.classList.remove('perfect-flash'); }
+    // Force reflow to restart animation
+    void document.body.offsetWidth;
+    document.body.classList.add('perfect-flash');
+    _perfectFlashTimer = setTimeout(function() {
+      document.body.classList.remove('perfect-flash');
+      _perfectFlashTimer = null;
+    }, 90);
+  }
+
   function updateMultiplierUI() {
     const prevMultiplier = lastMultiplierDisplay;
     const didChange = multiplier !== prevMultiplier;
@@ -12,6 +34,7 @@
       ui.bigMultiplier.style.display = 'none';
       ui.bigMultiplier.style.fontSize = '1.8rem';
       if (typeof clearIntensity === 'function') clearIntensity();
+      _setComboClass(1);
       lastMultiplierDisplay = multiplier;
       return;
     } else {
@@ -42,8 +65,12 @@
     else if (multiplier >= 3) triggerIntensity(1);
     else if (typeof clearIntensity === 'function') clearIntensity();
 
+    // Juice: update canvas edge glow class
+    _setComboClass(multiplier);
+
     lastMultiplierDisplay = multiplier;
   }
 
   OG.systems.scoring.updateMultiplierUI = updateMultiplierUI;
+  OG.systems.scoring.triggerPerfectFlash = triggerPerfectFlash;
 })(window);

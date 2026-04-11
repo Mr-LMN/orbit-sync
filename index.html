@@ -152,16 +152,19 @@
 
         </div>
 
-        <!-- Secondary Actions -->
-        <div class="hub-secondary-row">
-          <button class="hub-secondary-btn"
-            onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('workshop')">
-            ⬡ WORKSHOP
-          </button>
-          <button class="hub-secondary-btn hub-secondary-btn--event" id="hubEventBtn"
-            onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('event')">
-            🔥 EVENT
-          </button>
+        <!-- Daily Challenges Panel -->
+        <div id="dailyChallengesPanel" class="daily-challenges-panel">
+          <div class="challenges-header">
+            <span class="challenges-title">📋 DAILY CHALLENGES</span>
+            <span class="challenges-reset" id="challengesResetLabel">RESETS MIDNIGHT</span>
+          </div>
+          <!-- Streak strip -->
+          <div id="hubStreakDisplay" class="hub-streak-strip" style="display:none;"></div>
+          <!-- Challenge items injected by challenges.js -->
+          <div id="challengesList" class="challenges-list"></div>
+          <!-- Claim button (shown when all 3 done) -->
+          <button id="challengeClaimBtn" class="challenge-claim-btn" style="display:none;"
+            onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); if(OrbitGame.systems.challenges) OrbitGame.systems.challenges.claimChest();">🎁 CLAIM CHEST</button>
         </div>
 
       </div>
@@ -731,6 +734,7 @@
   </div>
 
   <script src="js/core/input.js"></script>
+  <script src="js/systems/challenges.js"></script>
   <script src="js/core/loop.js"></script>
   <script src="js/game-compat.js"></script>
   <script src="js/core/boot.js"></script>

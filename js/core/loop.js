@@ -4063,12 +4063,46 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       nearMissEl.style.display = 'none';
     }
     let subtitleText = '';
-    if (isCloseMiss) subtitleText = 'ONE TAP OFF';
-    else if (nearBestBannerActive) subtitleText = '';
-    else if (streakBeforeFail >= 6) subtitleText = 'RUN BROKEN';
+    // ── Near-miss contextual copy ─────────────────────────────────────────
+    const _hitsLeft    = levelData && levelData.hitsNeeded ? levelData.hitsNeeded - stageHits : Infinity;
+    const _isLastHits  = _hitsLeft <= 2 && levelData && levelData.hitsNeeded > 0 && !levelData.boss;
+    const _isHighCombo = streakBeforeFail >= 5;
+    const _pbGap       = personalBest.score > 0 ? personalBest.score - score : Infinity;
+    const _isNearPB    = _pbGap > 0 && _pbGap <= Math.max(30, personalBest.score * 0.12);
+
+    if (isCloseMiss && _isLastHits) {
+      subtitleText = 'ONE TAP FROM CLEARING';
+    } else if (isCloseMiss) {
+      subtitleText = 'ONE TAP OFF';
+    } else if (_isLastHits) {
+      subtitleText = `${_hitsLeft === 1 ? 'FINAL HIT REMAINING' : 'TWO HITS FROM CLEAR'}`;
+    } else if (_isHighCombo) {
+      subtitleText = `×${streakBeforeFail} COMBO SHATTERED`;
+    } else if (_isNearPB) {
+      subtitleText = `${Math.ceil(_pbGap)} FROM YOUR BEST`;
+    } else if (streakBeforeFail >= 6) {
+      subtitleText = 'RUN BROKEN';
+    }
+
+    // Promote ad revive more aggressively on high-emotion deaths
+    const _isHighStakes = _isLastHits || _isHighCombo || _isNearPB || streakBeforeFail >= 4;
+    if (_isHighStakes && adReviveBtn && !isPremium && !adReviveUsedThisStage) {
+      adReviveBtn.style.fontWeight = 'bold';
+      adReviveBtn.style.borderColor = '#ffaa00';
+      adReviveBtn.style.color = '#ffaa00';
+      adReviveBtn.style.boxShadow = '0 0 18px rgba(255,170,0,0.4)';
+    }
     ui.subtitle.classList.add('subtle-failure');
     ui.subtitle.innerText = subtitleText;
     ui.subtitle.style.display = subtitleText ? 'block' : 'none';
+    // Challenge: count completed run
+    if (OG.systems && OG.systems.challenges) {
+      OG.systems.challenges.onRunCompleted();
+      OG.systems.challenges.onRunScore(score);
+      if (streakBeforeFail > 0) OG.systems.challenges.onComboReached(streakBeforeFail);
+      const _worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+      if (_worldNum >= 2) OG.systems.challenges.onWorldReached(_worldNum);
+    }
 
     // The new run stats block is the summary card itself, so it just needs to be displayed block
     const summaryCard = document.getElementById('summaryCard');
@@ -4951,6 +4985,10 @@ function tap() {
       perfectLifeStreak++;
       runPerfectCount++;
       if (lives === 1) runLastLifeHits++;
+      // Challenge hook — count each perfect hit
+      if (OG.systems && OG.systems.challenges) OG.systems.challenges.onPerfectHit();
+      // Juice pass — screen flash
+      if (OG.systems && OG.systems.scoring && OG.systems.scoring.triggerPerfectFlash) OG.systems.scoring.triggerPerfectFlash();
       if (currentLevelIdx >= 2) {
         perfectFlash = Math.max(perfectFlash, 0.34);
       }

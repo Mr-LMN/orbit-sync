@@ -100,6 +100,14 @@
 
       if (typeof playerProgress === 'object' && playerProgress) {
         playerProgress.completedStages[levelData.id] = true;
+        // Challenge hooks
+        if (OG.systems && OG.systems.challenges) {
+          const _isFlawless = typeof runPerfectHitsOnly !== 'undefined' && runPerfectHitsOnly;
+          OG.systems.challenges.onStageCleared();
+          if (_isFlawless) OG.systems.challenges.onFlawlessStage();
+          const _wNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
+          if (_wNum >= 2) OG.systems.challenges.onWorldReached(_wNum);
+        }
         // Save per-stage best score
         const _stageScore = (typeof score !== 'undefined' ? score : 0) - (typeof scoreAtLevelStart !== 'undefined' ? scoreAtLevelStart : 0);
         if (_stageScore > 0) {
