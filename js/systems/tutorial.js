@@ -705,10 +705,36 @@
     }
   }
 
+  // ── PHASE 3: FIRST SESSION ARC — WORLD 1 COMPLETE ───────────────────────
+  // Called by progression.js when the World 1 boss is defeated for the first time.
+  // Marks the session arc as done (unlocks hub nav) and shows a cinematic card.
+  function onWorld1Complete() {
+    const storage = getStorage();
+    if (storage.getItem('orbitSync_sessionArcDone')) return; // already triggered
+    storage.setItem('orbitSync_sessionArcDone', '1');
+
+    // Delay to let boss defeat animation play first
+    setTimeout(function() {
+      showFreezeFrame(
+        'SYNCHRONISED',
+        'World 1 complete. Your base is now online.\n\nThe hub is your command centre — upgrade your Core, tackle Daily Missions, and challenge the weekly Phoenix Trial.',
+        'ENTER THE HUB',
+        function() {
+          // Navigate to hub home on dismiss
+          if (OG.ui && OG.ui.menus && typeof OG.ui.menus.refreshOrbitRankStrip === 'function') {
+            OG.ui.menus.refreshOrbitRankStrip();
+          }
+        },
+        'FIRST SESSION COMPLETE'
+      );
+    }, 1800);
+  }
+
   function resetMasterTutorial() {
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     persistState();
     getStorage().removeItem('orbitSync_tutorialDone');
+    getStorage().removeItem('orbitSync_sessionArcDone');
     clearGuidedHighlight();
     hideCard();
     started = false;
@@ -733,6 +759,7 @@
     onCorePurchased,
     onCoreEquipped,
     onUpgradePerformed,
+    onWorld1Complete,
     resetMasterTutorial,
     suspendTutorialUI,
     findFirstShopPurchaseTarget,

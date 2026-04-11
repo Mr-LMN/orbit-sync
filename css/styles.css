@@ -4093,3 +4093,359 @@ body.combo-8 #gameCanvas  {
   0%   { box-shadow: inset 0 0 90px rgba(255, 0, 255, 0.28), inset 0 0 180px rgba(180, 0, 255, 0.10); }
   100% { box-shadow: inset 0 0 130px rgba(255, 0, 255, 0.40), inset 0 0 240px rgba(180, 0, 255, 0.16); }
 }
+
+/* ════════════════════════════════════════════════════════════
+   PHASE 3 — DEPTH STYLES
+   ════════════════════════════════════════════════════════════ */
+
+/* ── HUB ANIMATED STARFIELD BACKGROUND ─────────────────────── */
+#hubBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+#hubBg::before,
+#hubBg::after,
+#hubBg .hub-star-layer {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,0.60) 0%, transparent 100%),
+    radial-gradient(1px 1px at 34% 72%, rgba(0,229,255,0.45) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 56% 9%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 55%, rgba(177,87,255,0.40) 0%, transparent 100%),
+    radial-gradient(1px 1px at 91% 33%, rgba(255,255,255,0.50) 0%, transparent 100%),
+    radial-gradient(2px 2px at 7% 88%, rgba(0,229,255,0.30) 0%, transparent 100%),
+    radial-gradient(1px 1px at 44% 41%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 67% 77%, rgba(255,170,0,0.30) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 14%, rgba(255,255,255,0.50) 0%, transparent 100%),
+    radial-gradient(1px 1px at 23% 49%, rgba(0,229,255,0.25) 0%, transparent 100%);
+  background-size: 400px 300px;
+}
+
+#hubBg::before {
+  animation: starDrift 22s linear infinite;
+}
+#hubBg::after {
+  background-size: 600px 450px;
+  opacity: 0.55;
+  animation: starDrift 38s linear infinite reverse;
+}
+
+@keyframes starDrift {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-300px); }
+}
+
+/* Nebula blobs underneath */
+#hubBg .hub-nebula {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+}
+#hubBg .hub-nebula-1 {
+  width: 280px; height: 200px;
+  top: -40px; left: -60px;
+  background: radial-gradient(ellipse, rgba(177,87,255,0.12) 0%, transparent 70%);
+  animation: nebulaPulse 12s ease-in-out infinite alternate;
+}
+#hubBg .hub-nebula-2 {
+  width: 220px; height: 180px;
+  bottom: 60px; right: -40px;
+  background: radial-gradient(ellipse, rgba(0,200,255,0.10) 0%, transparent 70%);
+  animation: nebulaPulse 18s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes nebulaPulse {
+  0%   { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 1.0; transform: scale(1.18); }
+}
+
+/* Make sure hub content layers above bg */
+#homeView .hub-center-stack,
+#homeView .daily-challenges-panel,
+#homeView #liveEventPanel,
+#homeView #orbitRankStrip {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── ORBIT RANK STRIP ───────────────────────────────────────── */
+#orbitRankStrip {
+  width: calc(100% - 32px);
+  max-width: 420px;
+  margin: 0 auto 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.rank-strip-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: rgba(255,170,0,0.90);
+  letter-spacing: 2px;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+.rank-strip-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rank-strip-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.44rem;
+  color: rgba(255,255,255,0.40);
+  letter-spacing: 2px;
+  line-height: 1;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.rank-strip-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.10);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.rank-strip-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffa500, #ffdd00);
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.22, 0.61, 0.36, 1);
+  width: 0%;
+}
+
+/* ── LIVE EVENT PANEL ───────────────────────────────────────── */
+#liveEventPanel {
+  width: calc(100% - 32px);
+  max-width: 420px;
+  margin: 0 auto 10px;
+  background: linear-gradient(135deg, rgba(255,60,0,0.08) 0%, rgba(120,0,60,0.10) 100%);
+  border: 1px solid rgba(255,100,30,0.25);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  animation: eventPanelGlow 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes eventPanelGlow {
+  0%   { box-shadow: 0 0 0px rgba(255,80,0,0); }
+  100% { box-shadow: 0 0 18px rgba(255,80,0,0.22); }
+}
+
+.event-panel-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+  animation: phoenixGlow 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes phoenixGlow {
+  0%   { filter: brightness(1) drop-shadow(0 0 0px rgba(255,120,0,0)); }
+  100% { filter: brightness(1.4) drop-shadow(0 0 8px rgba(255,120,0,0.8)); }
+}
+
+.event-panel-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.event-panel-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.38rem;
+  color: rgba(255,140,60,0.70);
+  letter-spacing: 2.5px;
+  margin-bottom: 2px;
+}
+
+.event-panel-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #ff7040;
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+}
+
+.event-panel-countdown {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.44rem;
+  color: rgba(255,200,150,0.60);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+.event-panel-cta {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.50rem;
+  font-weight: 700;
+  color: rgba(255,120,60,0.80);
+  letter-spacing: 2px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255,100,40,0.30);
+  border-radius: 6px;
+  background: rgba(255,60,0,0.08);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── RANK-UP CEREMONY OVERLAY ───────────────────────────────── */
+#rankUpCeremony {
+  font-family: 'Orbitron', sans-serif;
+  text-align: center;
+  padding: 24px;
+}
+
+.ceremony-burst {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(255,170,0,0.18) 0%, transparent 65%);
+  animation: ceremonyBurstPulse 1.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ceremonyBurstPulse {
+  0%   { opacity: 0; transform: scale(0.4); }
+  40%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.4; transform: scale(1); }
+}
+
+.ceremony-label {
+  font-size: clamp(0.55rem, 2.5vw, 0.72rem);
+  letter-spacing: 5px;
+  color: rgba(255,170,0,0.65);
+  margin-bottom: 12px;
+  animation: ceremonyFadeIn 0.5s ease-out both;
+}
+
+.ceremony-rank {
+  font-size: clamp(2.8rem, 14vw, 5rem);
+  font-weight: 900;
+  color: #ffcc00;
+  text-shadow: 0 0 40px rgba(255,170,0,0.6), 0 0 80px rgba(255,100,0,0.3);
+  letter-spacing: 4px;
+  line-height: 1;
+  animation: ceremonyRankPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+@keyframes ceremonyRankPop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+
+.ceremony-rank-name {
+  font-size: clamp(0.60rem, 3vw, 0.82rem);
+  letter-spacing: 4px;
+  color: rgba(255,220,120,0.75);
+  margin-top: 8px;
+  animation: ceremonyFadeIn 0.5s ease-out 0.4s both;
+}
+
+.ceremony-perk-card {
+  margin: 20px auto 0;
+  max-width: 280px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,170,0,0.30);
+  border-radius: 12px;
+  padding: 12px 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: ceremonyPerkSlide 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.55s both;
+}
+
+@keyframes ceremonyPerkSlide {
+  0%   { transform: translateY(30px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+
+.ceremony-perk-header {
+  font-size: 0.40rem;
+  letter-spacing: 3px;
+  color: rgba(255,170,0,0.55);
+  margin-bottom: 4px;
+}
+
+.ceremony-perk-name {
+  font-size: clamp(0.65rem, 3vw, 0.82rem);
+  font-weight: 700;
+  color: #ffcc44;
+  letter-spacing: 2px;
+}
+
+.ceremony-perk-desc {
+  font-size: 0.50rem;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.ceremony-dismiss {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.42rem;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.30);
+  animation: ceremonyFadeIn 0.4s ease-out 1.2s both;
+}
+
+@keyframes ceremonyFadeIn {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.ceremony-enter {
+  animation: ceremonyOverlayIn 0.35s ease-out both;
+}
+
+.ceremony-exit {
+  animation: ceremonyOverlayOut 0.32s ease-in both;
+}
+
+@keyframes ceremonyOverlayIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes ceremonyOverlayOut {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ── NAV SHAKE (hub lock guard) ─────────────────────────────── */
+@keyframes navShake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.nav-shake {
+  animation: navShake 0.35s ease-in-out;
+}

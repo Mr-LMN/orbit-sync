@@ -184,6 +184,21 @@
          }
       }
 
+      // ── Orbit Rank XP ────────────────────────────────────────────────────
+      if (OG.systems && OG.systems.prestige) {
+        const _isFlawlessRun = typeof runPerfectHitsOnly !== 'undefined' && runPerfectHitsOnly;
+        const _orbitXP = wasBoss ? 50 : 10;
+        const _flawlessBonus = _isFlawlessRun ? 15 : 0;
+        OG.systems.prestige.grantOrbitXP(_orbitXP + _flawlessBonus);
+        // World 1 completion — give ceremony if new player
+        if (wasBoss && worldAdvanced && currentWorld === 1) {
+          if (OG.systems.tutorial && typeof OG.systems.tutorial.onWorld1Complete === 'function') {
+            OG.systems.tutorial.onWorld1Complete();
+          }
+        }
+      }
+
+
       saveData();
 
       if (wasBoss || worldAdvanced || campaignComplete) {

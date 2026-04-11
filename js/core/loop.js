@@ -5015,8 +5015,23 @@ function tap() {
       const outwardY = normalY / normalLen;
       canvas.style.filter = 'brightness(2.1)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
-      soundPerfect(multiplier);
+      // Phase 2: rising-pitch crack (replaces generic soundPerfect on consecutive hits)
+      if (typeof soundPerfectCrack === 'function') {
+        soundPerfectCrack(perfectLifeStreak);
+      } else {
+        soundPerfect(multiplier);
+      }
       if (audioCtx) playPop(10, true);
+      // Zone-type impact sound for the hit target
+      if (t.phoenixType) {
+        if (t.phoenixType === 'ember'   && typeof soundZoneEmber   === 'function') soundZoneEmber();
+        if (t.phoenixType === 'inferno' && typeof soundZoneInferno === 'function') soundZoneInferno();
+        // ash is never hittable for score, but if it somehow happens treat as glitch
+      }
+      // Combo chain tone: play the ascending note for each step (1-5)
+      if (typeof soundComboTone === 'function' && perfectLifeStreak >= 1 && perfectLifeStreak <= 5) {
+        soundComboTone(perfectLifeStreak - 1);
+      }
       // Score punch — scale + colour flash
       if (ui.score) {
         const _sPunchColor = multiColors[Math.min(multiplier - 1, 7)];
@@ -5457,6 +5472,13 @@ function returnToMenu() {
           OrbitGame.systems.tutorial.startMasterTutorialIfNeeded();
       }, 300); // small delay to let UI settle
   }
+
+  // Show queued rank-up ceremony after a short hub-settle delay
+  setTimeout(function() {
+    if (OrbitGame.systems && OrbitGame.systems.ceremony) {
+      OrbitGame.systems.ceremony.showPendingCeremony();
+    }
+  }, 700);
 
   // Daily streak badge
   const _streakBadge = ui.dailyStreakBadge;

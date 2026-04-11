@@ -819,6 +819,109 @@
     ctx.restore();
   }
 
+  // ── PHASE 3: ORBIT RANK STRIP ────────────────────────────────────────────
+  function refreshOrbitRankStrip() {
+    const prestige = OG.systems && OG.systems.prestige;
+    if (!prestige) return;
+
+    const rank    = prestige.getOrbitRank();
+    const xp      = prestige.getOrbitXP();
+    const toNext  = prestige.getXPToNextRank();
+    const pct     = prestige.getXPProgress(); // 0.0 – 1.0
+    const label   = prestige.getRankLabel(rank);
+
+    const badgeEl = document.getElementById('orbitRankBadge');
+    const nameEl  = document.getElementById('orbitRankName');
+    const xpEl    = document.getElementById('orbitRankXP');
+    const barEl   = document.getElementById('orbitRankBar');
+    const hubRankLabel = document.getElementById('hubRankLabel');
+    const hubRankNum   = document.getElementById('hubRankNum');
+
+    if (badgeEl) badgeEl.textContent = 'RANK ' + rank;
+    if (nameEl)  nameEl.textContent  = label;
+    if (xpEl)    xpEl.textContent    = rank >= prestige.MAX_RANK ? 'MAX' : xp + ' / ' + toNext + ' XP';
+    if (barEl)   barEl.style.width   = (rank >= prestige.MAX_RANK ? 1 : pct) * 100 + '%';
+
+    // Also update the hub rank pill at the top of the home view
+    if (hubRankLabel) hubRankLabel.textContent = label;
+    if (hubRankNum)   hubRankNum.textContent   = 'RANK ' + (rank < 10 ? '0' + rank : rank);
+  }
+
+  // ── PHASE 3: LIVE EVENT PANEL COUNTDOWN ──────────────────────────────────
+  let _eventCountdownInterval = null;
+
+  function _formatCountdown(msLeft) {
+    if (msLeft <= 0) return 'LIVE NOW';
+    const totalSec = Math.floor(msLeft / 1000);
+    const d  = Math.floor(totalSec / 86400);
+    const h  = Math.floor((totalSec % 86400) / 3600);
+    const m  = Math.floor((totalSec % 3600) / 60);
+    const s  = totalSec % 60;
+    if (d > 0) return `ENDS IN: ${d}D ${h}H ${m}M`;
+    if (h > 0) return `ENDS IN: ${h}H ${m}M ${s}S`;
+    return `ENDS IN: ${m}M ${s}S`;
+  }
+
+  function refreshLiveEventPanel() {
+    const el = document.getElementById('eventPanelCountdown');
+    if (!el) return;
+
+    // Weekly reset — next Monday 00:00 UTC
+    const now     = new Date();
+    const dayOfWk = now.getUTCDay(); // 0=Sun, 1=Mon…
+    const daysToMon = ((8 - dayOfWk) % 7) || 7;
+    const nextMon = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysToMon
+    ));
+    const msLeft = nextMon.getTime() - now.getTime();
+    el.textContent = _formatCountdown(msLeft);
+  }
+
+  function startEventCountdownTicker() {
+    if (_eventCountdownInterval) return;
+    refreshLiveEventPanel();
+    _eventCountdownInterval = setInterval(refreshLiveEventPanel, 1000);
+  }
+
+  function stopEventCountdownTicker() {
+    if (_eventCountdownInterval) {
+      clearInterval(_eventCountdownInterval);
+      _eventCountdownInterval = null;
+    }
+  }
+
+  // ── PHASE 3: SESSION ARC NAV SHAKE ───────────────────────────────────────
+  function _shakeNavBar() {
+    const nav = document.getElementById('mainNavBar') || document.querySelector('.nav-bar');
+    if (!nav) return;
+    nav.classList.remove('nav-shake');
+    void nav.offsetWidth; // reflow
+    nav.classList.add('nav-shake');
+    nav.addEventListener('animationend', function onEnd() {
+      nav.classList.remove('nav-shake');
+      nav.removeEventListener('animationend', onEnd);
+    }, { once: true });
+  }
+
+  // Patch switchMenuTab to add session arc lock + shake
+  const _origSwitchMenuTab = switchMenuTab;
+  function switchMenuTab(tabId) {
+    // First session arc lock — block navigation for fresh installs during World 1
+    const sessionDone = OG.storage && OG.storage.getItem('orbitSync_sessionArcDone');
+    const tutSys = OG.systems && OG.systems.tutorial;
+    if (!sessionDone && tutSys && typeof tutSys.isNewPlayerProfile === 'function' && tutSys.isNewPlayerProfile()) {
+      _shakeNavBar();
+      return; // Hard block until World 1 cleared
+    }
+    _origSwitchMenuTab(tabId);
+    // Refresh rank strip whenever we come back to home
+    if (tabId === 'home') {
+      refreshOrbitRankStrip();
+      startEventCountdownTicker();
+    } else {
+      stopEventCountdownTicker();
+    }
+  }
 
   OG.ui.menus.toggleShop = toggleShop;
   OG.ui.menus.toggleSettings = toggleSettings;
@@ -831,6 +934,8 @@
   OG.ui.menus.selectAugment = selectAugment;
   OG.ui.menus.showLockedWorldPreview = showLockedWorldPreview;
   OG.ui.menus.refreshMenuWorldPreview = refreshMenuWorldPreview;
+  OG.ui.menus.refreshOrbitRankStrip = refreshOrbitRankStrip;
+  OG.ui.menus.refreshLiveEventPanel = refreshLiveEventPanel;
   window.startBestScoreRun = startBestScoreRun;
   window.startHardModeRun = startHardModeRun;
   window.showAugmentPicker = showAugmentPicker;
@@ -847,12 +952,13 @@
   // Initial body class
   document.body.classList.add('state-hub');
 
-  // Initial UI refresh
+  // Initial UI refresh (existing)
   setTimeout(refreshHubUI, 100);
-
-  // Re-run hub refresh after state is fully loaded to pick up saved progress
-  setTimeout(() => {
-     refreshHubUI();
-  }, 150);
+  // Phase 3: rank + event panel on first load
+  setTimeout(function() {
+    refreshHubUI();
+    refreshOrbitRankStrip();
+    startEventCountdownTicker();
+  }, 160);
 
 })(window);

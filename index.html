@@ -88,6 +88,12 @@
       <!-- HOME VIEW — PLAYER HUB CORE -->
       <div id="homeView" class="menu-view active-view">
 
+        <!-- Animated starfield background -->
+        <div id="hubBg" aria-hidden="true">
+          <div class="hub-nebula hub-nebula-1"></div>
+          <div class="hub-nebula hub-nebula-2"></div>
+        </div>
+
         <!-- Daily Streak Badge (shown when active) -->
         <div id="dailyStreakBadge" style="display:none; font-family:'Orbitron',sans-serif; font-size:0.48rem; letter-spacing:2px; color:rgba(255,200,80,0.7); text-align:center; flex-shrink:0; margin-bottom:4px;"></div>
 
@@ -150,6 +156,31 @@
             &#9654; CONTINUE
           </button>
 
+        </div>
+
+        <!-- Orbit Rank Strip -->
+        <div id="orbitRankStrip">
+          <div class="rank-strip-badge" id="orbitRankBadge">RANK 1</div>
+          <div class="rank-strip-info">
+            <div class="rank-strip-label">
+              <span id="orbitRankName">ORBIT RUNNER</span>
+              <span id="orbitRankXP">0 / 132 XP</span>
+            </div>
+            <div class="rank-strip-bar-track">
+              <div class="rank-strip-bar-fill" id="orbitRankBar"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Event Panel -->
+        <div id="liveEventPanel" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('event')" role="button" aria-label="Enter Phoenix Trial event">
+          <div class="event-panel-icon">🔥</div>
+          <div class="event-panel-info">
+            <div class="event-panel-badge">🔴 LIVE NOW · WEEKLY EVENT</div>
+            <div class="event-panel-title">THE PHOENIX</div>
+            <div class="event-panel-countdown" id="eventPanelCountdown">ENDS IN: CALCULATING...</div>
+          </div>
+          <div class="event-panel-cta">ENTER ▶</div>
         </div>
 
         <!-- Daily Challenges Panel -->
@@ -734,7 +765,9 @@
   </div>
 
   <script src="js/core/input.js"></script>
+  <script src="js/systems/prestige.js"></script>
   <script src="js/systems/challenges.js"></script>
+  <script src="js/systems/ceremony.js"></script>
   <script src="js/core/loop.js"></script>
   <script src="js/game-compat.js"></script>
   <script src="js/core/boot.js"></script>

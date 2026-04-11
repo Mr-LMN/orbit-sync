@@ -394,6 +394,7 @@
       // 1700→2300ms: ghost (invisible), alpha at 0.08 shimmer hint for veteran tracking
 
       let alpha;
+      const wasVisible = t.ghostVisible;
       if (phase < fadeIn) {
         alpha = phase / fadeIn;
         t.ghostVisible = false;
@@ -409,6 +410,10 @@
         t.ghostVisible = false;
       }
       t.alpha = alpha;
+      // Whoosh sound on first moment of becoming visible each cycle
+      if (!wasVisible && t.ghostVisible && typeof soundZoneGhostAppear === 'function') {
+        soundZoneGhostAppear();
+      }
     }
   }
 
@@ -447,6 +452,12 @@
     if (typeof vibrate === 'function') vibrate([80, 50, 150]);
     if (typeof soundFlameBurst === 'function') soundFlameBurst();
     if (typeof updateMusicState === 'function') updateMusicState(musicIntensity, true);
+    // Phase 2 audio: layer new sound into the drone per phase
+    if (typeof phoenixPhaseAudio === 'function') phoenixPhaseAudio(newIdx);
+    // SUPERNOVA: full orchestral climax hit
+    if (newIdx === 4 && typeof soundSupernovaHit === 'function') {
+      setTimeout(function() { if (_active) soundSupernovaHit(); }, 120);
+    }
 
     if (typeof computeWorldShape === 'function')   window.currentWorldShape   = computeWorldShape({ boss: 'phoenix' });
     if (typeof computeWorldPalette === 'function') window.currentWorldPalette = computeWorldPalette({ boss: 'phoenix' });
@@ -822,6 +833,8 @@
       canvas.classList.remove('wrath-warning');
     }
     _collapseInProgress = false;
+    // Clean up any extra audio layers added during phases 2-4
+    if (typeof cleanupPhoenixAudio === 'function') cleanupPhoenixAudio();
   }
 
   function isActive()    { return _active; }

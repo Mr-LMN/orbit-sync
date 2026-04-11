@@ -189,47 +189,90 @@
     updateMusicState(multiplier, !!isMusicBoss);
   }
 
-  function updateMusicState(currentMultiplier, isBossActive) {
+
+  // ── ADAPTIVE MUSIC LAYERS — 8 explicit levels tied to combo multiplier ────
+  // Each multiplier step is a full audio state: base volume, boss mix level,
+  // playback rate, and music filter cutoff frequency.
+  // Higher levels have progressively brighter, faster, louder, more intense sound.
+  const ADAPTIVE_LAYERS = [
+    null, // index 0 unused (multiplier is 1-indexed)
+    { base: 0.28, boss: 0.00, rate: 1.000, filterHz: 8000  }, // ×1 — calm, ambient
+    { base: 0.30, boss: 0.00, rate: 1.005, filterHz: 10000 }, // ×2 — slightly warmer
+    { base: 0.32, boss: 0.03, rate: 1.012, filterHz: 13000 }, // ×3 — building
+    { base: 0.35, boss: 0.06, rate: 1.020, filterHz: 16000 }, // ×4 — engaging
+    { base: 0.38, boss: 0.09, rate: 1.030, filterHz: 18000 }, // ×5 — heating up
+    { base: 0.41, boss: 0.12, rate: 1.042, filterHz: 20000 }, // ×6 — intense
+    { base: 0.44, boss: 0.14, rate: 1.055, filterHz: 23000 }, // ×7 — climactic
+    { base: 0.46, boss: 0.16, rate: 1.070, filterHz: 26000 }, // ×8 — maximum overdrive
+  ];
+
+  // Boss override layer — base is ducked, boss mix is prominent
+  const BOSS_LAYER = { base: 0.12, boss: 0.26, rate: null }; // rate: null = keep from multiplier
+
+  function setAdaptiveMusicLayer(currentMultiplier, isBossActive) {
     if (!audio.isMusicPlaying || !audio.audioCtx || !audio.baseGain || !audio.bossGain || !audio.baseSource || !audio.bossSource) return;
 
-    if (audio.currentMusicState.mult === currentMultiplier && audio.currentMusicState.boss === isBossActive) return;
+    const clamped = Math.max(1, Math.min(8, currentMultiplier || 1));
+    const layer   = ADAPTIVE_LAYERS[clamped];
 
-    audio.currentMusicState.mult = currentMultiplier;
+    // Deduplicate — skip if nothing changed
+    if (
+      audio.currentMusicState.mult === clamped &&
+      audio.currentMusicState.boss === isBossActive
+    ) return;
+    audio.currentMusicState.mult = clamped;
     audio.currentMusicState.boss = isBossActive;
 
     const now = audio.audioCtx.currentTime;
 
-    if (isBossActive) {
-      audio.baseGain.gain.cancelScheduledValues(now);
-      audio.bossGain.gain.cancelScheduledValues(now);
-      audio.baseGain.gain.linearRampToValueAtTime(0.12, now + 0.5);
-      audio.bossGain.gain.linearRampToValueAtTime(0.26, now + 0.5);
-    } else {
-      audio.baseGain.gain.cancelScheduledValues(now);
-      audio.bossGain.gain.cancelScheduledValues(now);
-      audio.bossGain.gain.linearRampToValueAtTime(0, now + 0.5);
-      // Escalate with multiplier but stay subtle — music underlies gameplay
-      const baseVol = 0.28 + (Math.min(currentMultiplier, 8) * 0.018);
-      audio.baseGain.gain.linearRampToValueAtTime(
-        Math.min(0.48, baseVol),
-        now + 0.5
-      );
-    }
+    // Volume targets
+    const targetBase = isBossActive ? BOSS_LAYER.base : layer.base;
+    const targetBoss = isBossActive ? BOSS_LAYER.boss : layer.boss;
 
-    // World-aware playback rate — W2 stages faster, base rate reflects world tempo
+    audio.baseGain.gain.cancelScheduledValues(now);
+    audio.bossGain.gain.cancelScheduledValues(now);
+    audio.baseGain.gain.linearRampToValueAtTime(targetBase, now + 0.4);
+    audio.bossGain.gain.linearRampToValueAtTime(targetBoss, now + 0.4);
+
+    // Playback rate — world-aware base + per-layer delta
     const worldNum = typeof levelData !== 'undefined' && levelData && levelData.id
       ? parseInt(levelData.id.split('-')[0], 10) : 1;
-    const worldBaseRate = worldNum === 2 ? 1.06
-      : worldNum === 3 ? 1.03
-      : worldNum === 4 ? 1.09
-      : worldNum === 5 ? 0.94
-      : 1.0;
-    const targetSpeed = worldBaseRate + (Math.min(currentMultiplier, 8) * 0.012);
+    const worldBaseRate = worldNum === 2 ? 1.06 : worldNum === 3 ? 1.03 : worldNum === 4 ? 1.09 : worldNum === 5 ? 0.94 : 1.0;
+    const layerRate = layer.rate; // already an absolute rate, apply world offset delta
+    const rateOffset = layerRate - 1.0; // delta above 1.0
+    const targetRate  = worldBaseRate + rateOffset;
+
     audio.baseSource.playbackRate.cancelScheduledValues(now);
     audio.bossSource.playbackRate.cancelScheduledValues(now);
-    audio.baseSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.2);
-    audio.bossSource.playbackRate.linearRampToValueAtTime(targetSpeed, now + 1.2);
+    audio.baseSource.playbackRate.linearRampToValueAtTime(targetRate, now + 1.0);
+    audio.bossSource.playbackRate.linearRampToValueAtTime(targetRate, now + 1.0);
+
+    // Music filter brightness — ramps per layer, giving a subtle "opening up" feel
+    if (audio.musicFilter) {
+      audio.musicFilter.frequency.cancelScheduledValues(now);
+      audio.musicFilter.frequency.linearRampToValueAtTime(layer.filterHz, now + 0.8);
+    }
   }
+
+  // Legacy compatibility shim — any code calling updateMusicState still works
+  function updateMusicState(currentMultiplier, isBossActive) {
+    setAdaptiveMusicLayer(currentMultiplier, isBossActive);
+  }
+
+  // Called by phoenix phase transitions to set a specific boss intensity
+  function setBossPhaseAudio(phaseIdx) {
+    if (!audio.isMusicPlaying || !audio.audioCtx || !audio.baseGain || !audio.bossGain) return;
+    const now = audio.audioCtx.currentTime;
+    // Phase-indexed boss mix — gets louder each phase
+    const bossVols = [0.10, 0.15, 0.20, 0.25, 0.30];
+    const baseVols = [0.18, 0.15, 0.13, 0.11, 0.09];
+    const idx = Math.max(0, Math.min(phaseIdx, bossVols.length - 1));
+    audio.baseGain.gain.cancelScheduledValues(now);
+    audio.bossGain.gain.cancelScheduledValues(now);
+    audio.baseGain.gain.linearRampToValueAtTime(baseVols[idx], now + 0.6);
+    audio.bossGain.gain.linearRampToValueAtTime(bossVols[idx], now + 0.6);
+  }
+
 
   audio.loadAudioFile = loadAudioFile;
   audio.getBaseTrackForLevel = getBaseTrackForLevel;
@@ -240,6 +283,9 @@
   audio.baseVolumeForMultiplier = baseVolumeForMultiplier;
   audio.setMusicLayer = setMusicLayer;
   audio.ensureCorrectMusicForLevel = ensureCorrectMusicForLevel;
+  audio.setAdaptiveMusicLayer = setAdaptiveMusicLayer;
+  audio.setBossPhaseAudio = setBossPhaseAudio;
+
   function duckMusicForLastLife() {
     if (!audio.audioCtx || !audio.baseGain) return;
     const now = audio.audioCtx.currentTime;

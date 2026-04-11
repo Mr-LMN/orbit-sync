@@ -484,6 +484,252 @@
     soundGood(multiplier);
   }
 
+
+  // ══════════════════════════════════════════════════════════
+  // PHASE 2 AUDIO UPGRADES
+  // ══════════════════════════════════════════════════════════
+
+  // ── 1. PERFECT HIT — rising-pitch "crack" per consecutive perfect ─────────
+  // Pitch rises from 880 Hz (hit 1) up to ~1760 Hz (hit 8+)
+  // A sharp transient crack + a crystal sine that decays fast
+  function soundPerfectCrack(consecutivePerfects) {
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
+    const t   = audio.audioCtx.currentTime;
+    const n   = Math.min(consecutivePerfects || 1, 10);
+    // Semitone ladder — 0, +2, +4, +7, +9, +12, +14, +16, +19, +21
+    const semitones = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+    const rootHz    = 880;
+    const freq      = rootHz * Math.pow(2, semitones[n - 1] / 12);
+
+    // Sharp transient — very fast click noise (the "crack")
+    playNoiseBurst(0.22, 0.038, t, 'highpass', freq * 1.6, 3.5);
+
+    // Crystal sine body — the satisfying ring-out
+    playSynth(freq,       'sine',     0.30, 0.001, 0.14, t, 0, false);
+    playSynth(freq * 2,   'triangle', 0.15, 0.001, 0.09, t, 0, false);
+
+    // On FILTHY perfect (3+), add a second harmonic shimmer
+    if (n >= 3) {
+      playSynth(freq * 1.5, 'sine', 0.10, 0.002, 0.07, t + 0.01, 0, false);
+    }
+  }
+
+  // ── 2. ZONE TYPE AUDIO ────────────────────────────────────────────────────
+
+  // EMBER — deep, warm thud (like a heavy muted drum)
+  function soundZoneEmber() {
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
+    const t = audio.audioCtx.currentTime;
+    // Sub-bass body
+    const osc = audio.audioCtx.createOscillator();
+    const g   = audio.makeGain(0);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(120, t);
+    osc.frequency.exponentialRampToValueAtTime(48, t + 0.08);
+    osc.connect(g);
+    g.gain.linearRampToValueAtTime(0.28, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
+    osc.start(t); osc.stop(t + 0.15);
+    // Short paper-thud noise click
+    playNoiseBurst(0.08, 0.06, t, 'lowpass', 200, 1.2);
+  }
+
+  // INFERNO — high, sharp metallic ping (like a hammer on a steel rod)
+  function soundZoneInferno() {
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
+    const t = audio.audioCtx.currentTime;
+    playSynth(2200, 'sine',     0.18, 0.001, 0.10, t, 0, false);
+    playSynth(3300, 'triangle', 0.08, 0.001, 0.06, t, 0, false);
+    playNoiseBurst(0.05, 0.025, t, 'highpass', 4000, 2.0);
+  }
+
+  // GHOST — atmospheric whoosh as it phases in (short filtered sweep)
+  // Called when a ghost zone becomes visible (ghostVisible = true)
+  function soundZoneGhostAppear() {
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
+    const t = audio.audioCtx.currentTime;
+    // Rising filtered noise sweep — airy "whoosh"
+    const bufSize = Math.floor(audio.audioCtx.sampleRate * 0.32);
+    const buf     = audio.audioCtx.createBuffer(1, bufSize, audio.audioCtx.sampleRate);
+    const data    = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufSize * 0.5);
+
+    const src = audio.audioCtx.createBufferSource();
+    src.buffer = buf;
+
+    const filt = audio.audioCtx.createBiquadFilter();
+    filt.type = 'bandpass';
+    filt.frequency.setValueAtTime(300,  t);
+    filt.frequency.exponentialRampToValueAtTime(1800, t + 0.28);
+    filt.Q.setValueAtTime(0.6, t);
+
+    const g = audio.makeGain(0);
+    src.connect(filt); filt.connect(g);
+    g.gain.linearRampToValueAtTime(0.12, t + 0.06);
+    g.gain.linearRampToValueAtTime(0.0,  t + 0.30);
+    src.start(t); src.stop(t + 0.34);
+  }
+
+  // ASH — glitchy static burst (danger signal)
+  function soundZoneAsh() {
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
+    const t = audio.audioCtx.currentTime;
+    // Three rapid static pops with descending pitch glitch
+    playNoiseBurst(0.25, 0.035, t,        'bandpass', 800,  0.4);
+    playNoiseBurst(0.18, 0.025, t + 0.04, 'bandpass', 400,  0.6);
+    playNoiseBurst(0.12, 0.020, t + 0.07, 'bandpass', 200,  0.8);
+    // Low glitch tone underneath
+    playSynth(55, 'sawtooth', 0.12, 0.002, 0.08, t, 1200, false);
+  }
+
+  // ── 3. COMBO CHAIN TONES — C E G B D ascending ──────────────────────────
+  // Plays one note of the chord per streak step (streak 1-5+)
+  // Notes: C4=261.63, E4=329.63, G4=392, B4=493.88, D5=587.33
+  const COMBO_TONE_FREQS = [261.63, 329.63, 392.00, 493.88, 587.33];
+
+  function soundComboTone(streakIndex) {
+    if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
+    const t    = audio.audioCtx.currentTime;
+    const step = Math.min(streakIndex, COMBO_TONE_FREQS.length - 1);
+    const freq = COMBO_TONE_FREQS[step];
+    const vol  = 0.14 + step * 0.02; // slightly louder as chain builds
+
+    // Clean plucked bell tone
+    playSynth(freq,     'sine',     vol,       0.001, 0.18, t, 0, false);
+    playSynth(freq * 2, 'triangle', vol * 0.4, 0.001, 0.10, t, 0, false);
+
+    // On the 5th note (D5, full chord complete) — add a satisfying shimmer
+    if (step >= 4) {
+      playSynth(freq * 1.5, 'sine', 0.08, 0.002, 0.12, t + 0.01, 0, true);
+      playNoiseBurst(0.04, 0.05, t, 'highpass', 2400, 1.5);
+    }
+  }
+
+  // ── 4. PHOENIX PHASE MUSIC LAYERS ────────────────────────────────────────
+  // Called by phoenix-boss-v2.js _doPhaseTransition to add sonic intensity per phase.
+  // Phase 0 → ambient drone only (existing startBossDrone)
+  // Phase 1 → speed up LFO + mild filter open
+  // Phase 2 → second osc layer (slightly detuned)
+  // Phase 3 → heavy distortion gain bump + faster LFO
+  // Phase 4 (SUPERNOVA) → special full hit (see below)
+
+  function phoenixPhaseAudio(phaseIdx) {
+    if (!audio.audioCtx) return;
+    const t = audio.audioCtx.currentTime;
+
+    switch (phaseIdx) {
+      case 1: { // BURN — speed up LFO, open filter slightly
+        if (droneFilterLfo) droneFilterLfo.frequency.linearRampToValueAtTime(1.2, t + 1.5);
+        if (droneFilter)    droneFilter.frequency.linearRampToValueAtTime(160, t + 1.5);
+        if (audio.bossDroneGain) audio.bossDroneGain.gain.linearRampToValueAtTime(0.26, t + 1.5);
+        break;
+      }
+      case 2: { // INFERNO — add a detuned third oscillator layer for thickness
+        try {
+          const osc3 = audio.audioCtx.createOscillator();
+          osc3.type = 'sawtooth';
+          osc3.frequency.setValueAtTime(55.8, t); // ~A1, slightly sharp for beating
+          const osc3Gain = audio.makeGain(0);
+          osc3.connect(osc3Gain);
+          if (droneFilter) osc3Gain.connect(droneFilter);
+          else if (audio.bossDroneGain) osc3Gain.connect(audio.bossDroneGain);
+          osc3Gain.gain.linearRampToValueAtTime(0.10, t + 2.0);
+          osc3.start(t);
+          audio._phoenixOsc3 = osc3;
+          audio._phoenixOsc3Gain = osc3Gain;
+        } catch (e) {}
+        if (droneFilterLfo) droneFilterLfo.frequency.linearRampToValueAtTime(2.2, t + 1.0);
+        if (droneFilter) droneFilter.frequency.linearRampToValueAtTime(200, t + 1.0);
+        if (audio.bossDroneGain) audio.bossDroneGain.gain.linearRampToValueAtTime(0.30, t + 1.0);
+        break;
+      }
+      case 3: { // ASH — rhythmic distortion pulser added
+        if (droneFilterLfo) {
+          droneFilterLfo.frequency.linearRampToValueAtTime(4.0, t + 0.8);
+        }
+        if (droneFilter) {
+          droneFilter.frequency.linearRampToValueAtTime(260, t + 0.5);
+          droneFilter.Q.linearRampToValueAtTime(5, t + 0.5);
+        }
+        if (audio.bossDroneGain) audio.bossDroneGain.gain.linearRampToValueAtTime(0.35, t + 0.5);
+        // Rapid metallic pulse accent
+        for (let p = 0; p < 4; p++) {
+          playSynth(80 + p * 15, 'sawtooth', 0.12, 0.01, 0.08, t + p * 0.12, 800, false);
+        }
+        break;
+      }
+      case 4: { // SUPERNOVA — see soundSupernovaHit below
+        break;
+      }
+    }
+  }
+
+  // ── 5. SUPERNOVA — full orchestral/electronic drop ──────────────────────
+  // This is the emotional climax. Three layers:
+  //  A) Sub-bass explosion (deep 30Hz → 20Hz rumble)
+  //  B) Orchestral-style ascending stab (brass-like sawtooth chord)
+  //  C) Digital "world destruction" noise burst + metallic aftershock
+  function soundSupernovaHit() {
+    if (!audio.audioCtx) return;
+    const t = audio.audioCtx.currentTime;
+
+    // A — Deep sub-bass rumble (the floor drops out)
+    const subOsc = audio.audioCtx.createOscillator();
+    const subG   = audio.makeGain(0);
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(55, t);
+    subOsc.frequency.exponentialRampToValueAtTime(22, t + 1.8);
+    subOsc.connect(subG);
+    subG.gain.linearRampToValueAtTime(0.55, t + 0.08);
+    subG.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+    subOsc.start(t); subOsc.stop(t + 1.9);
+
+    // B — Orchestral brass stab chord (C2 power chord with octaves)
+    const stab = [65.41, 98.00, 130.81, 196.00, 261.63]; // C2 E2 C3 G3 C4
+    stab.forEach(function(freq, i) {
+      playSynth(freq, 'sawtooth', 0.28 - i * 0.03, 0.04, 0.55, t + i * 0.025, 2000, true);
+    });
+
+    // Rising sweep synth (the "lift before the drop")
+    const sweepOsc = audio.audioCtx.createOscillator();
+    const sweepG   = audio.makeGain(0);
+    sweepOsc.type = 'sawtooth';
+    sweepOsc.frequency.setValueAtTime(80, t);
+    sweepOsc.frequency.exponentialRampToValueAtTime(800, t + 0.35);
+    sweepOsc.connect(sweepG);
+    sweepG.gain.linearRampToValueAtTime(0.22, t + 0.1);
+    sweepG.gain.exponentialRampToValueAtTime(0.001, t + 0.38);
+    sweepOsc.start(t); sweepOsc.stop(t + 0.42);
+
+    // C — Massive noise burst (digital explosion)
+    playNoiseBurst(0.45, 0.25, t,        'lowpass',  1200, 1.5);
+    playNoiseBurst(0.30, 0.40, t + 0.05, 'bandpass', 600,  2.5);
+    playNoiseBurst(0.20, 0.60, t + 0.12, 'lowpass',  400,  1.0);
+
+    // Metallic aftershock ring (the echo that lingers)
+    setTimeout(function() {
+      if (!audio.audioCtx) return;
+      const t2 = audio.audioCtx.currentTime;
+      playSynth(220, 'triangle', 0.16, 0.01, 0.9, t2, 0, true);
+      playSynth(110, 'sawtooth', 0.12, 0.02, 1.2, t2, 500, true);
+      playNoiseBurst(0.12, 0.8, t2, 'highpass', 1800, 1.2);
+    }, 380);
+
+    // Kill phoenix drone — SUPERNOVA owns the audio space
+    if (audio.bossDroneGain && audio.audioCtx) {
+      audio.bossDroneGain.gain.cancelScheduledValues(audio.audioCtx.currentTime);
+      audio.bossDroneGain.gain.linearRampToValueAtTime(0.001, audio.audioCtx.currentTime + 0.3);
+    }
+  }
+
+  // Cleanup phoenix extra oscillators when boss ends
+  function cleanupPhoenixAudio() {
+    try {
+      if (audio._phoenixOsc3) { audio._phoenixOsc3.stop(); audio._phoenixOsc3.disconnect(); audio._phoenixOsc3 = null; }
+      if (audio._phoenixOsc3Gain) { audio._phoenixOsc3Gain.disconnect(); audio._phoenixOsc3Gain = null; }
+    } catch (e) {}
+  }
+
   Object.assign(audio, {
     playTone,
     playNoiseBurst,
@@ -510,7 +756,17 @@
     soundLifeZone,
     soundLifeGained,
     soundUIClick,
-    playPop
+    playPop,
+    // Phase 2 new
+    soundPerfectCrack,
+    soundZoneEmber,
+    soundZoneInferno,
+    soundZoneGhostAppear,
+    soundZoneAsh,
+    soundComboTone,
+    phoenixPhaseAudio,
+    soundSupernovaHit,
+    cleanupPhoenixAudio
   });
 
   Object.assign(window, {
@@ -539,6 +795,16 @@
     soundLifeZone,
     soundLifeGained,
     soundUIClick,
-    playPop
+    playPop,
+    // Phase 2 new
+    soundPerfectCrack,
+    soundZoneEmber,
+    soundZoneInferno,
+    soundZoneGhostAppear,
+    soundZoneAsh,
+    soundComboTone,
+    phoenixPhaseAudio,
+    soundSupernovaHit,
+    cleanupPhoenixAudio
   });
 })(window);
