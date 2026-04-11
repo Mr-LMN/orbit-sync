@@ -544,93 +544,30 @@
     if (countdown) countdown.innerText = 'SEASON 1 ACTIVE';
   }
 
-  function _launchBossChallenge(levelOverride) {
-    initAudio();
-    toggleSettings(false);
-    ui.mainMenu.style.display = 'none';
-    document.body.classList.add('state-gameplay');
-    document.body.classList.remove('state-hub');
-
-    ui.topBar.style.display = 'flex';
-    ui.gameUI.style.display = 'block';
-    ui.bigMultiplier.style.display = 'block';
-    ui.text.style.display = 'none';
-    inMenu = false;
-    isPlaying = true;
-
-    levelData = levelOverride;
-    // Apply visual theme so ring uses phoenix colours/shape, not last campaign level
-    currentWorldPalette = computeWorldPalette(levelData);
-    currentWorldShape = computeWorldShape(levelData);
-    currentWorldVisualTheme = getWorldVisualTheme(levelData);
-
-    currentLevelIdx = -1;
-    resetRunState();
-    ui.score.innerText = '0';
-    updateStreakUI();
-    markScoreCoinDirty(true);
-    // Phoenix has its own timer/phase UI — hide campaign arena info
-    if (ui.arenaInfo) ui.arenaInfo.style.display = 'none';
-
-    setOverlayState('cinematic');
-    stageHits = 0;
-    bossPhase = 1;
-    isBossPhaseTwo = false;
-
-    if (OrbitGame.entities && OrbitGame.entities.boss) {
-      OrbitGame.entities.boss.triggerBossIntro();
-    }
-    OrbitGame.core.loop.startMainLoop();
-  }
-
   function startPhoenixRun() {
-    // Stop any previous phoenix run
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
-      OrbitGame.systems.phoenixBoss.stop();
+    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startPhoenixRun !== 'function') {
+      console.warn('[menus] eventRunner.startPhoenixRun is unavailable');
+      return;
     }
-    _launchBossChallenge({
-      id: 'phoenix',
-      title: 'Phoenix Trial',
-      hitsNeeded: 999999, // Phoenix manages its own termination
-      speed: 0.040,       // Orb base speed (phoenix zones manage their own moveSpeed)
-      lives: 2,           // Displayed lives; actual phoenix rebirths managed by phoenix-boss.js
-      boss: 'phoenix',
-      moveSpeed: 0,       // Phoenix zones set their own per-zone speed in spawnWave()
-      reverse: false,     // Phoenix manages direction per-zone
-      shrink: null,
-      blackout: null,
-      text: ''
-    });
-    // Start the phoenix boss system (runs the timer, phases, scoring)
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
-      OrbitGame.systems.phoenixBoss.start();
-    }
+    return OrbitGame.systems.eventRunner.startPhoenixRun();
   }
 
   function startPhoenixRunV2() {
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
-      OrbitGame.systems.phoenixBossV2.stop();
+    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startPhoenixRunV2 !== 'function') {
+      console.warn('[menus] eventRunner.startPhoenixRunV2 is unavailable');
+      return;
     }
-    _launchBossChallenge({
-      id: 'phoenix',
-      title: 'Phoenix V2 Trial',
-      hitsNeeded: 999999,
-      speed: 0.009,
-      lives: 2,
-      boss: 'phoenix',
-      moveSpeed: 0,
-      reverse: false,
-      shrink: null,
-      blackout: null,
-      text: ''
-    });
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
-      OrbitGame.systems.phoenixBossV2.start();
-    }
+    return OrbitGame.systems.eventRunner.startPhoenixRunV2();
   }
 
   // Legacy alias kept for safety
-  function startAbyssRun() { startPhoenixRun(); }
+  function startAbyssRun() {
+    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startAbyssRun !== 'function') {
+      console.warn('[menus] eventRunner.startAbyssRun is unavailable');
+      return;
+    }
+    return OrbitGame.systems.eventRunner.startAbyssRun();
+  }
 
 
 
