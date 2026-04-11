@@ -3651,7 +3651,8 @@ function update() {
       }
       if (_blackoutActive && frameNow >= _blackoutEndsAt) {
         _blackoutActive = false;
-        _nextBlackoutAt = _blackoutEndsAt - _bcfg.duration + _bcfg.interval;
+        // FIXED: next blackout = now + interval (not endsAt - duration + interval which was wrong)
+        _nextBlackoutAt = frameNow + _bcfg.interval;
         if (audioCtx && typeof playTone === 'function') playTone(880, 'sine', 0.05, 0.01, 0.15);
 
         // Massive light flood when blackout ends
@@ -3666,6 +3667,7 @@ function update() {
         triggerScreenShake(2);
       }
       _blackoutFlickerPhase = !_blackoutActive
+        && (frameNow < _nextBlackoutAt)
         && (_nextBlackoutAt - frameNow) < 180
         && (_nextBlackoutAt - frameNow) > 0;
     } else {

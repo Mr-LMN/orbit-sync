@@ -757,6 +757,7 @@
     soundLifeGained,
     soundUIClick,
     playPop,
+    playSynth,
     // Phase 2 new
     soundPerfectCrack,
     soundZoneEmber,
@@ -796,6 +797,7 @@
     soundLifeGained,
     soundUIClick,
     playPop,
+    playSynth,
     // Phase 2 new
     soundPerfectCrack,
     soundZoneEmber,

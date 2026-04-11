@@ -535,6 +535,7 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 /* Hub: full-height flex column, scroll only if content overflows */
 #homeView {
   overflow-y: auto;
+  position: relative; /* contains the absolutely-positioned #hubBg starfield */
 }
 
 /* Center stack fills remaining height and centers its content */
