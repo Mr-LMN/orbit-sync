@@ -99,6 +99,7 @@
   let interactionGuard = null;
   let activeTarget = null;
   let started = false;
+  let tutorialPausedGameplay = false;
 
   const els = {
     mask: null,
@@ -120,6 +121,21 @@
     els.body = document.getElementById('tutorialCardBody');
     els.btn = document.getElementById('tutorialCardBtn');
     els.hint = document.getElementById('tutorialTapHint');
+  }
+
+  function pauseGameplayForTutorial() {
+    if (typeof isPlaying !== 'undefined' && isPlaying) {
+      tutorialPausedGameplay = true;
+      if (typeof targetTimeScale !== 'undefined') targetTimeScale = 0;
+      if (typeof timeScale !== 'undefined') timeScale = 0;
+    }
+  }
+
+  function resumeGameplayFromTutorial() {
+    if (!tutorialPausedGameplay) return;
+    if (typeof targetTimeScale !== 'undefined') targetTimeScale = 1;
+    if (typeof timeScale !== 'undefined') timeScale = 1;
+    tutorialPausedGameplay = false;
   }
 
   function getStorage() {
@@ -184,6 +200,10 @@
     hydrateEls();
     if (!els.mask || !els.card) return;
 
+    // Freeze-frame cards should block and pause gameplay; guided highlight blocks input
+    // but does not necessarily pause simulation unless a card explicitly requests it.
+    if (config.pauseGameplay) pauseGameplayForTutorial();
+
     els.mask.classList.add('is-visible');
     els.mask.classList.remove('is-guided');
     els.ring.style.display = 'none';
@@ -199,6 +219,7 @@
     cardResolver = onDone || null;
 
     const close = function() {
+      resumeGameplayFromTutorial();
       if (cardResolver) {
         const fn = cardResolver;
         cardResolver = null;
@@ -206,6 +227,12 @@
       }
     };
 
+    els.mask.onclick = function(event) {
+      if (event.target === els.mask) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
     els.btn.onclick = close;
     els.card.onclick = config.tapAnywhere ? close : null;
   }
@@ -213,6 +240,7 @@
   function hideCard() {
     hydrateEls();
     if (!els.mask) return;
+    resumeGameplayFromTutorial();
     els.mask.classList.remove('is-visible');
     els.mask.classList.remove('is-guided');
     if (els.ring) els.ring.style.display = 'none';
@@ -220,6 +248,7 @@
       els.card.onclick = null;
       els.btn.onclick = null;
     }
+    els.mask.onclick = null;
     cardResolver = null;
   }
 
@@ -229,7 +258,8 @@
       body: description,
       buttonText: buttonText || 'CONTINUE',
       label: label || 'SYSTEM NOTICE',
-      tapAnywhere: true
+      tapAnywhere: true,
+      pauseGameplay: true
     }, function() {
       hideCard();
       if (typeof onComplete === 'function') onComplete();
@@ -280,6 +310,7 @@
   }
 
   function suspendTutorialUI() {
+    resumeGameplayFromTutorial();
     cardResolver = null;
     clearGuidedHighlight();
     hideCard();

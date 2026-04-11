@@ -2289,9 +2289,11 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
 #tutorialCard {
   position: fixed;
   left: 50%;
-  bottom: max(16px, env(safe-area-inset-bottom));
+  bottom: max(34px, calc(env(safe-area-inset-bottom) + 18px));
   transform: translateX(-50%);
-  width: min(92vw, 460px);
+  width: min(90vw, 460px);
+  max-height: min(52vh, 420px);
+  overflow: hidden;
   background: linear-gradient(160deg, rgba(18,27,44,0.92), rgba(8,14,26,0.95));
   border: 1px solid rgba(0,229,255,0.3);
   border-radius: 16px;
@@ -2328,6 +2330,9 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
   font-size: 0.83rem;
   line-height: 1.5;
   color: rgba(226, 240, 255, 0.92);
+  max-height: 22vh;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 #tutorialTapHint {
   margin-top: 10px;
@@ -2342,6 +2347,14 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
   border-color: rgba(0,229,255,0.5);
   color: #00e5ff;
   background: rgba(0,229,255,0.1);
+}
+@media (max-height: 740px) {
+  #tutorialCard {
+    bottom: max(38px, calc(env(safe-area-inset-bottom) + 20px));
+    padding: 14px 14px 12px;
+  }
+  #tutorialCardTitle { font-size: 0.92rem; }
+  #tutorialCardBody { font-size: 0.78rem; }
 }
 .tutorial-focus-target {
   position: relative !important;
