@@ -1553,6 +1553,9 @@ function loadLevel(idx) {
   if (OrbitGame.systems && OrbitGame.systems.tutorial) {
      OrbitGame.systems.tutorial.handleLevelStart(levelData.id);
   }
+  if (OrbitGame.systems && OrbitGame.systems.progression && typeof OrbitGame.systems.progression.markStageStartRunStats === 'function') {
+    OrbitGame.systems.progression.markStageStartRunStats();
+  }
   ensureCorrectMusicForLevel();
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);

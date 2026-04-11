@@ -65,6 +65,16 @@
       label: 'SYSTEM NOTICE',
       title: 'LOOP UNDERSTOOD',
       body: 'You understand the loop now. Master the worlds. Hunt the bosses. Evolve the core.'
+    },
+    starRating: {
+      label: 'WORLD FILE',
+      title: 'STAR RATING',
+      body: 'Clear the stage to earn 1 star.\nHold strong accuracy to earn 2.\nMaster the pattern to earn 3.\n\nStars are your proof of control. You will need them to unlock tougher paths.'
+    },
+    recoveryWindow: {
+      label: 'SYSTEM NOTICE',
+      title: 'RECOVERY WINDOW',
+      body: 'Chain 6 PERFECT hits in a row and you restore 1 LIFE. Precision is not just score. It keeps you alive.'
     }
   };
 
@@ -77,6 +87,10 @@
       hardModeCleared: false,
       economyRoute: null,
       ownershipDone: false
+    },
+    tutorialCards: {
+      starRatingShown: false,
+      recoveryWindowShown: false
     }
   };
 
@@ -117,7 +131,19 @@
     const raw = storage.getItem(STORAGE_KEY);
     if (raw) {
       try {
-        return Object.assign({}, DEFAULT_STATE, JSON.parse(raw));
+        const parsed = JSON.parse(raw);
+        return {
+          ...DEFAULT_STATE,
+          ...parsed,
+          pending: {
+            ...DEFAULT_STATE.pending,
+            ...(parsed && parsed.pending ? parsed.pending : {})
+          },
+          tutorialCards: {
+            ...DEFAULT_STATE.tutorialCards,
+            ...(parsed && parsed.tutorialCards ? parsed.tutorialCards : {})
+          }
+        };
       } catch (e) {
         // fallback below
       }
@@ -562,10 +588,44 @@
   }
 
   function onCampaignMilestone() {
+    if (!state.tutorialCards.starRatingShown) {
+      state.tutorialCards.starRatingShown = true;
+      persistState();
+      setTimeout(function() {
+        showFreezeFrame(
+          COPY.starRating.title,
+          COPY.starRating.body,
+          'UNDERSTOOD',
+          function() {},
+          COPY.starRating.label
+        );
+      }, 180);
+    }
+
     if (state.phase === PHASES.HARD_MODE_INTRO) {
       state.pending.firstCampaignMilestone = true;
       persistState();
     }
+  }
+
+  function handleLevelStart(stageId) {
+    const isHardMode = !!(OG.state && OG.state.legacy && OG.state.legacy.hardMode);
+    if (isHardMode) return;
+    if (stageId !== '1-4') return;
+    if (state.tutorialCards.recoveryWindowShown) return;
+
+    state.tutorialCards.recoveryWindowShown = true;
+    persistState();
+
+    setTimeout(function() {
+      showFreezeFrame(
+        COPY.recoveryWindow.title,
+        COPY.recoveryWindow.body,
+        'LOCKED IN',
+        function() {},
+        COPY.recoveryWindow.label
+      );
+    }, 350);
   }
 
   function onHardModeUnlocked() {
@@ -647,7 +707,7 @@
     isNewPlayerProfile,
 
     // Legacy bridge methods
-    handleLevelStart: function() {},
+    handleLevelStart,
     handleHardModeClear: onHardModeCleared,
     checkMenuRouting: startMasterTutorialIfNeeded,
     completePhase: function() {}
