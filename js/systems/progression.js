@@ -145,7 +145,13 @@
       }
 
       if (typeof hardModeActive !== 'undefined' && hardModeActive && levelData.id === '1-1') {
-         if (OG.systems && OG.systems.tutorial) OG.systems.tutorial.handleHardModeClear();
+         if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onHardModeCleared === 'function') {
+           OG.systems.tutorial.onHardModeCleared();
+         }
+      } else if ((!hardModeActive || typeof hardModeActive === 'undefined') && levelData && levelData.id === '1-1') {
+         if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onCampaignMilestone === 'function') {
+           OG.systems.tutorial.onCampaignMilestone();
+         }
       }
 
       saveData();

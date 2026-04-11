@@ -4,6 +4,7 @@
   OG.ui.menus = OG.ui.menus || {};
 
   let _pendingRunType = null;
+  let tutorialHardModeSeen = false;
 
   function toggleShop(show) {
     return OG.ui.shop.toggleShop(show);
@@ -14,6 +15,9 @@
   }
 
   function _launchCampaign() {
+    if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.suspendTutorialUI === 'function') {
+      OG.systems.tutorial.suspendTutorialUI();
+    }
     let startLevelIdx = getStartingIndexForWorld(menuSelectedWorld);
 
     initAudio();
@@ -201,6 +205,10 @@
         : 0;
       const _hardUnlocked = isUnlocked && _wStarsTotal >= 10;
       _hardBtn.style.display = _hardUnlocked ? 'inline-block' : 'none';
+      if (_hardUnlocked && !tutorialHardModeSeen && OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onHardModeUnlocked === 'function') {
+        tutorialHardModeSeen = true;
+        OG.systems.tutorial.onHardModeUnlocked();
+      }
     }
 
     // Dim arrows at boundaries
@@ -257,6 +265,10 @@
         if (typeof updateWorkshopUI === 'function') updateWorkshopUI();
     } else if (tabId === 'shop') {
         if (typeof updateShopUI === 'function') updateShopUI();
+    }
+
+    if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.onMenuTabOpened === 'function') {
+      OG.systems.tutorial.onMenuTabOpened(tabId);
     }
   }
 

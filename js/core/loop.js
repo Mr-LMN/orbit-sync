@@ -5402,9 +5402,9 @@ function returnToMenu() {
   ) {
     OrbitGame.ui.menus.refreshMenuWorldPreview();
   }
-  if (OrbitGame.systems && OrbitGame.systems.tutorial) {
+  if (OrbitGame.systems && OrbitGame.systems.tutorial && typeof OrbitGame.systems.tutorial.startMasterTutorialIfNeeded === 'function') {
       setTimeout(() => {
-          OrbitGame.systems.tutorial.checkMenuRouting();
+          OrbitGame.systems.tutorial.startMasterTutorialIfNeeded();
       }, 300); // small delay to let UI settle
   }
 

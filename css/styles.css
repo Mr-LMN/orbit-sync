@@ -2258,7 +2258,95 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
   0% { opacity:0; transform:translateY(6px); }
   100% { opacity:1; transform:translateY(0); }
 }
-#tutorialOverlay { animation: tutorialFade 0.4s ease forwards; }
+
+#tutorialMask {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 8, 16, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 10040;
+  display: none;
+  pointer-events: auto;
+}
+#tutorialMask.is-visible { display: block; animation: tutorialFade 0.28s ease; }
+#tutorialMask.is-guided #tutorialCard { pointer-events: none; opacity: 0; transform: translate(-50%, 26px); }
+
+#tutorialHighlightRing {
+  position: fixed;
+  border-radius: 14px;
+  border: 2px solid rgba(0, 229, 255, 0.92);
+  box-shadow: 0 0 0 1px rgba(0,229,255,0.35), 0 0 22px rgba(0,229,255,0.5), inset 0 0 18px rgba(0,229,255,0.18);
+  display: none;
+  z-index: 10045;
+  pointer-events: none;
+  animation: tutorialRingPulse 1.3s ease-in-out infinite;
+}
+@keyframes tutorialRingPulse {
+  0%,100% { transform: scale(1); opacity: 0.95; }
+  50% { transform: scale(1.03); opacity: 1; }
+}
+
+#tutorialCard {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: min(92vw, 460px);
+  background: linear-gradient(160deg, rgba(18,27,44,0.92), rgba(8,14,26,0.95));
+  border: 1px solid rgba(0,229,255,0.3);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55), 0 0 28px rgba(0,140,255,0.18), inset 0 0 20px rgba(255,255,255,0.04);
+  padding: 16px 16px 14px;
+  z-index: 10050;
+  color: #e9f6ff;
+  transition: opacity 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
+}
+#tutorialCard::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 16px;
+  border: 1px solid rgba(90, 230, 255, 0.26);
+  filter: blur(1px);
+  pointer-events: none;
+}
+#tutorialCardLabel {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.56rem;
+  letter-spacing: 2px;
+  color: rgba(0,229,255,0.86);
+}
+#tutorialCardTitle {
+  margin: 7px 0 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.02rem;
+  letter-spacing: 1.3px;
+  color: #fff;
+}
+#tutorialCardBody {
+  margin: 0;
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: rgba(226, 240, 255, 0.92);
+}
+#tutorialTapHint {
+  margin-top: 10px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 2.5px;
+  color: rgba(0,229,255,0.85);
+}
+#tutorialCardBtn {
+  margin-top: 12px;
+  width: 100%;
+  border-color: rgba(0,229,255,0.5);
+  color: #00e5ff;
+  background: rgba(0,229,255,0.1);
+}
+.tutorial-focus-target {
+  position: relative !important;
+  z-index: 10060 !important;
+}
 
 .shop-locked { opacity: 0.45; pointer-events: none; }
 .item-preview-locked::after {
