@@ -423,8 +423,20 @@
   function endRun(reason) {
     if (!_active) return;
     _active = false;
-    _hideUI();
+    _waveSpawned = false;
+    _wrathActive = false;
     _hideCore();
+
+    const gameUI = _el('phoenixGameUI');
+    if (gameUI) gameUI.style.display = 'none';
+    const timer = _el('phoenixTimer');
+    if (timer) timer.style.display = 'none';
+    const phase = _el('phoenixPhaseName');
+    if (phase) phase.style.display = 'none';
+    const mult = _el('phoenixMult');
+    if (mult) mult.style.display = 'none';
+    const livesEl = _el('phoenixLives');
+    if (livesEl) livesEl.style.display = 'none';
 
     let finalScore = score;
     // V2 BONUS SCORING
@@ -515,8 +527,21 @@
     if (_active) return;
     
     // Reset environment
-    if (typeof levelData !== 'undefined') {
-      levelData = { id: 'phoenix-trial', boss: 'phoenix', speed: 1.0 }; // Mock level
+    // Preserve the launch config provided by menus.js so the main loop keeps the intended event speed.
+    if (typeof levelData === 'undefined' || !levelData || levelData.boss !== 'phoenix') {
+      levelData = {
+        id: 'phoenix-trial',
+        title: 'Phoenix V2 Trial',
+        hitsNeeded: 999999,
+        speed: 0.009,
+        lives: 2,
+        boss: 'phoenix',
+        moveSpeed: 0,
+        reverse: false,
+        shrink: null,
+        blackout: null,
+        text: ''
+      };
     }
 
     _active = true;

@@ -96,7 +96,8 @@
       2: { name: 'WORLD 2', sub: 'PRISM BREAK', color: '#2ff6ff' },
       3: { name: 'WORLD 3', sub: isUnlocked ? 'RESONANCE' : '???', color: '#ffaa00' },
       4: { name: isUnlocked ? 'WORLD 4' : '? ? ? ?', sub: isUnlocked ? 'GLITCH PROTOCOL' : 'COMPLETE WORLD 3 TO UNLOCK', color: isUnlocked ? '#b157ff' : 'rgba(255,255,255,0.2)' },
-      5: { name: isUnlocked ? 'WORLD 5' : '? ? ? ?', sub: isUnlocked ? 'THE VOID' : 'CLEAR WORLD 4', color: isUnlocked ? '#a8d8ff' : 'rgba(255,255,255,0.15)' }
+      5: { name: isUnlocked ? 'WORLD 5' : '? ? ? ?', sub: isUnlocked ? 'THE VOID' : 'CLEAR WORLD 4', color: isUnlocked ? '#a8d8ff' : 'rgba(255,255,255,0.15)' },
+      6: { name: isUnlocked ? 'WORLD 6' : '? ? ? ?', sub: isUnlocked ? 'SOLAR CORE' : 'CLEAR WORLD 5', color: isUnlocked ? '#ff3300' : 'rgba(255,255,255,0.15)' }
     };
     const wd = worldData[menuSelectedWorld] || worldData[1];
 
@@ -663,10 +664,6 @@
   }
 
   function drawWorldPreviewCanvas(isLocked) {
-    const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
-      || (OG.data && Array.isArray(OG.data.campaign) ? OG.data.campaign : null)
-      || [];
-    if (!campaignData.length) return;
     if (typeof currentWorldShape === 'undefined' || typeof currentWorldPalette === 'undefined') return;
     const canvas = document.getElementById('worldPreviewCanvas');
     if (!canvas) return;
