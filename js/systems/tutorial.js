@@ -251,6 +251,17 @@
     if (els.mask) els.mask.classList.remove('is-guided');
   }
 
+  function suspendTutorialUI() {
+    clearGuidedHighlight();
+    hideCard();
+    hydrateEls();
+    if (els.mask) {
+      els.mask.classList.remove('is-visible');
+      els.mask.classList.remove('is-guided');
+      els.mask.style.display = '';
+    }
+  }
+
   function safeGuidedFallback(copy, advanceFn) {
     clearGuidedHighlight();
     showFreezeFrame(copy.title, copy.body, 'CONTINUE', advanceFn, copy.label);
@@ -330,6 +341,46 @@
     return unlocked.some(function(id) { return id && id !== 'classic'; });
   }
 
+  function isNewPlayerProfile() {
+    const worldUnlocked = Math.max(1, Number(window.maxWorldUnlocked) || 1);
+    const hasExtraCore = ownMoreThanDefault();
+    const hasCompleted = state.completed || state.phase === PHASES.COMPLETE;
+    return worldUnlocked <= 1 && !hasExtraCore && !hasCompleted;
+  }
+
+  function isVisibleElement(el) {
+    if (!el || !el.offsetParent) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function findFirstShopPurchaseTarget() {
+    const cards = Array.from(document.querySelectorAll('.shop-buy-card'));
+    for (let i = 0; i < cards.length; i++) {
+      const btn = cards[i].querySelector('.shop-coin-buy-btn');
+      if (!btn || !isVisibleElement(btn) || btn.disabled) continue;
+      if (btn.classList.contains('already-owned')) continue;
+      return btn;
+    }
+
+    const anyBtn = Array.from(document.querySelectorAll('.shop-coin-buy-btn'))
+      .find(function(btn) { return isVisibleElement(btn) && !btn.disabled; });
+    return anyBtn || null;
+  }
+
+  function findFirstWorkshopEquipTarget() {
+    const preferred = Array.from(document.querySelectorAll('.workshop-equip-btn[id^=\"wbtn-\"]')).find(function(btn) {
+      if (!isVisibleElement(btn) || btn.disabled) return false;
+      if (btn.id === 'wbtn-classic') return false;
+      return btn.textContent && btn.textContent.trim().toUpperCase() === 'EQUIP';
+    });
+    if (preferred) return preferred;
+
+    return Array.from(document.querySelectorAll('.workshop-equip-btn[id^=\"wbtn-\"]')).find(function(btn) {
+      return isVisibleElement(btn) && btn.id !== 'wbtn-classic';
+    }) || null;
+  }
+
   function routeEconomyPhase() {
     if (state.phase !== PHASES.ECONOMY_ROUTE) return;
     const route = ownMoreThanDefault() ? 'workshop' : 'shop';
@@ -356,7 +407,11 @@
   function startMasterTutorialIfNeeded() {
     if (started) return;
     started = true;
+    const midProgress = !state.completed && state.phase !== PHASES.WELCOME && state.phase !== PHASES.COMPLETE;
     if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') {
+      return;
+    }
+    if (!midProgress && !isNewPlayerProfile()) {
       return;
     }
     setTimeout(advanceMasterTutorial, 180);
@@ -474,15 +529,26 @@
 
     if (state.phase === PHASES.OWNERSHIP_ACTION && tabId === state.pending.economyRoute) {
       const isShop = tabId === 'shop';
-      const target = isShop ? '.shop-coin-buy-btn:not(.already-owned)' : '.workshop-equip-btn.owned-state';
+      const target = isShop ? findFirstShopPurchaseTarget() : findFirstWorkshopEquipTarget();
       showFreezeFrame(
         isShop ? 'ACQUIRE YOUR FIRST CORE' : 'EQUIP YOUR NEXT CORE',
         isShop ? 'Purchase one core to unlock the ownership layer.' : 'Equip a non-default owned core to confirm your first loadout action.',
         'READY',
         function() {
+          if (!target) {
+            showFreezeFrame(
+              isShop ? 'OPEN SHOP' : 'OPEN WORKSHOP',
+              isShop ? 'Could not lock a specific purchase button. Buy any available core to continue.' : 'Could not lock a specific equip button. Equip any non-default core to continue.',
+              'CONTINUE',
+              function() { suspendTutorialUI(); },
+              'SYSTEM NOTICE'
+            );
+            return;
+          }
           showGuidedHighlight({
             target: target,
-            fallbackCopy: COPY.economy
+            fallbackCopy: COPY.economy,
+            onFallback: suspendTutorialUI
           });
         },
         'COMMAND'
@@ -569,6 +635,10 @@
     onCoreEquipped,
     onUpgradePerformed,
     resetMasterTutorial,
+    suspendTutorialUI,
+    findFirstShopPurchaseTarget,
+    findFirstWorkshopEquipTarget,
+    isNewPlayerProfile,
 
     // Legacy bridge methods
     handleLevelStart: function() {},
