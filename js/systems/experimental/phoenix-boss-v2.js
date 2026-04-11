@@ -12,7 +12,8 @@
 
   // Phase thresholds (total elapsed seconds since run start)
   const PHASES = [
-    { name: 'EMBER',   threshold: 0,   speed: 0.0055, zoneBase: Math.PI / 5.8, types: ['ember', 'ember'], reverseChance: 0 },
+    // EMBER is intentionally the readable onboarding phase before the shell goes fully hostile.
+    { name: 'EMBER',   threshold: 0,   speed: 0.0049, zoneBase: Math.PI / 5.8, types: ['ember', 'ember'], reverseChance: 0 },
     { name: 'BURN',    threshold: 25,  speed: 0.0085, zoneBase: Math.PI / 7.0, types: ['ember', 'ember', 'ghost'], reverseChance: 0.30 },
     { name: 'INFERNO', threshold: 50,  speed: 0.012, zoneBase: Math.PI / 8.8, types: ['ember', 'ember', 'ghost', 'inferno'], reverseChance: 0.50, blackout: { duration: 1300, interval: 7000, firstAt: 2500 } },
     { name: 'ASH',     threshold: 80,  speed: 0.016, zoneBase: Math.PI / 11.5, types: ['ember', 'ember', 'ghost', 'inferno', 'ash'], reverseChance: 0.60, blackout: { duration: 1600, interval: 4500, firstAt: 1000 } },
@@ -22,6 +23,17 @@
   const ZONE_COLORS = { ember: '#ff7a1a', ghost: '#ffb85a', inferno: '#ffe570', ash: '#7a2020' };
   const ZONE_TIME_ADD = { ember: 3, ghost: 5, inferno: 8, ash: -4 };
   const ZONE_PERFECT_BONUS = 2; // Extra seconds on perfect (buffed in V2 to reward precision/speed)
+  const EMBER_FIRST_WAVE_SOFT_MULT = 0.82;
+  const EMBER_FIRST_WAVE_GRACE_MS = 900;
+  const PHASE_MUSIC_INTENSITY = [1, 1, 2, 2, 3];
+  const PHASE_FLAVOR = ['READ THE SHELL', 'TEMPERATURE RISING', 'ARMOR ADAPTS', 'CORRUPTED PATTERN', 'CRITICAL MELTDOWN'];
+  const PHASE_THEME = [
+    { popup: '#ff9f5d', pulse: '#ff9f5d', ambientShadow: 'inset 0 0 70px rgba(255, 140, 70, 0.18), inset 0 0 120px rgba(30, 10, 0, 0.20), 0 0 18px rgba(255, 124, 58, 0.12)', ambientFilter: 'saturate(1.02) brightness(1.00)' },
+    { popup: '#ff6a2c', pulse: '#ff6a2c', ambientShadow: 'inset 0 0 95px rgba(255, 88, 30, 0.28), inset 0 0 170px rgba(35, 8, 0, 0.30), 0 0 24px rgba(255, 72, 30, 0.18)', ambientFilter: 'saturate(1.08) brightness(1.02)' },
+    { popup: '#ff8c2e', pulse: '#ff8c2e', ambientShadow: 'inset 0 0 120px rgba(255, 118, 35, 0.34), inset 0 0 210px rgba(45, 10, 0, 0.40), 0 0 28px rgba(255, 120, 36, 0.20)', ambientFilter: 'saturate(1.14) contrast(1.04) brightness(1.03)' },
+    { popup: '#ff3d42', pulse: '#ff3d42', ambientShadow: 'inset 0 0 140px rgba(255, 55, 45, 0.42), inset 0 0 245px rgba(38, 0, 8, 0.56), 0 0 32px rgba(255, 50, 58, 0.22)', ambientFilter: 'saturate(1.24) contrast(1.08) brightness(1.05)' },
+    { popup: '#ff5b9a', pulse: '#ff5b9a', ambientShadow: 'inset 0 0 170px rgba(255, 62, 120, 0.50), inset 0 0 290px rgba(30, 0, 16, 0.70), 0 0 36px rgba(255, 90, 165, 0.30)', ambientFilter: 'saturate(1.34) contrast(1.12) brightness(1.08)' }
+  ];
 
   // ─── STATE V2 ────────────────────────────────────────────────────────────
   let _active        = false;
@@ -112,6 +124,13 @@
     pulseBrightness(1.5, 300);
   }
 
+  function _applyPhaseAmbientVisuals() {
+    if (typeof canvas === 'undefined' || !canvas || !canvas.style || _wrathActive) return;
+    const theme = PHASE_THEME[_phaseIdx] || PHASE_THEME[0];
+    canvas.style.boxShadow = theme.ambientShadow;
+    canvas.style.filter = theme.ambientFilter;
+  }
+
   function _updateUI() {
     const timerEl = _el('phoenixTimer');
     if (timerEl) {
@@ -121,7 +140,13 @@
       timerEl.classList.remove('phoenix-timer-critical');
     }
     const phaseEl = _el('phoenixPhaseName');
-    if (phaseEl) phaseEl.textContent = _phase().name + " (V2 BETA)";
+    if (phaseEl) {
+      phaseEl.textContent = _phase().name + " (V2 BETA)";
+      const theme = PHASE_THEME[_phaseIdx] || PHASE_THEME[0];
+      phaseEl.style.color = theme.popup;
+      phaseEl.style.textShadow = `0 0 14px ${theme.pulse}`;
+      phaseEl.style.letterSpacing = _phaseIdx >= 3 ? '2.5px' : '2px';
+    }
 
     const multEl = _el('phoenixMult');
     if (multEl) {
@@ -146,6 +171,8 @@
     _waveCount++;
     const ph = _phase();
     const spd = ph.speed + Math.min(0.004, _elapsed * 0.00004);
+    const isFirstEmberWave = (_phaseIdx === 0 && _waveCount === 1);
+    const waveDriftMult = isFirstEmberWave ? EMBER_FIRST_WAVE_SOFT_MULT : 1;
 
     // V2 Mechanics
     const isMeteor = _waveCount > 3 && _waveCount % 7 === 0;
@@ -193,7 +220,7 @@
           const a = normalizeAngle(offset + idx * spread);
           const isRev = (Math.random() < ph.reverseChance);
           const size = type === 'inferno' ? baseSize * 0.52 : type === 'ghost' ? baseSize * 0.82 : baseSize;
-          const spd2 = isRev ? -spd : spd;
+          const spd2 = (isRev ? -spd : spd) * waveDriftMult;
           const t = buildTarget(a, size, {
              color: ZONE_COLORS[type], active: true, hp: 1, isBossShield: false, moveSpeed: spd2
           });
@@ -208,6 +235,17 @@
 
     if (levelData) levelData.blackout = ph.blackout ? { ...ph.blackout } : null;
     _waveSpawned = true;
+    if (isFirstEmberWave) {
+      // Grace beat: first EMBER shell wave enters soft, then wakes to normal drift.
+      setTimeout(() => {
+        if (!_active || _phaseIdx !== 0) return;
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i];
+          if (!t || !t.active || !t.phoenixTarget || t.phoenixType !== 'ember' || !t.moveSpeed) continue;
+          t.moveSpeed /= EMBER_FIRST_WAVE_SOFT_MULT;
+        }
+      }, EMBER_FIRST_WAVE_GRACE_MS);
+    }
   }
 
   function _updateGhosts(frameNow) {
@@ -226,27 +264,27 @@
 
   function _doPhaseTransition(newIdx) {
     const ph = PHASES[newIdx];
-    const cols = ['#ff7a1a', '#ff5226', '#ff8b1f', '#ff2d1f', '#ff5430'];
-    const col  = cols[newIdx] || '#ff7a1a';
-    const musicIntensity = (newIdx >= 3) ? 3 : (newIdx >= 2 ? 2 : 1);
+    const theme = PHASE_THEME[newIdx] || PHASE_THEME[0];
+    const col = theme.popup;
+    const musicIntensity = PHASE_MUSIC_INTENSITY[newIdx] || 1;
+    const transitionBurst = 2.6 + (newIdx * 0.20);
 
-    pulseBrightness(3.0, 500);
-    _pulseCore(2.0, col);
+    pulseBrightness(transitionBurst, 500);
+    _pulseCore(2.0 + newIdx * 0.06, theme.pulse);
     if (newIdx === 4 && typeof soundBossDefeated === 'function') soundBossDefeated(); // SUPERNOVA epic sound!
 
-    createPopup(centerObj.x, centerObj.y - 80, `PHASE ${newIdx + 1}: ${ph.name}`, col);
+    createPopup(centerObj.x, centerObj.y - 96, `PHASE ${newIdx + 1}: ${ph.name}`, col);
+    createPopup(centerObj.x, centerObj.y - 66, PHASE_FLAVOR[newIdx] || 'MUTATION SPIKE', '#ffffff');
     createShockwave(col, 40); createShockwave('#ffffff', 80);
-    createParticles(centerObj.x, centerObj.y, col, 100);
+    createParticles(centerObj.x, centerObj.y, col, 100 + newIdx * 16);
 
     if (typeof canvas !== 'undefined' && canvas.style) {
-      canvas.style.boxShadow = `inset 0 0 180px ${col}, inset 0 0 240px rgba(38, 0, 0, 0.62), 0 0 70px ${col}`;
+      canvas.style.boxShadow = `inset 0 0 180px ${col}, inset 0 0 260px rgba(38, 0, 0, 0.64), 0 0 70px ${col}`;
       setTimeout(() => {
         if (!canvas || !canvas.style) return;
-        canvas.style.boxShadow = `inset 0 0 110px rgba(255, 66, 20, 0.34), inset 0 0 210px rgba(25, 0, 0, 0.46), 0 0 36px rgba(255, 78, 20, 0.32)`;
+        canvas.style.boxShadow = theme.ambientShadow;
+        canvas.style.filter = theme.ambientFilter;
       }, 160);
-      setTimeout(() => {
-        if (canvas && canvas.style) canvas.style.boxShadow = 'none';
-      }, 520);
     }
     // Brief armor mutation flare before stabilizing into the next phase.
     setTimeout(() => { if (_active) pulseBrightness(1.7, 180); }, 80);
@@ -323,12 +361,13 @@
         pulseBrightness(1.6, 120);
       } else if (_wrathActive && frameNow >= _wrathEndsAt) {
         _wrathActive = false;
-        if (typeof canvas !== 'undefined') canvas.style.boxShadow = 'none';
+        _applyPhaseAmbientVisuals();
         for (let wi = 0; wi < targets.length; wi++) {
           if (targets[wi].phoenixTarget && targets[wi].active && targets[wi].moveSpeed !== 0) targets[wi].moveSpeed *= -1;
         }
       }
     }
+    _applyPhaseAmbientVisuals();
 
     _updateGhosts(frameNow);
 
@@ -351,7 +390,7 @@
       }
       if (!anyActive) {
         _waveSpawned = false;
-        const pauseMs = _phaseIdx >= 2 ? 280 : 450;
+        const pauseMs = _phaseIdx >= 4 ? 220 : (_phaseIdx >= 2 ? 280 : (_phaseIdx === 1 ? 420 : 520));
         stageClearHoldUntil = performance.now() + pauseMs;
         setTimeout(() => { if (_active) spawnWave(); }, pauseMs);
       }
@@ -581,7 +620,7 @@
     _createCore();
     _updateUI();
     
-    // Initial Wave
+    // Initial Wave: keep the intro beat, and let EMBER read before full pressure.
     stageClearHoldUntil = performance.now() + 1500;
     setTimeout(() => { if (_active) spawnWave(); }, 1500);
 
