@@ -134,17 +134,31 @@
   }
 
   function pauseGameplayForTutorial() {
+    const mask = document.getElementById('tutorialMask');
+    if (mask) mask.dataset.allowNav = 'false';
+    // Stop the game loop entirely — not just slow it down
     if (typeof isPlaying !== 'undefined' && isPlaying) {
       tutorialPausedGameplay = true;
-      if (typeof targetTimeScale !== 'undefined') targetTimeScale = 0;
-      if (typeof timeScale       !== 'undefined') timeScale       = 0;
+      isPlaying = false;
+    } else if (typeof isPlaying !== 'undefined' && !isPlaying) {
+      // Not actively playing (e.g. on hub) but still track state
+      tutorialPausedGameplay = false;
     }
+    // Belt-and-suspenders: zero timescale too
+    if (typeof targetTimeScale !== 'undefined') targetTimeScale = 0;
+    if (typeof timeScale !== 'undefined') timeScale = 0;
   }
 
   function resumeGameplayFromTutorial() {
-    if (!tutorialPausedGameplay) return;
+    if (!tutorialPausedGameplay) {
+      // Still reset timescale if it was zeroed
+      if (typeof targetTimeScale !== 'undefined' && targetTimeScale === 0) targetTimeScale = 1;
+      if (typeof timeScale !== 'undefined' && timeScale === 0) timeScale = 1;
+      return;
+    }
+    isPlaying = true;
     if (typeof targetTimeScale !== 'undefined') targetTimeScale = 1;
-    if (typeof timeScale       !== 'undefined') timeScale       = 1;
+    if (typeof timeScale !== 'undefined') timeScale = 1;
     tutorialPausedGameplay = false;
   }
 
@@ -244,6 +258,7 @@
     resumeGameplayFromTutorial();
     els.mask.classList.remove('is-visible');
     els.mask.classList.remove('is-guided');
+    els.mask.dataset.allowNav = 'false';
     if (els.ring) els.ring.style.display = 'none';
     if (els.card) { els.card.onclick = null; els.btn.onclick = null; }
     els.mask.onclick = null;
@@ -340,6 +355,10 @@
       clearGuidedHighlight();
       activeTarget = target;
       activeTarget.classList.add('tutorial-focus-target');
+
+      // Allow tutorial-controlled tab switches through the switchMenuTab guard
+      const mask = document.getElementById('tutorialMask');
+      if (mask) mask.dataset.allowNav = 'true';
 
       els.mask.classList.add('is-visible');
       els.mask.classList.add('is-guided');
@@ -602,17 +621,21 @@
     const isHardMode = !!(OG.state && OG.state.legacy && OG.state.legacy.hardMode);
     if (isHardMode) return;
 
-    // In-game contextual tips — non-blocking, appear at bottom of screen
-    if (stageId === '1-1') {
+    // In-game contextual tips — only show when no freeze-frame card is active
+    function _showTipIfNoCard(text, delay, duration) {
       setTimeout(function() {
-        showInGameTip('TAP WHEN YOUR ORB IS INSIDE A GLOWING ZONE', 3500);
-      }, 1200);
+        const mask = document.getElementById('tutorialMask');
+        const cardActive = mask && mask.classList.contains('is-visible');
+        if (!cardActive) showInGameTip(text, duration || 3500);
+      }, delay || 1200);
+    }
+
+    if (stageId === '1-1') {
+      _showTipIfNoCard('TAP WHEN YOUR ORB IS INSIDE A GLOWING ZONE', 1400, 3500);
     }
 
     if (stageId === '1-2') {
-      setTimeout(function() {
-        showInGameTip('SMALLER ZONES = HIGHER REWARD — AIM FOR THE CENTER', 3500);
-      }, 1000);
+      _showTipIfNoCard('SMALLER ZONES = HIGHER REWARD — AIM FOR THE CENTER', 1100, 3500);
     }
 
     // Recovery window card at 1-4

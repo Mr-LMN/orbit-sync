@@ -219,6 +219,15 @@
   }
 
   function switchMenuTab(tabId) {
+    // Block tab navigation while a tutorial card is being shown
+    const tutMask = document.getElementById('tutorialMask');
+    if (tutMask && tutMask.classList.contains('is-visible')) {
+      // Only allow navigation if the tutorial itself is commanding it
+      // (tutorial system calls switchMenuTab internally via guided highlight)
+      const isTutorialControlled = tutMask.dataset.allowNav === 'true';
+      if (!isTutorialControlled) return;
+    }
+
     // Hide all views
     document.querySelectorAll('.menu-view').forEach(view => {
       view.style.display = 'none';

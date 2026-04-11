@@ -95,16 +95,23 @@ if (_lastLoginStr !== _todayStr) {
 }
 // ── END DAILY LOGIN STREAK ───────────────────
 
-// Queue bonus display for when menu renders
+
+// Queue bonus display — wait until we're on the hub AND no tutorial card is showing
 if (_dailyBonusToShow > 0) {
-  setTimeout(() => {
+  const _showDailyBonus = function() {
+    // Only show when in the menu and tutorial mask is not blocking
+    const tutMask = document.getElementById('tutorialMask');
+    const tutActive = tutMask && tutMask.classList.contains('is-visible');
+    if ((typeof inMenu !== 'undefined' && !inMenu) || tutActive) {
+      setTimeout(_showDailyBonus, 800); // re-check later
+      return;
+    }
     const badge = ui.dailyStreakBadge;
     if (badge) {
       const em = dailyLoginStreak >= 7 ? '🔥🔥' : dailyLoginStreak >= 3 ? '🔥' : '✦';
       badge.innerText = `${em} DAY ${dailyLoginStreak} STREAK`;
       badge.style.display = 'block';
     }
-    // Show bonus notification
     const notif = document.createElement('div');
     notif.style.cssText = `
       position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
@@ -113,22 +120,22 @@ if (_dailyBonusToShow > 0) {
       text-shadow:0 0 20px rgba(255,170,0,0.8);
       animation:streakFadeOut 2.8s ease forwards;
     `;
-
     const coinsText = document.createTextNode(`+${_dailyBonusToShow} COINS`);
     const br = document.createElement('br');
     const subtitle = document.createElement('span');
     subtitle.style.fontSize = '0.5rem';
     subtitle.style.opacity = '0.6';
     subtitle.textContent = `DAY ${dailyLoginStreak} LOGIN BONUS`;
-
     notif.appendChild(coinsText);
     notif.appendChild(br);
     notif.appendChild(subtitle);
-
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
-  }, 600);
+  };
+  // First check at 1.2s (after boot/tutorial init settle)
+  setTimeout(_showDailyBonus, 1200);
 }
+
 
 let maxWorldUnlocked = parseInt(OG.storage.getItem('orbitSync_maxWorld')) || 1;
 let menuSelectedWorld = 1;
