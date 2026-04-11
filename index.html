@@ -615,6 +615,24 @@
   </div>
 
   <!-- shopModal content has been moved to workshopView -->
+  <div id="loginSplashOverlay">
+    <div class="login-card">
+      <div class="login-flame">🔥</div>
+      <h2 class="login-streak-title" id="loginStreakTitle">DAY 1 STREAK</h2>
+      <div class="login-rewards">
+        <div class="login-reward-item">
+          <span class="reward-label">ORBIT XP</span>
+          <span class="reward-value">+5</span>
+        </div>
+        <div class="login-reward-item" id="loginCoinRewardRow">
+          <span class="reward-label">COINS</span>
+          <span class="reward-value">+10</span>
+        </div>
+      </div>
+      <button class="btn primary" onclick="document.getElementById('loginSplashOverlay').classList.remove('active')">COLLECT</button>
+    </div>
+  </div>
+
 
   <div id="screenOverlay">
     <h1 id="screenTitle">OUT OF SYNC</h1>
@@ -648,6 +666,16 @@
           </div>
           <div id="runCoinsHint" class="run-coins-hint" style="display:none;"></div>
         </div>
+
+        <div class="results-xp-row">
+          <div class="results-xp-label">ORBIT XP</div>
+          <div class="results-xp-bar-container">
+            <div id="resultsXpBarFill" class="results-xp-bar-fill"></div>
+          </div>
+          <div id="resultsXpText" class="results-xp-label" style="min-width: 40px; text-align: right; color: #ffa500;">+0</div>
+        </div>
+
+        <div id="resultsGradeBadge" class="results-grade-badge">S</div>
 
         <p id="nearMissMsg" class="near-miss-msg"></p>
       </div>

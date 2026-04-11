@@ -150,6 +150,11 @@
         if (!Array.isArray(playerProgress.unlockedWorlds)) playerProgress.unlockedWorlds = ['world1'];
         if (!playerProgress.unlockedWorlds.includes(unlockedNextWorldId)) {
           playerProgress.unlockedWorlds.push(unlockedNextWorldId);
+          // Phase 4: World Unlock Discovery Cinematic
+          if (OG.systems.prestige && typeof OG.systems.prestige.queueWorldUnlock === 'function') {
+            const worldNum = parseInt(unlockedNextWorldId.replace('world', ''), 10);
+            if (worldNum) OG.systems.prestige.queueWorldUnlock(worldNum);
+          }
         }
       }
 

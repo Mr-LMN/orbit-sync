@@ -45,7 +45,7 @@
         if (parsed && typeof parsed.rank === 'number') return parsed;
       } catch (e) {}
     }
-    return { rank: 1, xp: 0, pendingCeremony: null };
+    return { rank: 1, xp: 0, pendingCeremonyQueue: [] };
   }
 
   function _saveState(st) {
@@ -98,8 +98,9 @@
   function _onRankUp(newRank) {
     // Find any perk unlocked at this exact rank
     const perk = RANK_PERKS.find(p => p.rank === newRank) || null;
-    // Queue ceremony (shown on next hub open if in gameplay, or immediately if in hub)
-    _state.pendingCeremony = { rank: newRank, perk };
+    // Queue ceremony
+    if (!_state.pendingCeremonyQueue) _state.pendingCeremonyQueue = [];
+    _state.pendingCeremonyQueue.push({ type: 'rank_up', rank: newRank, perk });
     _saveState(_state);
 
     if (OG.systems.ceremony && typeof OG.systems.ceremony.showPendingCeremony === 'function') {
@@ -122,9 +123,19 @@
     return getActivePerks().some(p => p.id === perkId);
   }
 
+  function queueWorldUnlock(worldNum) {
+    if (!_state.pendingCeremonyQueue) _state.pendingCeremonyQueue = [];
+    _state.pendingCeremonyQueue.push({ type: 'world_unlock', worldNum });
+    _saveState(_state);
+
+    if (OG.systems.ceremony && typeof OG.systems.ceremony.showPendingCeremony === 'function') {
+      OG.systems.ceremony.showPendingCeremony();
+    }
+  }
+
   function consumePendingCeremony() {
-    const c = _state.pendingCeremony;
-    _state.pendingCeremony = null;
+    if (!_state.pendingCeremonyQueue || _state.pendingCeremonyQueue.length === 0) return null;
+    const c = _state.pendingCeremonyQueue.shift();
     _saveState(_state);
     return c;
   }
@@ -194,6 +205,7 @@
     getZoneScoreBonus,
     isPhoenixOpenAccess,
     getPhoenixBonusRebirth,
+    queueWorldUnlock,
   };
 
 })(window);

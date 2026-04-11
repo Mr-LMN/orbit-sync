@@ -89,7 +89,15 @@
     };
     // Daily login is always auto-done on first load
     const loginChallenge = newState.challenges.find(c => c.type === 'daily_login');
-    if (loginChallenge) { loginChallenge.progress = 1; loginChallenge.done = true; }
+    if (loginChallenge) { 
+      loginChallenge.progress = 1; 
+      loginChallenge.done = true; 
+      // Show dopamine splash on first load of the day
+      setTimeout(() => {
+        showLoginSplash(typeof dailyLoginStreak !== 'undefined' ? dailyLoginStreak : 1);
+        if (typeof grantOrbitXP === 'function') grantOrbitXP(5);
+      }, 800);
+    }
     _saveState(newState);
     return newState;
   }
@@ -97,6 +105,20 @@
   function _saveState(st) {
     const storage = OG.storage || window.localStorage;
     storage.setItem(STORAGE_KEY, JSON.stringify(st));
+  }
+
+  function showLoginSplash(streak) {
+    const overlay = document.getElementById('loginSplashOverlay');
+    const title = document.getElementById('loginStreakTitle');
+    if (!overlay || !title) return;
+
+    title.innerText = `DAY ${streak} STREAK`;
+    overlay.classList.add('active');
+
+    // Auto-hide after 4s if user doesn't click collect
+    setTimeout(() => {
+      overlay.classList.remove('active');
+    }, 4000);
   }
 
   let _state = _loadState();
@@ -116,7 +138,10 @@
       } else {
         // Cumulative
         c.progress = Math.min(c.target, c.progress + value);
-        if (c.progress >= c.target) { c.done = true; }
+        if (c.progress >= c.target) { 
+          c.done = true; 
+          c.justDone = true; // Temporary flag for UI flash
+        }
         anyChanged = true;
       }
     }
@@ -192,6 +217,10 @@
       const pct = Math.min(100, Math.round((c.progress / c.target) * 100));
       const item = document.createElement('div');
       item.className = 'challenge-item' + (c.done ? ' challenge-done' : '');
+      if (c.justDone) {
+        item.classList.add('challenge-just-done');
+        delete c.justDone;
+      }
       item.innerHTML = `
         <div class="challenge-row">
           <span class="challenge-check">${c.done ? '✓' : '◎'}</span>

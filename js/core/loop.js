@@ -4117,6 +4117,17 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     const summaryCard = document.getElementById('summaryCard');
     if (summaryCard) summaryCard.style.display = 'block';
 
+    // Phase 4: Results Screen Overhaul hooks
+    if (OrbitGame.ui.overlay && OrbitGame.ui.overlay.animateScore) {
+      OrbitGame.ui.overlay.animateScore(document.getElementById('runScoreDisplay'), score);
+      
+      const totalHits = (runPerfectCount || 0) + (runGoodCount || 0) + (runOkCount || 0);
+      OrbitGame.ui.overlay.showRunGrade(runPerfectCount || 0, totalHits);
+      
+      // On fail, we show minimal XP progress (maybe 2 XP for the effort?)
+      OrbitGame.ui.overlay.showXPEarned(2); 
+    }
+
     let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
 
     ui.btn.innerText = pendingCoins > 0 ? `BANK ${pendingCoins} + PLAY AGAIN` : 'PLAY AGAIN';
@@ -5091,6 +5102,9 @@ function tap() {
       if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('comboPerfectBonus')) {
           comboCount++;
           streak++;
+          if (OrbitGame.ui.hud && OrbitGame.ui.hud.checkStreakMilestones) {
+            OrbitGame.ui.hud.checkStreakMilestones(streak);
+          }
       }
       soundMultiplierUp(multiplier);
       let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 3 : 0;
@@ -5193,6 +5207,9 @@ function tap() {
     }
 
     streak++;
+    if (OrbitGame.ui.hud && OrbitGame.ui.hud.checkStreakMilestones) {
+      OrbitGame.ui.hud.checkStreakMilestones(streak);
+    }
     runBestStreak = Math.max(runBestStreak, streak);
     const isStreakMilestone = streak === 10 || streak === 20 || streak === 30;
     updateStreakUI(true, isStreakMilestone);
@@ -5586,6 +5603,19 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         // Flash text
         ui.runCoins.innerText = `+${coinsBanked} BANKED`;
         ui.runCoins.style.textShadow = '0 0 20px #ffaa00';
+
+        // Phase 4: Results screen dopamine
+        if (OrbitGame.ui.overlay && OrbitGame.ui.overlay.animateScore) {
+          OrbitGame.ui.overlay.animateScore(ui.clearScoreDisplay, score);
+          
+          const totalHits = (runPerfectCount || 0) + (runGoodCount || 0) + (runOkCount || 0);
+          OrbitGame.ui.overlay.showRunGrade(runPerfectCount || 0, totalHits);
+
+          const isBoss = !!(levelData && levelData.boss);
+          const isFlawless = !!runPerfectHitsOnly;
+          const totalXP = (isBoss ? 50 : 10) + (isFlawless ? 15 : 0);
+          OrbitGame.ui.overlay.showXPEarned(totalXP);
+        }
 
         // Show Double Coins ad option on Stage Clear if not premium and earned coins
         let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');

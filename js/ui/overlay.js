@@ -47,5 +47,67 @@
       if (audioCtx) soundFail();
     }
   }
+  function animateScore(el, targetScore, duration = 800) {
+    if (!el) return;
+    const start = parseInt(el.innerText) || 0;
+    const range = targetScore - start;
+    if (range === 0) return;
+
+    const startTime = performance.now();
+
+    function update(now) {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Quad ease out
+      const value = Math.floor(start + range * (1 - (1 - progress) * (1 - progress)));
+      
+      el.innerText = value;
+
+      if (progress < 1) {
+        requestAnimationFrame(update);
+      } else {
+        el.innerText = targetScore;
+        el.style.transform = 'scale(1.2)';
+        setTimeout(() => el.style.transform = 'scale(1)', 150);
+        if (typeof playPop === 'function') playPop(8, true);
+      }
+    }
+    requestAnimationFrame(update);
+  }
+
+  function showXPEarned(xpAmount) {
+    const bar = document.getElementById('resultsXpBarFill');
+    const text = document.getElementById('resultsXpText');
+    if (!bar || !text) return;
+
+    text.innerText = `+${xpAmount} XP`;
+    bar.style.width = '0%';
+    
+    setTimeout(() => {
+      // Calculate % of level (assuming ~100xp per rank for visual effect)
+      const pct = Math.min(100, Math.floor((xpAmount / 100) * 100));
+      bar.style.width = `${pct}%`;
+    }, 400);
+  }
+
+  function showRunGrade(perfects, total) {
+    const badge = document.getElementById('resultsGradeBadge');
+    if (!badge) return;
+
+    const rate = total > 0 ? perfects / total : 0;
+    let grade = 'C';
+    let colorClass = 'grade-c';
+
+    if (rate >= 0.85) { grade = 'S'; colorClass = 'grade-s'; }
+    else if (rate >= 0.65) { grade = 'A'; colorClass = 'grade-a'; }
+    else if (rate >= 0.40) { grade = 'B'; colorClass = 'grade-b'; }
+
+    badge.innerText = grade;
+    badge.className = `results-grade-badge ${colorClass} show`;
+  }
+
   OG.ui.overlay.attemptCoinRevive = attemptCoinRevive;
+  OG.ui.overlay.animateScore = animateScore;
+  OG.ui.overlay.showXPEarned = showXPEarned;
+  OG.ui.overlay.showRunGrade = showRunGrade;
 })(window);

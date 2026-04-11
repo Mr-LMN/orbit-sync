@@ -146,12 +146,82 @@
     const prestige = OG.systems.prestige;
     if (!prestige || typeof prestige.consumePendingCeremony !== 'function') return;
     const pending = prestige.consumePendingCeremony();
-    if (pending) showCeremony(pending);
+    if (pending) {
+      if (pending.type === 'world_unlock') {
+        showWorldUnlock(pending.worldNum);
+      } else {
+        showCeremony(pending);
+      }
+    }
+  }
+
+  function showWorldUnlock(worldNum) {
+    if (_showing) return;
+    _showing = true;
+
+    const el = _ensureOverlay();
+    const label = document.getElementById('ceremonyLabel');
+    const rank  = document.getElementById('ceremonyRank');
+    const name  = document.getElementById('ceremonyRankName');
+    const perk  = document.getElementById('ceremonyPerkCard');
+    const burst = document.getElementById('ceremonyBurst');
+
+    // Identify world name
+    const worldNames = {
+      2: "DIAMOND PROTOCOL",
+      3: "SOLARIS ENGINE",
+      4: "VOID SECTOR",
+      5: "NULL GATE",
+      6: "OMEGA CORE"
+    };
+
+    label.textContent = "NEW WORLD DISCOVERED";
+    label.style.color = "#ffaa00";
+    rank.textContent = "WORLD " + worldNum;
+    name.textContent = worldNames[worldNum] || "RECON SECTOR";
+    perk.style.display = 'none';
+
+    // Stylize background burst based on world
+    const palettes = {
+      2: "rgba(47, 246, 255, 0.2)",
+      3: "rgba(255, 170, 0, 0.2)",
+      4: "rgba(177, 87, 255, 0.2)",
+      5: "rgba(168, 216, 255, 0.2)",
+      6: "rgba(255, 51, 0, 0.2)"
+    };
+    burst.style.background = `radial-gradient(circle, ${palettes[worldNum] || 'rgba(0,229,255,0.2)'} 0%, transparent 70%)`;
+
+    // Show
+    el.style.display = 'flex';
+    el.classList.add('ceremony-enter');
+
+    // Sound - Reuse rank up logic with a slight tweak
+    const audio = OG.audio;
+    if (audio && audio.audioCtx && window.playSynth) {
+       window.playSynth(440, 'sine', 0.2, 0.01, 1.0, audio.audioCtx.currentTime, 0, true);
+       setTimeout(() => { if(window.playSynth) window.playSynth(880, 'sine', 0.2, 0.01, 1.0, audio.audioCtx.currentTime, 0, true); }, 150);
+    }
+
+    function dismiss() {
+      el.removeEventListener('click', dismiss);
+      el.classList.remove('ceremony-enter');
+      el.classList.add('ceremony-exit');
+      setTimeout(function() {
+        el.style.display = 'none';
+        _showing = false;
+        // Restore default label for next rank up
+        label.textContent = "ORBIT RANK UP";
+        label.style.color = "";
+        setTimeout(showPendingCeremony, 200);
+      }, 380);
+    }
+    el.addEventListener('click', dismiss);
   }
 
   OG.systems.ceremony = {
     showCeremony,
     showPendingCeremony,
+    showWorldUnlock
   };
 
 })(window);
