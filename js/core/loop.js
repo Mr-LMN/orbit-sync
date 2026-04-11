@@ -5416,16 +5416,24 @@ function changeWorld(dir) { return OrbitGame.ui.menus.changeWorld(dir); }
 function updateWorldSelectorUI() { return OrbitGame.ui.menus.updateWorldSelectorUI(); }
 
 function getStartingIndexForWorld(worldNum) {
-  for (let i = 0; i < campaign.length; i++) {
-    if (campaign[i].id.startsWith(worldNum + "-")) return i;
+  const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
+    || (OrbitGame.data && Array.isArray(OrbitGame.data.campaign) ? OrbitGame.data.campaign : null)
+    || [];
+  if (!campaignData.length) return 0;
+  for (let i = 0; i < campaignData.length; i++) {
+    if (campaignData[i] && campaignData[i].id && campaignData[i].id.startsWith(worldNum + "-")) return i;
   }
   return 0; // Fallback
 }
 
 function refreshMenuWorldPreview() {
   if (!inMenu) return;
+  const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
+    || (OrbitGame.data && Array.isArray(OrbitGame.data.campaign) ? OrbitGame.data.campaign : null)
+    || [];
+  if (!campaignData.length) return;
   const worldStartIdx = getStartingIndexForWorld(menuSelectedWorld);
-  levelData = campaign[worldStartIdx] || campaign[0];
+  levelData = campaignData[worldStartIdx] || campaignData[0];
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
   currentWorldVisualTheme = getWorldVisualTheme(levelData);
