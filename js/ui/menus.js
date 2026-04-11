@@ -582,7 +582,21 @@
     levelData = campaignData[startIdx] || campaignData[0];
     currentWorldPalette = computeWorldPalette(levelData);
     currentWorldShape = computeWorldShape(levelData);
+    console.debug('[campaign-preview]', {
+      world: menuSelectedWorld,
+      stageId: levelData && levelData.id,
+      shape: currentWorldShape,
+      palette: currentWorldPalette
+    });
     currentWorldVisualTheme = getWorldVisualTheme(levelData);
+
+    // Keep menu preview state authoritative while in menu mode.
+    if (typeof inMenu !== 'undefined' && inMenu) {
+      window.levelData = levelData;
+      window.currentWorldPalette = currentWorldPalette;
+      window.currentWorldShape = currentWorldShape;
+      window.currentWorldVisualTheme = currentWorldVisualTheme;
+    }
 
     drawWorldPreviewCanvas(false);
   }
