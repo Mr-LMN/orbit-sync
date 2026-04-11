@@ -12,11 +12,11 @@
 
   // Phase thresholds (total elapsed seconds since run start)
   const PHASES = [
-    { name: 'EMBER',   threshold: 0,   speed: 0.007, zoneBase: Math.PI / 5.8, types: ['ember', 'ember'], reverseChance: 0 },
-    { name: 'BURN',    threshold: 25,  speed: 0.012, zoneBase: Math.PI / 7.0, types: ['ember', 'ember', 'ghost'], reverseChance: 0.30 },
-    { name: 'INFERNO', threshold: 50,  speed: 0.018, zoneBase: Math.PI / 8.8, types: ['ember', 'ember', 'ghost', 'inferno'], reverseChance: 0.50, blackout: { duration: 1300, interval: 7000, firstAt: 2500 } },
-    { name: 'ASH',     threshold: 80,  speed: 0.025, zoneBase: Math.PI / 11.5, types: ['ember', 'ember', 'ghost', 'inferno', 'ash'], reverseChance: 0.60, blackout: { duration: 1600, interval: 4500, firstAt: 1000 } },
-    { name: 'SUPERNOVA', threshold: 100, speed: 0.033, zoneBase: Math.PI / 12, types: ['ash', 'ash', 'ash', 'inferno'], reverseChance: 0.80, blackout: { duration: 800, interval: 2000, firstAt: 500 } }
+    { name: 'EMBER',   threshold: 0,   speed: 0.0055, zoneBase: Math.PI / 5.8, types: ['ember', 'ember'], reverseChance: 0 },
+    { name: 'BURN',    threshold: 25,  speed: 0.0085, zoneBase: Math.PI / 7.0, types: ['ember', 'ember', 'ghost'], reverseChance: 0.30 },
+    { name: 'INFERNO', threshold: 50,  speed: 0.012, zoneBase: Math.PI / 8.8, types: ['ember', 'ember', 'ghost', 'inferno'], reverseChance: 0.50, blackout: { duration: 1300, interval: 7000, firstAt: 2500 } },
+    { name: 'ASH',     threshold: 80,  speed: 0.016, zoneBase: Math.PI / 11.5, types: ['ember', 'ember', 'ghost', 'inferno', 'ash'], reverseChance: 0.60, blackout: { duration: 1600, interval: 4500, firstAt: 1000 } },
+    { name: 'SUPERNOVA', threshold: 100, speed: 0.021, zoneBase: Math.PI / 12, types: ['ash', 'ash', 'ash', 'inferno'], reverseChance: 0.80, blackout: { duration: 800, interval: 2000, firstAt: 500 } }
   ];
 
   const ZONE_COLORS = { ember: '#ff7a1a', ghost: '#ffb85a', inferno: '#ffe570', ash: '#7a2020' };
@@ -144,7 +144,7 @@
 
     _waveCount++;
     const ph = _phase();
-    const spd = ph.speed + Math.min(0.01, _elapsed * 0.0001);
+    const spd = ph.speed + Math.min(0.004, _elapsed * 0.00004);
 
     // V2 Mechanics
     const isMeteor = _waveCount > 3 && _waveCount % 7 === 0;
@@ -512,8 +512,7 @@
 
   // ─── INIT ────────────────────────────────────────────────────────────────
   function start() {
-    // Only works if the game isn't already playing another mode
-    if (typeof isPlaying !== 'undefined' && isPlaying) return;
+    if (_active) return;
     
     // Reset environment
     if (typeof levelData !== 'undefined') {
@@ -533,6 +532,14 @@
 
     const gameUI = _el('phoenixGameUI');
     if (gameUI) gameUI.style.display = 'flex';
+    const timer = _el('phoenixTimer');
+    if (timer) timer.style.display = '';
+    const phase = _el('phoenixPhaseName');
+    if (phase) phase.style.display = '';
+    const mult = _el('phoenixMult');
+    if (mult) mult.style.display = '';
+    const livesEl = _el('phoenixLives');
+    if (livesEl) livesEl.style.display = '';
     
     _createCore();
     _updateUI();
@@ -546,7 +553,22 @@
     if (typeof startBossDrone === 'function') startBossDrone();
   }
 
-  function stop() { _active = false; _hideCore(); const el = _el('phoenixGameUI'); if(el) el.style.display = 'none'; }
+  function stop() {
+    _active = false;
+    _waveSpawned = false;
+    _wrathActive = false;
+    _hideCore();
+    const gameUI = _el('phoenixGameUI');
+    if (gameUI) gameUI.style.display = 'none';
+    const timer = _el('phoenixTimer');
+    if (timer) timer.style.display = 'none';
+    const phase = _el('phoenixPhaseName');
+    if (phase) phase.style.display = 'none';
+    const mult = _el('phoenixMult');
+    if (mult) mult.style.display = 'none';
+    const livesEl = _el('phoenixLives');
+    if (livesEl) livesEl.style.display = 'none';
+  }
   function isActive() { return _active; }
   function getPhaseIdx() { return _phaseIdx; }
 

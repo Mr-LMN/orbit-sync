@@ -43,9 +43,24 @@
     _launchCampaign();
   }
 
+  function getCampaignWorldCount() {
+    const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
+      || (OG.data && Array.isArray(OG.data.campaign) ? OG.data.campaign : null)
+      || [];
+    let maxWorld = 0;
+    for (let i = 0; i < campaignData.length; i++) {
+      const stage = campaignData[i];
+      if (!stage || typeof stage.id !== 'string') continue;
+      const parts = stage.id.split('-');
+      const worldNum = parseInt(parts[0], 10);
+      if (Number.isFinite(worldNum) && worldNum > maxWorld) maxWorld = worldNum;
+    }
+    return Math.max(1, maxWorld || 1);
+  }
+
   function changeWorld(dir) {
     menuSelectedWorld += dir;
-    const totalWorlds = 5;
+    const totalWorlds = getCampaignWorldCount();
     if (menuSelectedWorld < 1) menuSelectedWorld = 1;
     if (menuSelectedWorld > totalWorlds) menuSelectedWorld = totalWorlds;
     updateWorldSelectorUI();
@@ -126,7 +141,8 @@
     // Update Campaign Progress Bar
     const progressFill = document.getElementById('campaignProgressFill');
     const progressText = document.getElementById('campaignProgressText');
-    const completionPct = Math.min(100, Math.max(0, Math.floor((maxUnlocked / 5) * 100)));
+    const totalWorlds = getCampaignWorldCount();
+    const completionPct = Math.min(100, Math.max(0, Math.floor((maxUnlocked / totalWorlds) * 100)));
     if (progressFill) {
         progressFill.style.width = `${completionPct}%`;
         progressFill.style.background = isUnlocked ? wd.color : 'rgba(255,255,255,0.2)';
@@ -190,7 +206,7 @@
     const leftArrow = document.querySelector('#worldSelector .arrow-btn:first-child');
     const rightArrow = document.querySelector('#worldSelector .arrow-btn:last-child');
     if (leftArrow) leftArrow.disabled = menuSelectedWorld <= 1;
-    if (rightArrow) rightArrow.disabled = menuSelectedWorld >= 5;
+    if (rightArrow) rightArrow.disabled = menuSelectedWorld >= totalWorlds;
   }
 
   function switchMenuTab(tabId) {
@@ -598,7 +614,7 @@
       id: 'phoenix',
       title: 'Phoenix V2 Trial',
       hitsNeeded: 999999,
-      speed: 0.015,
+      speed: 0.009,
       lives: 2,
       boss: 'phoenix',
       moveSpeed: 0,
@@ -618,8 +634,14 @@
 
 
   function refreshMenuWorldPreview() {
+    const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
+      || (OG.data && Array.isArray(OG.data.campaign) ? OG.data.campaign : null)
+      || [];
+    if (!campaignData.length) return;
+    if (typeof getStartingIndexForWorld !== 'function') return;
+    if (typeof computeWorldPalette !== 'function' || typeof computeWorldShape !== 'function' || typeof getWorldVisualTheme !== 'function') return;
     const startIdx = getStartingIndexForWorld(menuSelectedWorld);
-    levelData = campaign[startIdx] || campaign[0];
+    levelData = campaignData[startIdx] || campaignData[0];
     currentWorldPalette = computeWorldPalette(levelData);
     currentWorldShape = computeWorldShape(levelData);
     currentWorldVisualTheme = getWorldVisualTheme(levelData);
@@ -628,7 +650,11 @@
   }
 
   function showLockedWorldPreview(worldNum) {
-    levelData = campaign[0];
+    const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
+      || (OG.data && Array.isArray(OG.data.campaign) ? OG.data.campaign : null)
+      || [];
+    if (!campaignData.length) return;
+    levelData = campaignData[0];
     currentWorldPalette = { color1: '#444', color2: '#222' };
     currentWorldShape = 'circle';
     currentWorldVisualTheme = { type: 'grid' };
@@ -637,6 +663,11 @@
   }
 
   function drawWorldPreviewCanvas(isLocked) {
+    const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
+      || (OG.data && Array.isArray(OG.data.campaign) ? OG.data.campaign : null)
+      || [];
+    if (!campaignData.length) return;
+    if (typeof currentWorldShape === 'undefined' || typeof currentWorldPalette === 'undefined') return;
     const canvas = document.getElementById('worldPreviewCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
