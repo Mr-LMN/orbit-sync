@@ -149,6 +149,7 @@
     state.completed = true;
     state.phase = PHASES.COMPLETE;
     persistState();
+    getStorage().setItem('orbitSync_tutorialDone', '1');
     clearGuidedHighlight();
     hideCard();
   }
@@ -201,7 +202,8 @@
       title,
       body: description,
       buttonText: buttonText || 'CONTINUE',
-      label: label || 'SYSTEM NOTICE'
+      label: label || 'SYSTEM NOTICE',
+      tapAnywhere: true
     }, function() {
       hideCard();
       if (typeof onComplete === 'function') onComplete();
@@ -252,6 +254,7 @@
   }
 
   function suspendTutorialUI() {
+    cardResolver = null;
     clearGuidedHighlight();
     hideCard();
     hydrateEls();
@@ -349,7 +352,9 @@
   }
 
   function isVisibleElement(el) {
-    if (!el || !el.offsetParent) return false;
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    if (!style || style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
     const rect = el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
   }
@@ -406,7 +411,6 @@
 
   function startMasterTutorialIfNeeded() {
     if (started) return;
-    started = true;
     const midProgress = !state.completed && state.phase !== PHASES.WELCOME && state.phase !== PHASES.COMPLETE;
     if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') {
       return;
@@ -414,6 +418,7 @@
     if (!midProgress && !isNewPlayerProfile()) {
       return;
     }
+    started = true;
     setTimeout(advanceMasterTutorial, 180);
   }
 
@@ -610,6 +615,7 @@
   function resetMasterTutorial() {
     state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     persistState();
+    getStorage().removeItem('orbitSync_tutorialDone');
     clearGuidedHighlight();
     hideCard();
     started = false;

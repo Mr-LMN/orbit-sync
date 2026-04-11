@@ -2299,6 +2299,7 @@ body.run-state-overdrive.arena-charge-3 #gameCanvas {
   padding: 16px 16px 14px;
   z-index: 10050;
   color: #e9f6ff;
+  transition: opacity 0.22s ease, transform 0.22s ease, box-shadow 0.22s ease;
 }
 #tutorialCard::before {
   content: '';
