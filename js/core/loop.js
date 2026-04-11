@@ -5395,7 +5395,13 @@ function returnToMenu() {
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
-  refreshMenuWorldPreview();
+  if (
+    OrbitGame.ui &&
+    OrbitGame.ui.menus &&
+    typeof OrbitGame.ui.menus.refreshMenuWorldPreview === 'function'
+  ) {
+    OrbitGame.ui.menus.refreshMenuWorldPreview();
+  }
   if (OrbitGame.systems && OrbitGame.systems.tutorial) {
       setTimeout(() => {
           OrbitGame.systems.tutorial.checkMenuRouting();
@@ -5428,16 +5434,13 @@ function getStartingIndexForWorld(worldNum) {
 
 function refreshMenuWorldPreview() {
   if (!inMenu) return;
-  const campaignData = (window.campaign && Array.isArray(window.campaign) ? window.campaign : null)
-    || (OrbitGame.data && Array.isArray(OrbitGame.data.campaign) ? OrbitGame.data.campaign : null)
-    || [];
-  if (!campaignData.length) return;
-  const worldStartIdx = getStartingIndexForWorld(menuSelectedWorld);
-  levelData = campaignData[worldStartIdx] || campaignData[0];
-  currentWorldPalette = computeWorldPalette(levelData);
-  currentWorldShape = computeWorldShape(levelData);
-  currentWorldVisualTheme = getWorldVisualTheme(levelData);
-  spawnTargets();
+  if (
+    OrbitGame.ui &&
+    OrbitGame.ui.menus &&
+    typeof OrbitGame.ui.menus.refreshMenuWorldPreview === 'function'
+  ) {
+    OrbitGame.ui.menus.refreshMenuWorldPreview();
+  }
 }
 
 function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampaignClear }) {
