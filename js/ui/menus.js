@@ -234,6 +234,7 @@
 
     if (tabId === 'campaign') {
       const isUnlocked = menuSelectedWorld <= (Number(maxWorldUnlocked) || 1);
+      console.debug('[campaign-tab-open]', { world: menuSelectedWorld, unlocked: isUnlocked });
       if (isUnlocked) {
         refreshMenuWorldPreview();
       } else {
@@ -618,6 +619,16 @@
     if (typeof currentWorldShape === 'undefined' || typeof currentWorldPalette === 'undefined') return;
     const canvas = document.getElementById('worldPreviewCanvas');
     if (!canvas) return;
+    const computedStyle = window.getComputedStyle(canvas);
+    console.debug('[campaign-preview-canvas]', {
+      width: canvas.width,
+      height: canvas.height,
+      display: computedStyle.display,
+      opacity: computedStyle.opacity,
+      visibility: computedStyle.visibility,
+      currentWorldShape,
+      menuSelectedWorld
+    });
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -647,7 +658,17 @@
       ctx.fillText('?', cx, cy);
     } else {
       const shapeColor = currentWorldPalette.primary || currentWorldPalette.color1 || '#00ff88';
+      const debugBackgroundByShape = {
+        circle: 'rgba(47, 246, 255, 0.12)',
+        diamond: 'rgba(255, 47, 246, 0.12)',
+        triangle: 'rgba(255, 170, 0, 0.12)',
+        square: 'rgba(177, 87, 255, 0.12)',
+        pentagon: 'rgba(168, 216, 255, 0.12)',
+        hexagon: 'rgba(255, 51, 0, 0.12)'
+      };
       ctx.setLineDash([]);
+      ctx.fillStyle = debugBackgroundByShape[currentWorldShape] || 'rgba(255, 255, 255, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Build the shape path
       ctx.beginPath();
@@ -689,6 +710,16 @@
       ctx.shadowColor = shapeColor;
       ctx.shadowBlur = 24;
       ctx.stroke();
+
+      ctx.save();
+      ctx.font = '12px Orbitron, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.shadowColor = shapeColor;
+      ctx.shadowBlur = 8;
+      ctx.fillText(`PREVIEW: ${currentWorldShape}`, cx, canvas.height - 10);
+      ctx.restore();
     }
     ctx.restore();
   }
