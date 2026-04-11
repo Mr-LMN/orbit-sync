@@ -3,6 +3,9 @@
   OG.systems = OG.systems || {};
 
   function launchBossChallenge(levelOverride) {
+    if (OG.systems && OG.systems.tutorial && typeof OG.systems.tutorial.suspendTutorialUI === 'function') {
+      OG.systems.tutorial.suspendTutorialUI();
+    }
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
