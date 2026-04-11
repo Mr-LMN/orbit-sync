@@ -57,11 +57,12 @@
     if (!_coreEl) {
       _coreEl = document.createElement('div');
       _coreEl.id = 'phoenixCoreObjV2';
+      // Core = intelligence/reactor; shell/rails around it are the armor layer.
       _coreEl.style.cssText = `
         position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
         width: 80px; height: 80px; border-radius: 50%;
-        background: radial-gradient(circle, #ffe570 0%, #ff7a1a 40%, #7a2020 80%, transparent 100%);
-        box-shadow: 0 0 80px #ff3300, inset 0 0 40px #ffffff;
+        background: radial-gradient(circle, #fff6c2 0%, #ffe570 14%, #ff7a1a 41%, #641010 82%, rgba(0, 0, 0, 0) 100%);
+        box-shadow: 0 0 64px rgba(255, 56, 0, 0.82), 0 0 14px rgba(255, 120, 40, 0.55), inset 0 0 34px rgba(255, 255, 255, 0.98), inset 0 0 18px rgba(255, 120, 0, 0.45);
         pointer-events: none; z-index: 5;
         transition: transform 0.1s ease, background 0.3s ease;
         mix-blend-mode: screen; opacity: 0;
@@ -83,11 +84,11 @@
     if (!_coreEl) return;
     _coreEl.dataset.pulsing = "true";
     _coreEl.style.transform = `translate(-50%, -50%) scale(${scale})`;
-    if (pulseColor) _coreEl.style.boxShadow = `0 0 100px ${pulseColor}, inset 0 0 60px #ffffff`;
+    if (pulseColor) _coreEl.style.boxShadow = `0 0 88px ${pulseColor}, 0 0 16px rgba(255, 160, 70, 0.45), inset 0 0 54px #ffffff, inset 0 0 20px rgba(255, 110, 0, 0.45)`;
     setTimeout(() => {
       if (_coreEl) {
         _coreEl.style.transform = `translate(-50%, -50%) scale(1)`;
-        _coreEl.style.boxShadow = `0 0 80px #ff3300, inset 0 0 40px #ffffff`;
+        _coreEl.style.boxShadow = `0 0 64px rgba(255, 56, 0, 0.82), 0 0 14px rgba(255, 120, 40, 0.55), inset 0 0 34px rgba(255, 255, 255, 0.98), inset 0 0 18px rgba(255, 120, 0, 0.45)`;
         _coreEl.dataset.pulsing = "false";
       }
     }, 250);
@@ -225,8 +226,9 @@
 
   function _doPhaseTransition(newIdx) {
     const ph = PHASES[newIdx];
-    const cols = ['#ff7a1a', '#ff5226', '#ffaa00', '#ff3333', '#ffffff'];
+    const cols = ['#ff7a1a', '#ff5226', '#ff8b1f', '#ff2d1f', '#ff5430'];
     const col  = cols[newIdx] || '#ff7a1a';
+    const musicIntensity = (newIdx >= 3) ? 3 : (newIdx >= 2 ? 2 : 1);
 
     pulseBrightness(3.0, 500);
     _pulseCore(2.0, col);
@@ -237,11 +239,21 @@
     createParticles(centerObj.x, centerObj.y, col, 100);
 
     if (typeof canvas !== 'undefined' && canvas.style) {
-      canvas.style.boxShadow = `inset 0 0 150px ${col}, 0 0 100px ${col}`;
-      setTimeout(() => { canvas.style.boxShadow = 'none'; }, 400);
+      canvas.style.boxShadow = `inset 0 0 180px ${col}, inset 0 0 240px rgba(38, 0, 0, 0.62), 0 0 70px ${col}`;
+      setTimeout(() => {
+        if (!canvas || !canvas.style) return;
+        canvas.style.boxShadow = `inset 0 0 110px rgba(255, 66, 20, 0.34), inset 0 0 210px rgba(25, 0, 0, 0.46), 0 0 36px rgba(255, 78, 20, 0.32)`;
+      }, 160);
+      setTimeout(() => {
+        if (canvas && canvas.style) canvas.style.boxShadow = 'none';
+      }, 520);
     }
+    // Brief armor mutation flare before stabilizing into the next phase.
+    setTimeout(() => { if (_active) pulseBrightness(1.7, 180); }, 80);
+    setTimeout(() => { if (_active) _pulseCore(1.3, '#ffb14d'); }, 130);
     if (typeof vibrate === 'function') vibrate([80, 50, 150]);
     if (typeof soundFlameBurst === 'function') soundFlameBurst();
+    if (typeof updateMusicState === 'function') updateMusicState(musicIntensity, true);
 
     if (typeof computeWorldShape === 'function') window.currentWorldShape = computeWorldShape({ boss: 'phoenix' });
     if (typeof computeWorldPalette === 'function') window.currentWorldPalette = computeWorldPalette({ boss: 'phoenix' });
@@ -533,7 +545,7 @@
         id: 'phoenix-trial',
         title: 'Phoenix V2 Trial',
         hitsNeeded: 999999,
-        speed: 0.009,
+        speed: 0.0135,
         lives: 2,
         boss: 'phoenix',
         moveSpeed: 0,

@@ -73,7 +73,7 @@
       id: 'phoenix',
       title: 'Phoenix V2 Trial',
       hitsNeeded: 999999,
-      speed: 0.009,
+      speed: 0.0135,
       lives: 2,
       boss: 'phoenix',
       moveSpeed: 0,
