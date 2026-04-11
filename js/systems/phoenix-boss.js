@@ -630,7 +630,25 @@
 
   function stop() {
     _active = false;
+    _waveSpawned = false;
+    _wrathActive = false;
+    _wrathEndsAt = 0;
+    _wrathNextAt = 0;
     _hideUI();
+    const timer = _el('phoenixTimer');
+    if (timer) timer.style.display = 'none';
+    const phase = _el('phoenixPhaseName');
+    if (phase) phase.style.display = 'none';
+    const mult = _el('phoenixMult');
+    if (mult) mult.style.display = 'none';
+    const livesEl = _el('phoenixLives');
+    if (livesEl) livesEl.style.display = 'none';
+    const phoenixCoreObjV2 = document.getElementById('phoenixCoreObjV2');
+    if (phoenixCoreObjV2) phoenixCoreObjV2.style.display = 'none';
+    if (typeof canvas !== 'undefined' && canvas && canvas.style) {
+      canvas.style.boxShadow = 'none';
+      canvas.style.filter = '';
+    }
   }
 
   function isActive() { return _active; }

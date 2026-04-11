@@ -594,6 +594,9 @@
     _active = false;
     _waveSpawned = false;
     _wrathActive = false;
+    _wrathEndsAt = 0;
+    _wrathNextAt = 0;
+    _phaseIdx = 0;
     _hideCore();
     const gameUI = _el('phoenixGameUI');
     if (gameUI) gameUI.style.display = 'none';
@@ -605,6 +608,10 @@
     if (mult) mult.style.display = 'none';
     const livesEl = _el('phoenixLives');
     if (livesEl) livesEl.style.display = 'none';
+    if (typeof canvas !== 'undefined' && canvas && canvas.style) {
+      canvas.style.boxShadow = 'none';
+      canvas.style.filter = '';
+    }
   }
   function isActive() { return _active; }
   function getPhaseIdx() { return _phaseIdx; }
