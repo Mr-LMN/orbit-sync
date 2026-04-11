@@ -631,20 +631,16 @@
     });
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!isLocked) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-      ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-    }
 
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
     // Per-shape radii so each shape feels consistently sized in the preview zone
-    const shapeRadii = { circle: 66, diamond: 62, triangle: 66, square: 58, pentagon: 64, hexagon: 64, octagon: 63 };
+    const shapeRadii = { circle: 72, diamond: 68, triangle: 72, square: 64, pentagon: 69, hexagon: 69, octagon: 68 };
     const radius = shapeRadii[currentWorldShape] || 66;
     // Per-shape vertical nudge: triangle is top-heavy (visual CoM sits above geometric center),
     // so shift it down so it reads as centered in the clipped preview zone.
     const shapeYNudge = { circle: 0, diamond: 0, triangle: 14, square: 0, pentagon: 0, hexagon: 0, octagon: 0 };
-    const drawCy = cy + (shapeYNudge[currentWorldShape] || 0);
+    const drawCy = cy + (shapeYNudge[currentWorldShape] || 0) - 8;
 
     ctx.save();
     if (isLocked) {
@@ -662,17 +658,86 @@
       ctx.fillText('?', cx, cy);
     } else {
       const shapeColor = currentWorldPalette.primary || currentWorldPalette.color1 || '#00ff88';
-      const debugBackgroundByShape = {
-        circle: 'rgba(47, 246, 255, 0.12)',
-        diamond: 'rgba(255, 47, 246, 0.12)',
-        triangle: 'rgba(255, 170, 0, 0.12)',
-        square: 'rgba(177, 87, 255, 0.12)',
-        pentagon: 'rgba(168, 216, 255, 0.12)',
-        hexagon: 'rgba(255, 51, 0, 0.12)'
-      };
       ctx.setLineDash([]);
-      ctx.fillStyle = debugBackgroundByShape[currentWorldShape] || 'rgba(255, 255, 255, 0.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const ambientAlpha = 0.14;
+
+      // subtle world-specific ambient motifs (behind shape)
+      ctx.save();
+      ctx.strokeStyle = shapeColor;
+      ctx.fillStyle = shapeColor;
+      if (currentWorldShape === 'circle') {
+        ctx.lineWidth = 1.2;
+        ctx.globalAlpha = ambientAlpha * 0.6;
+        ctx.beginPath();
+        ctx.arc(cx, drawCy, radius + 12, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = ambientAlpha * 0.4;
+        ctx.beginPath();
+        ctx.arc(cx, drawCy, radius + 24, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (currentWorldShape === 'diamond') {
+        ctx.lineWidth = 1.1;
+        ctx.globalAlpha = ambientAlpha * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(cx - radius - 18, drawCy + radius + 6);
+        ctx.lineTo(cx + radius + 18, drawCy - radius - 6);
+        ctx.stroke();
+        ctx.globalAlpha = ambientAlpha * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(cx - radius - 6, drawCy + radius + 18);
+        ctx.lineTo(cx + radius + 28, drawCy - radius - 16);
+        ctx.stroke();
+      } else if (currentWorldShape === 'triangle') {
+        const echoScale = [1.18, 1.33];
+        ctx.lineWidth = 1.1;
+        for (let i = 0; i < echoScale.length; i++) {
+          const s = echoScale[i];
+          ctx.globalAlpha = ambientAlpha * (0.5 - i * 0.12);
+          ctx.beginPath();
+          ctx.moveTo(cx, drawCy - radius * s);
+          ctx.lineTo(cx + radius * 0.866 * s, drawCy + radius * 0.5 * s);
+          ctx.lineTo(cx - radius * 0.866 * s, drawCy + radius * 0.5 * s);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      } else if (currentWorldShape === 'square') {
+        ctx.globalAlpha = ambientAlpha * 0.45;
+        ctx.fillRect(cx - radius - 18, drawCy - 40, radius * 2 + 36, 3);
+        ctx.globalAlpha = ambientAlpha * 0.35;
+        ctx.fillRect(cx - radius - 12, drawCy - 6, radius * 2 + 24, 2);
+        ctx.globalAlpha = ambientAlpha * 0.25;
+        ctx.fillRect(cx - radius - 16, drawCy + 30, radius * 2 + 32, 2);
+      } else if (currentWorldShape === 'pentagon') {
+        const bloom = ctx.createRadialGradient(cx, drawCy, radius * 0.15, cx, drawCy, radius * 1.35);
+        bloom.addColorStop(0, 'rgba(210,235,255,0.16)');
+        bloom.addColorStop(1, 'rgba(210,235,255,0)');
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = bloom;
+        ctx.beginPath();
+        ctx.arc(cx, drawCy, radius * 1.35, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (currentWorldShape === 'hexagon') {
+        ctx.lineWidth = 1.4;
+        ctx.globalAlpha = ambientAlpha * 0.55;
+        ctx.beginPath();
+        ctx.arc(cx + 6, drawCy + 2, radius + 14, -0.55, 0.9);
+        ctx.stroke();
+        ctx.globalAlpha = ambientAlpha * 0.35;
+        ctx.beginPath();
+        ctx.arc(cx - 5, drawCy + 3, radius + 22, -0.45, 0.7);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // faint inner haze to help shape feel embedded
+      const haze = ctx.createRadialGradient(cx, drawCy, radius * 0.15, cx, drawCy, radius * 1.45);
+      haze.addColorStop(0, `${shapeColor}33`);
+      haze.addColorStop(0.6, `${shapeColor}12`);
+      haze.addColorStop(1, `${shapeColor}00`);
+      ctx.fillStyle = haze;
+      ctx.beginPath();
+      ctx.arc(cx, drawCy, radius * 1.45, 0, Math.PI * 2);
+      ctx.fill();
 
       // Build the shape path
       ctx.beginPath();
@@ -714,15 +779,14 @@
       ctx.shadowColor = shapeColor;
       ctx.shadowBlur = 24;
       ctx.stroke();
+      ctx.shadowBlur = 0;
 
+      // crisp inner line for polished hologram readability
       ctx.save();
-      ctx.font = '12px Orbitron, sans-serif';
-      ctx.fillStyle = '#ffffff';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'bottom';
-      ctx.shadowColor = shapeColor;
-      ctx.shadowBlur = 8;
-      ctx.fillText(`PREVIEW: ${currentWorldShape}`, cx, canvas.height - 24);
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
       ctx.restore();
     }
     ctx.restore();
