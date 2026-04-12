@@ -63,6 +63,11 @@
     if (typeof canvas !== 'undefined' && canvas && canvas.style) {
       canvas.style.boxShadow = 'none';
       canvas.style.filter = '';
+      // Clear stale targets and canvas buffer so previous-run content
+      // doesn't bleed through the cinematic intro overlay (backdrop-filter blur).
+      if (typeof targets !== 'undefined') targets = [];
+      const _introCtx = canvas.getContext && canvas.getContext('2d');
+      if (_introCtx) { _introCtx.fillStyle = '#07070a'; _introCtx.fillRect(0, 0, canvas.width, canvas.height); }
     }
 
     currentLevelIdx = -1;
