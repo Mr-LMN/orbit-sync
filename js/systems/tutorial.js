@@ -399,15 +399,47 @@
   }
 
   function ownMoreThanDefault() {
-    const unlocked = Array.isArray(window.unlockedSkins) ? window.unlockedSkins : [];
+    // window.unlockedSkins is declared with `let` in loop.js and is NOT a window property.
+    // Read directly from storage as the canonical source of truth.
+    const storage = getStorage();
+    const raw = storage.getJSON ? storage.getJSON('orbitSync_unlocks', null) : null;
+    const unlocked = Array.isArray(raw) ? raw
+      : (Array.isArray(window.unlockedSkins) ? window.unlockedSkins : []);
     return unlocked.some(function(id) { return id && id !== 'classic'; });
   }
 
   function isNewPlayerProfile() {
-    const worldUnlocked = Math.max(1, Number(window.maxWorldUnlocked) || 1);
-    const hasExtraCore  = ownMoreThanDefault();
-    const hasCompleted  = state.completed || state.phase === PHASES.COMPLETE;
-    return worldUnlocked <= 1 && !hasExtraCore && !hasCompleted;
+    const storage = getStorage();
+
+    // Tutorial state explicitly marks this as complete — not a new player.
+    if (state.completed || state.phase === PHASES.COMPLETE) return false;
+    if (storage.getItem('orbitSync_tutorialDone') === '1') return false;
+
+    // Session arc flag is written when the World 1 boss is defeated for the first time.
+    // Its presence means this is definitely a returning player.
+    if (storage.getItem('orbitSync_sessionArcDone') === '1') return false;
+
+    // World unlock counter — window.maxWorldUnlocked is a `let` var in loop.js and is
+    // NOT exposed on the window object; read from storage as the authoritative source.
+    const maxWorld = parseInt(storage.getItem('orbitSync_maxWorld'), 10) || 1;
+    if (maxWorld > 1) return false;
+
+    // Any non-default core/skin owned indicates past play.
+    if (ownMoreThanDefault()) return false;
+
+    // Stage completion or star records mean the player has actually played levels.
+    const pp = storage.getJSON ? storage.getJSON('orbitSync_playerProgress', null) : null;
+    if (pp) {
+      if (Object.keys(pp.completedStages || {}).length > 0) return false;
+      if (Object.keys(pp.stageStars    || {}).length > 0) return false;
+    }
+
+    // A non-zero personal best score is definitive proof of past runs.
+    const pbScore = parseInt(storage.getItem('orbitSync_pbScore'), 10) || 0;
+    if (pbScore > 0) return false;
+
+    // All markers are at their factory defaults — this is a genuinely fresh save.
+    return true;
   }
 
   function isVisibleElement(el) {
@@ -459,11 +491,32 @@
     }, COPY.economy.label);
   }
 
+  // Auto-migration: called when a save has real progression but is missing the tutorial
+  // completion flags (e.g. saves that predate the orbitSync_masterTutorial_v2 key).
+  // Writes all necessary flags so the player is never re-onboarded on future loads.
+  function _markTutorialCompleteForMigratedSave() {
+    const storage = getStorage();
+    state.completed = true;
+    state.phase     = PHASES.COMPLETE;
+    persistState();
+    storage.setItem('orbitSync_tutorialDone', '1');
+    // Ensure the session-arc gate in menus.js also passes for this player.
+    // Any save with actual progression has already "completed" the first session arc.
+    if (!storage.getItem('orbitSync_sessionArcDone')) {
+      storage.setItem('orbitSync_sessionArcDone', '1');
+    }
+  }
+
   function startMasterTutorialIfNeeded() {
     if (started) return;
     const midProgress = !state.completed && state.phase !== PHASES.WELCOME && state.phase !== PHASES.COMPLETE;
     if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') return;
-    if (!midProgress && !isNewPlayerProfile()) return;
+    // Returning player whose tutorial completion flags are absent (e.g. pre-v2 save).
+    // Auto-write the missing flags instead of re-running onboarding.
+    if (!midProgress && !isNewPlayerProfile()) {
+      _markTutorialCompleteForMigratedSave();
+      return;
+    }
     started = true;
     setTimeout(advanceMasterTutorial, 180);
   }
