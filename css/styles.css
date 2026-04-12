@@ -535,7 +535,10 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 /* Hub: full-height flex column, scroll only if content overflows */
 #homeView {
   overflow-y: auto;
-  position: relative; /* contains the absolutely-positioned #hubBg starfield */
+  /* NOTE: position is intentionally NOT overridden here so that .menu-view's
+     position:absolute / height:100% fills #menuViews at full height.
+     #hubBg (position:absolute inset:0) is still contained because #homeView
+     is a positioned ancestor via .menu-view's position:absolute. */
 }
 
 /* Center stack fills remaining height and centers its content */
@@ -3762,6 +3765,11 @@ body.hard-mode #hardModeBadge { display: block; }
     0 0 0 1px rgba(0, 229, 255, 0.06),
     inset 0 0 40px rgba(0, 229, 255, 0.03);
   position: relative;
+  /* Clear inherited left/bottom/transform from the first #tutorialCard block so
+     the flex-centering of #tutorialMask positions the card correctly on mobile. */
+  left: auto;
+  bottom: auto;
+  transform: none;
   z-index: 9002;
   animation: tutCardEntrance 0.28s cubic-bezier(0.2, 0.8, 0.2, 1.2) forwards;
 }
@@ -3853,6 +3861,17 @@ body.hard-mode #hardModeBadge { display: block; }
 .tutorial-focus-target {
   position: relative;
   z-index: 9001 !important;
+}
+
+/* During guided mode the mask is transparent — the card must be fully hidden.
+   The tutCardEntrance animation uses fill-mode:forwards which keeps opacity:1
+   and would override the cascade-level opacity:0 from the earlier block.
+   animation:none cancels the fill state so the cascade value wins. */
+#tutorialMask.is-guided #tutorialCard {
+  animation: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: none !important;
 }
 
 /* ── In-game tip overlay ──────────────────────────────────────── */
