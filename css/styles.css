@@ -825,9 +825,9 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   gap: 10px;
   width: calc(100% - 28px);
   max-width: 286px;
-  margin: 18px auto 12px auto;
-  padding: 16px 20px;
-  font-size: 1.15rem;
+  margin: 14px auto 8px auto;
+  padding: 12px 20px;
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 3px;
   border-radius: 30px;
@@ -913,6 +913,61 @@ body.last-life #arenaInfo          { opacity: 0.35; }
   .hub-rank-pill  { margin-bottom: 12px; }
   .hub-brand-text { font-size: 2.05rem; }
   .hub-center-stack { padding-bottom: 4px; }
+  .hub-primary-cta { margin: 8px auto 6px; padding: 10px 18px; font-size: 1rem; }
+}
+
+/* Daily Challenges Button */
+.daily-challenges-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% - 32px);
+  max-width: 420px;
+  margin: 0 auto 10px;
+  background: rgba(6, 8, 18, 0.72);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.03), 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.daily-challenges-btn:active {
+  transform: scale(0.97);
+}
+
+.daily-challenges-btn.challenges-complete {
+  border-color: rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15), inset 0 0 20px rgba(255, 215, 0, 0.04);
+}
+
+.challenges-btn-icon {
+  font-size: 1.2rem;
+}
+
+.challenges-btn-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.85);
+  flex: 1;
+  text-align: left;
+}
+
+.challenges-btn-status {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  color: #ffaa00;
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: flex;
+}
+.challenges-btn-status:empty {
+  display: none;
 }
 
 /* ── CAMPAIGN VIEW ─────────────────────── */

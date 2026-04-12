@@ -183,8 +183,18 @@
           <div class="event-panel-cta">ENTER ▶</div>
         </div>
 
-        <!-- Daily Challenges Panel -->
-        <div id="dailyChallengesPanel" class="daily-challenges-panel">
+        <!-- Daily Challenges Button (Replaced Panel) -->
+        <button id="dailyChallengesBtn" class="daily-challenges-btn" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); document.getElementById('dailyChallengesModal').style.display='flex';">
+          <span class="challenges-btn-icon">📋</span>
+          <span class="challenges-btn-label">DAILY CHALLENGES</span>
+          <span id="challengesBtnStatus" class="challenges-btn-status"></span>
+        </button>
+
+      </div>
+
+      <!-- Daily Challenges Modal -->
+      <div id="dailyChallengesModal" class="modal" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; z-index:20; background:rgba(4,5,12,0.96); backdrop-filter:blur(8px); flex-direction:column; align-items:center; justify-content:center;">
+        <div id="dailyChallengesPanel" class="daily-challenges-panel" style="margin-top:0;">
           <div class="challenges-header">
             <span class="challenges-title">📋 DAILY CHALLENGES</span>
             <span class="challenges-reset" id="challengesResetLabel">RESETS MIDNIGHT</span>
@@ -197,7 +207,7 @@
           <button id="challengeClaimBtn" class="challenge-claim-btn" style="display:none;"
             onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); if(OrbitGame.systems.challenges) OrbitGame.systems.challenges.claimChest();">🎁 CLAIM CHEST</button>
         </div>
-
+        <button class="btn btn-outline" style="margin-top:20px; width:min(88vw, 360px);" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); document.getElementById('dailyChallengesModal').style.display='none';">CLOSE</button>
       </div>
 
       <!-- CAMPAIGN VIEW -->
