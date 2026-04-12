@@ -2265,10 +2265,18 @@ function draw() {
     const glowWidth = worldShape === 'diamond' ? bodyWidth + 1.5 : bodyWidth + 4;
     const housingWidth = worldShape === 'diamond' ? glowWidth + 2 : glowWidth + 4;
     const isLiteTargetRender = !useHeavyEffects && !isBossShield;
+    const isPhoenixBossTarget = !!(levelData && levelData.boss === 'phoenix' && t.phoenixTarget);
+    const phoenixAlphaMult = isPhoenixBossTarget && Number.isFinite(t.alpha)
+      ? Math.max(0, Math.min(1, t.alpha))
+      : 1;
     const isResonanceCoreTarget = levelData && levelData.id === '3-6' && !!t.isResonanceBossTarget;
     // Stronger target contrast on diamond (especially during streaks)
-    let targetAlpha = isBossShield ? (0.27 + approach * 0.27 + hitFlash * 0.2) : (0.45 + approach * 0.25 + hitFlash * 0.3);
-    let targetCoreAlpha = isBossShield ? 0.94 : 0.92;
+    let targetAlpha = isBossShield
+      ? (0.27 + approach * 0.27 + hitFlash * 0.2)
+      : (isPhoenixBossTarget
+        ? (0.68 + approach * 0.22 + hitFlash * 0.28)
+        : (0.45 + approach * 0.25 + hitFlash * 0.3));
+    let targetCoreAlpha = isBossShield ? 0.94 : (isPhoenixBossTarget ? 0.98 : 0.92);
     const isWorld2PrimaryTarget = worldNum === 2 && !isBoss && !t.isPhantom && !t.isCornerBonus && !t.isLifeZone && !isBossShield;
     let targetGlowColor = isWorld2PrimaryTarget ? theme.targetGlowColor : t.color;
     let targetCoreColor = isWorld2PrimaryTarget ? theme.targetCoreColor : (isBossShield ? t.color : '#ffffff');
@@ -2300,6 +2308,8 @@ function draw() {
       targetAlpha += comboGlow * 0.16;
       targetCoreAlpha = Math.min(1, targetCoreAlpha + (comboGlow * 0.08));
     }
+    targetAlpha *= phoenixAlphaMult;
+    targetCoreAlpha *= phoenixAlphaMult;
     const drawWorld2AngularBracket = (angle, config = {}) => {
       if (!shouldDrawWorld2MechanicBrackets) return;
       const radial = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
@@ -2655,7 +2665,7 @@ function draw() {
 
     if (!isLiteTargetRender) {
       // ── WORLD BODY FILL: luminous panel per world ─────────────
-      if (!t.isLifeZone && !t.isCornerBonus && !isLiteTargetRender) {
+      if (!t.isLifeZone && !t.isCornerBonus && !isLiteTargetRender && !isPhoenixBossTarget) {
         const _midFillPt = getPointOnShape(tCenter, worldShape, centerObj.x, centerObj.y, dynamicRadius);
         const _fw = worldNum === 1 ? 'rgba(0,200,255,0.11)'
           : worldNum === 2 ? 'rgba(47,246,255,0.10)'
@@ -2697,16 +2707,18 @@ function draw() {
       // ── END WORLD BODY FILL ───────────────────────────────────
 
       // --- ACTIVE TARGET HOUSING (subtle dark cradle behind gate) ---
-      ctx.beginPath();
-      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
-      ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
-      ctx.lineWidth = isBossShield
-        ? (housingWidth + 2.6)
-        : ((worldShape === 'diamond' ? housingWidth - 2 : housingWidth) + resonanceHousingBoost);
-      ctx.lineCap = 'butt';
-      ctx.shadowBlur = 0;
-      ctx.stroke();
+      if (!isPhoenixBossTarget) {
+        ctx.beginPath();
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+        ctx.strokeStyle = isBossShield ? 'rgba(2, 6, 12, 0.96)' : 'rgba(5, 10, 18, 0.9)';
+        ctx.globalAlpha = isBossShield ? (0.9 + (approach * 0.06)) : (0.74 + (approach * 0.08));
+        ctx.lineWidth = isBossShield
+          ? (housingWidth + 2.6)
+          : ((worldShape === 'diamond' ? housingWidth - 2 : housingWidth) + resonanceHousingBoost);
+        ctx.lineCap = 'butt';
+        ctx.shadowBlur = 0;
+        ctx.stroke();
+      }
     }
 
     if (isBossShield) {

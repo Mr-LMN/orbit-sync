@@ -97,9 +97,9 @@
         width: 80px; height: 80px; border-radius: 50%;
         background: radial-gradient(circle, #fff6c2 0%, #ffe570 14%, #ff7a1a 41%, #641010 82%, rgba(0,0,0,0) 100%);
         box-shadow: 0 0 64px rgba(255,56,0,0.82), 0 0 14px rgba(255,120,40,0.55), inset 0 0 34px rgba(255,255,255,0.98), inset 0 0 18px rgba(255,120,0,0.45);
-        pointer-events: none; z-index: 5;
+        pointer-events: none; z-index: 7;
         transition: transform 0.08s ease, background 0.3s ease, box-shadow 0.2s ease;
-        mix-blend-mode: screen; opacity: 0;
+        mix-blend-mode: normal; isolation: isolate; filter: none; opacity: 0;
       `;
       document.body.appendChild(_coreEl);
     }
