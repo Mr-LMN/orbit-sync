@@ -1966,6 +1966,7 @@ function draw() {
     : (activeSkin === 'crimson')
       ? '#cc1133'
       : (theme.railColor || palette.primary);
+  const isPhoenixBossFight = !!(isBoss && levelData && levelData.boss === 'phoenix');
 
   // Matrix tension overrides
   if (timeScale < 0.9 && !inMenu) {
@@ -1983,25 +1984,49 @@ function draw() {
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
   }
 
-  // Dark groove
-  buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-  ctx.lineWidth = 8;
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.shadowBlur = 0;
-  ctx.globalAlpha = 1.0;
-  ctx.stroke();
+  // Dark groove (skip for Phoenix boss so shell does not look recessed)
+  if (!isPhoenixBossFight) {
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1.0;
+    ctx.stroke();
+  }
 
   // Glowing line
   buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-  ctx.lineWidth = 2;
+  ctx.lineWidth = isPhoenixBossFight ? 3.8 : 2;
   ctx.globalAlpha = 0.9;
   ctx.strokeStyle = effectiveRailColor;
-  ctx.globalAlpha = 0.9 * railGlowScale;
-  setShadowBlur((worldNum === 2 && !isBoss) ? (12 * railGlowScale) : (15 * railGlowScale));
+  ctx.globalAlpha = (isPhoenixBossFight ? 1.0 : 0.9) * railGlowScale;
+  setShadowBlur((worldNum === 2 && !isBoss) ? (12 * railGlowScale) : ((isPhoenixBossFight ? 22 : 15) * railGlowScale));
   ctx.shadowColor = effectiveRailColor;
   ctx.stroke();
   ctx.globalAlpha = 1.0;
   ctx.shadowBlur = 0;
+
+  if (isPhoenixBossFight) {
+    // Phoenix armor highlight pass: crisp inner edge so the shell stays foreground.
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#ffe7c7';
+    ctx.globalAlpha = 0.92;
+    setShadowBlur(12);
+    ctx.shadowColor = '#ff9a4d';
+    ctx.stroke();
+
+    // Soft outer aura pass, intentionally light to avoid the frosted-panel look.
+    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius + 2, 0, Math.PI * 2);
+    ctx.lineWidth = 3.2;
+    ctx.strokeStyle = '#ff6a2c';
+    ctx.globalAlpha = 0.42;
+    setShadowBlur(16);
+    ctx.shadowColor = '#ff5a1f';
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
+  }
 
   // LAST-LIFE RING PULSE — drawn directly on the rail, pulses in canvas space
   if (lives === 1 && !inMenu && isPlaying && !levelData.boss) {

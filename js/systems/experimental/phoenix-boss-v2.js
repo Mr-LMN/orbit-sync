@@ -29,11 +29,11 @@
   const PHASE_MUSIC_INTENSITY = [1, 1, 2, 2, 3];
   const PHASE_FLAVOR = ['READ THE SHELL', 'TEMPERATURE RISING', 'ARMOR ADAPTS', 'CORRUPTED PATTERN', 'CRITICAL MELTDOWN'];
   const PHASE_THEME = [
-    { popup: '#ff9f5d', pulse: '#ff9f5d', ambientShadow: 'inset 0 0 70px rgba(255,140,70,0.18), inset 0 0 120px rgba(30,10,0,0.20), 0 0 18px rgba(255,124,58,0.12)',    ambientFilter: 'saturate(1.02) brightness(1.00)' },
-    { popup: '#ff6a2c', pulse: '#ff6a2c', ambientShadow: 'inset 0 0 95px rgba(255,88,30,0.28),  inset 0 0 170px rgba(35,8,0,0.30),   0 0 24px rgba(255,72,30,0.18)',    ambientFilter: 'saturate(1.08) brightness(1.02)' },
-    { popup: '#ff8c2e', pulse: '#ff8c2e', ambientShadow: 'inset 0 0 120px rgba(255,118,35,0.34),inset 0 0 210px rgba(45,10,0,0.40),  0 0 28px rgba(255,120,36,0.20)',   ambientFilter: 'saturate(1.14) contrast(1.04) brightness(1.03)' },
-    { popup: '#ff3d42', pulse: '#ff3d42', ambientShadow: 'inset 0 0 140px rgba(255,55,45,0.42), inset 0 0 245px rgba(38,0,8,0.56),   0 0 32px rgba(255,50,58,0.22)',    ambientFilter: 'saturate(1.24) contrast(1.08) brightness(1.05)' },
-    { popup: '#ff5b9a', pulse: '#ff5b9a', ambientShadow: 'inset 0 0 170px rgba(255,62,120,0.50),inset 0 0 290px rgba(30,0,16,0.70),  0 0 36px rgba(255,90,165,0.30)',   ambientFilter: 'saturate(1.34) contrast(1.12) brightness(1.08)' }
+    { popup: '#ff9f5d', pulse: '#ff9f5d', ambientShadow: '0 0 14px rgba(255,124,58,0.12)',  ambientFilter: 'saturate(1.02) brightness(1.00)' },
+    { popup: '#ff6a2c', pulse: '#ff6a2c', ambientShadow: '0 0 18px rgba(255,72,30,0.18)',    ambientFilter: 'saturate(1.08) brightness(1.02)' },
+    { popup: '#ff8c2e', pulse: '#ff8c2e', ambientShadow: '0 0 22px rgba(255,120,36,0.20)',   ambientFilter: 'saturate(1.14) contrast(1.04) brightness(1.03)' },
+    { popup: '#ff3d42', pulse: '#ff3d42', ambientShadow: '0 0 26px rgba(255,50,58,0.22)',    ambientFilter: 'saturate(1.24) contrast(1.08) brightness(1.05)' },
+    { popup: '#ff5b9a', pulse: '#ff5b9a', ambientShadow: '0 0 30px rgba(255,90,165,0.30)',   ambientFilter: 'saturate(1.34) contrast(1.12) brightness(1.08)' }
   ];
 
   // ─── STATE V2 ────────────────────────────────────────────────────────────
@@ -237,7 +237,7 @@
     pulseBrightness(2.8, 250);
 
     if (typeof canvas !== 'undefined' && canvas && canvas.style) {
-      canvas.style.boxShadow = 'inset 0 0 220px rgba(255,0,180,0.85), inset 0 0 320px rgba(60,0,30,0.75)';
+      canvas.style.boxShadow = '0 0 56px rgba(255,0,180,0.55)';
     }
 
     // Reverse all active zones immediately
@@ -529,7 +529,7 @@
         }
         createPopup(centerObj.x, centerObj.y - 52, 'WRATH PULSE', '#ff3300');
         _pulseCore(1.6, '#ff3300');
-        if (typeof canvas !== 'undefined') canvas.style.boxShadow = 'inset 0 0 50px #ff3300';
+        if (typeof canvas !== 'undefined') canvas.style.boxShadow = '0 0 30px rgba(255,80,0,0.45)';
         pulseBrightness(1.6, 120);
 
       } else if (_wrathActive && frameNow >= _wrathEndsAt) {
@@ -650,7 +650,7 @@
     _missCount++;
     _perfectMult = 1;
     if (typeof canvas !== 'undefined') {
-      canvas.style.boxShadow = 'inset 0 0 40px #ff3300';
+      canvas.style.boxShadow = '0 0 24px rgba(255,70,0,0.45)';
       setTimeout(() => { canvas.style.boxShadow = 'none'; }, 130);
     }
     _triggerRebirth();
