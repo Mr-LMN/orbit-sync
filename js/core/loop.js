@@ -1218,7 +1218,7 @@ function resetRunState() {
   runPerfectCount = 0;
   currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
   adReviveUsedThisStage = false;
-  world1FreeRestartUsed = false;
+  // DO NOT reset world1FreeRestartUsed here - it's managed per-level in loadLevel()
   // Iron Shield augment: reset extra revive eligibility
   if (activeAugment === 'iron_shield') usedLastChance = false;
   // (usedLastChance is already false, but this makes the intent explicit)
@@ -1628,6 +1628,8 @@ function loadLevel(idx) {
     tutOverlay.style.display = 'none';
     tutorialPhase = 0;
   }
+  // Reset World 1 free restart flag when loading a new level (one free restart per level only)
+  world1FreeRestartUsed = false;
   // Restore lives to full on boss entry — you earned it getting here
   if (levelData.boss && (levelData.boss === 'aegis' || levelData.boss === 'prism'
       || levelData.boss === 'corruptor' || levelData.boss === 'null_gate' || levelData.boss === 'spectre' || levelData.boss === 'solar_core')) {
