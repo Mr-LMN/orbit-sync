@@ -675,7 +675,6 @@
           <div class="summary-label" style="color: #ffaa00;">COINS EARNED</div>
           <div class="summary-value-group">
             <span id="runCoinsDisplay" style="color: #ffb830;">0</span>
-            <button id="adDoubleCoinsBtn" class="btn-compact" style="display:none;">📺 x2</button>
           </div>
           <div id="runCoinsHint" class="run-coins-hint" style="display:none;"></div>
         </div>
@@ -687,8 +686,6 @@
           </div>
           <div id="resultsXpText" class="results-xp-label" style="min-width: 40px; text-align: right; color: #ffa500;">+0</div>
         </div>
-
-        <div id="resultsGradeBadge" class="results-grade-badge">S</div>
 
         <p id="nearMissMsg" class="near-miss-msg"></p>
       </div>
@@ -718,16 +715,15 @@
         <div id="stageReplayBtns" style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center; width:100%;"></div>
       </div>
 
+      <!-- Simplified Fail Screen UI -->
       <div id="overlayActionStack" class="overlay-action-stack">
         <div id="overlayButtonGroup" class="overlay-button-group">
           <button id="adReviveBtn" class="btn" style="display: none; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff;">📺 WATCH AD TO REVIVE</button>
-          <button id="reviveBtn" class="btn" onclick="if(audioCtx) soundUIClick();" style="display: none;">ONE MORE TRY</button>
-          <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">REVIVE (🪙 50)</button>
-          <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">PLAY AGAIN</button>
+          <button id="bankCoinsBtn" class="btn primary" onclick="if(audioCtx) soundUIClick(); bankRunCoins();" style="display: none;">🪙 BANK COINS</button>
+          <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">💰 REVIVE (🪙 50)</button>
+          <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">RESTART STAGE</button>
         </div>
         <div id="overlaySecondaryActions" class="overlay-secondary-actions">
-          <button id="shareBtn" onclick="if(audioCtx) soundUIClick(); generateShareCard();">SHARE</button>
-          <span class="overlay-sep">·</span>
           <button id="menuBtn" onclick="if(audioCtx) soundUIClick();">MENU</button>
         </div>
       </div>
@@ -766,6 +762,7 @@
   <script src="js/systems/phoenix-boss.js"></script>
   <script src="js/systems/experimental/phoenix-boss-v2.js"></script>
   <script src="js/systems/rendering.js"></script>
+  <script src="js/systems/boss-cores.js"></script>
   <script src="js/systems/event-runner.js"></script>
 
   <script src="js/ui/hud.js"></script>

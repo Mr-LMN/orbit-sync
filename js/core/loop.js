@@ -294,6 +294,7 @@ let currentReviveCost = 50;
 let reviveCount = 0;
 let usedLastChance = false;
 let adReviveUsedThisStage = false;
+let world1FreeRestartUsed = false;
 let scoreAtCheckpoint = 0;
 let scoreAtLevelStart = 0;
 let ringHitFlash = 0;
@@ -1217,6 +1218,7 @@ function resetRunState() {
   runPerfectCount = 0;
   currentReviveCost = 50; reviveCount = 0; usedLastChance = false;
   adReviveUsedThisStage = false;
+  world1FreeRestartUsed = false;
   // Iron Shield augment: reset extra revive eligibility
   if (activeAugment === 'iron_shield') usedLastChance = false;
   // (usedLastChance is already false, but this makes the intent explicit)
@@ -1628,9 +1630,13 @@ function loadLevel(idx) {
   }
   // Restore lives to full on boss entry — you earned it getting here
   if (levelData.boss && (levelData.boss === 'aegis' || levelData.boss === 'prism'
-      || levelData.boss === 'corruptor' || levelData.boss === 'null_gate')) {
+      || levelData.boss === 'corruptor' || levelData.boss === 'null_gate' || levelData.boss === 'spectre' || levelData.boss === 'solar_core')) {
     lives = hardModeActive ? 2 : maxLives;
     ui.lives.innerText = lives;
+    // Activate the boss core rendering system
+    if (OG.systems && OG.systems.bossCores) {
+      OG.systems.bossCores.activate(levelData.boss, 100);
+    }
   }
 
   window.ghostShieldActive = !!(OrbitGame.entities.spheres.runtime &&
@@ -3362,6 +3368,12 @@ function draw() {
   // World 3 uses echo mechanics — the echo orb MUST be rendered here alongside the main orb.
   // Never add world-specific dimming for main/echo without updating both draw paths together.
   // Breaking this causes the player orb to appear "missing" even when logic is correct.
+
+  // BOSS CORE RENDERING (Active only during boss fights)
+  if (isBoss && OG.systems && OG.systems.bossCores && OG.systems.bossCores.isActive()) {
+    OG.systems.bossCores.render(ctx, centerObj.x, centerObj.y);
+  }
+
   // PLAYER ORB
   const currentWorldNum = getWorldNum();
   const isWorld3 = currentWorldNum === 3;
@@ -4038,7 +4050,25 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   }
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
+  // World 1 Tutorial: free restart on failure (no life penalty)
+  const currentWorld = parseInt((levelData && levelData.id) ? levelData.id.split('-')[0] : '1', 10);
+  const isWorld1Tutorial = currentWorld === 1;
+  if (lives <= 0 && isWorld1Tutorial && !world1FreeRestartUsed) {
+    world1FreeRestartUsed = true;
+    // Reset to just before this fail — restore lives and reset targets
+    lives = (hardModeActive ? 2 : maxLives);
+    resetRunState();
+    stageHits = 0;
+    // Reload the level without showing fail screen
+    loadLevel(currentLevelIdx);
+    return;
+  }
+
   if (lives <= 0) {
+    // Deactivate boss core if active
+    if (OG.systems && OG.systems.bossCores) {
+      OG.systems.bossCores.deactivate();
+    }
     if (audioCtx) updateMusicState(multiplier, false);
     clearIntensity();
     if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
@@ -5066,8 +5096,8 @@ function tap() {
           streak++;
       }
       soundMultiplierUp(multiplier);
-      let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 5 : 0;
-      score += (4 * multiplier) + frenzyBonusScore;
+      let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 2 : 0;
+      score += 15 + frenzyBonusScore;
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -5154,8 +5184,8 @@ function tap() {
           }
       }
       soundMultiplierUp(multiplier);
-      let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 3 : 0;
-      score += (3 * multiplier) + frenzyBonusScore;
+      let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 1 : 0;
+      score += 10 + frenzyBonusScore;
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -5205,7 +5235,7 @@ function tap() {
       if (lives === 1) runLastLifeHits++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.28 + Math.min(multiplier, 8) * 0.025);
-      score += (2 * multiplier);
+      score += 5;
       canvas.style.filter = 'brightness(1.4)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundGood(multiplier);
@@ -5216,7 +5246,7 @@ function tap() {
       runOkCount++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.08);
-      multiplier = 1; score += 1;
+      multiplier = 1; score += 2;
       const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
       createPopup(hitX, hitY - 24, okTimingLabel ? `${okTimingLabel}` : 'SLOPPY', '#ff6677', 'ok');
       canvas.style.filter = 'brightness(1.5) hue-rotate(320deg) saturate(1.4)';
@@ -5511,6 +5541,10 @@ function returnToMenu() {
   }
   if (OG.systems && OG.systems.phoenixBossV2 && OG.systems.phoenixBossV2.isActive()) {
     OG.systems.phoenixBossV2.stop();
+  }
+  // Deactivate boss cores
+  if (OG.systems && OG.systems.bossCores) {
+    OG.systems.bossCores.deactivate();
   }
   // Hide all Phoenix UI elements when returning to menu
   const pbUI = document.getElementById('phoenixGameUI');
