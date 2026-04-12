@@ -785,6 +785,9 @@
     const isHardMode = !!(OG.state && OG.state.legacy && OG.state.legacy.hardMode);
     if (isHardMode) return;
 
+    // Never show in-game tutorial content to established players
+    if (!isNewPlayerProfile()) return;
+
     // In-game contextual tips — only show when no freeze-frame card is active
     function _showTipIfNoCard(text, delay, duration) {
       setTimeout(function() {
