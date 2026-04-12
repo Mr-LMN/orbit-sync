@@ -203,9 +203,12 @@
           <div id="hubStreakDisplay" class="hub-streak-strip" style="display:none;"></div>
           <!-- Challenge items injected by challenges.js -->
           <div id="challengesList" class="challenges-list"></div>
-          <!-- Claim button (shown when all 3 done) -->
-          <button id="challengeClaimBtn" class="challenge-claim-btn" style="display:none;"
+          <!-- Daily Claim button (shown when all 3 done) -->
+          <button id="challengeClaimBtn" class="challenge-claim-btn" style="display:none; margin-bottom:12px;"
             onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); if(OrbitGame.systems.challenges) OrbitGame.systems.challenges.claimChest();">🎁 CLAIM CHEST</button>
+          <!-- Weekly Claim button -->
+          <button id="weeklyChallengeClaimBtn" class="challenge-claim-btn" style="display:none; border-color:#ffd700; color:#ffd700;"
+            onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); if(OrbitGame.systems.challenges) OrbitGame.systems.challenges.claimWeeklyChest();">🏆 CLAIM WEEKLY</button>
         </div>
         <button class="btn btn-outline" style="margin-top:20px; width:min(88vw, 360px);" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick(); document.getElementById('dailyChallengesModal').style.display='none';">CLOSE</button>
       </div>

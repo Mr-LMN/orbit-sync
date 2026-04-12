@@ -4117,6 +4117,25 @@ body.hard-mode #hardModeBadge { display: block; }
   background: #00ff88;
 }
 
+/* ── Weekly challenge item styling ────────────────────────────── */
+.challenge-item.challenge-weekly {
+  background: rgba(255, 215, 0, 0.04);
+  border-color: rgba(255, 215, 0, 0.12);
+}
+
+.challenge-item.challenge-weekly.challenge-done {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.30);
+}
+
+.challenge-item.challenge-weekly .challenge-bar-fill {
+  background: linear-gradient(90deg, #ffd700, #ff9500);
+}
+
+.challenge-item.challenge-weekly.challenge-done .challenge-bar-fill {
+  background: linear-gradient(90deg, #ffd700, #ffaa00);
+}
+
 /* ── Claim chest button ────────────────────────────────────── */
 .challenge-claim-btn {
   display: none;

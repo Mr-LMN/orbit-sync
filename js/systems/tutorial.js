@@ -17,6 +17,10 @@
     HARD_MODE_CLEAR: 'hard_mode_clear',
     ECONOMY_ROUTE:   'economy_route',
     OWNERSHIP_ACTION:'ownership_action',
+    SPHERE_INTRO:    'sphere_intro',      // Phase 7: Explain spheres & leveling
+    PERK_INTRO:      'perk_intro',        // Phase 8: Explain perks & equipping
+    RANK_INTRO:      'rank_intro',        // Phase 9: Explain prestige & rankings
+    DAILY_CHALLENGE: 'daily_challenge',   // Phase 10: First daily challenge
     COMPLETE:        'complete'
   };
 
@@ -86,6 +90,26 @@
       label: 'WORLD FILE',
       title: 'KNOW YOUR ZONES',
       body: '🟠 EMBER — Safe. Hit for points. Your bread and butter.\n\n🟡 GHOST — Appears and disappears. Only hits when visible.\n\n⚡ INFERNO — Tiny, moves fast. Massive reward for precision.\n\n⬛ ASH — A TRAP. Hitting ash costs you a LIFE. Avoid it.'
+    },
+    sphereIntro: {
+      label: 'CORE SYSTEM',
+      title: 'YOUR SPHERE IS YOUR ARMOR',
+      body: 'Spheres define your stats. Rarer spheres have stronger passives — passive bonuses that always apply.\n\nLevel them up, unlock perk slots, ascend them to stars. Your sphere is your identity.'
+    },
+    perkIntro: {
+      label: 'AUGMENT SYSTEM',
+      title: 'PERKS CUSTOMIZE YOUR POWER',
+      body: 'Perks are equippable bonuses you slot into your sphere.\n\nCombine perks to build synergies. Swap them between runs to counter different worlds.\n\nPerks are unlocked as you progress through challenges and ranking up.'
+    },
+    rankIntro: {
+      label: 'PRESTIGE SYSTEM',
+      title: 'RANK UP & CLIMB GLOBAL RANKS',
+      body: 'Earn XP by completing runs and challenges. Each rank unlocks cosmetics, perks, and passive bonuses.\n\nReach rank 50 and prestige to reset for cosmetic badges and permanent stat boosts. There is no ceiling — only the next climb.'
+    },
+    dailyChallengeIntro: {
+      label: 'DAILY SYSTEM',
+      title: 'COMPLETE YOUR DAILY MISSIONS',
+      body: 'Three challenges refresh each day at UTC midnight. Complete all three to earn bonus coins and a small reward.\n\nSpecial weekly challenges offer even better loot. Consistency builds empires.'
     }
   };
 
@@ -97,7 +121,11 @@
       hardModeUnlocked:       false,
       hardModeCleared:        false,
       economyRoute:           null,
-      ownershipDone:          false
+      ownershipDone:          false,
+      sphereIntroShown:       false,
+      perkIntroShown:         false,
+      rankIntroShown:         false,
+      dailyChallengeShown:    false
     },
     tutorialCards: {
       starRatingShown:       false,
@@ -602,7 +630,85 @@
     if (state.phase === PHASES.ECONOMY_ROUTE) { routeEconomyPhase(); return; }
 
     if (state.phase === PHASES.OWNERSHIP_ACTION) {
-      if (state.pending.ownershipDone) { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }
+      if (state.pending.ownershipDone) { setMasterTutorialPhase(PHASES.SPHERE_INTRO); advanceMasterTutorial(); }
+      return;
+    }
+
+    if (state.phase === PHASES.SPHERE_INTRO) {
+      if (state.pending.sphereIntroShown) { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); return; }
+      state.pending.sphereIntroShown = true;
+      persistState();
+      showFreezeFrame(COPY.sphereIntro.title, COPY.sphereIntro.body, 'LEVEL UP', function() {
+        showGuidedHighlight({
+          target: '#workshopEquippedLevel',
+          fallbackCopy: COPY.sphereIntro,
+          onSuccess: function() { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); },
+          onFallback: function() { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); }
+        });
+      }, COPY.sphereIntro.label);
+      return;
+    }
+
+    if (state.phase === PHASES.PERK_INTRO) {
+      if (state.pending.perkIntroShown) { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); return; }
+      state.pending.perkIntroShown = true;
+      persistState();
+      showFreezeFrame(COPY.perkIntro.title, COPY.perkIntro.body, 'EQUIP PERK', function() {
+        const perkSlot = document.querySelector('#workshopEquippedPerkSlots button');
+        if (perkSlot && isVisibleElement(perkSlot)) {
+          showGuidedHighlight({
+            target: perkSlot,
+            fallbackCopy: COPY.perkIntro,
+            onSuccess: function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); },
+            onFallback: function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); }
+          });
+        } else {
+          setTimeout(function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); }, 600);
+        }
+      }, COPY.perkIntro.label);
+      return;
+    }
+
+    if (state.phase === PHASES.RANK_INTRO) {
+      if (state.pending.rankIntroShown) { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); return; }
+      state.pending.rankIntroShown = true;
+      persistState();
+      showFreezeFrame(COPY.rankIntro.title, COPY.rankIntro.body, 'CLIMB', function() {
+        const rankStrip = document.getElementById('hubRankLabel');
+        if (rankStrip && isVisibleElement(rankStrip)) {
+          showGuidedHighlight({
+            target: rankStrip,
+            fallbackCopy: COPY.rankIntro,
+            onSuccess: function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); },
+            onFallback: function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); }
+          });
+        } else {
+          setTimeout(function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); }, 600);
+        }
+      }, COPY.rankIntro.label);
+      return;
+    }
+
+    if (state.phase === PHASES.DAILY_CHALLENGE) {
+      if (state.pending.dailyChallengeShown) { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); return; }
+      state.pending.dailyChallengeShown = true;
+      persistState();
+      showFreezeFrame(COPY.dailyChallengeIntro.title, COPY.dailyChallengeIntro.body, 'CHECK CHALLENGES', function() {
+        const challengeNav = document.querySelector('[onclick*="switchMenuTab"]') && document.querySelector('[onclick*="switchMenuTab(\'challenges\')"]');
+        const challengeBtn = challengeNav || document.getElementById('nav-challenges') || Array.from(document.querySelectorAll('button')).find(function(btn) {
+          return btn.textContent && btn.textContent.includes('CHALLENGES');
+        });
+        if (challengeBtn && isVisibleElement(challengeBtn)) {
+          showGuidedHighlight({
+            target: challengeBtn,
+            fallbackCopy: COPY.dailyChallengeIntro,
+            onSuccess: function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); },
+            onFallback: function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }
+          });
+        } else {
+          setTimeout(function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }, 600);
+        }
+      }, COPY.dailyChallengeIntro.label);
       return;
     }
 

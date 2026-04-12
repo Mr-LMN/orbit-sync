@@ -25,15 +25,34 @@
     { id: 'streak_login',    label: 'Log in today',                 type: 'daily_login',      target: 1,   xp: 10 },
   ];
 
+  // ─── WEEKLY CHALLENGE POOL ──────────────────────────────────────────────
+  // Harder challenges that refresh weekly (Monday UTC)
+  const WEEKLY_CHALLENGE_POOL = [
+    { id: 'weekly_world_boss', label: 'Defeat a World Boss', type: 'boss_defeated', target: 1, xp: 150, rarity: 'EPIC' },
+    { id: 'weekly_perfects_50', label: 'Land 50 PERFECT hits', type: 'perfects_total', target: 50, xp: 120, rarity: 'EPIC' },
+    { id: 'weekly_score_5000', label: 'Score 5000+ total', type: 'single_run_score', target: 5000, xp: 100, rarity: 'RARE' },
+    { id: 'weekly_runs_20', label: 'Complete 20 runs', type: 'runs_completed', target: 20, xp: 80, rarity: 'RARE' },
+    { id: 'weekly_phoenix_clear', label: 'Defeat the Phoenix', type: 'phoenix_victory', target: 1, xp: 200, rarity: 'LEGENDARY' },
+  ];
+
   // ─── CHEST REWARD TABLE ─────────────────────────────────────────────────
   // coins awarded when the total daily challenge chest is claimed
-  const CHEST_REWARD = { coins: 28, label: 'DAILY CHEST', rarity: 'RARE', color: '#00e5ff' };
+  const CHEST_REWARD = { coins: 28, gems: 2, sphereXP: 50, label: 'DAILY CHEST', rarity: 'RARE', color: '#00e5ff' };
+  const WEEKLY_REWARD = { coins: 100, gems: 15, sphereXP: 300, label: 'WEEKLY CHEST', rarity: 'LEGENDARY', color: '#ffd700' };
 
   // ─── SEEDED DAILY SELECTION ──────────────────────────────────────────────
   // Everyone gets the same 3 challenges each calendar day, seeded by date.
   function _seedForToday() {
     const d = new Date();
     return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+  }
+
+  function _seedForWeek() {
+    // Monday = start of week (week 0 = first monday of year)
+    const d = new Date();
+    const weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1)); // Adjust to Monday
+    return weekStart.getFullYear() * 10000 + (weekStart.getMonth() + 1) * 100 + weekStart.getDate();
   }
 
   function _seededRand(seed, idx) {
@@ -69,6 +88,26 @@
     return chosen;
   }
 
+  function _selectWeeksChallenges() {
+    const seed = _seedForWeek();
+    const pool = WEEKLY_CHALLENGE_POOL.slice();
+    const chosen = [];
+    const used = new Set();
+
+    // Pick 2 weekly challenges
+    for (let i = 0; i < 2 && pool.length > 0; i++) {
+      let idx;
+      let attempts = 0;
+      do {
+        idx = Math.floor(_seededRand(seed, i * 10 + attempts) * pool.length);
+        attempts++;
+      } while (used.has(idx) && attempts < 20);
+      used.add(idx);
+      chosen.push({ ...pool[idx], isWeekly: true });
+    }
+    return chosen;
+  }
+
   // ─── STATE ───────────────────────────────────────────────────────────────
   function _loadState() {
     const storage = OG.storage || window.localStorage;
@@ -76,19 +115,23 @@
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        if (parsed && parsed.dateKey === _seedForToday()) return parsed;
+        if (parsed && parsed.dateKey === _seedForToday() && parsed.weekKey === _seedForWeek()) return parsed;
       } catch (e) { /* fallback */ }
     }
     // New day — reset progress
-    const challenges = _selectTodaysChallenges();
+    const dailyChallenges = _selectTodaysChallenges();
+    const weeklyChallenges = _selectWeeksChallenges();
     const newState = {
       dateKey:    _seedForToday(),
-      challenges: challenges.map(c => ({ ...c, progress: 0, done: false })),
-      chestClaimed: false,
+      weekKey:    _seedForWeek(),
+      dailyChallenges: dailyChallenges.map(c => ({ ...c, progress: 0, done: false })),
+      weeklyChallenges: weeklyChallenges.map(c => ({ ...c, progress: 0, done: false })),
+      dailyChestClaimed: false,
+      weeklyChestClaimed: false,
       sessionStats: { stagesCleared: 0, perfects: 0, maxCombo: 0, runsCompleted: 0, phoenixSurvived: 0 }
     };
     // Daily login is always auto-done on first load
-    const loginChallenge = newState.challenges.find(c => c.type === 'daily_login');
+    const loginChallenge = newState.dailyChallenges.find(c => c.type === 'daily_login');
     if (loginChallenge) { 
       loginChallenge.progress = 1; 
       loginChallenge.done = true; 
@@ -126,8 +169,10 @@
   // ─── PROGRESS HELPERS ────────────────────────────────────────────────────
   function _tick(type, value) {
     let anyChanged = false;
-    for (let i = 0; i < _state.challenges.length; i++) {
-      const c = _state.challenges[i];
+    
+    // Update daily challenges
+    for (let i = 0; i < _state.dailyChallenges.length; i++) {
+      const c = _state.dailyChallenges[i];
       if (c.done) continue;
       if (c.type !== type) continue;
 
@@ -145,6 +190,26 @@
         anyChanged = true;
       }
     }
+
+    // Update weekly challenges
+    for (let i = 0; i < _state.weeklyChallenges.length; i++) {
+      const c = _state.weeklyChallenges[i];
+      if (c.done) continue;
+      if (c.type !== type) continue;
+
+      if (type === 'single_run_score' || type === 'max_combo' || type === 'world_reached' || type === 'phoenix_survive' || type === 'boss_defeated' || type === 'phoenix_victory') {
+        if (value >= c.target) { c.progress = c.target; c.done = true; anyChanged = true; }
+        else { c.progress = Math.max(c.progress, value); anyChanged = true; }
+      } else {
+        c.progress = Math.min(c.target, c.progress + value);
+        if (c.progress >= c.target) { 
+          c.done = true; 
+          c.justDone = true;
+        }
+        anyChanged = true;
+      }
+    }
+
     if (anyChanged) {
       _saveState(_state);
       refreshChallengesUI();
@@ -153,33 +218,60 @@
   }
 
   function _checkChestReady() {
-    if (_state.chestClaimed) return;
-    const allDone = _state.challenges.every(c => c.done);
-    if (allDone) {
+    if (_state.dailyChestClaimed) {
       const claimBtn = document.getElementById('challengeClaimBtn');
-      if (claimBtn) {
-        claimBtn.style.display = 'block';
-        claimBtn.classList.add('challenge-claim-ready');
+      if (claimBtn) claimBtn.style.display = 'none';
+    } else {
+      const allDaily = _state.dailyChallenges.every(c => c.done);
+      if (allDaily) {
+        const claimBtn = document.getElementById('challengeClaimBtn');
+        if (claimBtn) {
+          claimBtn.style.display = 'block';
+          claimBtn.classList.add('challenge-claim-ready');
+        }
+        const panel = document.getElementById('dailyChallengesPanel');
+        if (panel) panel.classList.add('challenges-complete');
+        const btn = document.getElementById('dailyChallengesBtn');
+        if (btn) btn.classList.add('challenges-complete');
       }
-      // Subtle pulse on the hub challenge bar
-      const panel = document.getElementById('dailyChallengesPanel');
-      if (panel) panel.classList.add('challenges-complete');
-      const btn = document.getElementById('dailyChallengesBtn');
-      if (btn) btn.classList.add('challenges-complete');
+    }
+
+    if (_state.weeklyChestClaimed) {
+      const claimBtn = document.getElementById('weeklyChallengeClaimBtn');
+      if (claimBtn) claimBtn.style.display = 'none';
+    } else {
+      const allWeekly = _state.weeklyChallenges.every(c => c.done);
+      if (allWeekly) {
+        const claimBtn = document.getElementById('weeklyChallengeClaimBtn');
+        if (claimBtn) {
+          claimBtn.style.display = 'block';
+          claimBtn.classList.add('challenge-claim-ready');
+        }
+      }
     }
   }
 
   function claimChest() {
-    if (_state.chestClaimed) return;
-    if (!_state.challenges.every(c => c.done)) return;
-    _state.chestClaimed = true;
+    if (_state.dailyChestClaimed) return;
+    if (!_state.dailyChallenges.every(c => c.done)) return;
+    _state.dailyChestClaimed = true;
     _saveState(_state);
 
-    // Award coins
+    // Award coins + gems + sphere XP items
     if (typeof globalCoins !== 'undefined') {
       globalCoins += CHEST_REWARD.coins;
       if (typeof saveData === 'function') saveData();
       if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
+    }
+    if (typeof globalCrystals !== 'undefined') {
+      globalCrystals += CHEST_REWARD.gems;
+    }
+
+    // Sphere XP item to inventory (stored in progression data)
+    if (OG.storage && OG.storage.getJSON) {
+      const progData = OG.storage.getJSON('orbitSync_progression', {}) || {};
+      progData.sphereXPItems = (progData.sphereXPItems || 0) + CHEST_REWARD.sphereXP;
+      OG.storage.setJSON('orbitSync_progression', progData);
     }
 
     // Celebration
@@ -193,9 +285,48 @@
     // Pop notification
     if (typeof createPopup === 'function' && typeof centerObj !== 'undefined') {
       createPopup(centerObj.x, centerObj.y - 80, `+${CHEST_REWARD.coins} COINS`, CHEST_REWARD.color);
-      createPopup(centerObj.x, centerObj.y - 55, `DAILY CHEST CLAIMED`, '#ffffff');
+      createPopup(centerObj.x, centerObj.y - 55, `+${CHEST_REWARD.gems} GEMS`, '#ff00ff');
+      createPopup(centerObj.x, centerObj.y - 30, `+${CHEST_REWARD.sphereXP} SPHERE XP`, '#ffd700');
       if (typeof createShockwave === 'function') createShockwave(CHEST_REWARD.color, 50);
       if (typeof pulseBrightness === 'function') pulseBrightness(1.6, 200);
+    }
+    refreshChallengesUI();
+  }
+
+  function claimWeeklyChest() {
+    if (_state.weeklyChestClaimed) return;
+    if (!_state.weeklyChallenges.every(c => c.done)) return;
+    _state.weeklyChestClaimed = true;
+    _saveState(_state);
+
+    // Award coins + gems + sphere XP items (much higher)
+    if (typeof globalCoins !== 'undefined') {
+      globalCoins += WEEKLY_REWARD.coins;
+      if (typeof saveData === 'function') saveData();
+      if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
+    }
+    if (typeof globalCrystals !== 'undefined') {
+      globalCrystals += WEEKLY_REWARD.gems;
+    }
+
+    // Sphere XP items
+    if (OG.storage && OG.storage.getJSON) {
+      const progData = OG.storage.getJSON('orbitSync_progression', {}) || {};
+      progData.sphereXPItems = (progData.sphereXPItems || 0) + WEEKLY_REWARD.sphereXP;
+      OG.storage.setJSON('orbitSync_progression', progData);
+    }
+
+    // Celebration (more intense)
+    const btn = document.getElementById('weeklyChallengeClaimBtn');
+    if (btn) { btn.innerText = '✓ CLAIMED'; btn.disabled = true; btn.style.opacity = '0.5'; }
+
+    if (typeof createPopup === 'function' && typeof centerObj !== 'undefined') {
+      createPopup(centerObj.x, centerObj.y - 100, `🎖 WEEKLY COMPLETE 🎖`, '#ffd700');
+      createPopup(centerObj.x, centerObj.y - 80, `+${WEEKLY_REWARD.coins} COINS`, WEEKLY_REWARD.color);
+      createPopup(centerObj.x, centerObj.y - 55, `+${WEEKLY_REWARD.gems} GEMS`, '#ff00ff');
+      createPopup(centerObj.x, centerObj.y - 30, `+${WEEKLY_REWARD.sphereXP} SPHERE XP`, '#00ff88');
+      if (typeof createShockwave === 'function') createShockwave(WEEKLY_REWARD.color, 80);
+      if (typeof pulseBrightness === 'function') pulseBrightness(2.0, 400);
     }
     refreshChallengesUI();
   }
@@ -209,6 +340,8 @@
   function onWorldReached(w)             { _tick('world_reached', w); }
   function onFlawlessStage()             { _tick('flawless_stage', 1); }
   function onPhoenixSurvived(seconds)    { _tick('phoenix_survive', seconds); }
+  function onBossDefeated()              { _tick('boss_defeated', 1); }
+  function onPhoenixVictory()            { _tick('phoenix_victory', 1); }
 
   // ─── UI RENDERER ─────────────────────────────────────────────────────────
   function refreshChallengesUI() {
@@ -219,7 +352,15 @@
     let completedCount = 0;
 
     list.innerHTML = '';
-    _state.challenges.forEach(c => {
+    
+    // Add header for daily challenges
+    const dailyHeader = document.createElement('div');
+    dailyHeader.style.cssText = 'font-family: Orbitron, sans-serif; font-size: 0.65rem; color: rgba(255,255,255,0.5); letter-spacing: 2px; margin-bottom: 8px; text-transform: uppercase;';
+    dailyHeader.textContent = '⭐ DAILY CHALLENGES';
+    list.appendChild(dailyHeader);
+
+    // Render daily challenges
+    _state.dailyChallenges.forEach(c => {
       if (c.done) completedCount++;
       const pct = Math.min(100, Math.round((c.progress / c.target) * 100));
       const item = document.createElement('div');
@@ -241,23 +382,54 @@
       list.appendChild(item);
     });
 
-    const allDone = _state.challenges.every(c => c.done);
+    // Add weekly challenges if available
+    if (_state.weeklyChallenges && _state.weeklyChallenges.length > 0) {
+      const weeklyHeader = document.createElement('div');
+      weeklyHeader.style.cssText = 'font-family: Orbitron, sans-serif; font-size: 0.65rem; color: rgba(255,215,0,0.5); letter-spacing: 2px; margin-top: 16px; margin-bottom: 8px; text-transform: uppercase;';
+      weeklyHeader.textContent = '🏆 WEEKLY CHALLENGES';
+      list.appendChild(weeklyHeader);
+
+      _state.weeklyChallenges.forEach(c => {
+        const pct = Math.min(100, Math.round((c.progress / c.target) * 100));
+        const item = document.createElement('div');
+        item.className = 'challenge-item' + (c.done ? ' challenge-done challenge-weekly' : 'challenge-weekly');
+        if (c.justDone) {
+          item.classList.add('challenge-just-done');
+          delete c.justDone;
+        }
+        item.innerHTML = `
+          <div class="challenge-row">
+            <span class="challenge-check">${c.done ? '✓' : '◎'}</span>
+            <span class="challenge-label">${c.label}</span>
+            <span class="challenge-xp" style="color: #ffd700;">+${c.xp} XP</span>
+          </div>
+          <div class="challenge-bar-track">
+            <div class="challenge-bar-fill" style="width:${pct}%; background: linear-gradient(90deg, #ffd700, #ffaa00);"></div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    const allDone = _state.dailyChallenges.every(c => c.done);
+    const allWeekly = _state.weeklyChallenges && _state.weeklyChallenges.every(c => c.done);
     const claimBtn = document.getElementById('challengeClaimBtn');
+    const claimWeekly = document.getElementById('weeklyChallengeClaimBtn');
     const statusBtn = document.getElementById('challengesBtnStatus');
 
     if (statusBtn) {
-      if (_state.chestClaimed) {
+      if (_state.dailyChestClaimed) {
         statusBtn.innerText = 'DONE';
         statusBtn.style.color = '#888';
         statusBtn.style.borderColor = '#888';
         statusBtn.style.background = 'rgba(255,255,255,0.05)';
       } else if (allDone) {
-        statusBtn.innerText = 'CLAIM CHEST';
-        statusBtn.style.color = '#ffd700';
-        statusBtn.style.borderColor = '#ffd700';
-        statusBtn.style.background = 'rgba(255,215,0,0.15)';
+        statusBtn.innerText = 'CLAIM DAILY';
+        statusBtn.style.color = '#00e5ff';
+        statusBtn.style.borderColor = '#00e5ff';
+        statusBtn.style.background = 'rgba(0,229,255,0.15)';
       } else {
-        statusBtn.innerText = `${completedCount}/3 COMPLETED`;
+        statusBtn.innerText = `${completedCount}/3 DAILY`;
         statusBtn.style.color = '#ffaa00';
         statusBtn.style.borderColor = 'rgba(255, 170, 0, 0.3)';
         statusBtn.style.background = 'rgba(255, 170, 0, 0.1)';
@@ -265,20 +437,38 @@
     }
 
     if (claimBtn) {
-      if (_state.chestClaimed) {
+      if (_state.dailyChestClaimed) {
         claimBtn.style.display = 'block';
-        claimBtn.innerText = '✓ CLAIMED';
+        claimBtn.innerText = '✓ DAILY CLAIMED';
         claimBtn.disabled = true;
         claimBtn.style.opacity = '0.5';
         claimBtn.classList.remove('challenge-claim-ready');
       } else if (allDone) {
         claimBtn.style.display = 'block';
         claimBtn.classList.add('challenge-claim-ready');
-        claimBtn.innerText = `🎁 CLAIM CHEST (+${CHEST_REWARD.coins} COINS)`;
+        claimBtn.innerText = `🎁 CLAIM DAILY (+${CHEST_REWARD.coins} 🪙 +${CHEST_REWARD.gems} 💎)`;
         claimBtn.disabled = false;
         claimBtn.style.opacity = '1';
       } else {
         claimBtn.style.display = 'none';
+      }
+    }
+
+    if (claimWeekly) {
+      if (_state.weeklyChestClaimed) {
+        claimWeekly.style.display = 'block';
+        claimWeekly.innerText = '✓ WEEKLY CLAIMED';
+        claimWeekly.disabled = true;
+        claimWeekly.style.opacity = '0.5';
+        claimWeekly.classList.remove('challenge-claim-ready');
+      } else if (allWeekly) {
+        claimWeekly.style.display = 'block';
+        claimWeekly.classList.add('challenge-claim-ready');
+        claimWeekly.innerText = `🏆 CLAIM WEEKLY (+${WEEKLY_REWARD.coins} 🪙 +${WEEKLY_REWARD.gems} 💎)`;
+        claimWeekly.disabled = false;
+        claimWeekly.style.opacity = '1';
+      } else {
+        claimWeekly.style.display = 'none';
       }
     }
   }
@@ -330,7 +520,10 @@
     onWorldReached,
     onFlawlessStage,
     onPhoenixSurvived,
+    onBossDefeated,
+    onPhoenixVictory,
     claimChest,
+    claimWeeklyChest,
     refreshChallengesUI,
     refreshStreakUI,
     getState: () => _state

@@ -490,6 +490,11 @@
       if (typeof updatePersistentCoinUI === 'function') updatePersistentCoinUI();
     }
 
+    // Track Phoenix victory for challenges (only if survived)
+    if (reason === 'survived' && OG.systems && OG.systems.challenges) {
+      OG.systems.challenges.onPhoenixVictory();
+    }
+
     if (typeof stopBossDrone === 'function') stopBossDrone();
     if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
     if (typeof updateMusicState === 'function') updateMusicState(1, false);

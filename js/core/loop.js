@@ -4743,6 +4743,8 @@ function tap() {
       soundBossDefeated();
       stopBossDrone();
       vibrate([100, 50, 150]);
+      // Track boss defeat for challenges
+      if (OG.systems && OG.systems.challenges) OG.systems.challenges.onBossDefeated();
       stageHits = 999;
       isPlaying = false;
       canvas.style.filter = 'brightness(3) saturate(3) hue-rotate(180deg)';
@@ -4812,6 +4814,8 @@ function tap() {
       soundBossDefeated();
       stopBossDrone();
       vibrate([100, 40, 140, 40, 180, 40, 100]);
+      // Track boss defeat for challenges
+      if (OG.systems && OG.systems.challenges) OG.systems.challenges.onBossDefeated();
 
       stageHits = 999;
       isPlaying = false;
@@ -4845,6 +4849,8 @@ function tap() {
       soundBossDefeated();
       stopBossDrone();
       vibrate([80, 40, 100, 40, 120, 40, 80]);
+      // Track boss defeat for challenges
+      if (OG.systems && OG.systems.challenges) OG.systems.challenges.onBossDefeated();
       stageHits = 999;
       isPlaying = false;
       canvas.style.filter = 'brightness(2.8) saturate(2) hue-rotate(260deg)';
@@ -4876,6 +4882,8 @@ function tap() {
       createPopup(centerObj.x, centerObj.y - 30, "SHATTERED", "#ffffff");
       soundBossDefeated();
       stopBossDrone();
+      // Track boss defeat for challenges
+      if (OG.systems && OG.systems.challenges) OG.systems.challenges.onBossDefeated();
       world2BossArenaRotationSpeed = 0;
       stageHits = 999;
       isPlaying = false;
@@ -5007,6 +5015,8 @@ function tap() {
           createPopup(centerObj.x, centerObj.y - 50, "BOSS DEFEATED!", "#00ff88");
           soundBossDefeated();
           stopBossDrone();
+          // Track boss defeat for challenges
+          if (OG.systems && OG.systems.challenges) OG.systems.challenges.onBossDefeated();
           triggerScreenShake(20);
           stageHits = 999;
           isPlaying = false;
