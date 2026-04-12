@@ -164,6 +164,8 @@
       // Subtle pulse on the hub challenge bar
       const panel = document.getElementById('dailyChallengesPanel');
       if (panel) panel.classList.add('challenges-complete');
+      const btn = document.getElementById('dailyChallengesBtn');
+      if (btn) btn.classList.add('challenges-complete');
     }
   }
 
@@ -185,6 +187,8 @@
     if (btn) { btn.innerText = '✓ CLAIMED'; btn.disabled = true; btn.style.opacity = '0.5'; }
     const panel = document.getElementById('dailyChallengesPanel');
     if (panel) panel.classList.remove('challenges-complete');
+    const mainBtn = document.getElementById('dailyChallengesBtn');
+    if (mainBtn) mainBtn.classList.remove('challenges-complete');
 
     // Pop notification
     if (typeof createPopup === 'function' && typeof centerObj !== 'undefined') {
@@ -212,8 +216,11 @@
     const list  = document.getElementById('challengesList');
     if (!panel || !list) return;
 
+    let completedCount = 0;
+
     list.innerHTML = '';
     _state.challenges.forEach(c => {
+      if (c.done) completedCount++;
       const pct = Math.min(100, Math.round((c.progress / c.target) * 100));
       const item = document.createElement('div');
       item.className = 'challenge-item' + (c.done ? ' challenge-done' : '');
@@ -236,6 +243,27 @@
 
     const allDone = _state.challenges.every(c => c.done);
     const claimBtn = document.getElementById('challengeClaimBtn');
+    const statusBtn = document.getElementById('challengesBtnStatus');
+
+    if (statusBtn) {
+      if (_state.chestClaimed) {
+        statusBtn.innerText = 'DONE';
+        statusBtn.style.color = '#888';
+        statusBtn.style.borderColor = '#888';
+        statusBtn.style.background = 'rgba(255,255,255,0.05)';
+      } else if (allDone) {
+        statusBtn.innerText = 'CLAIM CHEST';
+        statusBtn.style.color = '#ffd700';
+        statusBtn.style.borderColor = '#ffd700';
+        statusBtn.style.background = 'rgba(255,215,0,0.15)';
+      } else {
+        statusBtn.innerText = `${completedCount}/3 COMPLETED`;
+        statusBtn.style.color = '#ffaa00';
+        statusBtn.style.borderColor = 'rgba(255, 170, 0, 0.3)';
+        statusBtn.style.background = 'rgba(255, 170, 0, 0.1)';
+      }
+    }
+
     if (claimBtn) {
       if (_state.chestClaimed) {
         claimBtn.style.display = 'block';
