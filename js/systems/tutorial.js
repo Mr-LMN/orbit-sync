@@ -509,11 +509,11 @@
 
   function startMasterTutorialIfNeeded() {
     if (started) return;
-    const midProgress = !state.completed && state.phase !== PHASES.WELCOME && state.phase !== PHASES.COMPLETE;
     if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') return;
-    // Returning player whose tutorial completion flags are absent (e.g. pre-v2 save).
-    // Auto-write the missing flags instead of re-running onboarding.
-    if (!midProgress && !isNewPlayerProfile()) {
+    // Always check player profile regardless of mid-progress state.
+    // An established player should never be re-onboarded, even if the tutorial
+    // state was left mid-progress (e.g. interrupted first session, stale storage).
+    if (!isNewPlayerProfile()) {
       _markTutorialCompleteForMigratedSave();
       return;
     }
