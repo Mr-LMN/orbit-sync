@@ -1,382 +1,508 @@
-# Orbit Sync – Strategic Growth Plan (Alpha → Production)
+# Orbit Sync - Production Roadmap (Alpha -> Mobile Launch)
 
 ## Executive Summary
-Orbit Sync has solid **gameplay DNA** (excellent feel/juice) and **multiple progression layers** (campaign, sphere leveling, perks, ranks). To compete in the casual-competitive space you're targeting, you need to focus on **retention mechanics**, **social leverage**, and **monetization depth**—while keeping the core 5-minute loop frictionless.
+Orbit Sync already has strong gameplay feel, clear visual identity, and multiple progression hooks. What it still needs is a production-ready meta layer: trusted persistence, competitive infrastructure, expandable live-ops, cosmetics and loot worth chasing, and the data plumbing required to tune a mobile game after launch.
+
+This document is intentionally updated against the current codebase. Items that already exist are crossed out so the remaining roadmap stays honest.
 
 ---
 
-## 1. COMPETITIVE LEADERBOARDS & SOCIAL PROOF
-**Why it matters**: Try-hards need a destination. Casual players see "other people doing better" = dopamine hit to compete.
+## Product Principles
 
-### Current State
-- ✅ Phoenix boss has placeholder leaderboard UI (top 5)
-- ✅ Percentile system exists (top 5%, 15%, etc.)
-- ❌ No persistent global/weekly/friend leaderboards
-- ❌ No backend integration (all cosmetic)
-- ❌ No social sharing that drives FOMO
+### 1. Mobile-first progression
+- Player identity and progression must carry across installs, devices, and upgrades.
+- Google and Apple sign-in should be the default account rails.
+- Guest play is allowed, but the game should gently prompt players to bind progress before risk points like uninstall, prestige, or purchase.
 
-### What's Needed
-1. **Real-time leaderboards**
-   - Global (all-time top 100+ by high score)
-   - Weekly (Phoenix trial resets; new window each 7 days)
-   - Personal best + rank position
-   - Backend: Simple endpoint to post runs, query top scores
-   - **Low effort**: Start with JSON file + basic Node.js server (can upgrade to DB later)
+### 2. Every system must feed "one more run"
+- Core loop retention beats feature count.
+- New systems should reinforce timing mastery, build experimentation, collection, rivalry, or anticipation.
 
-2. **Friend/social layer**
-   - Simple share card showing: your rank, best score, world reached, avatar
-   - Deep-link to "beat my score" (pre-loads that stage)
-   - WhatsApp/Twitter share with custom score card image
-   - **Existing**: `generateShareCard()` in share.js — wire this to real social
+### 3. Cosmetics must feel collectible, not disposable
+- Cosmetic rewards should have rarity, theme, presentation, and visibility in play.
+- Loot should create excitement without damaging competitive fairness.
 
-3. **Rank badges & profile**
-   - Show your rank, best scores per world, streaks
-   - Prestige star display
-   - Equipment loadout screenshot
-   - **Quick win**: Use existing prestige system UI in profile view
+### 4. Live service without heavy ops overhead
+- Events, rewards, shop rotations, and challenge tables should be content-configurable without deep code edits.
 
 ---
 
-## 2. SPHERE PROGRESSION DEPTH
-**Why it matters**: Casual players grind for cosmetics + power-ups. Try-hards want optimization paths.
+## 1. Core Progress Review
 
-### Current State
-- ✅ 7 spheres (rarity tiers: common → legendary)
-- ✅ Level curves (e.g., ghost = 10 levels)
-- ✅ Star ascension system (1–5 stars)
-- ✅ Perk slots unlock per level
-- ✅ Passive effects scale with stars
-- ❌ **No perk discovery/exploration** – perks feel static
-- ❌ **Limited build diversity** – 2–3 optimal loadouts dominate
-- ❌ **No prestige/reset cycle** – long-term engagement cliff
+### Already in place
+- ~~Phoenix event structure exists~~
+- ~~Campaign progression exists~~
+- ~~Daily challenge system exists~~
+- ~~Weekly challenge system exists~~
+- ~~Login streaks and login splash exist~~
+- ~~Rank / prestige-style orbit XP system exists~~
+- ~~Tutorial path extends into spheres, perks, rank, and dailies~~
 
-### What's Needed
-1. **Expand perk ecosystem**
-   - Add 15–20 perks (currently ~8–10)
-   - Categories: offensive (damage/score), defensive (lives/shields), economic (coins/XP)
-   - **Rarity tiers for perks**: Common perks free → rare perks from bosses/challenges
-   - Perk unlock mechanics: challenges, ranking up, boss defeats
-   - **Why**: Builds become meta-game; try-hards hunt for synergies
+### Still needed
+1. Phoenix event must be fully production-stable
+   - Finish balance tuning
+   - Remove remaining edge-case UI/render regressions
+   - Confirm score fairness and event reward cadence
 
-2. **Synergy system**
-   - Bonus effects if 2+ matching-theme perks equipped
-   - E.g., "Energy Sync": equip 2 electric perks → +10% multiplier gain
-   - **Why**: Drives experimentation, creates content (build showcases)
+2. Mid-game progression pacing pass
+   - Validate World 2 -> World 4 difficulty climb
+   - Reduce dead zones where players stop unlocking meaningful things
+   - Tie rewards more tightly to mastery, not just grind volume
 
-3. **Prestige/Ascension track**
-   - After maxing a sphere (lv10 + 5 stars), "reset" back to lv1 but keep a "prestige badge"
-   - Prestige badge = cosmetic glow + passive bonus (+5% score globally per prestige)
-   - **Why**: Soft reset prevents engagement cliff; rewards dedication
+3. Clear long-tail goals
+   - Add visible "next chase" messaging in hub/profile
+   - Examples: next rank unlock, next cosmetic drop, next event reward, next loot milestone
 
 ---
 
-## 3. CHALLENGE & ACHIEVEMENT SYSTEM
-**Why it matters**: Casuals need short-term goals. Try-hards want difficult, prestigeful targets.
+## 2. Accounts, Save Data, and Cross-Device Progression
 
-### Current State
-- ✅ Challenge registry exists (score, combo, perfects)
-- ✅ XP reward system
-- ✅ Rank-up ceremony animations
-- ❌ **Challenges feel static** – same list every day
-- ❌ **No difficulty scaling** – challenge 1 = challenge 100
-- ❌ **No seasonal/limited challenges** – no FOMO
+**Why this is critical**: this is a mobile game. Progress loss destroys retention, trust, and monetization potential.
 
-### What's Needed
-1. **Daily Challenges**
-   - 3 random challenges rotate each day (e.g., "Combo ×5 in World 2")
-   - Guaranteed coins + XP for completing all 3
-   - **Streak bonus**: complete 7 days in a row → rare cosmetic reward
-   - **Why**: Casual players log in daily; predictable engagement
+### Current state
+- Local persistence exists
+- ~~Some progression systems persist locally~~
+- No verified cloud save
+- No account identity layer
+- No restore flow for purchases / progression
 
-2. **Weekly Challenges**
-   - Harder targets (e.g., "Perfect 10+ in a single run", "All bosses defeated")
-   - Exclusive reward: cosmetic sphere skin OR perk unlock
-   - **Why**: Try-hards have a persistent goal
+### Required for production
+1. Account system
+   - Sign in with Apple
+   - Sign in with Google
+   - Anonymous guest account fallback
+   - Account linking flow: guest -> Apple/Google without losing progress
 
-3. **Seasonal Challenges** (e.g., "Season 1: April 1–30")
-   - Tiered difficulty ladder (bronze → silver → gold → platinum)
-   - Platinum = Top 1% only; cosmetic exclusive (e.g., "Platinum Aura")
-   - **Why**: Rank-driven players have a "final boss"
+2. Cloud save
+   - Sync campaign progress
+   - Sync currencies
+   - Sync owned spheres, levels, stars, perks, cosmetics
+   - Sync rank / XP / challenge state / event rewards
+   - Sync settings where useful
 
-4. **Achievement/Badge system**
-   - Milestones: "First Perfect", "Master World 3", "Reach Rank 10", etc.
-   - Badges show in profile + hub
-   - **Why**: Gamification; visible progression for shareability
+3. Conflict handling
+   - Last-write-wins is not enough for a progression game
+   - Need merge rules for currencies, unlocks, purchases, and consumables
+   - Provide player-facing "choose device save / cloud save" recovery flow if conflict occurs
 
----
+4. Recovery and restore
+   - Reinstall should restore progression after sign-in
+   - Device switch should be seamless
+   - Purchase restore must be explicit and tested on both Apple and Google flows
 
-## 4. MONETIZATION DEPTH
-**Why it matters**: Free content has ceiling; monetization funds servers, artist time, marketing.
-
-### Current State
-- ✅ Premium (£2.99): no ads + 2× coins
-- ✅ Shop: buy spheres with coins
-- ✅ Cosmetic currencies: coins (grind) + crystals (planned purchase)
-- ❌ **No crystal shop** – crystals unused
-- ❌ **No battle pass** – no recurring spend
-- ❌ **No cosmetics** – sphere skins only
-- ❌ **Limited sphere prices** (£0 → £400 coins) – ceiling feels low
-
-### What's Needed
-1. **Battle Pass** (seasonal, £4.99)
-   - 30–40 tiers: mix of cosmetics, coins, XP boosters
-   - Free track (base 15 tiers) to let f2p preview value
-   - Cosmetics: sphere glows, effect trails, name tags, emote reactions
-   - **Why**: Predictable recurring revenue; proven model (Fortnite, Genshin)
-
-2. **Cosmetic Shop** (crystal-based)
-   - Sphere visual effects: glows, trails, impact animations
-   - UI skins: menu themes, arena backgrounds
-   - Seasonal cosmetics (e.g., "Neon Void Core" = limited 2-week drop)
-   - Pricing: 500 crystals (~£3.99) per cosmetic
-   - **Why**: High-margin digital goods; no gameplay advantage
-
-3. **Perk cosmetics**
-   - Visual upgrades for equipped perks (particle effects, sound variants)
-   - 200 crystals (~£1.99) each
-   - **Why**: Emotional investment in loadouts
-
-4. **Starter Packs**
-   - First-purchase bonus: 1.5× crystals (e.g., buy 5 get 7.5)
-   - "New player bundle": 1 rare sphere + 5 perks + 1000 coins for £2.99
-   - **Why**: CPI reduction; proven ARPU booster
+5. Backend source of truth
+   - Runs that affect economy, unlocks, and leaderboards should hit a trusted backend
+   - Local-only progression should be treated as temporary until synced
 
 ---
 
-## 5. LIVE EVENTS & FOMO ENGINE
-**Why it matters**: Static games die. Events create urgency and content hooks.
+## 3. Competitive Layer and Leaderboards
 
-### Current State
-- ✅ Phoenix Trial as template (weekly challenge)
-- ❌ Only 1 live event possible at a time
-- ❌ No calendar/countdown to next event
-- ❌ No exclusive loot tied to events
+**Why it matters**: the game already has score-chase DNA. It needs a real destination.
 
-### What's Needed
-1. **Event calendar**
-   - Display next 3 events on hub
-   - Countdown timer (e.g., "Phoenix Trial ends in 2d 5h")
-   - Hint text: "Prepare your loadout for 5× multiplier zones"
-   - **Why**: Players plan play sessions; anticipation drives retention
+### Current state
+- ~~Phoenix leaderboard UI placeholder exists~~
+- ~~Share card foundations exist~~
+- No real persistent leaderboard backend
+- No score validation
+- No friend or near-rank rivalry layer
 
-2. **Rotating events** (weekly rotation, 4 planned)
-   - **Week 1–2**: Phoenix Trial (speed + rebirth multiplier)
-   - **Week 3–4**: Eclipse Mode (x8 multiplier but 1 life only)
-   - **Week 5–6**: Resonance Grind (x5 multiplier, bonus XP/coins)
-   - **Week 7–8**: Void Surge (random zone mutations every 5s)
-   - Each event: unique cosmetic reward (e.g., "Eclipse Crown" exclusive to event)
+### Required next
+1. Real leaderboard backend
+   - Global all-time
+   - Weekly event leaderboard
+   - Friends leaderboard
+   - "Near you" leaderboard (+/- rank band around player)
 
-3. **Seasonal events** (monthly)
-   - Major narrative hook (e.g., "The Void Awakens" – new boss appears)
-   - Exclusive sphere or perk unlock
-   - Limited-time cosmetics
-   - **Why**: Drives reinvestment; content creator content
+2. Score validation / anti-cheat
+   - Server-validated run submission
+   - Basic tamper detection
+   - Rate limiting and suspicious-run flags
+   - Event and leaderboard integrity rules before launch
 
----
+3. Player profile upgrades
+   - Best scores by world / mode
+   - Event placements
+   - Build snapshot
+   - Cosmetic showcase
 
-## 6. PROGRESSION PACING & FEEDBACK LOOPS
-**Why it matters**: Players need constant "wins" (dopamine) to stay engaged.
-
-### Current State
-- ✅ Strong immediate feedback (juice: particles, sounds, multiplier glow)
-- ✅ Sphere XP visible per run
-- ✅ Rank-up ceremonies trigger
-- ❌ **Slow mid-game** (ranks 10–30 feel grindy)
-- ❌ **No weekly/daily rewards** (login bonus only)
-- ❌ **Rewards plateau** (no reason to keep playing after clearing all worlds)
-
-### What's Needed
-1. **Daily login rewards** (7-day cycle)
-   - Day 1–6: coins (50–200 scaling)
-   - Day 7: cosmetic item or rare perk unlock
-   - **Auto-reset**: If missed day, streak resets but no penalty
-   - **Why**: Guaranteed engagement; no guilt
-
-2. **Run reward scaling**
-   - Multiply coin/XP gains based on:
-     - Multiplier reached (x8 multiplier = 1.5× base rewards)
-     - Perfect hit rate (≥80% perfects = 1.3× base)
-     - Hard mode (2× rewards)
-   - **Why**: Incentivizes skillful play; feels like earned progression
-
-3. **Prestige rewards**
-   - Each sphere prestige level (1–5) grants account-wide +5% XP
-   - 5 max prestige spheres = +25% XP globally
-   - **Why**: Long-tail engagement; no ceiling
-
-4. **Weekly "Catchup XP"**
-   - If offline >3 days, next run grants 1.5× XP
-   - Cap: once per week
-   - **Why**: Returning players don't feel too far behind
+4. Async rivalry features
+   - "Beat my score" challenge links
+   - Rival notifications
+   - Near-rank challenge surfacing in hub
 
 ---
 
-## 7. ONBOARDING & TUTORIAL EXPANSION
-**Why it matters**: 70% of players drop in first 10 min. Clarity = retention.
+## 4. Build Depth: Spheres, Perks, Synergies
 
-### Current State
-- ✅ Master tutorial system exists (phases)
-- ✅ Freeze-frame overlays for concepts
-- ❌ **Tutorial ends at hard mode** – doesn't cover spheres/perks/ranking
-- ❌ **No post-tutorial guidance** – casual players don't know what to do next
+**Why it matters**: progression exists, but the build metagame needs more discovery and more reasons to experiment.
 
-### What's Needed
-1. **Extended tutorial path**
-   - Phase 7: "Spheres" – explain rarity, leveling, passive effects
-   - Phase 8: "Perks" – first perk unlock + equip tutorial
-   - Phase 9: "Rank system" – show rank benefits (cosmetics, passives)
-   - Phase 10: "First daily challenge" – complete for reward
-   - **Why**: Prevents abandonment; each phase = clear next goal
+### Current state
+- ~~Sphere progression exists~~
+- ~~Perk slots and passive progression exist~~
+- ~~Rank perks exist~~
+- Limited synergy depth
+- Build diversity risk remains
 
-2. **Contextual help overlays**
-   - Tap "?" icon on any UI → overlay explains it
-   - E.g., tap "?" on perk slot → "Perks are equippable bonuses. Unlock more by ranking up."
-   - **Why**: Casual players feel empowered, not overwhelmed
+### Next requirements
+1. Expand perk pool
+   - Add 10-15 more perks minimum
+   - Split into offensive, defensive, economy, event-specialist, and combo-control roles
 
-3. **Progression tooltips**
-   - When sphere reaches level 3 → "New perk slot unlocked!"
-   - When player reaches rank 5 → "You've unlocked access to hard mode challenges"
-   - **Why**: Celebrate milestones; surface systems player might miss
+2. Add explicit synergy system
+   - 2-piece and 3-piece perk synergies
+   - Sphere + perk theme bonuses
+   - Event-specific build recommendations
 
----
+3. Build surfaces
+   - Save named loadouts
+   - Recommended loadouts per world / event
+   - Quick swap from event screen
 
-## 8. RETENTION MECHANICS (ANTI-CHURN)
-**Why it matters**: F2P games live or die by retention curve.
-
-### Current State
-- ✅ Daily login streak system
-- ✅ Prestige/ranking keeps engaged players invested
-- ❌ **No comeback incentives** – lapsed players not prompted
-- ❌ **No win streaks** – no penalty for losing, no momentum
-- ❌ **No social pressure** – no "your friend beat your score" notifications
-
-### What's Needed
-1. **Push notifications** (optional, on by default)
-   - "New daily challenges available!"
-   - "You're close to the next rank..."
-   - "Your friend just beat your best score!"
-   - Frequency: 1 per day max (avoid spam)
-   - **Why**: Proven 30–50% engagement boost
-
-2. **Lapsed player comeback**
-   - If offline 7+ days → show "Welcome back!" + 2× coins/XP for next 3 runs
-   - If offline 14+ days → offer "Catch-up bundle" (cosmetic + 500 coins, free)
-   - **Why**: Lower friction to re-engage
-
-3. **Win streak tracker**
-   - Show consecutive perfect runs in world
-   - Bonus coins if maintain 3+ in a row
-   - **Why**: Encourages focused play; satisfying to protect streak
-
-4. **"Near you" leaderboard**
-   - Show players ±50 ranks close to you (not just global top 100)
-   - Tap to "challenge" them (jump to their best world/difficulty)
-   - **Why**: Peer competition is stronger motivator than abstract ranking
+4. Prestige v2
+   - Current rank system is good, but long-tail reset structure needs to become explicit
+   - Add true account-wide prestige loop with cosmetic flex and evergreen rewards
 
 ---
 
-## 9. PERFORMANCE & TECHNICAL DEBT
-**Why it matters**: Mobile users have battery/bandwidth limits. Jank kills retention.
+## 5. Cosmetics, Loot, and Collection
 
-### Current State
-- ✅ Game runs fast on canvas
-- ✅ No frameworks bloat
-- ❌ **No analytics** – don't know what players do
-- ❌ **No crash reporting** – bugs go unreported
-- ❌ **No A/B testing** – can't optimize funnel
+**Why it matters**: cosmetics and loot are not optional extras here. They are one of the main reasons players return, spend, and share.
 
-### What's Needed
-1. **Analytics backbone**
-   - Track: session starts, stages completed, purchases, churn
-   - Tools: Firebase or custom lightweight endpoint
-   - **Why**: Data-driven decisions (e.g., "players drop 50% at world 2 stage 4 – rebalance")
+### Current state
+- Some cosmetic unlock framing exists
+- ~~Shop and sphere ownership systems exist~~
+- No full cosmetic economy
+- No proper loot reward structure
+- No rare drop excitement loop
 
-2. **Error tracking**
-   - Use Sentry or similar to capture JS errors
-   - **Why**: Fix critical bugs before they cascade
+### Production goals
+1. Cosmetic categories
+   - Sphere skins
+   - Trails
+   - Impact effects
+   - Aura / shell effects
+   - Event badges
+   - UI themes
+   - Nameplates / profile frames
+   - Kill / perfect / combo callout variants
 
-3. **Performance monitoring**
-   - Frame rate tracking (alert if <55 FPS)
-   - Startup time (alert if >3s)
-   - **Why**: Catch regressions early
+2. Loot system
+   - Reward capsules / chests from dailies, weeklies, events, bosses, and milestone tracks
+   - Rarity tiers: Common / Rare / Epic / Legendary
+   - Loot tables that include cosmetics, currencies, perk shards, upgrade materials, and event tokens
+
+3. Duplicate handling
+   - Duplicates should convert into a useful resource
+   - Example: cosmetic dust, upgrade fragments, or reroll currency
+
+4. Cosmetic visibility
+   - Cosmetics must be visible in gameplay, hub, profile, and share cards
+   - Event rewards should be recognizable at a glance
+
+5. Loot presentation
+   - Chest opening animation
+   - New-item spotlight
+   - Rarity-specific reveal treatment
+   - "Recently earned" section in hub/profile
+
+6. Fairness rules
+   - Cosmetics and loot may support progression, but paid loot must not become pay-to-win
+   - Competitive modes should remain skill-legible
 
 ---
 
-## 10. CONTENT ROADMAP (NEXT 3 MONTHS)
+## 6. Economy and Monetization
 
-| Month | Feature | Impact | Effort |
-|-------|---------|--------|--------|
-| **April (Now)** | Fix Phoenix V2 bugs; finalize rank system | Stability | Low |
-| | Daily challenges | Retention +20% | Medium |
-| | Global leaderboard MVP | Competitive hook | Medium |
-| | Extend tutorial | Onboarding LTV +15% | Low |
-| **May** | Battle Pass | Revenue +30% | High |
-| | 3–4 new perks | Build diversity | Medium |
-| | Seasonal event (Eclipse) | Content hook | Medium |
-| **June** | Cosmetic shop | Revenue +15% | Medium |
-| | 2nd live event | Fomo/engagement | Medium |
-| | Prestige system v2 | Long-tail retention | High |
+**Why it matters**: monetization should support the game, not distort it.
+
+### Current state
+- ~~Premium / no-ads style value exists~~
+- ~~Coin economy exists~~
+- Crystal economy is still under-realized
+- No real cosmetic shop
+- No battle pass
+- No structured loot economy
+
+### Recommended production stack
+1. Cosmetic shop
+   - Crystal-based
+   - Rotating featured items
+   - Permanent catalog + limited seasonal shelf
+
+2. Loot-backed event rewards
+   - Event tokens redeem into themed loot tracks
+   - Keeps events distinct and collectible
+
+3. Battle pass
+   - Free + premium track
+   - Cosmetics, currencies, loot capsules, profile items
+   - Must be clean, readable, and not over-engineered at first release
+
+4. Starter and returner bundles
+   - New player value bundle
+   - Lapsed player catch-up pack
+   - Event starter pack tied to weekly mode
+
+5. Economy safety
+   - Simulate reward output before shipping
+   - Prevent runaway inflation of coins / crystals / loot dust
+   - Ensure premium spend feels helpful, not mandatory
 
 ---
 
-## PRIORITIZATION MATRIX (What to Build First)
+## 7. Events and Live Ops
 
-### 🔴 **CRITICAL (Do Now)**
-1. **Fix Phoenix V2 crash/balance** – can't launch live without this
-2. **Daily challenges** – easiest retention boost (existing code path)
-3. **Global leaderboard** – minimal backend, huge motivational impact
-4. **Tutorial extension to rank 5** – prevents onboarding churn
+**Why it matters**: Phoenix is a good start, but one event does not make a live game.
 
-### 🟡 **HIGH (Next 2 Weeks)**
-1. **Battle Pass system** – proven monetization model
-2. **3–5 new perks** – expand build depth without balance overhaul
-3. **Event calendar UI** – zero gameplay changes, high anticipation
-4. **Startup packs** – reduce CPI on ads
+### Current state
+- ~~Phoenix event framework exists~~
+- No reusable event calendar system
+- No content operations layer
+- No reward-tokenized event loop
 
-### 🟢 **MEDIUM (Month 2–3)**
-1. **Cosmetic shop** – digital goods scale infinitely
-2. **Prestige v2** – long-tail engagement
-3. **Push notifications** – drives D1 retention
-4. **Advanced analytics** – informs all future decisions
+### Required next
+1. Event framework v2
+   - Shared event definition schema
+   - Start / end time
+   - Reward pool
+   - Rules modifiers
+   - Leaderboard type
+   - Shop tie-ins
 
-### 🔵 **NICE-TO-HAVE (Backlog)**
-- Social sharing (Twitter/Discord)
-- Friend leaderboards (requires auth)
+2. Event calendar
+   - Show active event
+   - Show next upcoming events
+   - Show countdowns
+   - Show recommended loadout and reward preview
+
+3. Rotating event set
+   - Phoenix Trial
+   - Eclipse Mode
+   - Resonance Grind
+   - Void Surge
+   - At least 3 should be truly shippable before scale launch
+
+4. Seasonal layer
+   - Monthly or 6-week season
+   - Shared cosmetic theme
+   - Season pass
+   - Seasonal badge / rank reward
+
+5. Internal live-ops controls
+   - Server-driven event activation
+   - Reward tuning without app update
+   - Emergency disable / rollback
+
+---
+
+## 8. Onboarding, Clarity, and Accessibility
+
+**Why it matters**: mobile players churn quickly when they are confused, overloaded, or physically uncomfortable.
+
+### Current state
+- ~~Master tutorial framework exists~~
+- ~~Extended tutorial phases exist~~
+- Still needs stronger post-tutorial guidance
+- Accessibility coverage is incomplete
+
+### What should be added
+1. Post-tutorial guidance
+   - "What to do next" prompts in hub
+   - Recommended goals after each unlock
+   - Event nudges once the player is eligible
+
+2. Contextual system explainers
+   - Tooltip / help mode for currencies, perks, stars, event rewards, loot rarity
+
+3. Accessibility
+   - Reduced flash / reduced shake mode
+   - Distinct non-color-only zone cues
+   - Larger HUD option
+   - Haptic intensity controls
+   - Separate music / SFX / UI sound controls
+   - Readability pass for smaller screens
+
+4. Device reality checks
+   - One-thumb usability on common mobile aspect ratios
+   - Safe area / notch compliance
+   - Resume-from-background handling
+
+---
+
+## 9. Retention Systems
+
+**Why it matters**: the game needs reasons to return even when the player is not currently pushing world progression.
+
+### Current state
+- ~~Daily login streak exists~~
+- ~~Daily challenge loop exists~~
+- ~~Weekly challenge loop exists~~
+- No comeback framework
+- No real notification strategy
+- No strong social retention loop
+
+### Required next
+1. Returner incentives
+   - 3-day return bonus
+   - 7-day comeback boost
+   - 14-day welcome-back gift bundle
+
+2. Notification strategy
+   - Event ending soon
+   - Daily challenge refresh
+   - Reward chest ready
+   - Rival beat your score
+   - Rank unlock available
+
+3. Win / mastery streaks
+   - World clear streaks
+   - Perfect-run streaks
+   - Event streak modifiers
+
+4. Collection retention
+   - Missing-item chase display
+   - Event-exclusive item tracker
+   - Cosmetic set completion bonuses
+
+---
+
+## 10. Analytics, Crash Reporting, and Tuning
+
+**Why it matters**: without data, balancing and retention work become guesswork.
+
+### Current state
+- No proper analytics backbone
+- No crash reporting layer
+- No production balance dashboard
+
+### Required next
+1. Analytics
+   - Install -> tutorial start -> first clear -> first return funnel
+   - Stage fail/drop-off points
+   - Event participation
+   - Build selection
+   - Reward claims
+   - Purchase conversion
+
+2. Crash/error reporting
+   - JS runtime errors
+   - API failure rates
+   - device / OS segmentation
+
+3. Performance telemetry
+   - FPS buckets
+   - load time
+   - memory pressure
+   - battery-heavy effect hotspots
+
+4. A/B testing readiness
+   - Reward tuning
+   - Offer pricing
+   - Event copy
+   - onboarding order
+
+---
+
+## 11. Technical Requirements for Mobile Production
+
+### Must-have
+1. Secure backend
+   - Accounts
+   - cloud saves
+   - leaderboard validation
+   - inventory and economy sync
+
+2. Content-config system
+   - challenges
+   - event rotations
+   - loot tables
+   - shop inventory
+   - pricing
+
+3. Release tooling
+   - staging and production environments
+   - remote config
+   - feature flags
+   - rollback path
+
+4. QA matrix
+   - iPhone small / large / notch
+   - Android low / mid / high spec
+   - offline / reconnect behavior
+   - account-link edge cases
+   - purchase restore
+   - save conflict resolution
+
+---
+
+## 12. Revised Prioritization
+
+### Critical now
+1. Phoenix V2 stability and fairness
+2. Apple / Google account system + cloud save
+3. Real leaderboard backend + score validation
+4. Analytics + crash reporting
+5. Cosmetic / loot foundation
+
+### High priority after that
+1. Event framework v2 and event calendar
+2. Expanded perk pool and synergy system
+3. Cosmetic shop
+4. Accessibility pass
+5. Returner incentive loop
+
+### Medium priority
+1. Battle pass
+2. Prestige v2
+3. Rival / friends layer
+4. A/B testing infrastructure
+
+### Backlog
 - In-game tournaments
-- Custom UI themes
+- Creator / streamer integration
+- Guild / clan layer
+- Advanced social gifting
 
 ---
 
-## BUSINESS MODEL ASSUMPTIONS
+## 13. Suggested 8-Week Production Push
 
-**Target revenue mix (mature state)**:
-- Premium (no ads + 2× coins): 30% of DAU, £2.99/yr = ~10% revenue
-- Battle Pass: 8% of DAU, £4.99/month = ~30% revenue
-- Cosmetics: 5% of DAU, £5–10/month = ~35% revenue
-- Ad revenue (impressions): remaining 25%
+### Phase 1: Foundation
+- Phoenix polish and event integrity
+- Account auth
+- Cloud save
+- Analytics
+- Crash reporting
 
-**Launch metrics to aim for**:
-- Day 1 retention: >40%
-- Day 7 retention: >20%
-- Day 30 retention: >8%
-- ARPU: £0.50–£1.00 first month
+### Phase 2: Competitive and collection
+- Real leaderboards
+- Loot table framework
+- Cosmetic inventory model
+- First event reward set
+
+### Phase 3: Retention and monetization
+- Event calendar
+- Cosmetic shop
+- Returner rewards
+- Accessibility pass
+
+### Phase 4: Scale prep
+- Battle pass
+- live-ops config tools
+- soft-launch balancing
 
 ---
 
-## EXECUTION TIPS
+## 14. Final Guidance
 
-1. **Backend can stay lightweight** – start with Node.js + JSON, no database yet
-2. **Cosmetics don't need gameplay testing** – iterate fast on visuals
-3. **A/B test prices** – sphere costs, crystal packs, battle pass pricing
-4. **Mobile-first analytics** – use device fingerprinting if no auth
-5. **Soft-launch first** – New Zealand/Canada App Stores before global
-6. **Streamer seeding** – send early access to speedrunners; free cosmetics for highlight clips
+Orbit Sync does not need more raw systems before launch as much as it needs the existing systems to become trusted, portable, collectible, and socially meaningful.
 
----
+The correct production order for this game is:
+1. Protect player progress with Apple / Google account sync and cloud save.
+2. Make competition real with validated leaderboards.
+3. Make rewards exciting with cosmetics, loot, and visible collection value.
+4. Make live content sustainable with event infrastructure.
+5. Use analytics to tune everything after soft launch.
 
-## FINAL WORD
-
-Orbit Sync has **excellent core gameplay** but is missing the **meta-game** (progression treadmill, social competition, fomo events). The next level is threading those systems together in a way that feels **natural**, not grindy. Start with leaderboards + daily challenges (quick wins), then layer in battle pass and cosmetics for monetization depth.
-
-The key: every system should feed back into **"I want to play one more run"** and **"I want to show my friends."**
-
+If a feature does not help trust, retention, collection, rivalry, or replayability, it should not outrank these.
