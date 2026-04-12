@@ -5,6 +5,8 @@
 
   let _pendingRunType = null;
   let tutorialHardModeSeen = false;
+  let _previewAnimFrame = 0;
+  let _previewAnimInterval = null;
 
   function toggleShop(show) {
     return OG.ui.shop.toggleShop(show);
@@ -22,6 +24,7 @@
 
     initAudio();
     toggleSettings(false);
+    _stopPreviewAnimation(); // Stop preview animation before leaving menu
     ui.mainMenu.style.display = 'none';
     document.body.classList.add('state-gameplay');
     document.body.classList.remove('state-hub');
@@ -669,6 +672,9 @@
     const shapeYNudge = { circle: 0, diamond: 0, triangle: 14, square: 0, pentagon: 0, hexagon: 0, octagon: 0 };
     const drawCy = cy + (shapeYNudge[currentWorldShape] || 0) - 8;
 
+    // Increment animation frame for pulsing/rotating effects
+    _previewAnimFrame = (_previewAnimFrame + 1) % 360;
+
     ctx.save();
     if (isLocked) {
       ctx.strokeStyle = '#444';
@@ -794,6 +800,62 @@
         ctx.arc(cx, drawCy, radius, 0, Math.PI * 2);
       }
 
+      // ── BOSS ORB (if this world has a boss) ──────────────────────────────
+      const isBossWorld = menuSelectedWorld === 1 || menuSelectedWorld === 2 || menuSelectedWorld === 3 || menuSelectedWorld === 4;
+      if (isBossWorld) {
+        const bossOrbRadius = radius * 0.42;
+        const pulse = Math.sin(_previewAnimFrame * Math.PI / 180) * 0.15 + 0.85;
+        const bossOrbSize = bossOrbRadius * pulse;
+
+        // Boss orb core glow
+        const bossGradient = ctx.createRadialGradient(cx, drawCy, bossOrbSize * 0.3, cx, drawCy, bossOrbSize * 1.2);
+        bossGradient.addColorStop(0, 'rgba(255, 100, 100, 0.6)');
+        bossGradient.addColorStop(0.5, 'rgba(255, 50, 50, 0.3)');
+        bossGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = bossGradient;
+        ctx.beginPath();
+        ctx.arc(cx, drawCy, bossOrbSize * 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Pulsing shield rings around boss
+        const shieldCount = 3;
+        for (let i = 0; i < shieldCount; i++) {
+          const shieldRadius = bossOrbSize + (i + 1) * 10;
+          const shieldAlpha = Math.max(0.1, 0.4 - i * 0.15) * (1.2 - pulse * 0.4);
+          ctx.strokeStyle = `rgba(255, 150, 0, ${shieldAlpha})`;
+          ctx.lineWidth = 1.5 - i * 0.3;
+          ctx.globalAlpha = shieldAlpha;
+          ctx.beginPath();
+          ctx.arc(cx, drawCy, shieldRadius, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Boss orb solid core with inner detail
+        ctx.fillStyle = '#ff4444';
+        ctx.shadowColor = '#ff0000';
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(cx, drawCy, bossOrbSize * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Boss orb highlight for 3D effect
+        ctx.fillStyle = 'rgba(255, 150, 100, 0.5)';
+        ctx.beginPath();
+        ctx.arc(cx - bossOrbSize * 0.25, drawCy - bossOrbSize * 0.25, bossOrbSize * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner dangerous glow
+        ctx.strokeStyle = '#ffaa00';
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.arc(cx, drawCy, bossOrbSize * 0.5, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+      }
+
       // Subtle fill for shape interior presence
       ctx.globalAlpha = 0.1;
       ctx.fillStyle = shapeColor;
@@ -807,6 +869,46 @@
       ctx.shadowBlur = 24;
       ctx.stroke();
       ctx.shadowBlur = 0;
+
+      // ── ANIMATED ORBIT RING ──────────────────────────────────────────────
+      // Rotating elements on the outer ring for visual interest
+      const ringRadius = radius * 1.5;
+      const orbitCount = 6;
+      const orbitRotation = (_previewAnimFrame * 2) * Math.PI / 180;
+      
+      for (let i = 0; i < orbitCount; i++) {
+        const angle = (i / orbitCount) * Math.PI * 2 + orbitRotation;
+        const orbX = cx + Math.cos(angle) * ringRadius;
+        const orbY = drawCy + Math.sin(angle) * ringRadius;
+        
+        // Orbital point glow
+        const orbGlow = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, 6);
+        orbGlow.addColorStop(0, shapeColor + '99');
+        orbGlow.addColorStop(1, shapeColor + '00');
+        ctx.fillStyle = orbGlow;
+        ctx.beginPath();
+        ctx.arc(orbX, orbY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Orbital point core
+        ctx.fillStyle = shapeColor;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.arc(orbX, orbY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+
+      // Orbit path lines connecting the points
+      ctx.strokeStyle = shapeColor;
+      ctx.lineWidth = 0.8;
+      ctx.globalAlpha = 0.15;
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.arc(cx, drawCy, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1.0;
 
       // crisp inner line for polished hologram readability
       ctx.save();
@@ -948,6 +1050,29 @@
   window.switchMenuTab    = switchMenuTab;
   window.handleHeroPanelClick = handleHeroPanelClick;
   window.startContinueRun = startContinueRun;
+
+  // ── PREVIEW ANIMATION LOOP ────────────────────────────────────────────────
+  function _startPreviewAnimation() {
+    if (_previewAnimInterval) return; // Already running
+    _previewAnimInterval = setInterval(() => {
+      _previewAnimFrame = (_previewAnimFrame + 2) % 360;
+      drawWorldPreviewCanvas(false);
+    }, 1000 / 30); // ~30fps for smooth animation
+  }
+
+  function _stopPreviewAnimation() {
+    if (_previewAnimInterval) {
+      clearInterval(_previewAnimInterval);
+      _previewAnimInterval = null;
+    }
+  }
+
+  // Hook into menu visibility to control animation
+  const _origRefreshMenuWorldPreview = refreshMenuWorldPreview;
+  refreshMenuWorldPreview = function() {
+    _origRefreshMenuWorldPreview();
+    _startPreviewAnimation();
+  };
 
   // Initial body class
   document.body.classList.add('state-hub');

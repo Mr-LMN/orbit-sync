@@ -5512,6 +5512,17 @@ function returnToMenu() {
   if (OG.systems && OG.systems.phoenixBossV2 && OG.systems.phoenixBossV2.isActive()) {
     OG.systems.phoenixBossV2.stop();
   }
+  // Hide all Phoenix UI elements when returning to menu
+  const pbUI = document.getElementById('phoenixGameUI');
+  if (pbUI) pbUI.style.display = 'none';
+  const timerEl = document.getElementById('phoenixTimer');
+  if (timerEl) timerEl.style.display = 'none';
+  const phaseEl = document.getElementById('phoenixPhaseName');
+  if (phaseEl) phaseEl.style.display = 'none';
+  const pbStatusRow = document.getElementById('phoenixStatusRow');
+  if (pbStatusRow) pbStatusRow.style.display = 'none';
+  const coreEl = document.getElementById('phoenixCoreObjV2');
+  if (coreEl) coreEl.style.display = 'none';
   clearRunTransientTimers();
   clearIntensity();
   stopBossDrone();
