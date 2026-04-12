@@ -892,7 +892,7 @@
 
   // ── PHASE 3: SESSION ARC NAV SHAKE ───────────────────────────────────────
   function _shakeNavBar() {
-    const nav = document.getElementById('mainNavBar') || document.querySelector('.nav-bar');
+    const nav = document.getElementById('bottomNavBar') || document.querySelector('.bottom-nav');
     if (!nav) return;
     nav.classList.remove('nav-shake');
     void nav.offsetWidth; // reflow
@@ -905,7 +905,7 @@
 
   // Patch switchMenuTab to add session arc lock + shake
   const _origSwitchMenuTab = switchMenuTab;
-  function switchMenuTab(tabId) {
+  switchMenuTab = function(tabId) {
     // First session arc lock — block navigation for fresh installs during World 1
     const sessionDone = OG.storage && OG.storage.getItem('orbitSync_sessionArcDone');
     const tutSys = OG.systems && OG.systems.tutorial;
