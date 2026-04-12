@@ -719,12 +719,13 @@
       <div id="overlayActionStack" class="overlay-action-stack">
         <div id="overlayButtonGroup" class="overlay-button-group">
           <button id="adReviveBtn" class="btn" style="display: none; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff;">📺 WATCH AD TO REVIVE</button>
-          <button id="bankCoinsBtn" class="btn primary" onclick="if(audioCtx) soundUIClick(); bankRunCoins();" style="display: none;">🪙 BANK COINS</button>
+
           <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">💰 REVIVE (🪙 50)</button>
-          <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">RESTART STAGE</button>
+          <button id="actionBtn" class="btn btn-play primary" onclick="if(audioCtx) soundUIClick();">🪙 BANK COINS & RESTART WORLD</button>
         </div>
         <div id="overlaySecondaryActions" class="overlay-secondary-actions">
           <button id="menuBtn" onclick="if(audioCtx) soundUIClick();">MENU</button>
+          <button id="shareBtn" style="display:none;" onclick="if(audioCtx) soundUIClick(); shareScore();">SHARE</button>
         </div>
       </div>
     </div>

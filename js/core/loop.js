@@ -4202,7 +4202,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
 
     let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
 
-    ui.btn.innerText = pendingCoins > 0 ? `BANK ${pendingCoins} + PLAY AGAIN` : 'PLAY AGAIN';
+    ui.btn.innerText = pendingCoins > 0 ? `🪙 BANK ${pendingCoins} & RESTART WORLD` : 'RESTART WORLD';
     ui.btn.onclick = function () {
       bankRunCoins();
       ui.overlay.style.display = 'none';
@@ -4223,7 +4223,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
                       runCents *= 2;
                       const newPending = getPendingRunCoins();
                       ui.runCoins.innerText = `+${newPending} COINS (DOUBLED!)`;
-                      ui.btn.innerText = `BANK ${newPending} + PLAY AGAIN`;
+                      ui.btn.innerText = `🪙 BANK ${newPending} & RESTART WORLD`;
                       adDoubleCoinsBtn.style.display = 'none';
                   });
               }

@@ -31,6 +31,7 @@
       currentReviveCost = reviveCost * 2;
       saveData();
       ui.coins.innerText = Math.floor(globalCoins);
+      if (window.reviveCount !== undefined) window.reviveCount++;
 
       canvas.style.boxShadow = 'inset 0 0 100px #ffaa00';
       setTimeout(() => canvas.style.boxShadow = 'none', 300);
