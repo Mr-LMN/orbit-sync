@@ -4052,9 +4052,12 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   }
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
-  // World 1 Tutorial: free restart on failure (no life penalty)
+  // World 1 Tutorial: free restart on failure — new players only, not established players
   const currentWorld = parseInt((levelData && levelData.id) ? levelData.id.split('-')[0] : '1', 10);
-  const isWorld1Tutorial = currentWorld === 1;
+  const _tutSysRevive = OrbitGame && OrbitGame.systems && OrbitGame.systems.tutorial;
+  const _isNewPlayer = !tutorialComplete &&
+    (!_tutSysRevive || !_tutSysRevive.isNewPlayerProfile || _tutSysRevive.isNewPlayerProfile());
+  const isWorld1Tutorial = currentWorld === 1 && _isNewPlayer;
   if (lives <= 0 && isWorld1Tutorial && !world1FreeRestartUsed) {
     world1FreeRestartUsed = true;
     // Reset to just before this fail — restore lives and reset targets
