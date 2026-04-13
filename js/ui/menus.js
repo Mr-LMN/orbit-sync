@@ -7,6 +7,45 @@
   let tutorialHardModeSeen = false;
   let _previewAnimFrame = 0;
   let _previewAnimInterval = null;
+  let _hubOrbAnimId = null;
+
+  // ── HUB ORB LIVE RENDERER ─────────────────────────────────────────────────
+  // Renders the equipped sphere skin on a canvas for brilliant detail in the hub.
+  function _stopHubSphereAnimation() {
+    if (_hubOrbAnimId !== null) {
+      cancelAnimationFrame(_hubOrbAnimId);
+      _hubOrbAnimId = null;
+    }
+  }
+
+  const _HUB_SKIN_COLORS = {
+    classic: '#00e5ff', skull: '#00ff50', prism: '#b157ff', echo: '#00eaff',
+    crimson: '#ff2244', pulse: '#ff8800', ghost: '#c8d6e5', storm: '#4fc3f7'
+  };
+
+  function _startHubSphereAnimation(skin) {
+    _stopHubSphereAnimation();
+    const canvas = document.getElementById('hubSphereCanvas');
+    if (!canvas || typeof drawOrbSkin !== 'function') return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const cx = w / 2, cy = h / 2;
+    const orbRadius = 32;
+    const skinColor = _HUB_SKIN_COLORS[skin] || '#00e5ff';
+
+    function frame() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.save();
+      // Clip to circle so skin stays within the sphere shape
+      ctx.beginPath();
+      ctx.arc(cx, cy, cx - 1, 0, Math.PI * 2);
+      ctx.clip();
+      drawOrbSkin(ctx, cx, cy, skin, orbRadius, 0, skinColor);
+      ctx.restore();
+      _hubOrbAnimId = requestAnimationFrame(frame);
+    }
+    frame();
+  }
 
   function toggleShop(show) {
     return OG.ui.shop.toggleShop(show);
@@ -25,6 +64,7 @@
     initAudio();
     toggleSettings(false);
     _stopPreviewAnimation(); // Stop preview animation before leaving menu
+    _stopHubSphereAnimation();
     ui.mainMenu.style.display = 'none';
     document.body.classList.add('state-gameplay');
     document.body.classList.remove('state-hub');
@@ -335,6 +375,7 @@
       if (orbStage) orbStage.style.setProperty('--orb-color', orbColor);
       if (orbCore)  orbCore.setAttribute('data-skin', skin);
       if (coreName) coreName.innerText = SKIN_LABELS[skin] || 'CLASSIC CORE';
+      _startHubSphereAnimation(skin);
 
       // ── Campaign Progress ──────────────────────────────────────────────────
       const campaignEl = document.getElementById('hubStatCampaign');
@@ -413,6 +454,7 @@
   function _launchBestScore() {
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
+    _stopHubSphereAnimation();
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
@@ -459,6 +501,7 @@
   }
 
   function _startHardModeGameplay() {
+    _stopHubSphereAnimation();
     initAudio();
     toggleSettings(false);
     ui.mainMenu.style.display = 'none';
@@ -646,6 +689,41 @@
     currentWorldVisualTheme = { type: 'grid' };
 
     drawWorldPreviewCanvas(true);
+  }
+
+  // Draws a glowing mini-sphere at (x,y) with given radius, world color, and alpha.
+  // Used by the campaign preview orbit rings for that "orbiting balls" effect.
+  function _drawPreviewOrb(ctx, x, y, r, color, alpha) {
+    // Outer glow halo
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, r * 3.5);
+    glow.addColorStop(0, color + 'cc');
+    glow.addColorStop(0.4, color + '55');
+    glow.addColorStop(1, color + '00');
+    ctx.globalAlpha = alpha * 0.75;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core orb body
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = r * 3;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Specular highlight — gives the orb a 3-D sphere feel
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.globalAlpha = alpha * 0.65;
+    ctx.beginPath();
+    ctx.arc(x - r * 0.3, y - r * 0.3, r * 0.38, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.globalAlpha = 1.0;
+    ctx.shadowBlur = 0;
   }
 
   function drawWorldPreviewCanvas(isLocked) {
@@ -873,53 +951,61 @@
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // ── ANIMATED ORBIT RING ──────────────────────────────────────────────
-      // Rotating elements on the outer ring for visual interest
-      const ringRadius = radius * 1.5;
-      const orbitCount = 6;
-      const orbitRotation = (_previewAnimFrame * 2) * Math.PI / 180;
-      
-      for (let i = 0; i < orbitCount; i++) {
-        const angle = (i / orbitCount) * Math.PI * 2 + orbitRotation;
-        const orbX = cx + Math.cos(angle) * ringRadius;
-        const orbY = drawCy + Math.sin(angle) * ringRadius;
-        
-        // Orbital point glow
-        const orbGlow = ctx.createRadialGradient(orbX, orbY, 0, orbX, orbY, 6);
-        orbGlow.addColorStop(0, shapeColor + '99');
-        orbGlow.addColorStop(1, shapeColor + '00');
-        ctx.fillStyle = orbGlow;
-        ctx.beginPath();
-        ctx.arc(orbX, orbY, 6, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Orbital point core
-        ctx.fillStyle = shapeColor;
-        ctx.globalAlpha = 0.7;
-        ctx.beginPath();
-        ctx.arc(orbX, orbY, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1.0;
-      }
+      // ── MULTI-RING ORBITING SPHERES ───────────────────────────────────────
+      // Inner ring: 3 bright orbs, fast clockwise spin
+      // Outer ring: 5 orbs, slower counter-clockwise spin (sci-fi gyroscope feel)
+      const innerRingR = radius * 1.14;
+      const outerRingR = radius * 1.44;
+      const innerRot   = (_previewAnimFrame * 3.5) * Math.PI / 180;
+      const outerRot   = -(_previewAnimFrame * 1.6) * Math.PI / 180;
 
-      // Orbit path lines connecting the points
+      // Outer orbit trail — faint dashed ring
+      ctx.save();
+      ctx.setLineDash([4, 9]);
       ctx.strokeStyle = shapeColor;
-      ctx.lineWidth = 0.8;
-      ctx.globalAlpha = 0.15;
-      ctx.setLineDash([4, 6]);
+      ctx.lineWidth = 0.75;
+      ctx.globalAlpha = 0.14;
       ctx.beginPath();
-      ctx.arc(cx, drawCy, ringRadius, 0, Math.PI * 2);
+      ctx.arc(cx, cy, outerRingR, 0, Math.PI * 2);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.globalAlpha = 1.0;
-
-      // crisp inner line for polished hologram readability
-      ctx.save();
-      ctx.globalAlpha = 0.7;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
       ctx.restore();
+
+      // Inner orbit trail — slightly more visible with crisp white ghost
+      ctx.save();
+      ctx.setLineDash([3, 5]);
+      ctx.strokeStyle = shapeColor;
+      ctx.lineWidth = 0.9;
+      ctx.globalAlpha = 0.22;
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerRingR, 0, Math.PI * 2);
+      ctx.stroke();
+      // Hologram polish: faint white ring on inner trail
+      ctx.globalAlpha = 0.28;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Inner orbs — 3 bright spheres, tight fast orbit
+      for (let i = 0; i < 3; i++) {
+        const angle = (i / 3) * Math.PI * 2 + innerRot;
+        _drawPreviewOrb(ctx,
+          cx + Math.cos(angle) * innerRingR,
+          cy + Math.sin(angle) * innerRingR,
+          5.5, shapeColor, 1.0);
+      }
+
+      // Outer orbs — 5 spheres, wide slow counter-orbit, pulse in brightness
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2 + outerRot;
+        const dim = 0.5 + 0.45 * ((Math.sin(angle + _previewAnimFrame * 0.04) + 1) / 2);
+        _drawPreviewOrb(ctx,
+          cx + Math.cos(angle) * outerRingR,
+          cy + Math.sin(angle) * outerRingR,
+          3.8, shapeColor, dim);
+      }
     }
     ctx.restore();
   }
@@ -1125,6 +1211,7 @@
       startEventCountdownTicker();
     } else {
       stopEventCountdownTicker();
+      _stopHubSphereAnimation();
     }
   }
 
