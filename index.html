@@ -718,6 +718,8 @@
       <!-- Simplified Fail Screen UI -->
       <div id="overlayActionStack" class="overlay-action-stack">
         <div id="overlayButtonGroup" class="overlay-button-group">
+          <button id="reviveBtn" style="display: none;">ONE MORE TRY</button>
+          <div id="tutorialReviveHint" class="tutorial-revive-hint" style="display: none;"></div>
           <button id="adReviveBtn" class="btn" style="display: none; background: rgba(0, 229, 255, 0.15); border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff;">📺 WATCH AD TO REVIVE</button>
 
           <button id="coinReviveBtn" class="btn" onclick="if(audioCtx) soundUIClick(); attemptCoinRevive();" style="display: none;">💰 REVIVE (🪙 50)</button>

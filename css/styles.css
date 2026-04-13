@@ -1991,6 +1991,20 @@ body.last-life #arenaInfo          { opacity: 0.35; }
     transparent 100%);
 }
 
+/* ── TUTORIAL REVIVE HINT ──────────────────
+   Subtle text below the free retry button.    */
+.tutorial-revive-hint {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.48rem, 1.6vw, 0.58rem);
+  font-weight: 500;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(255, 190, 48, 0.3);
+  text-align: center;
+  padding: 2px 20px 10px;
+  line-height: 1.6;
+}
+
 /* ── COIN REVIVE ────────────────────────────
    Small. Same line. Much dimmer.              */
 #coinReviveBtn {
