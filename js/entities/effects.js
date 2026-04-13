@@ -13,7 +13,7 @@
 
   function createPopup(x, y, text, color, hitQuality = null) {
     const isMobile = window.innerWidth < 768;
-    const useHeavyEffects = !isMobile || (typeof OrbitGame !== 'undefined' && OrbitGame.state && OrbitGame.state.legacy.multiplier > 2);
+    const useHeavyEffects = !isMobile || (typeof OrbitGame !== 'undefined' && OrbitGame.state && OrbitGame.state.legacy.multiplier > 5);
 
     // De-clutter strategy: Filter out mundane feedback unless requested heavily
     if (text === 'SLOPPY' || text === 'EARLY' || text === 'LATE' || text === 'GOOD' || hitQuality === 'ok' || hitQuality === 'good') {
@@ -120,6 +120,7 @@
   }
 
   function createShockwave(color, speed = 40) {
+    if (shockwaves.length >= MAX_SHOCKWAVES) shockwaves.shift();
     shockwaves.push({
       radius: orbitRadius * 0.15,
       opacity: 1.0,
@@ -148,11 +149,18 @@
   }
 
   function triggerScreenShake(intensity = 5) {
-    canvas.style.transform = `translate(${(Math.random() - 0.5) * intensity}px, ${(Math.random() - 0.5) * intensity}px)`;
+    // On mobile, cap shake intensity to reduce CSS repaint cost
+    const _mobileIntensity = isMobile ? Math.min(intensity, 12) : intensity;
+    canvas.style.transform = `translate(${(Math.random() - 0.5) * _mobileIntensity}px, ${(Math.random() - 0.5) * _mobileIntensity}px)`;
     setTimeout(() => canvas.style.transform = 'translate(0,0)', 60);
   }
 
+  // Throttle CSS filter changes on mobile — they trigger expensive repaints
+  let _lastFilterChangeAt = 0;
   function pulseBrightness(amount = 1.6, duration = 120) {
+    const now = performance.now();
+    if (isMobile && (now - _lastFilterChangeAt) < 150) return;
+    _lastFilterChangeAt = now;
     canvas.style.filter = `brightness(${amount})`;
     if (brightnessPulseTimeout) clearTimeout(brightnessPulseTimeout);
     brightnessPulseTimeout = setTimeout(() => {

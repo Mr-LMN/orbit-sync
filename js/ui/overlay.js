@@ -3,9 +3,13 @@
   OG.ui = OG.ui || {};
   OG.ui.overlay = OG.ui.overlay || {};
 
+  let _adSimTimeout = null;
   window.showSimulatedAd = function(onComplete) {
     const adOverlay = document.getElementById('adSimulationOverlay');
     if (!adOverlay) return;
+
+    // Clear any previous ad timeout to prevent overlapping callbacks
+    if (_adSimTimeout) { clearTimeout(_adSimTimeout); _adSimTimeout = null; }
 
     // Pause any game sounds
     if (typeof audioCtx !== 'undefined' && audioCtx.state === 'running') {
@@ -14,7 +18,8 @@
 
     adOverlay.style.display = 'flex';
 
-    setTimeout(() => {
+    _adSimTimeout = setTimeout(() => {
+        _adSimTimeout = null;
         adOverlay.style.display = 'none';
         if (typeof audioCtx !== 'undefined' && audioCtx.state === 'suspended') {
             audioCtx.resume();
