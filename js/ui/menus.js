@@ -937,6 +937,34 @@
         ctx.globalAlpha = 1.0;
       }
 
+      // Rebuild shape path (boss orb drawing calls ctx.beginPath() and clears it)
+      ctx.beginPath();
+      if (currentWorldShape === 'square') {
+        ctx.rect(cx - radius, drawCy - radius, radius*2, radius*2);
+      } else if (currentWorldShape === 'diamond') {
+        ctx.moveTo(cx,          drawCy - radius);
+        ctx.lineTo(cx + radius, drawCy);
+        ctx.lineTo(cx,          drawCy + radius);
+        ctx.lineTo(cx - radius, drawCy);
+        ctx.closePath();
+      } else if (currentWorldShape === 'triangle') {
+        ctx.moveTo(cx, drawCy - radius);
+        ctx.lineTo(cx + radius*0.866, drawCy + radius*0.5);
+        ctx.lineTo(cx - radius*0.866, drawCy + radius*0.5);
+        ctx.closePath();
+      } else if (currentWorldShape === 'pentagon' || currentWorldShape === 'hexagon' || currentWorldShape === 'octagon') {
+        const sides = currentWorldShape === 'pentagon' ? 5 : (currentWorldShape === 'hexagon' ? 6 : 8);
+        for(let i=0; i<sides; i++){
+          const angle = i * (Math.PI*2)/sides - Math.PI/2;
+          const x = cx + Math.cos(angle)*radius;
+          const y = drawCy + Math.sin(angle)*radius;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.closePath();
+      } else {
+        ctx.arc(cx, drawCy, radius, 0, Math.PI * 2);
+      }
+
       // Subtle fill for shape interior presence
       ctx.globalAlpha = 0.1;
       ctx.fillStyle = shapeColor;
