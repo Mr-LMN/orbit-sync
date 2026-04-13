@@ -1149,6 +1149,8 @@ function forceHideOverlayExtras() {
   if (summaryCard) summaryCard.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
   if (closeMissBanner) closeMissBanner.style.display = 'none';
+  const tutorialReviveHint = document.getElementById('tutorialReviveHint');
+  if (tutorialReviveHint) tutorialReviveHint.style.display = 'none';
   if (overlayActionStack) {
     overlayActionStack.classList.remove('revive-available', 'no-revive');
   }
@@ -4056,22 +4058,10 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   }
   canvas.style.boxShadow = `inset 0 0 50px #ff3366`; setTimeout(() => canvas.style.boxShadow = 'none', 150);
 
-  // World 1 Tutorial: free restart on failure — new players only, not established players
-  const currentWorld = parseInt((levelData && levelData.id) ? levelData.id.split('-')[0] : '1', 10);
-  const _tutSysRevive = OrbitGame && OrbitGame.systems && OrbitGame.systems.tutorial;
-  const _isNewPlayer = !tutorialComplete &&
-    (!_tutSysRevive || !_tutSysRevive.isNewPlayerProfile || _tutSysRevive.isNewPlayerProfile());
-  const isWorld1Tutorial = currentWorld === 1 && _isNewPlayer;
-  if (lives <= 0 && isWorld1Tutorial && !world1FreeRestartUsed) {
-    world1FreeRestartUsed = true;
-    // Reset to just before this fail — restore lives and reset targets
-    lives = (hardModeActive ? 2 : maxLives);
-    resetRunState();
-    stageHits = 0;
-    // Reload the level without showing fail screen
-    loadLevel(currentLevelIdx);
-    return;
-  }
+  // World 1 Tutorial: check if tutorial revive is available (shown on fail screen)
+  const _failWorld = parseInt((levelData && levelData.id) ? levelData.id.split('-')[0] : '1', 10);
+  const _world1BossCleared = playerProgress && playerProgress.completedStages && playerProgress.completedStages['1-6'];
+  const tutorialReviveAvailable = _failWorld === 1 && !_world1BossCleared && !world1FreeRestartUsed;
 
   if (lives <= 0) {
     // Deactivate boss core if active
@@ -4279,57 +4269,83 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     let reviveBtn = document.getElementById('reviveBtn') || ui.reviveBtn;
     let coinReviveBtn = document.getElementById('coinReviveBtn') || ui.coinReviveBtn;
     let adReviveBtn = document.getElementById('adReviveBtn');
+    let tutorialReviveHint = document.getElementById('tutorialReviveHint');
 
     if (reviveBtn) reviveBtn.style.display = 'block';
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
-    // if (adReviveBtn) adReviveBtn.style.display = 'none';
 
     let reviveAvailable = false;
 
-    const _ironShieldBonus = (activeAugment === 'iron_shield') && reviveCount === 0 && usedLastChance;
-    if (!usedLastChance || _ironShieldBonus) {
-      if (_ironShieldBonus) usedLastChance = false; // reset for the iron shield bonus
+    if (tutorialReviveAvailable) {
+      // World 1 tutorial: show free retry with clear tutorial messaging
       if (reviveBtn) {
-        reviveBtn.innerText = activeAugment === 'iron_shield' && reviveCount === 0
-          ? "SHIELD REVIVE" : "ONE MORE TRY";
+        reviveBtn.style.display = 'block';
+        reviveBtn.innerText = 'FREE RETRY';
         reviveBtn.onclick = function () {
-          usedLastChance = true;
-          restartCurrentStageAfterRevive();
-        };
-      }
-      reviveAvailable = true;
-    } else {
-      if (reviveBtn) reviveBtn.style.display = 'none';
-    }
-
-    const reviveCost = currentReviveCost || 50;
-    if (coinReviveBtn && globalCoins >= reviveCost) {
-      coinReviveBtn.style.display = 'block';
-      if (ui.btn) ui.btn.style.display = 'block';
-      coinReviveBtn.innerText = `REVIVE (🪙 ${reviveCost})`;
-      coinReviveBtn.onclick = function () {
-        if (audioCtx) soundUIClick();
-        attemptCoinRevive();
-      };
-      reviveAvailable = true;
-    }
-
-    // Show Ad Revive if eligible
-    if (adReviveBtn && !isPremium && !adReviveUsedThisStage) {
-        adReviveBtn.style.display = 'block';
-        if (ui.btn) ui.btn.style.display = 'block';
-        adReviveBtn.onclick = function () {
-            if (audioCtx) soundUIClick();
-            if (typeof showSimulatedAd === 'function') {
-                showSimulatedAd(() => {
-                    adReviveUsedThisStage = true;
-                    // Provide a free revive without using chance or coins
-                    reviveCount++;
-                    restartCurrentStageAfterRevive();
-                });
-            }
+          if (audioCtx) soundUIClick();
+          world1FreeRestartUsed = true;
+          lives = (hardModeActive ? 2 : maxLives);
+          resetRunState();
+          stageHits = 0;
+          loadLevel(currentLevelIdx);
         };
         reviveAvailable = true;
+      }
+      if (tutorialReviveHint) {
+        tutorialReviveHint.style.display = 'block';
+        tutorialReviveHint.innerText = 'TUTORIAL MODE · FREE RETRIES END AFTER WORLD 1';
+      }
+      // Keep it simple for new players — hide paid revive options during tutorial
+      if (coinReviveBtn) coinReviveBtn.style.display = 'none';
+      if (adReviveBtn) adReviveBtn.style.display = 'none';
+    } else {
+      if (tutorialReviveHint) tutorialReviveHint.style.display = 'none';
+
+      const _ironShieldBonus = (activeAugment === 'iron_shield') && reviveCount === 0 && usedLastChance;
+      if (!usedLastChance || _ironShieldBonus) {
+        if (_ironShieldBonus) usedLastChance = false; // reset for the iron shield bonus
+        if (reviveBtn) {
+          reviveBtn.innerText = activeAugment === 'iron_shield' && reviveCount === 0
+            ? "SHIELD REVIVE" : "ONE MORE TRY";
+          reviveBtn.onclick = function () {
+            usedLastChance = true;
+            restartCurrentStageAfterRevive();
+          };
+        }
+        reviveAvailable = true;
+      } else {
+        if (reviveBtn) reviveBtn.style.display = 'none';
+      }
+
+      const reviveCost = currentReviveCost || 50;
+      if (coinReviveBtn && globalCoins >= reviveCost) {
+        coinReviveBtn.style.display = 'block';
+        if (ui.btn) ui.btn.style.display = 'block';
+        coinReviveBtn.innerText = `REVIVE (🪙 ${reviveCost})`;
+        coinReviveBtn.onclick = function () {
+          if (audioCtx) soundUIClick();
+          attemptCoinRevive();
+        };
+        reviveAvailable = true;
+      }
+
+      // Show Ad Revive if eligible
+      if (adReviveBtn && !isPremium && !adReviveUsedThisStage) {
+          adReviveBtn.style.display = 'block';
+          if (ui.btn) ui.btn.style.display = 'block';
+          adReviveBtn.onclick = function () {
+              if (audioCtx) soundUIClick();
+              if (typeof showSimulatedAd === 'function') {
+                  showSimulatedAd(() => {
+                      adReviveUsedThisStage = true;
+                      // Provide a free revive without using chance or coins
+                      reviveCount++;
+                      restartCurrentStageAfterRevive();
+                  });
+              }
+          };
+          reviveAvailable = true;
+      }
     }
 
     updateFailActionHierarchy(reviveAvailable);
