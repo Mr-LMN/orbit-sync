@@ -185,6 +185,23 @@
     return hasPerk('phoenix_bonus_life') ? 1 : 0;
   }
 
+  // Returns the next rank that unlocks a perk (for "next chase" hub messaging)
+  function getNextPerkMilestone() {
+    const rank = _state.rank || 1;
+    return RANK_PERKS.find(p => p.rank > rank) || null;
+  }
+
+  // Returns total XP needed from current position to reach a target rank
+  function getXPToRank(targetRank) {
+    const rank = _state.rank || 1;
+    if (targetRank <= rank) return 0;
+    let total = _xpToNextRank(rank) - (_state.xp || 0);
+    for (let r = rank + 1; r < targetRank; r++) {
+      total += _xpToNextRank(r);
+    }
+    return Math.max(0, total);
+  }
+
   // ── EXPORT ───────────────────────────────────────────────────────────────
   OG.systems.prestige = {
     MAX_RANK,
@@ -205,6 +222,8 @@
     getZoneScoreBonus,
     isPhoenixOpenAccess,
     getPhoenixBonusRebirth,
+    getNextPerkMilestone,
+    getXPToRank,
     queueWorldUnlock,
   };
 

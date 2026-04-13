@@ -172,6 +172,16 @@
           </div>
         </div>
 
+        <!-- Next Goal Panel — "what am I working towards?" -->
+        <div id="nextGoalPanel" role="button" aria-label="Current goal" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();if(OG&&OG.ui&&OG.ui.menus&&OG.ui.menus.triggerNextGoal)OG.ui.menus.triggerNextGoal();">
+          <div class="next-goal-icon" id="nextGoalIcon">⬡</div>
+          <div class="next-goal-body">
+            <div class="next-goal-label" id="nextGoalLabel">NEXT GOAL</div>
+            <div class="next-goal-value" id="nextGoalValue">—</div>
+          </div>
+          <div class="next-goal-cta" id="nextGoalCta">▶</div>
+        </div>
+
         <!-- Live Event Panel -->
         <div id="liveEventPanel" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('event')" role="button" aria-label="Enter Phoenix Trial event">
           <div class="event-panel-icon">🔥</div>
