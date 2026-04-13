@@ -390,6 +390,9 @@
         OG.systems.challenges.refreshChallengesUI();
         OG.systems.challenges.refreshStreakUI();
       }
+
+      // ── Next Goal Panel ────────────────────────────────────────────────────
+      refreshNextGoalPanel();
   }
 
   function startContinueRun() {
@@ -947,6 +950,106 @@
     // Also update the hub rank pill at the top of the home view
     if (hubRankLabel) hubRankLabel.textContent = label;
     if (hubRankNum)   hubRankNum.textContent   = 'RANK ' + (rank < 10 ? '0' + rank : rank);
+
+    // Keep next-goal panel in sync with latest XP state
+    refreshNextGoalPanel();
+  }
+
+  // ── NEXT GOAL PANEL ───────────────────────────────────────────────────────
+  // Shows the player's most relevant upcoming goal in the hub.
+  // Priority: 1) claimable daily chest  2) daily challenges in progress
+  //           3) next rank perk unlock  4) weekly challenge  5) beat best score
+
+  let _nextGoalActionFn = null;
+
+  function refreshNextGoalPanel() {
+    const panel   = document.getElementById('nextGoalPanel');
+    const iconEl  = document.getElementById('nextGoalIcon');
+    const labelEl = document.getElementById('nextGoalLabel');
+    const valueEl = document.getElementById('nextGoalValue');
+    const ctaEl   = document.getElementById('nextGoalCta');
+    if (!panel) return;
+
+    let icon = '⬡', label = 'NEXT GOAL', value = '—', cta = '▶';
+    let goalType = 'rank';
+    _nextGoalActionFn = null;
+
+    const challenges = OG.systems && OG.systems.challenges;
+    const prestige   = OG.systems && OG.systems.prestige;
+
+    if (challenges) {
+      const st = challenges.getState();
+
+      // 1. Daily chest ready to claim
+      if (st && !st.dailyChestClaimed && st.dailyChallenges && st.dailyChallenges.length > 0
+          && st.dailyChallenges.every(c => c.done)) {
+        icon = '🎁'; label = 'DAILY CHEST READY'; value = 'CLAIM YOUR REWARD'; cta = 'CLAIM';
+        goalType = 'daily-ready';
+        _nextGoalActionFn = function() {
+          const modal = document.getElementById('dailyChallengesModal');
+          if (modal) modal.style.display = 'flex';
+        };
+
+      // 2. Daily challenges in progress
+      } else if (st && st.dailyChallenges && st.dailyChallenges.length > 0) {
+        const done  = st.dailyChallenges.filter(c => c.done).length;
+        const total = st.dailyChallenges.length;
+        if (done < total) {
+          const dots = st.dailyChallenges.map(c => c.done ? '◆' : '◇').join('  ');
+          icon = '📋'; label = 'DAILY CHALLENGES'; value = dots + '  ·  ' + done + ' / ' + total;
+          cta = 'GO'; goalType = 'daily';
+          _nextGoalActionFn = function() {
+            const modal = document.getElementById('dailyChallengesModal');
+            if (modal) modal.style.display = 'flex';
+          };
+        }
+      }
+
+      // 3. Weekly chest ready (lower priority than daily)
+      if (!_nextGoalActionFn && st && !st.weeklyChestClaimed && st.weeklyChallenges
+          && st.weeklyChallenges.length > 0 && st.weeklyChallenges.every(c => c.done)) {
+        icon = '🏆'; label = 'WEEKLY CHEST READY'; value = 'CLAIM YOUR REWARD'; cta = 'CLAIM';
+        goalType = 'weekly-ready';
+        _nextGoalActionFn = function() {
+          const modal = document.getElementById('dailyChallengesModal');
+          if (modal) modal.style.display = 'flex';
+        };
+      }
+    }
+
+    // 4. Next rank perk milestone
+    if (!_nextGoalActionFn && prestige) {
+      const perk = prestige.getNextPerkMilestone();
+      if (perk) {
+        const xpLeft = prestige.getXPToRank(perk.rank);
+        icon  = '⬡';
+        label = 'RANK ' + perk.rank + ' UNLOCK';
+        value = perk.label + '  ·  ' + (xpLeft > 0 ? xpLeft + ' XP away' : 'READY');
+        cta   = '▶'; goalType = 'rank';
+      }
+    }
+
+    // 5. Beat best score fallback
+    if (!_nextGoalActionFn && label === 'NEXT GOAL') {
+      const best = (typeof personalBest !== 'undefined' && personalBest && personalBest.score > 0)
+        ? personalBest.score
+        : (typeof highScore !== 'undefined' ? highScore : 0);
+      icon = '🏅'; label = 'PERSONAL BEST';
+      value = best > 0 ? 'BEAT ' + best + ' PTS' : 'SET YOUR FIRST RECORD';
+      cta = '▶'; goalType = 'score';
+    }
+
+    if (iconEl)  iconEl.textContent  = icon;
+    if (labelEl) labelEl.textContent = label;
+    if (valueEl) valueEl.textContent = value;
+    if (ctaEl)   ctaEl.textContent   = cta;
+    panel.setAttribute('data-goal-type', goalType);
+  }
+
+  function triggerNextGoal() {
+    if (typeof _nextGoalActionFn === 'function') {
+      _nextGoalActionFn();
+    }
   }
 
   // ── PHASE 3: LIVE EVENT PANEL COUNTDOWN ──────────────────────────────────
@@ -1037,6 +1140,8 @@
   OG.ui.menus.showLockedWorldPreview = showLockedWorldPreview;
   OG.ui.menus.refreshMenuWorldPreview = refreshMenuWorldPreview;
   OG.ui.menus.refreshOrbitRankStrip = refreshOrbitRankStrip;
+  OG.ui.menus.refreshNextGoalPanel  = refreshNextGoalPanel;
+  OG.ui.menus.triggerNextGoal       = triggerNextGoal;
   OG.ui.menus.refreshLiveEventPanel = refreshLiveEventPanel;
   window.startBestScoreRun = startBestScoreRun;
   window.startHardModeRun = startHardModeRun;
