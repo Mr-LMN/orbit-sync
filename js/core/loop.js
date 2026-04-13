@@ -1,5 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
+// willReadFrequently forces CPU-side (software) rendering which tanks mobile FPS.
+// glitchCanvas already skips getImageData on mobile, so only opt-in on desktop.
+const _isMobileBrowser = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+const ctx = canvas.getContext('2d', _isMobileBrowser ? {} : { willReadFrequently: true });
 const ui = window.ui || OrbitGame.dom.ui;
 
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
@@ -1581,6 +1584,7 @@ function loadLevel(idx) {
   _nextBlackoutAt = 0;
   _blackoutFlickerPhase = false;
   _blackoutInitialised = false;
+  particles = [];
   popups = [];
   shockwaves = [];
   targetHitRipples = [];
@@ -1835,7 +1839,7 @@ function draw() {
   const railGlowScale = theme.railGlowScale || 1;
   const now = performance.now();
   const splitPulseTime = now * 0.015;
-  const useHeavyEffects = !isMobile || multiplier > 2;
+  const useHeavyEffects = !isMobile || multiplier > 5;
   const shadowBlurCap = useHeavyEffects ? 999 : 8;
   const setShadowBlur = (value) => { ctx.shadowBlur = Math.min(shadowBlurCap, value); };
   drawTick++;
@@ -1853,7 +1857,8 @@ function draw() {
   }
 
   // World atmosphere glow — faint radial wash behind everything
-  if (!inMenu) {
+  // On mobile, only render every 4th frame — it's a slow-changing ambient effect
+  if (!inMenu && (!isMobile || drawTick % 4 === 0)) {
     const _atmTime = now * 0.0004;
     const _atmPulse = (Math.sin(_atmTime) + 1) * 0.5;
     let _atmColor = null;
@@ -1954,13 +1959,10 @@ function draw() {
     }
   }
 
-  // Ambient background dust
-  bgDust.forEach(d => {
-    ctx.beginPath();
-    ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(255,255,255, ${d.opacity})`;
-    ctx.fill();
-
+  // Ambient background dust — on mobile skip every other particle to halve draw calls
+  for (let _di = 0; _di < bgDust.length; _di++) {
+    const d = bgDust[_di];
+    // Update position for all particles (cheap), but only draw every other on mobile
     let speedMult = isBoss ? 3.5 : 1;
     speedMult *= timeScale;
     if (worldNum === 2 && !isBoss) {
@@ -1972,7 +1974,12 @@ function draw() {
       d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
     }
     if (d.y < 0) { d.y = viewportHeight; d.x = Math.random() * viewportWidth; }
-  });
+    if (isMobile && (_di & 1)) continue; // skip odd-indexed particles on mobile
+    ctx.beginPath();
+    ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255, ${d.opacity})`;
+    ctx.fill();
+  }
 
   // ENERGY LANE
   let effectiveRailColor = hardModeActive
@@ -3342,8 +3349,11 @@ function draw() {
       ctx.strokeStyle = sw.color;
       ctx.globalAlpha = sw.opacity;
       ctx.lineWidth = sw.width;
-      setShadowBlur(30);
-      ctx.shadowColor = sw.color;
+      // shadowBlur(30) per shockwave is very expensive — skip on mobile
+      if (!isMobile) {
+        setShadowBlur(30);
+        ctx.shadowColor = sw.color;
+      }
       ctx.stroke();
     }
   }
@@ -3365,8 +3375,10 @@ function draw() {
     ctx.strokeStyle = ripple.color;
     ctx.globalAlpha = ripple.life * 0.7;
     ctx.lineWidth = 1.5 + ((1 - ripple.life) * 1.8);
-    setShadowBlur(12);
-    ctx.shadowColor = ripple.color;
+    if (!isMobile) {
+      setShadowBlur(12);
+      ctx.shadowColor = ripple.color;
+    }
     ctx.stroke();
   }
   ctx.globalAlpha = 1.0;
@@ -3467,10 +3479,13 @@ function draw() {
       ctx.strokeStyle = p.color;
       ctx.globalAlpha = p.life;
       ctx.lineWidth = 2;
-      setShadowBlur(6);
-      ctx.shadowColor = p.color;
+      // shadowBlur per-particle is extremely expensive on mobile (55 Gaussian blurs/frame)
+      if (!isMobile) {
+        setShadowBlur(6);
+        ctx.shadowColor = p.color;
+      }
       ctx.stroke();
-      ctx.shadowBlur = 0;
+      if (!isMobile) ctx.shadowBlur = 0;
       ctx.globalAlpha = 1.0;
     }
   }
@@ -3525,7 +3540,7 @@ function draw() {
       ctx.save();
       ctx.translate(renderX, renderY);
       ctx.scale(scale, scale);
-      if (pop.shadow > 0) {
+      if (pop.shadow > 0 && !isMobile) {
         ctx.shadowBlur = pop.shadow;
         ctx.shadowColor = pop.color;
       }
@@ -3537,7 +3552,8 @@ function draw() {
   }
 
   // Vignette — dark edges deepen with multiplier for tunnel-vision focus
-  if (!inMenu) {
+  // On mobile, only draw vignette every 3rd frame to save gradient allocation cost
+  if (!inMenu && (!isMobile || drawTick % 3 === 0)) {
     const _vigMult = Math.min(multiplier, 8);
     const _vigAlpha = hardModeActive
       ? 0.42 + (_vigMult * 0.032)
