@@ -1156,10 +1156,14 @@ function forceHideOverlayExtras() {
 function updateFailActionHierarchy(reviveAvailable) {
   const overlayActionStack = ui.overlayActionStack;
   if (!overlayActionStack || !ui.btn) return;
+
   if (reviveAvailable) {
     overlayActionStack.classList.add('revive-available');
     overlayActionStack.classList.remove('no-revive');
     ui.btn.classList.remove('primary');
+
+    // Explicitly make sure these buttons aren't hidden by any lingering CSS if they're meant to be available.
+    // The handleFail method explicitly toggles their display property already, so we rely on that.
   } else {
     overlayActionStack.classList.add('no-revive');
     overlayActionStack.classList.remove('revive-available');
@@ -4167,6 +4171,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
 
     // Promote ad revive more aggressively on high-emotion deaths
     const _isHighStakes = _isLastHits || _isHighCombo || _isNearPB || streakBeforeFail >= 4;
+
     if (_isHighStakes && adReviveBtn && !isPremium && !adReviveUsedThisStage) {
       adReviveBtn.style.fontWeight = 'bold';
       adReviveBtn.style.borderColor = '#ffaa00';
@@ -4271,33 +4276,36 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       }
     }
     setOverlayState('gameOver');
-    let reviveBtn = ui.reviveBtn;
-    let coinReviveBtn = ui.coinReviveBtn;
+    let reviveBtn = document.getElementById('reviveBtn') || ui.reviveBtn;
+    let coinReviveBtn = document.getElementById('coinReviveBtn') || ui.coinReviveBtn;
     let adReviveBtn = document.getElementById('adReviveBtn');
 
-    reviveBtn.style.display = 'block';
+    if (reviveBtn) reviveBtn.style.display = 'block';
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
-    if (adReviveBtn) adReviveBtn.style.display = 'none';
+    // if (adReviveBtn) adReviveBtn.style.display = 'none';
 
     let reviveAvailable = false;
 
     const _ironShieldBonus = (activeAugment === 'iron_shield') && reviveCount === 0 && usedLastChance;
     if (!usedLastChance || _ironShieldBonus) {
       if (_ironShieldBonus) usedLastChance = false; // reset for the iron shield bonus
-      reviveBtn.innerText = activeAugment === 'iron_shield' && reviveCount === 0
-        ? "SHIELD REVIVE" : "ONE MORE TRY";
-      reviveBtn.onclick = function () {
-        usedLastChance = true;
-        restartCurrentStageAfterRevive();
-      };
+      if (reviveBtn) {
+        reviveBtn.innerText = activeAugment === 'iron_shield' && reviveCount === 0
+          ? "SHIELD REVIVE" : "ONE MORE TRY";
+        reviveBtn.onclick = function () {
+          usedLastChance = true;
+          restartCurrentStageAfterRevive();
+        };
+      }
       reviveAvailable = true;
     } else {
-      reviveBtn.style.display = 'none';
+      if (reviveBtn) reviveBtn.style.display = 'none';
     }
 
     const reviveCost = currentReviveCost || 50;
     if (coinReviveBtn && globalCoins >= reviveCost) {
       coinReviveBtn.style.display = 'block';
+      if (ui.btn) ui.btn.style.display = 'block';
       coinReviveBtn.innerText = `REVIVE (🪙 ${reviveCost})`;
       coinReviveBtn.onclick = function () {
         if (audioCtx) soundUIClick();
@@ -4309,6 +4317,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     // Show Ad Revive if eligible
     if (adReviveBtn && !isPremium && !adReviveUsedThisStage) {
         adReviveBtn.style.display = 'block';
+        if (ui.btn) ui.btn.style.display = 'block';
         adReviveBtn.onclick = function () {
             if (audioCtx) soundUIClick();
             if (typeof showSimulatedAd === 'function') {
@@ -5031,6 +5040,10 @@ function tap() {
         soundCoreDamage();
         if (bossPhase === 1) {
           bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; updateStreakUI(); updateMultiplierUI();
+          if (OG.systems && OG.systems.bossCores) {
+            OG.systems.bossCores.updatePhase(bossPhase);
+            OG.systems.bossCores.updateHealth(50); // Phase 2 starts at 50% health
+          }
           createParticles(centerObj.x, centerObj.y, '#ff3366', 72);
           createShockwave('#ff3366', 44);
           pulseBrightness(1.7, 120);
@@ -5044,6 +5057,10 @@ function tap() {
           triggerScreenShake(24); scheduleBossSpawn(700); return;
         } else {
           ui.bossPhase2.className = "boss-segment";
+          if (OG.systems && OG.systems.bossCores) {
+            OG.systems.bossCores.updateHealth(0); // Phase 2 cleared
+            OG.systems.bossCores.deactivate();
+          }
           createParticles(centerObj.x, centerObj.y, '#ffffff', 50);
           createShockwave('#00ff88', 55);
           createShockwave('#ffffff', 70);
@@ -5102,7 +5119,7 @@ function tap() {
       }
       soundMultiplierUp(multiplier);
       let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 2 : 0;
-      score += 15 + frenzyBonusScore;
+      score += (4 * multiplier) + frenzyBonusScore;
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -5190,7 +5207,7 @@ function tap() {
       }
       soundMultiplierUp(multiplier);
       let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 1 : 0;
-      score += 10 + frenzyBonusScore;
+      score += (3 * multiplier) + frenzyBonusScore;
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -5240,7 +5257,7 @@ function tap() {
       if (lives === 1) runLastLifeHits++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.28 + Math.min(multiplier, 8) * 0.025);
-      score += 5;
+      score += (2 * multiplier);
       canvas.style.filter = 'brightness(1.4)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundGood(multiplier);
@@ -5251,7 +5268,7 @@ function tap() {
       runOkCount++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.08);
-      multiplier = 1; score += 2;
+      multiplier = 1; score += (1 * multiplier);
       const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
       createPopup(hitX, hitY - 24, okTimingLabel ? `${okTimingLabel}` : 'SLOPPY', '#ff6677', 'ok');
       canvas.style.filter = 'brightness(1.5) hue-rotate(320deg) saturate(1.4)';
