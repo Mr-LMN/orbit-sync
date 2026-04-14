@@ -227,7 +227,7 @@
 
     // Volume targets
     const targetBase = isBossActive ? BOSS_LAYER.base : layer.base;
-    const targetBoss = isBossActive ? BOSS_LAYER.boss : layer.boss;
+    const targetBoss = isBossActive ? BOSS_LAYER.boss : 0;
 
     audio.baseGain.gain.cancelScheduledValues(now);
     audio.bossGain.gain.cancelScheduledValues(now);

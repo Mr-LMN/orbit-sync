@@ -53,7 +53,7 @@ window.getActiveAugment = function() { return activeAugment; };
 // Only aegis and prism are real boss music stages. 3-6/spectre uses echo mechanics — base track only.
 function _isMusicBossStage(ld) {
   if (!ld || !ld.boss) return false;
-  return ld.boss === 'aegis' || ld.boss === 'prism' || ld.boss === 'corruptor';
+  return ld.boss === 'aegis' || ld.boss === 'prism' || ld.boss === 'corruptor' || ld.boss === 'null_gate' || ld.boss === 'solar_core';
 }
 function vibrate(pattern) { return OrbitGame.audio.vibrate(pattern); }
 
@@ -1608,6 +1608,19 @@ function loadLevel(idx) {
   currentWorldPalette = computeWorldPalette(levelData);
   currentWorldShape = computeWorldShape(levelData);
   currentWorldVisualTheme = getWorldVisualTheme(levelData);
+  // If transitioning to a pentagon stage, nudge angle away from corner vertices
+  // so the sphere doesn't appear visually frozen on a sharp corner point.
+  if (currentWorldShape === 'pentagon') {
+    const _pentaSides = 5;
+    const _pentaSector = (Math.PI * 2) / _pentaSides;
+    const _normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const _nearestCorner = Math.round(_normAngle / _pentaSector) * _pentaSector;
+    const _distToCorner = Math.abs(_normAngle - _nearestCorner);
+    if (_distToCorner < _pentaSector * 0.12) {
+      const _sectorIdx = Math.floor(_normAngle / _pentaSector);
+      angle = _sectorIdx * _pentaSector + _pentaSector * 0.5;
+    }
+  }
   stageHits = 0; distanceTraveled = 0; totalStageDistance = 0; trail = [];
   _blackoutActive = false;
   _blackoutEndsAt = 0;
@@ -3765,7 +3778,7 @@ function update() {
   if (isPlaying && !inMenu && !isCinematicIntro && (worldNum === 5 || (levelData && levelData.id === 'abyss'))) {
     const _bcfg = levelData && levelData.blackout;
     if (_bcfg) {
-      if (!_blackoutInitialised) {
+      if (!_blackoutInitialised && !isStageClearHoldPaused) {
         _blackoutInitialised = true;
         _nextBlackoutAt = frameNow + (_bcfg.firstAt || 2000);
       }
