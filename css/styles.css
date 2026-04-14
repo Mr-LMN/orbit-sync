@@ -1,5 +1,6 @@
-body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: Orbitron, sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-#gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100vw; height: 100vh; transition: box-shadow 220ms ease, filter 120ms ease; }
+html { background-color: #0f0f13; }
+body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: Orbitron, sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
+#gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100%; height: 100%; transition: box-shadow 220ms ease, filter 120ms ease; }
 
 @keyframes survivalNearMissShock {
   0% { box-shadow: inset 0 0 0 rgba(255, 176, 78, 0); filter: brightness(1); }
@@ -4712,3 +4713,55 @@ body.combo-8 #gameCanvas  {
 .nav-shake {
   animation: navShake 0.35s ease-in-out;
 }
+
+/* ─── RESPONSIVE STAGE ──────────────────────────────────────────
+   Orbit Sync is a mobile-first portrait game. On wide screens
+   (laptops, desktops) we letterbox the UI into a centered portrait
+   frame rather than stretching across a 16:9 canvas, so the HUD,
+   menus and arena stay cohesive. Applied when JS adds
+   `.landscape-stage` to <body>. Mobile portrait is unchanged.
+   ──────────────────────────────────────────────────────────── */
+html.landscape-stage-host {
+  background:
+    radial-gradient(ellipse at 50% 35%, #141427 0%, #06060c 55%, #000 95%);
+}
+
+body.landscape-stage {
+  /* Portrait aspect frame: 9:16, capped so it doesn't feel oversized */
+  width: min(100vw, calc(100vh * 9 / 16), 560px);
+  height: 100vh;
+  margin: 0 auto;
+  box-shadow:
+    0 0 0 1px rgba(0, 229, 255, 0.06),
+    0 0 48px rgba(0, 0, 0, 0.85),
+    0 0 120px rgba(0, 229, 255, 0.05);
+}
+
+/* Decorative side rails on wide screens (outside the portrait frame) */
+body.landscape-stage::before,
+body.landscape-stage::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  pointer-events: none;
+  z-index: 60;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 229, 255, 0) 0%,
+    rgba(0, 229, 255, 0.14) 50%,
+    rgba(0, 229, 255, 0) 100%
+  );
+  opacity: 0.5;
+}
+body.landscape-stage::before { left: calc(50% - min(50vw, calc(50vh * 9 / 16), 280px) - 2px); }
+body.landscape-stage::after  { right: calc(50% - min(50vw, calc(50vh * 9 / 16), 280px) - 2px); }
+
+/* Keep fixed-position elements inside the portrait stage */
+body.landscape-stage .pause-fab,
+body.landscape-stage #tutorialMask,
+body.landscape-stage #tutorialCard {
+  position: absolute;
+}
+body.landscape-stage #tutorialMask { inset: 0; }

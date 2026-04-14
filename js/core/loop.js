@@ -549,9 +549,39 @@ function _syncPauseBtn() {
   pb.style.display = (!inMenu && isPlaying || (!inMenu && !isPlaying)) ? 'flex' : 'none';
 }
 
+// Decide when to letterbox the game into a portrait stage. Mobile phones in
+// portrait use the full viewport; laptops/desktops in landscape get a 9:16
+// centered frame so the mobile-first HUD doesn't sprawl across a wide canvas.
+function shouldUseLandscapeStage() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  if (!w || !h) return false;
+  const isWide = (w / h) > 1.05;
+  const isTouchMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const prefersFinePointer = !!(window.matchMedia && window.matchMedia('(pointer: fine)').matches);
+  // On touch phones in landscape we don't letterbox (user can just rotate).
+  if (isTouchMobile && !prefersFinePointer) return false;
+  // Laptop/desktop landscape: letterbox.
+  return isWide && (w >= 900 || prefersFinePointer);
+}
+
+function computeStageSize(landscape) {
+  if (!landscape) {
+    return { w: window.innerWidth, h: window.innerHeight };
+  }
+  const h = window.innerHeight;
+  const portraitW = h * 9 / 16;
+  const w = Math.min(window.innerWidth, portraitW, 560);
+  return { w: Math.round(w), h: Math.round(h) };
+}
+
 function updateCanvasSize() {
-  viewportWidth = window.innerWidth;
-  viewportHeight = window.innerHeight;
+  const landscape = shouldUseLandscapeStage();
+  document.documentElement.classList.toggle('landscape-stage-host', landscape);
+  document.body.classList.toggle('landscape-stage', landscape);
+  const stage = computeStageSize(landscape);
+  viewportWidth = stage.w;
+  viewportHeight = stage.h;
   dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.style.width = `${viewportWidth}px`;
   canvas.style.height = `${viewportHeight}px`;
