@@ -85,7 +85,11 @@
 
     const el  = _ensureOverlay();
     const rank = data.rank || 1;
+    // Prefer milestone perk (from RANK_PERKS). If absent, fall back to any
+    // newly-unlocked equippable perk so the player always sees a reward card
+    // on ranks that grant an equippable.
     const perk = data.perk || null;
+    const equippable = data.equippablePerk || null;
     const prestige = OG.systems.prestige;
 
     // Populate
@@ -93,10 +97,22 @@
     document.getElementById('ceremonyRankName').textContent =
       prestige ? prestige.getRankLabel(rank) : 'ORBIT RUNNER';
 
-    const perkCard = document.getElementById('ceremonyPerkCard');
+    const perkCard     = document.getElementById('ceremonyPerkCard');
+    const perkHeaderEl = perkCard ? perkCard.querySelector('.ceremony-perk-header') : null;
+
     if (perk) {
+      if (perkHeaderEl) perkHeaderEl.textContent = 'PERK UNLOCKED';
       document.getElementById('ceremonyPerkName').textContent = perk.label;
       document.getElementById('ceremonyPerkDesc').textContent = perk.description;
+      perkCard.style.display = 'flex';
+    } else if (equippable) {
+      // Equippable perks surface under a distinct header so the player knows
+      // to socket it in the Workshop.
+      if (perkHeaderEl) perkHeaderEl.textContent = 'EQUIPPABLE PERK UNLOCKED';
+      document.getElementById('ceremonyPerkName').textContent =
+        (equippable.icon ? equippable.icon + ' ' : '') + (equippable.name || '').toUpperCase();
+      document.getElementById('ceremonyPerkDesc').textContent =
+        equippable.description + ' · Equip in Workshop';
       perkCard.style.display = 'flex';
     } else {
       perkCard.style.display = 'none';
