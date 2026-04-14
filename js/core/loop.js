@@ -1730,13 +1730,27 @@ function isSplitEntity(t) {
 }
 
 function getActiveSplitFamilyMembers(familyId) {
-  return targets.filter((t) => t.active && isSplitEntity(t) && (familyId == null || t.splitFamilyId === familyId));
+  const result = [];
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (t.active && isSplitEntity(t) && (familyId == null || t.splitFamilyId === familyId)) {
+      result.push(t);
+    }
+  }
+  return result;
 }
 
 function pruneInactiveSplitTargets() {
   if (!Array.isArray(targets) || targets.length === 0) return 0;
   const before = targets.length;
-  targets = targets.filter((t) => t.active || !isSplitEntity(t));
+  const newTargets = [];
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (t.active || !isSplitEntity(t)) {
+      newTargets.push(t);
+    }
+  }
+  targets = newTargets;
   return before - targets.length;
 }
 
@@ -1766,9 +1780,10 @@ function getSplitCruiseSpeed(stage = levelData, generation = 0, sideSign = 0) {
 function spawnControlledSplitRoot(options = {}) {
   if (!isSplitStageMode()) return null;
   pruneInactiveSplitTargets();
-  targets.forEach((t) => {
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
     if (t.active && isSplitEntity(t)) t.active = false;
-  });
+  }
   const familyId = getNextSplitFamilyId();
   const size = options.size || Math.PI / 4.2;
   const baseStart = typeof options.startAngle === 'number'
@@ -1953,7 +1968,7 @@ function draw() {
   }
 
   // Ambient background dust
-  bgDust.forEach(d => {
+  for (let i = 0; i < bgDust.length; i++) { const d = bgDust[i];
     ctx.beginPath();
     ctx.arc(d.x, d.y, d.size, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255,255,255, ${d.opacity})`;
@@ -1970,7 +1985,7 @@ function draw() {
       d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
     }
     if (d.y < 0) { d.y = viewportHeight; d.x = Math.random() * viewportWidth; }
-  });
+   }
 
   // ENERGY LANE
   let effectiveRailColor = hardModeActive
@@ -2084,7 +2099,7 @@ function draw() {
       });
     }
     const _flarePulse = (Math.sin(now * 0.002) + 1) * 0.5;
-    _hexCorners.forEach((pt, idx) => {
+    for (let idx = 0; idx < _hexCorners.length; idx++) { const pt = _hexCorners[idx];
       const _offset = idx * (Math.PI * 2 / 6);
       const _fp = (Math.sin(now * 0.003 + _offset) + 1) * 0.5;
 
@@ -2107,7 +2122,7 @@ function draw() {
       ctx.shadowBlur = 15;
       ctx.shadowColor = '#ffcc00';
       ctx.fill();
-    });
+     }
 
     ctx.restore();
     ctx.globalAlpha = 1.0;
@@ -2167,7 +2182,7 @@ function draw() {
 
     // Corner hot spots — sharp diamond points
     const cornerPoints = [0, Math.PI / 2, Math.PI, (Math.PI * 3) / 2];
-    cornerPoints.forEach((cornerAngle, idx) => {
+    for (let idx = 0; idx < cornerPoints.length; idx++) { const cornerAngle = cornerPoints[idx];
       const span = Math.PI / 24;
       buildShapePath(ctx, 'diamond', centerObj.x, centerObj.y,
         orbitRadius, cornerAngle - span, cornerAngle + span, 6);
@@ -2190,7 +2205,7 @@ function draw() {
       ctx.lineWidth = 1;
       ctx.globalAlpha = 0.5;
       ctx.stroke();
-    });
+     }
 
     ctx.restore();
     ctx.globalAlpha = 1.0;
@@ -2226,7 +2241,7 @@ function draw() {
       });
     }
     const _sensorPulse = (Math.sin(now * 0.0012) + 1) * 0.5;
-    _pentaCorners.forEach((pt, idx) => {
+    for (let idx = 0; idx < _pentaCorners.length; idx++) { const pt = _pentaCorners[idx];
       const _offset = idx * (Math.PI * 2 / 5);
       const _sp = (Math.sin(now * 0.0014 + _offset) + 1) * 0.5;
       ctx.beginPath();
@@ -2236,7 +2251,7 @@ function draw() {
       ctx.shadowBlur = 10;
       ctx.shadowColor = '#a8d8ff';
       ctx.fill();
-    });
+     }
 
     ctx.restore();
     ctx.globalAlpha = 1.0;
@@ -2277,8 +2292,9 @@ function draw() {
   const shouldDrawWorld2MechanicBrackets = shouldDrawTargetMarkers && worldNum === 2 && worldShape === 'diamond' && !isBoss;
 
   // TARGETS
-  targets.forEach(t => {
-    if (!t.active) return;
+  for (let _ti = 0; _ti < targets.length; _ti++) {
+    const t = targets[_ti];
+    if (!t.active) continue;
     const tCenter = t.start + (t.size / 2);
     const approach = getTargetApproachIntensity(t, angle, direction);
     const idlePulse = 0.94 + (Math.sin(now / 620 + tCenter * 2.4) * 0.06);
@@ -2427,7 +2443,7 @@ function draw() {
 
       ctx.setLineDash([]);
       ctx.restore();
-      return; // Skip normal target drawing
+      continue; // Skip normal target drawing
     }
 
     if (t.isPhantom) {
@@ -2496,7 +2512,7 @@ function draw() {
       ctx.setLineDash([]);
       ctx.restore();
       ctx.globalAlpha = 1.0;
-      return;
+      continue;
     }
 
     if (t.isLifeZone) {
@@ -2541,7 +2557,7 @@ function draw() {
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
       ctx.restore();
-      return;
+      continue;
     }
 
     if (t.isCornerBonus) {
@@ -2603,7 +2619,7 @@ function draw() {
       ctx.restore();
 
       ctx.restore();
-      return;
+      continue;
     }
     if (t.isEchoTarget) {
       const pulse = 0.96 + Math.sin(Date.now() / 300) * 0.04;
@@ -2656,7 +2672,7 @@ function draw() {
       ctx.stroke();
 
       ctx.restore();
-      return;
+      continue;
     }
     if (t.isSyncTarget) {
       const syncPulse = 0.82 + Math.sin(Date.now() / 120) * 0.1;
@@ -2675,7 +2691,7 @@ function draw() {
       ctx.lineCap = 'round';
       ctx.stroke();
       ctx.restore();
-      return;
+      continue;
     }
 
     const targetRenderer = OrbitGame.entities && OrbitGame.entities.targetRenderers;
@@ -2695,7 +2711,7 @@ function draw() {
       drawWorld2AngularBracket,
       setShadowBlur
     })) {
-      return;
+      continue;
     }
 
     ctx.save();
@@ -3065,11 +3081,12 @@ function draw() {
       ctx.restore();
     }
     ctx.restore();
-  });
+  }
 
   // ── SYNC GATE SECOND PASS (drawn above all targets) ──────────
-  targets.forEach(t => {
-    if (!t.active) return;
+  for (let _ti = 0; _ti < targets.length; _ti++) {
+    const t = targets[_ti];
+    if (!t.active) continue;
     const tCenter = t.start + (t.size / 2);
     const approach = getTargetApproachIntensity(t, angle, direction);
     const hitFlash = t.hitFlash || 0;
@@ -3082,7 +3099,7 @@ function draw() {
       && !t.isLifeZone
       && !t.isCornerBonus;
 
-    if (!_showSyncGate) return;
+    if (!_showSyncGate) continue;
 
     const _gMidAngle = normalizeAngle(tCenter);
     // Start gate arms OUTSIDE the housing — clear the target stroke
@@ -3266,7 +3283,7 @@ function draw() {
     ctx.restore();
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
-  });
+  }
   // ── END SYNC GATE SECOND PASS ─────────────────────────────
 
   // TRAIL
@@ -3756,8 +3773,9 @@ function update() {
 
   let deferredFailReason = null;
   let pendingSplitFamilyRespawnId = null;
-  targets.forEach(t => {
-    if (!t.active) return;
+  for (let _ti = 0; _ti < targets.length; _ti++) {
+    const t = targets[_ti];
+    if (!t.active) continue;
 
     if (t.hitFlash) t.hitFlash *= Math.pow(0.76, delta);
     if (t.hitFlash && t.hitFlash < 0.02) t.hitFlash = 0;
@@ -3780,7 +3798,7 @@ function update() {
     if (t.isHeart && totalStageDistance > t.expireDistance) {
       t.active = false; const expPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, orbitRadius);
       createParticles(expPt.x, expPt.y, '#555', 10);
-      return;
+      continue;
     }
     const _hmMoveMult = hardModeActive ? 1.5 : 1.0;
     let currentMoveSpeed = (t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed)) * _hmMoveMult;
@@ -3911,7 +3929,7 @@ function update() {
         }
       }
     }
-  });
+  }
 
   if (pendingSplitFamilyRespawnId != null) {
     maybeRespawnSplitRootForStage(pendingSplitFamilyRespawnId);
@@ -5777,7 +5795,13 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
             : '1') + '-';
           // Find the world that was just cleared (one before nextWorld)
           const _clearedWorldPrefix = nextWorld > 1 ? String(nextWorld - 1) + '-' : '1-';
-          const _worldStages = campaign.filter(s => s && s.id && s.id.startsWith(_clearedWorldPrefix) && !s.boss);
+          const _worldStages = [];
+          for (let i = 0; i < campaign.length; i++) {
+            const s = campaign[i];
+            if (s && s.id && s.id.startsWith(_clearedWorldPrefix) && !s.boss) {
+              _worldStages.push(s);
+            }
+          }
           _replayBtns.textContent = '';
           const _totalStars = _worldStages.reduce((acc, s) => {
             return acc + ((playerProgress.stageStars && playerProgress.stageStars[s.id]) || 0);
@@ -5787,7 +5811,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
           _summaryEl.style.cssText = 'width:100%; text-align:center; font-family:Orbitron,sans-serif; font-size:0.62rem; letter-spacing:2px; color:rgba(255,210,80,0.65); margin-bottom:10px;';
           _summaryEl.innerText = `${_totalStars} / ${_maxStars} ★`;
           _replayBtns.appendChild(_summaryEl);
-          _worldStages.forEach(s => {
+          for (let _wi = 0; _wi < _worldStages.length; _wi++) { const s = _worldStages[_wi];
             const _pb = (playerProgress.bestScores && playerProgress.bestScores[s.id]) || 0;
             const _btn = document.createElement('button');
             _btn.style.cssText = 'font-family:Orbitron,sans-serif; font-size:0.58rem; letter-spacing:1.5px; padding:7px 12px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.55); border-radius:6px; cursor:pointer;';
@@ -5824,7 +5848,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
               }
             };
             _replayBtns.appendChild(_btn);
-          });
+           }
           _replayRow.style.display = _worldStages.length > 0 ? 'block' : 'none';
         }
 
