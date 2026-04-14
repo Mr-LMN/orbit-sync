@@ -1736,13 +1736,27 @@ function isSplitEntity(t) {
 }
 
 function getActiveSplitFamilyMembers(familyId) {
-  return targets.filter((t) => t.active && isSplitEntity(t) && (familyId == null || t.splitFamilyId === familyId));
+  const result = [];
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (t.active && isSplitEntity(t) && (familyId == null || t.splitFamilyId === familyId)) {
+      result.push(t);
+    }
+  }
+  return result;
 }
 
 function pruneInactiveSplitTargets() {
   if (!Array.isArray(targets) || targets.length === 0) return 0;
   const before = targets.length;
-  targets = targets.filter((t) => t.active || !isSplitEntity(t));
+  const kept = [];
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (t.active || !isSplitEntity(t)) {
+      kept.push(t);
+    }
+  }
+  targets = kept;
   return before - targets.length;
 }
 
@@ -1772,9 +1786,10 @@ function getSplitCruiseSpeed(stage = levelData, generation = 0, sideSign = 0) {
 function spawnControlledSplitRoot(options = {}) {
   if (!isSplitStageMode()) return null;
   pruneInactiveSplitTargets();
-  targets.forEach((t) => {
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
     if (t.active && isSplitEntity(t)) t.active = false;
-  });
+  }
   const familyId = getNextSplitFamilyId();
   const size = options.size || Math.PI / 4.2;
   const baseStart = typeof options.startAngle === 'number'
@@ -2286,8 +2301,9 @@ function draw() {
   const shouldDrawWorld2MechanicBrackets = shouldDrawTargetMarkers && worldNum === 2 && worldShape === 'diamond' && !isBoss;
 
   // TARGETS
-  targets.forEach(t => {
-    if (!t.active) return;
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (!t.active) continue;
     const tCenter = t.start + (t.size / 2);
     const approach = getTargetApproachIntensity(t, angle, direction);
     const idlePulse = 0.94 + (Math.sin(now / 620 + tCenter * 2.4) * 0.06);
@@ -2436,7 +2452,7 @@ function draw() {
 
       ctx.setLineDash([]);
       ctx.restore();
-      return; // Skip normal target drawing
+      continue; // Skip normal target drawing
     }
 
     if (t.isPhantom) {
@@ -2505,7 +2521,7 @@ function draw() {
       ctx.setLineDash([]);
       ctx.restore();
       ctx.globalAlpha = 1.0;
-      return;
+      continue;
     }
 
     if (t.isLifeZone) {
@@ -2550,7 +2566,7 @@ function draw() {
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
       ctx.restore();
-      return;
+      continue;
     }
 
     if (t.isCornerBonus) {
@@ -2612,7 +2628,7 @@ function draw() {
       ctx.restore();
 
       ctx.restore();
-      return;
+      continue;
     }
     if (t.isEchoTarget) {
       const pulse = 0.96 + Math.sin(Date.now() / 300) * 0.04;
@@ -2665,7 +2681,7 @@ function draw() {
       ctx.stroke();
 
       ctx.restore();
-      return;
+      continue;
     }
     if (t.isSyncTarget) {
       const syncPulse = 0.82 + Math.sin(Date.now() / 120) * 0.1;
@@ -2684,7 +2700,7 @@ function draw() {
       ctx.lineCap = 'round';
       ctx.stroke();
       ctx.restore();
-      return;
+      continue;
     }
 
     const targetRenderer = OrbitGame.entities && OrbitGame.entities.targetRenderers;
@@ -2704,7 +2720,7 @@ function draw() {
       drawWorld2AngularBracket,
       setShadowBlur
     })) {
-      return;
+      continue;
     }
 
     ctx.save();
@@ -3074,11 +3090,12 @@ function draw() {
       ctx.restore();
     }
     ctx.restore();
-  });
+  }
 
   // ── SYNC GATE SECOND PASS (drawn above all targets) ──────────
-  targets.forEach(t => {
-    if (!t.active) return;
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (!t.active) continue;
     const tCenter = t.start + (t.size / 2);
     const approach = getTargetApproachIntensity(t, angle, direction);
     const hitFlash = t.hitFlash || 0;
@@ -3091,7 +3108,7 @@ function draw() {
       && !t.isLifeZone
       && !t.isCornerBonus;
 
-    if (!_showSyncGate) return;
+    if (!_showSyncGate) continue;
 
     const _gMidAngle = normalizeAngle(tCenter);
     // Start gate arms OUTSIDE the housing — clear the target stroke
@@ -3275,7 +3292,7 @@ function draw() {
     ctx.restore();
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
-  });
+  }
   // ── END SYNC GATE SECOND PASS ─────────────────────────────
 
   // TRAIL
@@ -3774,8 +3791,9 @@ function update() {
 
   let deferredFailReason = null;
   let pendingSplitFamilyRespawnId = null;
-  targets.forEach(t => {
-    if (!t.active) return;
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    if (!t.active) continue;
 
     if (t.hitFlash) t.hitFlash *= Math.pow(0.76, delta);
     if (t.hitFlash && t.hitFlash < 0.02) t.hitFlash = 0;
@@ -3798,7 +3816,7 @@ function update() {
     if (t.isHeart && totalStageDistance > t.expireDistance) {
       t.active = false; const expPt = getPointOnShape(t.start, worldShape, centerObj.x, centerObj.y, orbitRadius);
       createParticles(expPt.x, expPt.y, '#555', 10);
-      return;
+      continue;
     }
     const _hmMoveMult = hardModeActive ? 1.5 : 1.0;
     let currentMoveSpeed = (t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed)) * _hmMoveMult;
@@ -3929,7 +3947,7 @@ function update() {
         }
       }
     }
-  });
+  }
 
   if (pendingSplitFamilyRespawnId != null) {
     maybeRespawnSplitRootForStage(pendingSplitFamilyRespawnId);
