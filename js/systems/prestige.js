@@ -35,6 +35,70 @@
     { rank: 50, id: 'max_rank_badge',     label: '◆ ORBIT MASTER',      description: 'Exclusive rank badge + gold orb trail', type: 'cosmetic' },
   ];
 
+  // ── EQUIPPABLE PERK UNLOCK SCHEDULE ──────────────────────────────────────
+  // These are the Workshop-socketable perks (registered in entities/perks/registry.js).
+  // Distinct from RANK_PERKS above — those are always-on rank milestone buffs;
+  // these are equippable into sphere slots. Ranks chosen to avoid collisions
+  // with RANK_PERKS so each rank-up shows at most one perk card in the ceremony.
+  //
+  // NOTE: rank 1 entries are granted immediately on first boot so a brand-new
+  // player always has at least one perk to equip once a slot unlocks.
+  const EQUIPPABLE_PERK_UNLOCKS = [
+    { rank: 1,  perkId: 'vital_core'          },
+    { rank: 1,  perkId: 'prospector'          },
+    { rank: 2,  perkId: 'arc_expander'        },
+    { rank: 4,  perkId: 'magnet_core'         },
+    { rank: 6,  perkId: 'micro_arc'           },
+    { rank: 7,  perkId: 'edge_sync'           },
+    { rank: 9,  perkId: 'pulse_chip'          },
+    { rank: 12, perkId: 'flawless_payout'     },
+    { rank: 14, perkId: 'combo_conduit'       },
+    { rank: 17, perkId: 'near_miss_echo'      },
+    { rank: 22, perkId: 'wide_arc_matrix'     },
+    { rank: 27, perkId: 'coin_magnate'        },
+    { rank: 33, perkId: 'spectral_anchor'     },
+    { rank: 42, perkId: 'deep_reserve'        },
+    { rank: 48, perkId: 'perfectionist_crown' },
+  ];
+
+  // Returns the perk IDs unlocked AT a specific rank (usually 0 or 1 entries,
+  // but rank 1 intentionally seeds multiple).
+  function _perkIdsAtRank(rank) {
+    return EQUIPPABLE_PERK_UNLOCKS.filter(e => e.rank === rank).map(e => e.perkId);
+  }
+
+  // Returns all perk IDs that should be unlocked by the given rank (<= rank).
+  function _perkIdsUpToRank(rank) {
+    return EQUIPPABLE_PERK_UNLOCKS.filter(e => e.rank <= rank).map(e => e.perkId);
+  }
+
+  // Grant any equippable perks owed for this rank. Idempotent — unlockPerk
+  // returns false if already owned. Returns array of newly-unlocked perk defs.
+  function _grantEquippablePerksForRank(rank) {
+    const sr = OG.entities && OG.entities.spheres && OG.entities.spheres.runtime;
+    const perkReg = OG.entities && OG.entities.perks && OG.entities.perks.registry;
+    if (!sr || !sr.unlockPerk || !perkReg) return [];
+    const newlyUnlocked = [];
+    _perkIdsAtRank(rank).forEach(function(perkId) {
+      if (sr.unlockPerk(perkId) && perkReg[perkId]) {
+        newlyUnlocked.push(perkReg[perkId]);
+      }
+    });
+    return newlyUnlocked;
+  }
+
+  // Self-healing boot check — grants every perk owed for the player's current
+  // rank. Handles: (1) existing players who ranked up before this feature
+  // existed, (2) any case where a ceremony was skipped. Safe to call at boot.
+  function _reconcileUnlockedPerks() {
+    const sr = OG.entities && OG.entities.spheres && OG.entities.spheres.runtime;
+    if (!sr || !sr.unlockPerk) return;
+    const rank = _state.rank || 1;
+    _perkIdsUpToRank(rank).forEach(function(perkId) {
+      sr.unlockPerk(perkId); // idempotent
+    });
+  }
+
   // ── STATE ────────────────────────────────────────────────────────────────
   function _loadState() {
     const storage = OG.storage || window.localStorage;
@@ -96,17 +160,34 @@
   }
 
   function _onRankUp(newRank) {
-    // Find any perk unlocked at this exact rank
+    // Find any milestone (rank-bound) perk unlocked at this exact rank
     const perk = RANK_PERKS.find(p => p.rank === newRank) || null;
+
+    // Grant any equippable (workshop-socketable) perks owed for this rank.
+    // The ceremony below surfaces the first newly-unlocked one via an
+    // equippablePerk payload (the existing perk card renders its label/desc).
+    const newEquippable = _grantEquippablePerksForRank(newRank);
+    const equippablePerk = newEquippable[0] || null;
+
     // Queue ceremony
     if (!_state.pendingCeremonyQueue) _state.pendingCeremonyQueue = [];
-    _state.pendingCeremonyQueue.push({ type: 'rank_up', rank: newRank, perk });
+    _state.pendingCeremonyQueue.push({
+      type: 'rank_up',
+      rank: newRank,
+      perk,
+      equippablePerk
+    });
     _saveState(_state);
 
     if (OG.systems.ceremony && typeof OG.systems.ceremony.showPendingCeremony === 'function') {
       OG.systems.ceremony.showPendingCeremony();
     }
   }
+
+  // Reconcile on first module tick after entities/spheres/runtime is available.
+  // Using setTimeout(0) avoids load-order issues since runtime.js may be parsed
+  // after this file depending on script tag order.
+  setTimeout(_reconcileUnlockedPerks, 0);
 
   // ── PUBLIC READS ─────────────────────────────────────────────────────────
   function getOrbitRank()   { return _state.rank || 1; }

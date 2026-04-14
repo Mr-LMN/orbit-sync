@@ -264,6 +264,20 @@
       _writeBlob(blob);
     },
 
+    // Add a perk to the player's unlocked pool. Idempotent — safe to call
+    // multiple times. Returns true if this call newly unlocked the perk.
+    unlockPerk: function(perkId) {
+      if (!perkId) return false;
+      const perkReg = OG.entities.perks && OG.entities.perks.registry;
+      if (!perkReg || !perkReg[perkId]) return false; // unknown perk id
+      const blob = _readBlob();
+      blob.unlockedPerks = blob.unlockedPerks || [];
+      if (blob.unlockedPerks.indexOf(perkId) !== -1) return false;
+      blob.unlockedPerks.push(perkId);
+      _writeBlob(blob);
+      return true;
+    },
+
     // Ascend a sphere, increasing its star rating and resetting level
     ascendSphere: function(sphereId) {
       const meta = this.getSphereMeta(sphereId);
