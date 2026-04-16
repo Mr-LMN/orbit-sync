@@ -4,6 +4,7 @@
   OG.systems.spawning = OG.systems.spawning || {};
 
   function spawnTargets() {
+    const ui = window.ui || (window.OrbitGame.dom && window.OrbitGame.dom.ui) || window.OrbitGame.ui;
     targets = [];
     if (OrbitGame.systems && OrbitGame.systems.splitControl) {
       OrbitGame.systems.splitControl.resetSplitFamilyState();
