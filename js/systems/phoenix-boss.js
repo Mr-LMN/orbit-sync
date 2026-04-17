@@ -496,7 +496,7 @@
     }
 
     if (typeof stopBossDrone === 'function') stopBossDrone();
-    if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+    if (OrbitGame && OrbitGame.audio && OrbitGame.audio.stopLastLifeDrone) OrbitGame.audio.stopLastLifeDrone();
     if (typeof updateMusicState === 'function') updateMusicState(1, false);
 
     const col = reason === 'survived' ? '#ff9a46' : '#ff4422';
