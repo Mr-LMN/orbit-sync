@@ -1,5 +1,5 @@
 html { background-color: #0f0f13; }
-body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: Orbitron, sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: relative; }
+body { margin: 0; padding: 0; background-color: #0f0f13; color: white; font-family: Orbitron, sans-serif; overflow: hidden; touch-action: none; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; height: 100dvh; position: relative; }
 #gameCanvas { position: absolute; top: 0; left: 0; z-index: 1; background: #0f0f13; width: 100%; height: 100%; transition: box-shadow 220ms ease, filter 120ms ease; }
 
 @keyframes survivalNearMissShock {
@@ -2519,7 +2519,7 @@ body.world4-active::after {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100vh; height: 100dvh;
   background: repeating-linear-gradient(
     0deg,
     rgba(0, 0, 0, 0.05),
@@ -4729,7 +4729,7 @@ html.landscape-stage-host {
 body.landscape-stage {
   /* Portrait aspect frame: 9:16, capped so it doesn't feel oversized */
   width: min(100vw, calc(100vh * 9 / 16), 560px);
-  height: 100vh;
+  height: 100vh; height: 100dvh;
   margin: 0 auto;
   box-shadow:
     0 0 0 1px rgba(0, 229, 255, 0.06),
