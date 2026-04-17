@@ -105,7 +105,7 @@
         audio.isMusicPlaying = true;
         audio.currentMusicState = { mult: -1, boss: null };
       } catch (e) {
-        console.warn('Dynamic music failed', e);
+        // Silently fail dynamic music
       } finally {
         if (audio.musicStartToken === startToken) {
           audio.musicStartPromise = null;
@@ -159,7 +159,7 @@
       audio.currentBossTrack = null;
       audio.currentMusicState = { mult: 1, boss: false };
     } catch (e) {
-      console.warn('stopDynamicMusic failed', e);
+      // Silently fail stopDynamicMusic
     }
   }
 
