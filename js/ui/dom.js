@@ -44,6 +44,7 @@
     clearScoreDisplay: document.getElementById('clearScoreDisplay'),
     clearStreakDisplay: document.getElementById('clearStreakDisplay'),
     clearSummary: document.getElementById('clearSummary'),
+    clearStars: document.getElementById('clearStars'),
     closeMissBanner: document.getElementById('closeMissBanner'),
     coinReviveBtn: document.getElementById('coinReviveBtn'),
     adDoubleCoinsBtn: document.getElementById('adDoubleCoinsBtn'),
