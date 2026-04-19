@@ -1,4 +1,4 @@
-const canvas = document.getElementById('gameCanvas');
+const canvas = window.canvas || document.getElementById('gameCanvas');
 // willReadFrequently forces CPU-side (software) rendering which tanks mobile FPS.
 // glitchCanvas already skips getImageData on mobile, so only opt-in on desktop.
 const _isMobileBrowser = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
@@ -103,7 +103,7 @@ if (_lastLoginStr !== _todayStr) {
 if (_dailyBonusToShow > 0) {
   const _showDailyBonus = function() {
     // Only show when in the menu and tutorial mask is not blocking
-    const tutMask = document.getElementById('tutorialMask');
+    const tutMask = ui.tutorialMask;
     const tutActive = tutMask && tutMask.classList.contains('is-visible');
     if ((typeof inMenu !== 'undefined' && !inMenu) || tutActive) {
       setTimeout(_showDailyBonus, 800); // re-check later
@@ -233,9 +233,9 @@ function updatePersistentCoinUI() {
   ui.coins.innerText = Math.floor(globalCoins);
   if (ui.shopCoinCount) ui.shopCoinCount.innerText = Math.floor(globalCoins);
 
-  const crystalCountEl = document.getElementById('crystalCount');
+  const crystalCountEl = ui.crystalCount;
   if (crystalCountEl) crystalCountEl.innerText = Math.floor(globalCrystals);
-  const shopCrystalCount = document.getElementById('shopCrystalCount');
+  const shopCrystalCount = ui.shopCrystalCount;
   if (shopCrystalCount) shopCrystalCount.innerText = Math.floor(globalCrystals);
 
   // Try to refresh dynamic states in menus
@@ -1158,7 +1158,7 @@ function forceHideOverlayExtras() {
   const shareBtn = ui.shareBtn;
   const pbStatsBlock = ui.pbStatsBlock;
   const runStatsBlock = ui.runStatsBlock;
-  const summaryCard = document.getElementById('summaryCard');
+  const summaryCard = ui.summaryCard;
   const newRecordBanner = ui.newRecordBanner;
   const closeMissBanner = ui.closeMissBanner;
   const overlayActionStack = ui.overlayActionStack;
@@ -1182,7 +1182,7 @@ function forceHideOverlayExtras() {
   if (summaryCard) summaryCard.style.display = 'none';
   if (newRecordBanner) newRecordBanner.style.display = 'none';
   if (closeMissBanner) closeMissBanner.style.display = 'none';
-  const tutorialReviveHint = document.getElementById('tutorialReviveHint');
+  const tutorialReviveHint = ui.tutorialReviveHint;
   if (tutorialReviveHint) tutorialReviveHint.style.display = 'none';
   if (overlayActionStack) {
     overlayActionStack.classList.remove('revive-available', 'no-revive');
@@ -1585,18 +1585,18 @@ function loadLevel(idx) {
     OG.systems.phoenixBossV2.stop();
   }
   // Hide any lingering Phoenix UI overlays
-  const pbUI = document.getElementById('phoenixGameUI');
+  const pbUI = ui.phoenixGameUI;
   if (pbUI) pbUI.style.display = 'none';
-  const timerEl = document.getElementById('phoenixTimer');
+  const timerEl = ui.phoenixTimer;
   if (timerEl) timerEl.style.display = 'none';
-  const phaseEl = document.getElementById('phoenixPhaseName');
+  const phaseEl = ui.phoenixPhaseName;
   if (phaseEl) phaseEl.style.display = 'none';
-  const multEl = document.getElementById('phoenixMult');
+  const multEl = ui.phoenixMult;
   if (multEl) multEl.style.display = 'none';
-  const livesEl = document.getElementById('phoenixLives');
+  const livesEl = ui.phoenixLives;
   if (livesEl) livesEl.style.display = 'none';
   // Ensure core element is hidden
-  const coreEl = document.getElementById('phoenixCoreObjV2');
+  const coreEl = ui.phoenixCoreObjV2;
   if (coreEl) coreEl.style.display = 'none';
   if (OrbitGame.systems && OrbitGame.systems.tutorial) {
      OrbitGame.systems.tutorial.handleLevelStart(levelData.id);
@@ -4258,12 +4258,12 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     }
 
     // The new run stats block is the summary card itself, so it just needs to be displayed block
-    const summaryCard = document.getElementById('summaryCard');
+    const summaryCard = ui.summaryCard;
     if (summaryCard) summaryCard.style.display = 'block';
 
     // Phase 4: Results Screen Overhaul hooks
     if (OrbitGame.ui.overlay && OrbitGame.ui.overlay.animateScore) {
-      OrbitGame.ui.overlay.animateScore(document.getElementById('runScoreDisplay'), score);
+      OrbitGame.ui.overlay.animateScore(ui.runScoreDisplay, score);
       
       const totalHits = (runPerfectCount || 0) + (runGoodCount || 0) + (runOkCount || 0);
       OrbitGame.ui.overlay.showRunGrade(runPerfectCount || 0, totalHits);
@@ -4272,7 +4272,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       OrbitGame.ui.overlay.showXPEarned(2); 
     }
 
-    let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
+    let adDoubleCoinsBtn = ui.adDoubleCoinsBtn;
 
     ui.btn.innerText = pendingCoins > 0 ? `🪙 BANK ${pendingCoins} & RESTART WORLD` : 'RESTART WORLD';
     ui.btn.onclick = function () {
@@ -4343,10 +4343,10 @@ function handleFail(reason, failEdgeDistance = Infinity) {
       }
     }
     setOverlayState('gameOver');
-    let reviveBtn = document.getElementById('reviveBtn') || ui.reviveBtn;
-    let coinReviveBtn = document.getElementById('coinReviveBtn') || ui.coinReviveBtn;
-    let adReviveBtn = document.getElementById('adReviveBtn');
-    let tutorialReviveHint = document.getElementById('tutorialReviveHint');
+    let reviveBtn = ui.reviveBtn;
+    let coinReviveBtn = ui.coinReviveBtn;
+    let adReviveBtn = ui.adReviveBtn;
+    let tutorialReviveHint = ui.tutorialReviveHint;
 
     if (reviveBtn) reviveBtn.style.display = 'block';
     if (coinReviveBtn) coinReviveBtn.style.display = 'none';
@@ -5610,7 +5610,7 @@ function restartFromCheckpoint() {
   ui.title.classList.remove('run-title');
   ui.subtitle.classList.remove('subtle-failure');
   const runStatsBlock = ui.runStatsBlock;
-  const summaryCard = document.getElementById('summaryCard');
+  const summaryCard = ui.summaryCard;
   const runScoreDisplay = ui.runScoreDisplay;
   const runComboDisplay = ui.runComboDisplay;
   const nearMissEl = ui.nearMissMsg;
@@ -5662,15 +5662,15 @@ function returnToMenu() {
     OG.systems.bossCores.deactivate();
   }
   // Hide all Phoenix UI elements when returning to menu
-  const pbUI = document.getElementById('phoenixGameUI');
+  const pbUI = ui.phoenixGameUI;
   if (pbUI) pbUI.style.display = 'none';
-  const timerEl = document.getElementById('phoenixTimer');
+  const timerEl = ui.phoenixTimer;
   if (timerEl) timerEl.style.display = 'none';
-  const phaseEl = document.getElementById('phoenixPhaseName');
+  const phaseEl = ui.phoenixPhaseName;
   if (phaseEl) phaseEl.style.display = 'none';
-  const pbStatusRow = document.getElementById('phoenixStatusRow');
+  const pbStatusRow = ui.phoenixStatusRow;
   if (pbStatusRow) pbStatusRow.style.display = 'none';
-  const coreEl = document.getElementById('phoenixCoreObjV2');
+  const coreEl = ui.phoenixCoreObjV2;
   if (coreEl) coreEl.style.display = 'none';
   clearRunTransientTimers();
   clearIntensity();
@@ -5684,7 +5684,7 @@ function returnToMenu() {
   if (runStatsBlock) runStatsBlock.style.display = 'none';
   ui.text.style.display = 'block';
   inMenu = true; isPlaying = false;
-  const lockedOverlay = document.getElementById('lockedWorldOverlay');
+  const lockedOverlay = ui.lockedWorldOverlay;
   if (lockedOverlay) lockedOverlay.style.display = 'none';
   if (
     OrbitGame.ui &&
@@ -5825,7 +5825,7 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
         }
 
         // Show Double Coins ad option on Stage Clear if not premium and earned coins
-        let adDoubleCoinsBtn = document.getElementById('adDoubleCoinsBtn');
+        let adDoubleCoinsBtn = ui.adDoubleCoinsBtn;
         if (adDoubleCoinsBtn && !isPremium && coinsBanked > 0) {
             adDoubleCoinsBtn.style.display = 'inline-block';
             if (ui.runCoinsBox) ui.runCoinsBox.style.display = 'inline-flex';

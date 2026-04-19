@@ -5,7 +5,7 @@
 
   let _adSimTimeout = null;
   window.showSimulatedAd = function(onComplete) {
-    const adOverlay = document.getElementById('adSimulationOverlay');
+    const adOverlay = ui.adSimulationOverlay;
     if (!adOverlay) return;
 
     // Clear any previous ad timeout to prevent overlapping callbacks
@@ -44,7 +44,7 @@
 
       revive();
     } else {
-      let btn = document.getElementById('coinReviveBtn');
+      let btn = ui.coinReviveBtn;
       if (btn) {
         btn.style.transform = 'translateX(-10px)';
         setTimeout(() => btn.style.transform = 'translateX(10px)', 50);
@@ -82,8 +82,8 @@
   }
 
   function showXPEarned(xpAmount) {
-    const bar = document.getElementById('resultsXpBarFill');
-    const text = document.getElementById('resultsXpText');
+    const bar = ui.resultsXpBarFill;
+    const text = ui.resultsXpText;
     if (!bar || !text) return;
 
     text.innerText = `+${xpAmount} XP`;
@@ -97,7 +97,7 @@
   }
 
   function showRunGrade(perfects, total) {
-    const badge = document.getElementById('resultsGradeBadge');
+    const badge = ui.resultsGradeBadge;
     if (!badge) return;
 
     const rate = total > 0 ? perfects / total : 0;
