@@ -429,14 +429,15 @@
   // ─── TUTORIAL FLOW ───────────────────────────────────────────────────────
   function maybeOpenCampaignGate() {
     if (state.phase !== PHASES.CAMPAIGN_GATE) return;
-    showFreezeFrame(COPY.campaign.title, COPY.campaign.body, 'OPEN CAMPAIGN', function() {
-      showGuidedHighlight({
-        target: '#nav-campaign',
-        onSuccess:  function() { setMasterTutorialPhase(PHASES.WORLD_PREVIEW); advanceMasterTutorial(); },
-        onFallback: function() { setMasterTutorialPhase(PHASES.WORLD_PREVIEW); advanceMasterTutorial(); },
-        fallbackCopy: COPY.campaign
-      });
-    }, COPY.campaign.label);
+    // Post-stage hub onboarding: skip the freeze-frame preamble and point
+    // directly at the Campaign tab. A tiny non-blocking tip carries context.
+    showInGameTip('OPEN CAMPAIGN TO PICK YOUR NEXT WORLD', 3200);
+    showGuidedHighlight({
+      target: '#nav-campaign',
+      onSuccess:  function() { setMasterTutorialPhase(PHASES.WORLD_PREVIEW); advanceMasterTutorial(); },
+      onFallback: function() { setMasterTutorialPhase(PHASES.WORLD_PREVIEW); advanceMasterTutorial(); },
+      fallbackCopy: COPY.campaign
+    });
   }
 
   function ownMoreThanDefault() {
@@ -857,29 +858,22 @@
       _showTipIfNoCard('SMALLER ZONES = HIGHER REWARD — AIM FOR THE CENTER', 1100, 3500);
     }
 
-    // Recovery window card at 1-4
+    // Stage 1-4: recovery-window + zone-types lessons.
+    // Replaced freeze-frame cards with non-blocking in-game tips so live
+    // gameplay is never paused mid-stage.
     if (stageId !== '1-4') return;
     if (state.tutorialCards.recoveryWindowShown) return;
 
     state.tutorialCards.recoveryWindowShown = true;
     persistState();
 
-    setTimeout(function() {
-      showFreezeFrame(
-        COPY.recoveryWindow.title, COPY.recoveryWindow.body, 'LOCKED IN',
-        function() {
-          // Chain: zone types card immediately follows
-          if (!state.tutorialCards.zoneTypesShown) {
-            state.tutorialCards.zoneTypesShown = true;
-            persistState();
-            setTimeout(function() {
-              showFreezeFrame(COPY.zoneTypes.title, COPY.zoneTypes.body, 'GOT IT', function() {}, COPY.zoneTypes.label);
-            }, 120);
-          }
-        },
-        COPY.recoveryWindow.label
-      );
-    }, 350);
+    _showTipIfNoCard('CHAIN 6 PERFECT HITS — RESTORE 1 LIFE', 600, 4200);
+
+    if (!state.tutorialCards.zoneTypesShown) {
+      state.tutorialCards.zoneTypesShown = true;
+      persistState();
+      _showTipIfNoCard('ASH ZONES ARE TRAPS — AVOID THEM', 5200, 4200);
+    }
   }
 
   function onHardModeUnlocked() {
