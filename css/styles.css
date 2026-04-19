@@ -3864,6 +3864,29 @@ body.hard-mode #hardModeBadge { display: block; }
   animation: tutRingPulse 1.3s ease-in-out infinite;
 }
 
+
+#tutorialHandPointer {
+  position: fixed;
+  width: 42px;
+  height: 42px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  line-height: 1;
+  z-index: 9002;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+  animation: tutorialHandBounce 0.85s ease-in-out infinite;
+  transform-origin: 50% 70%;
+}
+
+@keyframes tutorialHandBounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.06); }
+}
+
+
 @keyframes tutRingPulse {
   0%, 100% {
     box-shadow: 0 0 0 9999px rgba(4, 5, 16, 0.86), 0 0 16px rgba(0, 229, 255, 0.3);
