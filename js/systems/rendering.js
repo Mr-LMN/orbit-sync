@@ -3,6 +3,10 @@
   OG.systems = OG.systems || {};
   OG.systems.rendering = OG.systems.rendering || {};
 
+  function wrapPolygonIndex(index, sides) {
+    return ((index % sides) + sides) % sides;
+  }
+
   function getPointOnShape(t, shape, cx, cy, radius) {
     function getTrianglePoint(angle, tx, ty, tradius) {
       const tau = Math.PI * 2;
@@ -10,7 +14,7 @@
       if (Math.abs(norm - tau) < 1e-10) norm = 0;
       const sideSize = tau / 3;
       const rawIndex = Math.floor(norm / sideSize);
-      const sideIndex = rawIndex % 3;
+      const sideIndex = wrapPolygonIndex(rawIndex, 3);
       const localT = (norm - rawIndex * sideSize) / sideSize;
 
       // Wider-base isosceles triangle for cleaner gameplay/readability
@@ -51,10 +55,11 @@
       if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
       const sectorSize = Math.PI * 2 / 4;
       const rawIdx = Math.floor(normalized / sectorSize);
-      const sectorIdx = rawIdx % 4;
+      const sectorIdx = wrapPolygonIndex(rawIdx, 4);
+      const nextSectorIdx = wrapPolygonIndex(sectorIdx + 1, 4);
       const progress = (normalized - rawIdx * sectorSize) / sectorSize;
       const p1 = corners[sectorIdx];
-      const p2 = corners[(sectorIdx + 1) % 4];
+      const p2 = corners[nextSectorIdx];
       return { x: p1.x + (p2.x - p1.x) * progress, y: p1.y + (p2.y - p1.y) * progress };
     }
     if (shape === 'triangle') {
@@ -86,10 +91,11 @@
       if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
       const sectorSize = Math.PI * 2 / sides;
       const rawIdx = Math.floor(normalized / sectorSize);
-      const sectorIdx = rawIdx % sides;
+      const sectorIdx = wrapPolygonIndex(rawIdx, sides);
+      const nextSectorIdx = wrapPolygonIndex(sectorIdx + 1, sides);
       const progress = (normalized - rawIdx * sectorSize) / sectorSize;
       const p1 = corners[sectorIdx];
-      const p2 = corners[(sectorIdx + 1) % sides];
+      const p2 = corners[nextSectorIdx];
       let ptX = p1?.x + (p2?.x - p1?.x) * progress;
       let ptY = p1?.y + (p2?.y - p1?.y) * progress;
       return { x: ptX || cx, y: ptY || cy };
@@ -118,10 +124,11 @@
       if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
       const sectorSize = Math.PI * 2 / sides;
       const rawIdx = Math.floor(normalized / sectorSize);
-      const sectorIdx = rawIdx % sides;
+      const sectorIdx = wrapPolygonIndex(rawIdx, sides);
+      const nextSectorIdx = wrapPolygonIndex(sectorIdx + 1, sides);
       const progress = Math.max(0, Math.min(1, (normalized - rawIdx * sectorSize) / sectorSize));
       const p1 = corners[sectorIdx];
-      const p2 = corners[(sectorIdx + 1) % sides];
+      const p2 = corners[nextSectorIdx];
       let ptX = (p1 != null ? p1.x : cx) + ((p2 != null ? p2.x : cx) - (p1 != null ? p1.x : cx)) * progress;
       let ptY = (p1 != null ? p1.y : cy) + ((p2 != null ? p2.y : cy) - (p1 != null ? p1.y : cy)) * progress;
 
