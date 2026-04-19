@@ -145,7 +145,7 @@
   let _tipTimer = null;
 
   const els = {
-    mask: null, ring: null, card: null,
+    mask: null, ring: null, hand: null, card: null,
     label: null, title: null, body: null,
     btn: null, hint: null
   };
@@ -153,6 +153,7 @@
   function hydrateEls() {
     els.mask  = document.getElementById('tutorialMask');
     els.ring  = document.getElementById('tutorialHighlightRing');
+    els.hand  = document.getElementById('tutorialHandPointer');
     els.card  = document.getElementById('tutorialCard');
     els.label = document.getElementById('tutorialCardLabel');
     els.title = document.getElementById('tutorialCardTitle');
@@ -288,6 +289,7 @@
     els.mask.classList.remove('is-guided');
     els.mask.dataset.allowNav = 'false';
     if (els.ring) els.ring.style.display = 'none';
+    if (els.hand) els.hand.style.display = 'none';
     if (els.card) { els.card.onclick = null; els.btn.onclick = null; }
     els.mask.onclick = null;
     cardResolver = null;
@@ -327,12 +329,22 @@
   function placeRing(target) {
     hydrateEls();
     if (!els.ring || !target) return;
+
     const r = target.getBoundingClientRect();
+
     els.ring.style.display = 'block';
     els.ring.style.left    = `${Math.max(6, r.left - 8)}px`;
     els.ring.style.top     = `${Math.max(6, r.top  - 8)}px`;
     els.ring.style.width   = `${Math.max(36, r.width  + 16)}px`;
     els.ring.style.height  = `${Math.max(36, r.height + 16)}px`;
+
+    if (els.hand) {
+      const handLeft = Math.min(window.innerWidth - 46, r.right - 6);
+      const handTop  = Math.max(8, r.top - 24);
+      els.hand.style.display = 'flex';
+      els.hand.style.left = `${handLeft}px`;
+      els.hand.style.top  = `${handTop}px`;
+    }
   }
 
   function clearGuidedHighlight() {
@@ -341,6 +353,7 @@
     activeTarget = null;
     hydrateEls();
     if (els.ring) els.ring.style.display = 'none';
+    if (els.hand) els.hand.style.display = 'none';
     if (els.mask) els.mask.classList.remove('is-guided');
   }
 
@@ -542,14 +555,30 @@
 
   function startMasterTutorialIfNeeded() {
     if (started) return;
-    if (state.completed || state.phase === PHASES.COMPLETE || getStorage().getItem('orbitSync_tutorialDone') === '1') return;
-    // Always check player profile regardless of mid-progress state.
-    // An established player should never be re-onboarded, even if the tutorial
-    // state was left mid-progress (e.g. interrupted first session, stale storage).
+
+    const storage = getStorage();
+
+    if (state.completed || state.phase === PHASES.COMPLETE || storage.getItem('orbitSync_tutorialDone') === '1') return;
+
+    // Returning / progressed players should never get re-onboarded.
     if (!isNewPlayerProfile()) {
       _markTutorialCompleteForMigratedSave();
       return;
     }
+
+    // New-player flow is now gameplay-first:
+    // do NOT begin hub tutorial until the first stage clear has happened.
+    if (storage.getItem('orbitSync_sessionArcDone') !== '1') {
+      return;
+    }
+
+    // If the player already completed the first live run, skip the old
+    // welcome/orbit-loop lecture and begin at guided hub onboarding.
+    if (state.phase === PHASES.WELCOME || state.phase === PHASES.ORBIT_LOOP) {
+      state.phase = PHASES.CAMPAIGN_GATE;
+      persistState();
+    }
+
     started = true;
     setTimeout(advanceMasterTutorial, 180);
   }
@@ -768,13 +797,36 @@
   }
 
   function onCampaignMilestone() {
+    const storage = getStorage();
+
+    // First ever 1-1 clear now ends the "instant play" opening
+    // and unlocks the guided hub flow.
+    if (!storage.getItem('orbitSync_sessionArcDone') && isNewPlayerProfile()) {
+      storage.setItem('orbitSync_sessionArcDone', '1');
+
+      if (state.phase === PHASES.WELCOME || state.phase === PHASES.ORBIT_LOOP) {
+        state.phase = PHASES.CAMPAIGN_GATE;
+      }
+
+      persistState();
+      started = false; // allow hub tutorial to start when returnToMenu runs
+      return;
+    }
+
     if (!state.tutorialCards.starRatingShown) {
       state.tutorialCards.starRatingShown = true;
       persistState();
       setTimeout(function() {
-        showFreezeFrame(COPY.starRating.title, COPY.starRating.body, 'UNDERSTOOD', function() {}, COPY.starRating.label);
+        showFreezeFrame(
+          COPY.starRating.title,
+          COPY.starRating.body,
+          'UNDERSTOOD',
+          function() {},
+          COPY.starRating.label
+        );
       }, 180);
     }
+
     if (state.phase === PHASES.HARD_MODE_INTRO) {
       state.pending.firstCampaignMilestone = true;
       persistState();
