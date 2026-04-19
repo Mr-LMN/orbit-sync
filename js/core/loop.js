@@ -1278,7 +1278,7 @@ function resetRunState() {
   comboCount = 0; comboTimer = 0; comboGlow = 0; hitStopUntil = 0;
   lastMultiplierDisplay = 1;
   clearIntensity();
-  if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+  stopLastLifeDrone();
   if (typeof unduckMusic === 'function') unduckMusic();
   document.body.classList.remove('last-life');
   updateLastLifeState();
@@ -1294,11 +1294,11 @@ function updateLastLifeState() {
 
   if (isLastLife && !wasLastLife) {
     // Entering last-life state
-    if (typeof startLastLifeDrone === 'function' && audioCtx) startLastLifeDrone();
+    if (OrbitGame.audio.audioCtx) startLastLifeDrone();
     if (typeof duckMusicForLastLife === 'function') duckMusicForLastLife();
   } else if (!isLastLife && wasLastLife) {
     // Leaving last-life state (gained life or died)
-    if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+    stopLastLifeDrone();
     if (typeof unduckMusic === 'function') unduckMusic();
   }
 }
@@ -4147,7 +4147,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
     }
     if (audioCtx) updateMusicState(multiplier, false);
     clearIntensity();
-    if (typeof stopLastLifeDrone === 'function') stopLastLifeDrone();
+    stopLastLifeDrone();
     if (typeof unduckMusic === 'function') unduckMusic();
     const previousPB = {
       score: personalBest.score || 0,
