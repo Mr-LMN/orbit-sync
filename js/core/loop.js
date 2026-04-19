@@ -3734,7 +3734,7 @@ function update() {
   }
 
   angle += moveStep;
-  if (isNaN(angle)) angle = 0;
+  if (!isFinite(angle)) angle = 0;
   if (!inMenu) { distanceTraveled += Math.abs(moveStep); totalStageDistance += Math.abs(moveStep); }
 
   const tPt = getPointOnShape(angle, getWorldShape(), centerObj.x, centerObj.y, orbitRadius);
@@ -3798,7 +3798,7 @@ function update() {
         pulseBrightness(2.5, 200);
         createParticles(centerObj.x, centerObj.y, '#ffffff', 30);
       }
-      if (!_blackoutActive && frameNow >= _nextBlackoutAt) {
+      if (!_blackoutActive && _blackoutInitialised && frameNow >= _nextBlackoutAt) {
         _blackoutActive = true;
         _blackoutEndsAt = frameNow + _bcfg.duration;
         if (audioCtx && typeof playTone === 'function') playTone(90, 'sine', 0.10, 0.008, 0.10);

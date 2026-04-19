@@ -102,7 +102,8 @@
       for (let i = 0; i < sides; i++) {
         const a = rotation + (i * Math.PI * 2 / sides);
         // Adjust radius so the path matches the orbit radius
-        let rAdjust = radius / Math.cos(Math.PI / sides);
+        const cosApothem = Math.cos(Math.PI / sides);
+        let rAdjust = isFinite(cosApothem) && cosApothem !== 0 ? radius / cosApothem : radius;
 
         // Add fractal/abstract displacement for abyss shapes
         if (shape === 'abyss') {
@@ -112,15 +113,17 @@
 
         corners.push({ x: cx + Math.cos(a) * rAdjust, y: cy + Math.sin(a) * rAdjust });
       }
-      const normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      // Use `let` so we can apply the near-2π guard (same as diamond/phoenix)
+      let normalized = ((t % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      if (Math.abs(normalized - Math.PI * 2) < 1e-10) normalized = 0;
       const sectorSize = Math.PI * 2 / sides;
       const rawIdx = Math.floor(normalized / sectorSize);
       const sectorIdx = rawIdx % sides;
-      const progress = (normalized - rawIdx * sectorSize) / sectorSize;
+      const progress = Math.max(0, Math.min(1, (normalized - rawIdx * sectorSize) / sectorSize));
       const p1 = corners[sectorIdx];
       const p2 = corners[(sectorIdx + 1) % sides];
-      let ptX = p1?.x + (p2?.x - p1?.x) * progress;
-      let ptY = p1?.y + (p2?.y - p1?.y) * progress;
+      let ptX = (p1 != null ? p1.x : cx) + ((p2 != null ? p2.x : cx) - (p1 != null ? p1.x : cx)) * progress;
+      let ptY = (p1 != null ? p1.y : cy) + ((p2 != null ? p2.y : cy) - (p1 != null ? p1.y : cy)) * progress;
 
       // Add secondary abstraction layer for abyss (curved/jagged edges)
       if (shape === 'abyss') {
@@ -130,9 +133,9 @@
           ptY += Math.sin(tangentA) * edgeOffset;
       }
 
-      if (isNaN(ptX) || isNaN(ptY)) {
-        ptX = p1?.x || cx || 0;
-        ptY = p1?.y || cy || 0;
+      if (!isFinite(ptX) || !isFinite(ptY)) {
+        ptX = p1 != null ? p1.x : cx;
+        ptY = p1 != null ? p1.y : cy;
       }
       return { x: ptX, y: ptY };
     }
