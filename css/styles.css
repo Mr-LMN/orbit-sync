@@ -98,7 +98,32 @@ body.state-gameplay .top-stat-coins, body.state-gameplay .top-stat-crystals { di
 body.state-gameplay .add-currency-btn { display: none; }
 body.state-gameplay #topBar {
   background: none;
+  border-bottom: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   padding-top: 16px;
+}
+
+/* Hub-mode premium top bar — frosted glass + neon accent divider.
+   Gameplay keeps its transparent override above so the canvas stays unobscured. */
+body:not(.state-gameplay) #topBar {
+  background: linear-gradient(to bottom, rgba(10, 25, 47, 0.78) 0%, rgba(5, 11, 20, 0.55) 100%);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border-bottom: 1px solid rgba(0, 255, 136, 0.18);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  padding: 14px 16px;
+}
+body:not(.state-gameplay) #topBar .top-stat-coins,
+body:not(.state-gameplay) #topBar .top-stat-crystals {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35);
+  padding: 5px 13px;
+}
+body:not(.state-gameplay) #topBar .top-stat-crystals {
+  border-color: rgba(0, 255, 136, 0.22);
+  box-shadow: inset 0 1px 8px rgba(0, 0, 0, 0.55), 0 0 12px rgba(0, 255, 136, 0.10);
 }
 
 
