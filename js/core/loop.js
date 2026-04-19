@@ -2508,6 +2508,10 @@ function draw() {
       const phantomPulse = 0.68 + Math.abs(Math.sin(now / 290 + (tCenter * 1.1))) * 0.4;
       const isDiamondWorld = worldNum === 2 && !isBoss;
       const isGlitchWorld = worldNum === 4 && !isBoss;
+      // Unstable construct flicker — random each frame for menacing static feel.
+      // Used only on the default crimson path so diamond/glitch themes stay intentional.
+      const phantomFlicker = 0.85 + Math.random() * 0.15;
+      const phantomGlowBlur = 10 + Math.random() * 15;
       ctx.setLineDash(isDiamondWorld ? [7, 8] : (isGlitchWorld ? [2, 6, 8, 4] : [4, 12]));
 
       // Jitter effect for Glitch World
@@ -2521,25 +2525,25 @@ function draw() {
           ctx.translate((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
         }
       }
-      
+
       // Very faint glow — barely there
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
         orbitRadius, jitterStart, jitterStart + jitterSize);
-      ctx.strokeStyle = isGlitchWorld ? (Math.random() > 0.5 ? '#b157ff' : '#00ff41') : '#ff3366';
-      ctx.globalAlpha = isDiamondWorld ? (0.2 * phantomPulse) : (isGlitchWorld ? 0.3 * phantomPulse : 0.12);
+      ctx.strokeStyle = isGlitchWorld ? (Math.random() > 0.5 ? '#b157ff' : '#00ff41') : (isDiamondWorld ? '#ff3366' : '#c81030');
+      ctx.globalAlpha = isDiamondWorld ? (0.2 * phantomPulse) : (isGlitchWorld ? 0.3 * phantomPulse : 0.22 * phantomFlicker);
       ctx.lineWidth = isDiamondWorld ? 10 : (isGlitchWorld ? 12 : 8);
       ctx.lineCap = 'butt';
-      setShadowBlur(isDiamondWorld || isGlitchWorld ? 16 : 0);
-      ctx.shadowColor = isGlitchWorld ? '#b157ff' : '#ff3366';
+      setShadowBlur(isDiamondWorld || isGlitchWorld ? 16 : phantomGlowBlur);
+      ctx.shadowColor = isGlitchWorld ? '#b157ff' : (isDiamondWorld ? '#ff3366' : '#c81030');
       ctx.stroke();
-      
+
       // Thin dashed line only, no fill, no X label
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y,
         orbitRadius, jitterStart, jitterStart + jitterSize);
-      ctx.strokeStyle = isGlitchWorld ? (Math.random() > 0.8 ? '#ffffff' : '#ff3366') : '#ff3366';
-      ctx.globalAlpha = isDiamondWorld ? (0.75 * phantomPulse) : (isGlitchWorld ? 0.6 * phantomPulse : 0.45);
-      ctx.lineWidth = isDiamondWorld ? 2.6 : (isGlitchWorld ? Math.random() * 4 + 1 : 1.5);
-      setShadowBlur(isDiamondWorld || isGlitchWorld ? 10 : 0);
+      ctx.strokeStyle = isGlitchWorld ? (Math.random() > 0.8 ? '#ffffff' : '#ff3366') : (isDiamondWorld ? '#ff3366' : '#ff1f3f');
+      ctx.globalAlpha = isDiamondWorld ? (0.75 * phantomPulse) : (isGlitchWorld ? 0.6 * phantomPulse : 0.55 * phantomFlicker);
+      ctx.lineWidth = isDiamondWorld ? 2.6 : (isGlitchWorld ? Math.random() * 4 + 1 : 1.5 + Math.random() * 0.6);
+      setShadowBlur(isDiamondWorld || isGlitchWorld ? 10 : phantomGlowBlur * 0.55);
       ctx.stroke();
 
       // Diamond-only prism interference streak to make phantom traps pop.
@@ -2679,7 +2683,10 @@ function draw() {
       continue;
     }
     if (t.isEchoTarget) {
-      const pulse = 0.96 + Math.sin(Date.now() / 300) * 0.04;
+      // Ethereal breathing — wide swing on opacity so the echo feels like it's
+      // fading in and out of existence rather than solid matter.
+      const breath = (Math.sin(Date.now() / 200) + 1) * 0.5; // 0..1
+      const pulse = 0.62 + breath * 0.38; // 0.62..1.0
       const ghostOffset = Math.sin(Date.now() / 600 + tCenter * 0.8) * 0.008;
       const midAngle = normalizeAngle(t.start + (t.size / 2));
       const markerPt = getPointOnShape(midAngle, worldShape, centerObj.x, centerObj.y, dynamicRadius);
@@ -2689,7 +2696,7 @@ function draw() {
       ctx.lineWidth = 3.2;
       if (ctx.setLineDash) ctx.setLineDash([6, 4]);
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
-      ctx.shadowBlur = 11;
+      ctx.shadowBlur = 18 + breath * 10;
       ctx.shadowColor = '#66f0ff';
       ctx.stroke();
 
@@ -2705,7 +2712,7 @@ function draw() {
         normalizeAngle(t.start - ghostOffset),
         normalizeAngle(t.start + t.size - ghostOffset)
       );
-      ctx.shadowBlur = 3;
+      ctx.shadowBlur = 12 + breath * 6;
       ctx.shadowColor = '#66f0ff';
       ctx.stroke();
 
@@ -2900,6 +2907,20 @@ function draw() {
         : (10 + (approach * 12) + (hitFlash * 16)));
       ctx.shadowColor = targetGlowColor;
       ctx.stroke();
+
+      // Hot energy filament — thin pure-white centre line so the arc reads as
+      // a live energy construct, not a flat painted band. Boss shields keep
+      // their dedicated metallic look and skip this pass.
+      if (!isBossShield) {
+        ctx.beginPath();
+        buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+        ctx.strokeStyle = '#ffffff';
+        ctx.globalAlpha = Math.min(1, 0.72 + (approach * 0.18) + (hitFlash * 0.2));
+        ctx.lineWidth = 2;
+        setShadowBlur(5 + (hitFlash * 6));
+        ctx.shadowColor = targetGlowColor;
+        ctx.stroke();
+      }
     } else {
       ctx.beginPath();
       buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
