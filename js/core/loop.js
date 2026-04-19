@@ -1167,6 +1167,11 @@ function forceHideOverlayExtras() {
   if (runCoinsBox) runCoinsBox.style.display = 'none';
   if (menuBtn) menuBtn.style.display = 'none';
   if (clearSummary) clearSummary.style.display = 'none';
+  if (ui.clearStars) {
+    ui.clearStars.style.display = 'none';
+    const _starEls = ui.clearStars.querySelectorAll('.clear-star');
+    _starEls.forEach(s => s.classList.remove('earned', 'gold'));
+  }
   if (shareBtn) {
     shareBtn.style.display = 'none';
     shareBtn.classList.remove('pb-share');
@@ -5783,6 +5788,36 @@ function showWorldClearSequence({ nextLevelIdx, nextWorld, coinsEarned, isCampai
   if (clearSummary) clearSummary.style.display = 'grid';
   if (clearScoreDisplay) clearScoreDisplay.innerText = score;
   if (clearStreakDisplay) clearStreakDisplay.innerText = runBestStreak;
+
+  // ── World star rating: average of the 5 regular stages in the cleared world ──
+  if (ui.clearStars) {
+    const _starEls = ui.clearStars.querySelectorAll('.clear-star');
+    _starEls.forEach(s => { s.classList.remove('earned', 'gold'); s.style.animationDelay = ''; });
+    let _worldStars = 0;
+    try {
+      const _clearedWorld = (levelData && levelData.id)
+        ? parseInt(String(levelData.id).split('-')[0], 10)
+        : (nextWorld ? Math.max(1, nextWorld - 1) : 1);
+      const _starsMap = (typeof playerProgress === 'object' && playerProgress && playerProgress.stageStars) || {};
+      let _sum = 0, _count = 0;
+      for (let _s = 1; _s <= 5; _s++) {
+        const _id = `${_clearedWorld}-${_s}`;
+        if (typeof _starsMap[_id] === 'number') { _sum += _starsMap[_id]; _count++; }
+      }
+      const _avg = _count > 0 ? (_sum / _count) : 0;
+      if (_avg >= 2.5) _worldStars = 3;
+      else if (_avg >= 1.5) _worldStars = 2;
+      else _worldStars = 1; // World was cleared, so at least 1 star
+    } catch (_e) { _worldStars = 1; }
+    ui.clearStars.style.display = 'flex';
+    _starEls.forEach((el, idx) => {
+      if (idx < _worldStars) {
+        el.style.animationDelay = `${0.25 + idx * 0.18}s`;
+        el.classList.add('earned');
+        if (_worldStars === 3) el.classList.add('gold');
+      }
+    });
+  }
   if (clearCoinsDisplay) clearCoinsDisplay.innerText = '0';
 
   // 3. The Dopamine Tally Animation
