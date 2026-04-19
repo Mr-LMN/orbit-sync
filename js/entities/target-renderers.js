@@ -6,22 +6,32 @@
     ctx.save();
     const isDiamondWorld = rc.worldShape === 'diamond' && rc.worldNum === 2 && !rc.isBoss;
     const markerPt = rc.getPointOnShape(t.cornerAnchor, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius);
+    const breath = 1 + Math.sin(Date.now() / 520 + t.start * 3.7) * 0.08;
 
-    // Arc body — slightly thicker, brighter
+    // Outer aura pass — wide, soft halo drawn first so brighter layers sit on top
+    rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
+    ctx.strokeStyle = '#00e8ff';
+    ctx.globalAlpha = (isDiamondWorld ? (0.1 + rc.approach * 0.08) : (0.18 + rc.approach * 0.12)) * breath;
+    ctx.lineWidth = isDiamondWorld ? 8.2 : 12;
+    ctx.shadowBlur = isDiamondWorld ? 13 : 28;
+    ctx.shadowColor = '#00e8ff';
+    ctx.stroke();
+
+    // Shell — main coloured body of the arc
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
     ctx.strokeStyle = '#00e8ff';
     ctx.globalAlpha = 0.88;
     ctx.lineWidth = isDiamondWorld ? 4.2 : 4.5;
     ctx.shadowBlur = isDiamondWorld ? 11 : 18;
-    ctx.shadowColor = '#00e8ff';
     ctx.stroke();
 
-    // Outer aura pass
+    // Hot energy core — thin pure white filament down the centre
     rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, t.start, t.start + t.size);
-    ctx.strokeStyle = '#00e8ff';
-    ctx.globalAlpha = isDiamondWorld ? (0.1 + rc.approach * 0.08) : (0.18 + rc.approach * 0.12);
-    ctx.lineWidth = isDiamondWorld ? 8.2 : 12;
-    ctx.shadowBlur = isDiamondWorld ? 13 : 28;
+    ctx.strokeStyle = '#ffffff';
+    ctx.globalAlpha = 0.78 + rc.approach * 0.18;
+    ctx.lineWidth = isDiamondWorld ? 1.4 : 1.6;
+    ctx.shadowBlur = isDiamondWorld ? 4 : 8;
+    ctx.shadowColor = '#9af8ff';
     ctx.stroke();
 
     // Chevron marker at corner point
@@ -95,6 +105,7 @@
     const rightStart = t.start + halfSize;
     const rightEnd = t.start + t.size;
     const isDiamondWorld = rc.worldShape === 'diamond' && rc.worldNum === 2 && !rc.isBoss;
+    const dualBreath = 1 + Math.sin(Date.now() / 480 + t.start * 4.3) * 0.07;
     const leftColor = t.leftColor || (isDiamondWorld ? '#9cf5ff' : '#2ff6ff');
     const rightColor = t.rightColor || (isDiamondWorld ? '#d5b8ff' : '#ff4fd8');
     const coreColor = t.coreColor || '#ffffff';
@@ -108,7 +119,7 @@
 
     if (t.dualState === 'full' || t.dualState === 'left') {
       rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
-      ctx.strokeStyle = shellColor; ctx.globalAlpha = shellAlpha; ctx.lineWidth = shellWidth; ctx.lineCap = 'butt';
+      ctx.strokeStyle = shellColor; ctx.globalAlpha = shellAlpha * dualBreath; ctx.lineWidth = shellWidth; ctx.lineCap = 'butt';
       rc.setShadowBlur(isDiamondWorld ? 10 : 22); ctx.shadowColor = shellColor; ctx.stroke();
 
       rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
@@ -122,7 +133,7 @@
 
     if (t.dualState === 'full' || t.dualState === 'right') {
       rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
-      ctx.strokeStyle = shellColor; ctx.globalAlpha = shellAlpha; ctx.lineWidth = shellWidth; ctx.lineCap = 'butt';
+      ctx.strokeStyle = shellColor; ctx.globalAlpha = shellAlpha * dualBreath; ctx.lineWidth = shellWidth; ctx.lineCap = 'butt';
       rc.setShadowBlur(isDiamondWorld ? 10 : 22); ctx.shadowColor = shellColor; ctx.stroke();
 
       rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, rightStart + halfPad, rightEnd - halfPad);
@@ -261,6 +272,29 @@
       ctx.strokeStyle = '#ffffff'; ctx.globalAlpha = 0.95; ctx.lineWidth = depth === 0 ? 2 : depth === 1 ? 1.5 : 1.2;
     }
     ctx.shadowBlur = isSmallSplit ? 0 : (splitHeavy ? 7 : 2); ctx.shadowColor = '#ffffff'; ctx.stroke();
+
+    // Crystalline shard flare — subtle bright highlight on fractured pieces so
+    // they read as broken glass catching the light, not just shrunken arcs.
+    if (!isRootSplit) {
+      const flareAngle = t.start + (t.size / 2);
+      const flarePt = rc.getPointOnShape(flareAngle, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius);
+      const flareRx = flarePt.x - rc.centerObj.x;
+      const flareRy = flarePt.y - rc.centerObj.y;
+      const flareLen = Math.hypot(flareRx, flareRy) || 1;
+      const flareTx = -flareRy / flareLen;
+      const flareTy = flareRx / flareLen;
+      const flareSpan = (isSmallSplit ? 2.4 : 3.2) * pulse;
+      ctx.beginPath();
+      ctx.moveTo(flarePt.x - flareTx * flareSpan, flarePt.y - flareTy * flareSpan);
+      ctx.lineTo(flarePt.x + flareTx * flareSpan, flarePt.y + flareTy * flareSpan);
+      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = (isSmallSplit ? 0.42 : 0.58) + seamFlash * 0.25;
+      ctx.lineWidth = isSmallSplit ? 0.9 : 1.15;
+      ctx.lineCap = 'butt';
+      ctx.shadowBlur = splitHeavy ? (isSmallSplit ? 3 : 5) : 1;
+      ctx.shadowColor = palette.core;
+      ctx.stroke();
+    }
 
     if (rc.shouldDrawWorld2MechanicBrackets) {
       const splitBracketAlpha = (isSmallSplit ? 0.26 : isMediumSplit ? 0.34 : 0.4) + (isWorld2Split ? (launchMix * 0.2) : 0);
