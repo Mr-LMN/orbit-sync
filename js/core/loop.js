@@ -2292,9 +2292,10 @@ function draw() {
     const _pentaCorners = [];
     for (let _pi = 0; _pi < 5; _pi++) {
       const _pa = -Math.PI / 2 + (_pi * Math.PI * 2 / 5);
+      const _cornerR = orbitRadius / Math.cos(Math.PI / 5);
       _pentaCorners.push({
-        x: centerObj.x + Math.cos(_pa) * orbitRadius,
-        y: centerObj.y + Math.sin(_pa) * orbitRadius
+        x: centerObj.x + Math.cos(_pa) * _cornerR,
+        y: centerObj.y + Math.sin(_pa) * _cornerR
       });
     }
     const _sensorPulse = (Math.sin(now * 0.0012) + 1) * 0.5;

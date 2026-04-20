@@ -194,6 +194,34 @@
     const rawSpan = endAngle - startAngle;
     let span = ((rawSpan) + Math.PI * 2) % (Math.PI * 2);
     if (span === 0 && rawSpan !== 0) span = Math.PI * 2;
+
+    // For polygon shapes with partial arcs, inject corner boundary angles so edges
+    // aren't visually cut when the arc spans a polygon corner.
+    const polySidesMap = { triangle: 3, square: 4, pentagon: 5, hexagon: 6, phoenix: 10 };
+    const polySides = polySidesMap[shape];
+    if (polySides && span < Math.PI * 2 - 0.01) {
+      const sectorSize = Math.PI * 2 / polySides;
+      const normalize = (v) => ((v % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+      let normStart = normalize(startAngle);
+      if (Math.abs(normStart - Math.PI * 2) < 1e-10) normStart = 0;
+      const endUnwrapped = normStart + span;
+      const pointAngles = [normStart];
+      const firstBoundaryIdx = Math.floor(normStart / sectorSize) + 1;
+      for (let i = 0; i <= polySides; i++) {
+        const boundary = (firstBoundaryIdx + i) * sectorSize;
+        if (boundary > normStart + 1e-10 && boundary < endUnwrapped - 1e-10) pointAngles.push(boundary);
+        if (boundary >= endUnwrapped) break;
+      }
+      pointAngles.push(endUnwrapped);
+      ctx.beginPath();
+      pointAngles.forEach((a, idx) => {
+        const pt = getPointOnShape(a, shape, cx, cy, radius);
+        if (idx === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      return;
+    }
+
     const actualSteps = Math.max(2, Math.ceil(steps * span / (Math.PI * 2)));
     ctx.beginPath();
     for (let i = 0; i <= actualSteps; i++) {

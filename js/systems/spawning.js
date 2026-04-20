@@ -543,7 +543,12 @@
           ui.tutorialTextContainer.style.display = 'block';
           ui.tutorialTextContainer.style.opacity = '1';
         }
-        targets.push(buildTarget(Math.random() * Math.PI * 2, Math.PI / 8, {
+        // Spawn at least 60° ahead of the orb so the player doesn't wait a full revolution
+        const _minGap = Math.PI / 3;
+        const _spread = Math.PI * 1.5;
+        const _base = ((angle + _minGap) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const _spawnAngle = (_base + Math.random() * _spread) % (Math.PI * 2);
+        targets.push(buildTarget(_spawnAngle, Math.PI / 8, {
           color: w5Color, active: true, hp: 1, moveSpeed: 0
         }));
         return;
