@@ -423,7 +423,19 @@
           const hasProgress = typeof playerProgress !== 'undefined'
               && playerProgress.completedStages
               && Object.keys(playerProgress.completedStages).length > 0;
-          ctaBtn.innerHTML = hasProgress ? '&#9654; CONTINUE' : '&#9654; PLAY';
+          const labelEl = document.getElementById('hubCtaLabel');
+          const subEl = document.getElementById('hubCtaSubtitle');
+          let ctaStage = 1;
+          if (typeof playerProgress !== 'undefined' && playerProgress.completedStages) {
+              for (let s = 6; s >= 1; s--) {
+                  if (playerProgress.completedStages[`${world}-${s}`]) {
+                      ctaStage = Math.min(s + 1, 6);
+                      break;
+                  }
+              }
+          }
+          if (labelEl) labelEl.innerText = hasProgress ? 'CONTINUE' : 'START';
+          if (subEl) subEl.innerText = `W${world} · S${ctaStage}`;
       }
 
       // ── Challenges & Streak ────────────────────────────────────────────────
