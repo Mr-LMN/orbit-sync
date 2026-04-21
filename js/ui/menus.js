@@ -7,6 +7,7 @@
   let tutorialHardModeSeen = false;
   let _previewAnimFrame = 0;
   let _previewAnimInterval = null;
+  let _previewIsLocked = false;
   let _hubOrbAnimId = null;
 
   // ── HUB ORB LIVE RENDERER ─────────────────────────────────────────────────
@@ -687,6 +688,7 @@
       window.currentWorldVisualTheme = currentWorldVisualTheme;
     }
 
+    _previewIsLocked = false;
     drawWorldPreviewCanvas(false);
   }
 
@@ -696,10 +698,11 @@
       || [];
     if (!campaignData.length) return;
     levelData = campaignData[0];
-    currentWorldPalette = { color1: '#444', color2: '#222' };
+    currentWorldPalette = { primary: '#444444', secondary: '#222222', color1: '#444444', color2: '#222222' };
     currentWorldShape = 'circle';
     currentWorldVisualTheme = { type: 'grid' };
 
+    _previewIsLocked = true;
     drawWorldPreviewCanvas(true);
   }
 
@@ -1288,7 +1291,7 @@
     if (_previewAnimInterval) return; // Already running
     _previewAnimInterval = setInterval(() => {
       _previewAnimFrame = (_previewAnimFrame + 2) % 360;
-      drawWorldPreviewCanvas(false);
+      drawWorldPreviewCanvas(_previewIsLocked);
     }, 1000 / 30); // ~30fps for smooth animation
   }
 

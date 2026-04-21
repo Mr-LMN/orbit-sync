@@ -41,6 +41,8 @@
 
     initSynthBus();
 
+    if (!Number.isFinite(startTime)) startTime = audio.audioCtx.currentTime;
+
     const osc = audio.audioCtx.createOscillator();
     osc.type = type; // 'square', 'sawtooth', 'triangle', 'sine'
     osc.frequency.setValueAtTime(freq, startTime);
