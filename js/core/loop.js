@@ -282,6 +282,7 @@ let _blackoutActive = false;
 let _blackoutEndsAt = 0;
 let _nextBlackoutAt = 0;
 let _blackoutFlickerPhase = false;
+let _blackoutTransitionWindow = false; // true during 200ms fade-in and fade-out
 let _blackoutInitialised = false;
 // ─────────────────────────────────────────────────────────
 let lives = 3; let multiplier = 1; let streak = 0; let distanceTraveled = 0; let totalStageDistance = 0;
@@ -1631,6 +1632,7 @@ function loadLevel(idx) {
   _blackoutEndsAt = 0;
   _nextBlackoutAt = 0;
   _blackoutFlickerPhase = false;
+  _blackoutTransitionWindow = false;
   _blackoutInitialised = false;
   particles = [];
   popups = [];
@@ -3408,7 +3410,10 @@ function draw() {
 
   // Blackout vignette — Spotlight effect for The Void
   if (_blackoutActive && (getWorldNum() === 5 || levelData.id === 'abyss') && !inMenu) {
-    const _bFade = Math.min(1, (now - (_blackoutEndsAt - (levelData.blackout ? levelData.blackout.duration : 1200))) / 200);
+    const _bDur = levelData.blackout ? levelData.blackout.duration : 1200;
+    const _bFadeIn  = Math.min(1, (now - (_blackoutEndsAt - _bDur)) / 200);
+    const _bFadeOut = Math.min(1, (_blackoutEndsAt - now) / 200);
+    const _bFade = Math.min(_bFadeIn, _bFadeOut);
     const playerPt = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, orbitRadius);
     const spotlightGrad = ctx.createRadialGradient(
         playerPt.x, playerPt.y, orbitRadius * 0.1,
@@ -3419,6 +3424,27 @@ function draw() {
     spotlightGrad.addColorStop(1, `rgba(3, 3, 8, ${0.98 * _bFade})`);
     ctx.fillStyle = spotlightGrad;
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+  }
+  // Transition window — targets ghost through the vignette so the player has a hittable cue
+  if (_blackoutTransitionWindow && (getWorldNum() === 5 || levelData.id === 'abyss') && !inMenu) {
+    const _bDurT = levelData.blackout ? levelData.blackout.duration : 1200;
+    const _bFIn  = Math.min(1, (now - (_blackoutEndsAt - _bDurT)) / 200);
+    const _bFOut = Math.min(1, (_blackoutEndsAt - now) / 200);
+    const _tAlpha = 1 - Math.min(_bFIn, _bFOut);
+    for (let _ti = 0; _ti < targets.length; _ti++) {
+      const _tt = targets[_ti];
+      if (!_tt.active || _tt.isPhantom || _tt.isHeart) continue;
+      ctx.beginPath();
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, _tt.start, _tt.start + _tt.size);
+      ctx.strokeStyle = '#c8e8ff';
+      ctx.globalAlpha = _tAlpha * 0.78;
+      ctx.lineWidth = 5 + (_tAlpha * 4);
+      setShadowBlur(24 + (_tAlpha * 16));
+      ctx.shadowColor = '#a8d8ff';
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+    }
   }
 
   // Shockwaves (preserved behaviour + integration)
@@ -3831,9 +3857,16 @@ function update() {
         && (frameNow < _nextBlackoutAt)
         && (_nextBlackoutAt - frameNow) < 180
         && (_nextBlackoutAt - frameNow) > 0;
+      if (_blackoutActive) {
+        const _bStartTime = _blackoutEndsAt - (_bcfg.duration || 1000);
+        _blackoutTransitionWindow = (frameNow - _bStartTime) < 200 || (_blackoutEndsAt - frameNow) < 200;
+      } else {
+        _blackoutTransitionWindow = false;
+      }
     } else {
       _blackoutActive = false;
       _blackoutFlickerPhase = false;
+      _blackoutTransitionWindow = false;
     }
     // Null Gate phase 1 boss blackout
     if (levelData && levelData.boss === 'null_gate' && !isBossPhaseTwo && bossPhase === 1) {
@@ -3842,15 +3875,17 @@ function update() {
       const _cPos = frameNow % _bCycle;
       _blackoutActive = _cPos < _bDur;
       _blackoutFlickerPhase = !_blackoutActive && _cPos > (_bCycle - 200);
+      _blackoutTransitionWindow = _blackoutActive && (_cPos < 200 || _cPos > (_bDur - 200));
     }
   } else {
     // Force-clear blackout state any time the tick block doesn't apply
     // (cinematic intro, paused, menu, or wrong world). Without this, an
     // active blackout could persist across cinematics and leave the orb
     // permanently invisible on Stage 5-2 / 5-3 / 5-4 / 5-5.
-    if (_blackoutActive || _blackoutFlickerPhase) {
+    if (_blackoutActive || _blackoutFlickerPhase || _blackoutTransitionWindow) {
       _blackoutActive = false;
       _blackoutFlickerPhase = false;
+      _blackoutTransitionWindow = false;
     }
   }
   // ── END BLACKOUT TICK ────────────────────────────
@@ -5222,6 +5257,15 @@ function tap() {
       createParticles(hitX, hitY, '#7dfffb', 10);
       createTargetHitRipple(hitX, hitY, '#7dfffb');
       vibrate(12);
+    }
+
+    // Void Strike bonus — reward timing a hit during the blackout transition window
+    if (_blackoutTransitionWindow) {
+      score += 3;
+      runCents += 3;
+      markScoreCoinDirty();
+      createPopup(hitX, hitY - 52, 'VOID STRIKE', '#a8d8ff');
+      createParticles(hitX, hitY, '#a8d8ff', 8);
     }
 
     const worldNumHit = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
