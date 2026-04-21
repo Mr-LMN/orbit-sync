@@ -3809,9 +3809,10 @@ function update() {
         _blackoutInitialised = true;
         _nextBlackoutAt = frameNow + (_bcfg.firstAt || 2000);
       }
-      if (_blackoutActive && frameNow >= _blackoutEndsAt) {
+      // Safety clamp: stuck blackout (e.g. tab backgrounded mid-flicker) must end at hard cap
+      const _bDurCap = (_bcfg.duration || 1000) * 1.5;
+      if (_blackoutActive && (frameNow >= _blackoutEndsAt || frameNow > _blackoutEndsAt + _bDurCap)) {
         _blackoutActive = false;
-        // FIXED: next blackout = now + interval (not endsAt - duration + interval which was wrong)
         _nextBlackoutAt = frameNow + _bcfg.interval;
         if (audioCtx && typeof playTone === 'function') playTone(880, 'sine', 0.05, 0.01, 0.15);
 
@@ -3842,9 +3843,15 @@ function update() {
       _blackoutActive = _cPos < _bDur;
       _blackoutFlickerPhase = !_blackoutActive && _cPos > (_bCycle - 200);
     }
-  } else if (worldNum !== 5 && (!levelData || levelData.id !== 'abyss')) {
-    _blackoutActive = false;
-    _blackoutFlickerPhase = false;
+  } else {
+    // Force-clear blackout state any time the tick block doesn't apply
+    // (cinematic intro, paused, menu, or wrong world). Without this, an
+    // active blackout could persist across cinematics and leave the orb
+    // permanently invisible on Stage 5-2 / 5-3 / 5-4 / 5-5.
+    if (_blackoutActive || _blackoutFlickerPhase) {
+      _blackoutActive = false;
+      _blackoutFlickerPhase = false;
+    }
   }
   // ── END BLACKOUT TICK ────────────────────────────
 
