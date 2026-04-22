@@ -249,14 +249,14 @@
               </div>
 
               <!-- We keep menuPlayBtn ID here so changeWorld updates it correctly without breaking existing logic -->
-              <button class="campaign-card-play" id="menuPlayBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startCampaign()">PLAY</button>
+              <button class="campaign-card-play btn-play-world" id="menuPlayBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); const hmBtn=document.getElementById('menuHardModeBtn'); if(hmBtn) hmBtn.classList.remove('active'); startCampaign()">PLAY</button>
             </div>
 
             <button class="arrow-btn" aria-label="Next world" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); changeWorld(1)">▶</button>
           </div>
 
           <div class="campaign-actions">
-            <button class="btn btn-outline" id="menuHardModeBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); startHardModeRun();" style="display:none;">⚠ HARD MODE</button>
+            <button class="btn btn-outline btn-hard-mode" id="menuHardModeBtn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); this.classList.toggle('active'); startHardModeRun();" style="display:none;">⚠ HARD MODE</button>
           </div>
         </div>
       </div>
