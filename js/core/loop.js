@@ -6013,4 +6013,17 @@
   OG.core.loop.draw = draw;
   OG.core.loop.startMainLoop = startMainLoop;
   OG.core.loop.stopMainLoop = stopMainLoop;
+
+  // Functions called as globals from shop.js and menus.js
+  window.drawOrbSkin = drawOrbSkin;
+  window.renderShopOrbPreview = renderShopOrbPreview;
+  window.computeWorldPalette = computeWorldPalette;
+  window.computeWorldShape = computeWorldShape;
+  window.getWorldVisualTheme = getWorldVisualTheme;
+  window.getStartingIndexForWorld = getStartingIndexForWorld;
+  window.saveData = saveData;
+  window.updatePersistentCoinUI = updatePersistentCoinUI;
+  window.createPopup = createPopup;
+  window.updateShopUI = updateShopUI;
+  window.updateWorkshopUI = updateWorkshopUI;
 })(window, window.OG);
