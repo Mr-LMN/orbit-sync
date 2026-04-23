@@ -55,4 +55,34 @@
 
   OG.boot.init = init;
   OG.boot.init();
+
+  // Page Visibility: auto-pause gameplay and suspend the AudioContext
+  // when the tab is hidden. On return, resume audio but leave the pause
+  // overlay up so the player clicks Resume before the game un-pauses.
+  document.addEventListener('visibilitychange', function onVisibilityChange() {
+    const audioCtx = OG.audio && OG.audio.audioCtx;
+
+    if (document.hidden) {
+      const ui = (OG.dom && OG.dom.ui) || window.ui;
+      const pauseBtn = ui && ui.pauseBtn;
+      const isActivelyPlaying = !!(pauseBtn && pauseBtn.style.display === 'flex');
+      const settingsModal = ui && ui.settingsModal;
+      const modalBottom = settingsModal && settingsModal.style.bottom;
+      const alreadyPaused = modalBottom === '0' || modalBottom === '0px';
+
+      if (isActivelyPlaying && !alreadyPaused) {
+        if (OG.ui && OG.ui.settings && typeof OG.ui.settings.toggleSettings === 'function') {
+          OG.ui.settings.toggleSettings(true);
+        }
+      }
+
+      if (audioCtx && audioCtx.state === 'running' && typeof audioCtx.suspend === 'function') {
+        audioCtx.suspend();
+      }
+    } else {
+      if (audioCtx && audioCtx.state === 'suspended' && typeof audioCtx.resume === 'function') {
+        audioCtx.resume();
+      }
+    }
+  });
 })(window, window.OG);
