@@ -466,4 +466,6 @@
   OG.ui.shop.updateWorkshopUI = updateWorkshopUI;
   OG.ui.shop.buyItem          = buyItem;
   OG.ui.shop.equipSkin        = equipSkin;
+  window.buyItem   = buyItem;
+  window.equipSkin = equipSkin;
 })(window, window.OG);

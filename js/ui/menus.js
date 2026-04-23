@@ -1280,6 +1280,10 @@
   window.switchMenuTab    = switchMenuTab;
   window.handleHeroPanelClick = handleHeroPanelClick;
   window.startContinueRun = startContinueRun;
+  window.changeWorld = changeWorld;
+  window.startCampaign = startCampaign;
+  window.toggleShop = toggleShop;
+  window.toggleSettings = toggleSettings;
 
   // ── PREVIEW ANIMATION LOOP ────────────────────────────────────────────────
   function _startPreviewAnimation() {
