@@ -498,27 +498,29 @@
   }
 
   function findFirstShopPurchaseTarget() {
-    const cards = Array.from(document.querySelectorAll('.shop-buy-card'));
-    for (let i = 0; i < cards.length; i++) {
-      const btn = cards[i].querySelector('.shop-coin-buy-btn');
-      if (!btn || !isVisibleElement(btn) || btn.disabled) continue;
-      if (btn.classList.contains('already-owned')) continue;
-      return btn;
+    const buttons = document.querySelectorAll('.shop-coin-buy-btn');
+    for (let i = 0; i < buttons.length; i++) {
+      const btn = buttons[i];
+      if (btn.disabled || btn.classList.contains('already-owned')) continue;
+      if (isVisibleElement(btn)) return btn;
     }
-    return Array.from(document.querySelectorAll('.shop-coin-buy-btn'))
-      .find(function(btn) { return isVisibleElement(btn) && !btn.disabled; }) || null;
+    return null;
   }
 
   function findFirstWorkshopEquipTarget() {
-    const preferred = Array.from(document.querySelectorAll('.workshop-equip-btn[id^="wbtn-"]')).find(function(btn) {
-      if (!isVisibleElement(btn) || btn.disabled) return false;
-      if (btn.id === 'wbtn-classic') return false;
-      return btn.textContent && btn.textContent.trim().toUpperCase() === 'EQUIP';
-    });
-    if (preferred) return preferred;
-    return Array.from(document.querySelectorAll('.workshop-equip-btn[id^="wbtn-"]')).find(function(btn) {
-      return isVisibleElement(btn) && btn.id !== 'wbtn-classic';
-    }) || null;
+    const buttons = document.querySelectorAll('.workshop-equip-btn[id^="wbtn-"]');
+    let firstVisible = null;
+    for (let i = 0; i < buttons.length; i++) {
+      const btn = buttons[i];
+      if (btn.disabled || btn.id === 'wbtn-classic') continue;
+      if (isVisibleElement(btn)) {
+        if (!firstVisible) firstVisible = btn;
+        if (btn.textContent && btn.textContent.trim().toUpperCase() === 'EQUIP') {
+          return btn;
+        }
+      }
+    }
+    return firstVisible;
   }
 
   function routeEconomyPhase() {
