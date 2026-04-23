@@ -1,5 +1,4 @@
-(function initSfxModule(window) {
-  const OG = window.OrbitGame;
+(function initSfxModule(window, OG) {
   const audio = OG.audio;
 
   // Global Delay/Reverb Bus setup for Tron-like spaciousness
@@ -486,7 +485,6 @@
     soundGood(multiplier);
   }
 
-
   // ══════════════════════════════════════════════════════════
   // PHASE 2 AUDIO UPGRADES
   // ══════════════════════════════════════════════════════════
@@ -811,4 +809,4 @@
     soundSupernovaHit,
     cleanupPhoenixAudio
   });
-})(window);
+})(window, window.OG);

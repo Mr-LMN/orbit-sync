@@ -22,10 +22,7 @@
 // Do NOT re-add passive IDs (lives_1, ghost_save, coin_bonus_1 etc.) here.
 // Those live exclusively in spheres/registry.js as sphere passive objects.
 
-(function(window) {
-  const OG = window.OrbitGame = window.OrbitGame || {};
-  OG.entities = OG.entities || {};
-  OG.entities.perks = OG.entities.perks || {};
+(function(window, OG) {
 
   const PERKS = {
 
@@ -194,4 +191,4 @@
   };
 
   OG.entities.perks.registry = PERKS;
-})(window);
+})(window, window.OG);

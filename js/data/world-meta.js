@@ -1,5 +1,4 @@
-(function initWorldMeta(window) {
-  const OG = window.OrbitGame;
+(function initWorldMeta(window, OG) {
 
   const WORLD_ORDER = ['world1', 'world2', 'world3', 'world4', 'world5', 'world6'];
   const DEFAULT_WORLDS = {
@@ -70,7 +69,6 @@
   }
 
   function ensureWorlds() {
-    OG.data = OG.data || {};
     if (!OG.data.WORLDS) OG.data.WORLDS = cloneWorldsTemplate();
     return OG.data.WORLDS;
   }
@@ -114,8 +112,6 @@
     const worlds = ensureWorlds();
     return worlds[worldId] || null;
   }
-
-  OG.data = OG.data || {};
   OG.data.WORLDS = OG.data.WORLDS || cloneWorldsTemplate();
   OG.data.worldMeta = [
     { id: 1, label: 'WORLD 1' },
@@ -131,4 +127,4 @@
   OG.data.unlockNextWorldByBoss = unlockNextWorldByBoss;
   OG.data.getWorldConfig = getWorldConfig;
   window.WORLDS = OG.data.WORLDS;
-})(window);
+})(window, window.OG);

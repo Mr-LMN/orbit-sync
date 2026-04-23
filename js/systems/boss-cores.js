@@ -1,7 +1,4 @@
-(function initBossCores(window) {
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
-  OG.systems.bossCores = OG.systems.bossCores || {};
+(function initBossCores(window, OG) {
 
   // Boss core definitions by boss type
   const CORE_CONFIGS = {
@@ -414,4 +411,4 @@
     return _activeCoreType;
   };
 
-})(window);
+})(window, window.OG);

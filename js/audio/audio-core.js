@@ -1,6 +1,5 @@
-(function initAudioCore(window) {
-  const OG = window.OrbitGame;
-  const audio = OG.audio = OG.audio || {};
+(function initAudioCore(window, OG) {
+  const audio = OG.audio;
 
   const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
   audio.AudioContextCtor = AudioContextCtor;
@@ -113,4 +112,4 @@
   window.makeGain = makeGain;
   window.getMinSoundIntervalMs = getMinSoundIntervalMs;
   window.shouldThrottleAudio = shouldThrottleAudio;
-})(window);
+})(window, window.OG);

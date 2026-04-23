@@ -1,7 +1,5 @@
-(function initPhoenixBossSystem(window) {
+(function initPhoenixBossSystem(window, OG) {
   'use strict';
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
 
   // ─── CONFIG ──────────────────────────────────────────────────────────────
   const TIMER_START   = 30;    // seconds to begin with
@@ -496,7 +494,7 @@
     }
 
     if (typeof stopBossDrone === 'function') stopBossDrone();
-    if (OrbitGame && OrbitGame.audio && OrbitGame.audio.stopLastLifeDrone) OrbitGame.audio.stopLastLifeDrone();
+    if (OG && OG.audio && OG.audio.stopLastLifeDrone) OG.audio.stopLastLifeDrone();
     if (typeof updateMusicState === 'function') updateMusicState(1, false);
 
     const col = reason === 'survived' ? '#ff9a46' : '#ff4422';
@@ -673,4 +671,4 @@
     getPhaseIdx
   };
 
-})(window);
+})(window, window.OG);

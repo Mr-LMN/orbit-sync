@@ -1,7 +1,4 @@
-(function initHud(window) {
-  const OG = window.OrbitGame;
-  OG.ui = OG.ui || {};
-  OG.ui.hud = OG.ui.hud || {};
+(function initHud(window, OG) {
 
   let lastStreakMilestone = 0;
 
@@ -38,4 +35,4 @@
 
   OG.ui.hud.showStreakBadge = showStreakBadge;
   OG.ui.hud.checkStreakMilestones = checkStreakMilestones;
-})(window);
+})(window, window.OG);

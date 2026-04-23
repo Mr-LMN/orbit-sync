@@ -1,7 +1,4 @@
-(function initInputCore(window, document) {
-  const OG = window.OrbitGame;
-  OG.core = OG.core || {};
-  OG.core.input = OG.core.input || {};
+(function initInputCore(window, OG, document) {
 
   // Elements that should never pass through to tap()
   const BLOCKED_TAGS = new Set(['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL', 'A']);
@@ -49,4 +46,4 @@
 
   let listenersBound = false;
   OG.core.input.bind = bind;
-})(window, document);
+})(window, window.OG, document);

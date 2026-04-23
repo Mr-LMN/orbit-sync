@@ -1,13 +1,10 @@
-(function initSpawningSystem(window) {
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
-  OG.systems.spawning = OG.systems.spawning || {};
+(function initSpawningSystem(window, OG) {
 
   function spawnTargets() {
-    const ui = window.ui || (window.OrbitGame.dom && window.OrbitGame.dom.ui) || window.OrbitGame.ui;
+    const ui = window.ui || (OG.dom && OG.dom.ui) || OG.ui;
     targets = [];
-    if (OrbitGame.systems && OrbitGame.systems.splitControl) {
-      OrbitGame.systems.splitControl.resetSplitFamilyState();
+    if (OG.systems && OG.systems.splitControl) {
+      OG.systems.splitControl.resetSplitFamilyState();
     }
     const palette = getWorldPalette();
     const worldNum = parseInt(levelData.id.split('-')[0], 10);
@@ -694,7 +691,7 @@
           const fallback = buildTarget(splitAngle, Math.PI / 8, {
             color: w4Color, active: true, hp: 1
           });
-          fallback.splitFamilyId = (OrbitGame.systems && OrbitGame.systems.splitControl && typeof OrbitGame.systems.splitControl.getNextSplitFamilyId === 'function') ? OrbitGame.systems.splitControl.getNextSplitFamilyId() : null;
+          fallback.splitFamilyId = (OG.systems && OG.systems.splitControl && typeof OG.systems.splitControl.getNextSplitFamilyId === 'function') ? OG.systems.splitControl.getNextSplitFamilyId() : null;
           fallback.splitOnHit = true;
           fallback.splitGeneration = 0;
           fallback.splitDepth = 0;
@@ -1051,4 +1048,4 @@
   }
 
   OG.systems.spawning.spawnTargets = spawnTargets;
-})(window);
+})(window, window.OG);

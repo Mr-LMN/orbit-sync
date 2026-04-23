@@ -1,7 +1,4 @@
-(function initScoringSystem(window) {
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
-  OG.systems.scoring = OG.systems.scoring || {};
+(function initScoringSystem(window, OG) {
 
   // Juice pass — body combo classes for canvas glow escalation
   const COMBO_CLASSES = ['combo-3', 'combo-5', 'combo-7', 'combo-8'];
@@ -73,4 +70,4 @@
 
   OG.systems.scoring.updateMultiplierUI = updateMultiplierUI;
   OG.systems.scoring.triggerPerfectFlash = triggerPerfectFlash;
-})(window);
+})(window, window.OG);

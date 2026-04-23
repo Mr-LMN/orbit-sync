@@ -1,5 +1,4 @@
-(function initStorage(window) {
-  const OG = window.OrbitGame;
+(function initStorage(window, OG) {
   const SECRET = 'orbit-sync-s3cr3t';
   const fallbackStorage = {};
 
@@ -86,11 +85,11 @@
     }
   }
 
-  OG.storage = Object.assign(OG.storage || {}, {
+  OG.storage = Object.assign(OG.storage, {
     getItem,
     setItem,
     getJSON,
     setJSON,
     removeItem
   });
-})(window);
+})(window, window.OG);

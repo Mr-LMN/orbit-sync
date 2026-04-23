@@ -1,7 +1,4 @@
-(function initShare(window) {
-  const OG = window.OrbitGame;
-  OG.ui = OG.ui || {};
-  OG.ui.share = OG.ui.share || {};
+(function initShare(window, OG) {
 
   function generateShareCard() {
     const card = document.createElement('canvas');
@@ -126,4 +123,4 @@
 
   OG.ui.share.generateShareCard = generateShareCard;
   OG.ui.share.downloadCard = downloadCard;
-})(window);
+})(window, window.OG);

@@ -1,7 +1,4 @@
-(function initTargetEntity(window) {
-  const OG = window.OrbitGame;
-  OG.entities = OG.entities || {};
-  OG.entities.target = OG.entities.target || {};
+(function initTargetEntity(window, OG) {
 
   function resolveMovement(config, definition) {
     const canMove = config.canMove !== undefined
@@ -298,4 +295,4 @@
   OG.entities.target.spawnWorld2CornerBonusTargets = spawnWorld2CornerBonusTargets;
   OG.entities.target.spawnWorld2MechanicTargets = spawnWorld2MechanicTargets;
   OG.entities.target.isInsideTarget = isInsideTarget;
-})(window);
+})(window, window.OG);

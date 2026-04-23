@@ -1,7 +1,4 @@
-(function initRenderingSystem(window) {
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
-  OG.systems.rendering = OG.systems.rendering || {};
+(function initRenderingSystem(window, OG) {
 
   function wrapPolygonIndex(index, sides) {
     return ((index % sides) + sides) % sides;
@@ -71,11 +68,11 @@
       const rotation = -Math.PI / 2;
       const corners = [];
       let phase = 0;
-      if (typeof window.OrbitGame !== 'undefined' && window.OrbitGame.systems) {
-         if (window.OrbitGame.systems.phoenixBossV2 && window.OrbitGame.systems.phoenixBossV2.isActive()) {
-            phase = window.OrbitGame.systems.phoenixBossV2.getPhaseIdx() || 0;
-         } else if (window.OrbitGame.systems.phoenixBoss && window.OrbitGame.systems.phoenixBoss.isActive()) {
-            phase = window.OrbitGame.systems.phoenixBoss.getPhaseIdx() || 0;
+      if (typeof OG !== 'undefined' && OG.systems) {
+         if (OG.systems.phoenixBossV2 && OG.systems.phoenixBossV2.isActive()) {
+            phase = OG.systems.phoenixBossV2.getPhaseIdx() || 0;
+         } else if (OG.systems.phoenixBoss && OG.systems.phoenixBoss.isActive()) {
+            phase = OG.systems.phoenixBoss.getPhaseIdx() || 0;
          }
       }
       for (let i = 0; i < sides; i++) {
@@ -234,4 +231,4 @@
 
   OG.systems.rendering.getPointOnShape = getPointOnShape;
   OG.systems.rendering.buildShapePath = buildShapePath;
-})(window);
+})(window, window.OG);

@@ -1,7 +1,6 @@
-(function initState(window) {
-  const OG = window.OrbitGame;
+(function initState(window, OG) {
 
-  OG.state = Object.assign(OG.state || {}, {
+  OG.state = Object.assign(OG.state, {
     initialized: false,
     run: {
       running: false,
@@ -32,4 +31,4 @@
 
   // Legacy globals used by inline handlers and existing game code.
   window.audioCtx = window.audioCtx || null;
-})(window);
+})(window, window.OG);

@@ -1,7 +1,5 @@
-(function initPhoenixBossV2System(window) {
+(function initPhoenixBossV2System(window, OG) {
   'use strict';
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
 
   // ─── CONFIG V2 ───────────────────────────────────────────────────────────
   const BONUS_LIFE_AT   = 60;    // earn +1 life at this total elapsed (seconds)
@@ -843,4 +841,4 @@
   // ─── EXPORT ──────────────────────────────────────────────────────────────
   OG.systems.phoenixBossV2 = { start, stop, tick, spawnWave, onTargetHit, onMiss, endRun, isActive, getPhaseIdx };
 
-})(window);
+})(window, window.OG);
