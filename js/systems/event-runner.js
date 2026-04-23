@@ -1,6 +1,4 @@
-(function initEventRunner(window) {
-  const OG = window.OrbitGame = window.OrbitGame || {};
-  OG.systems = OG.systems || {};
+(function initEventRunner(window, OG) {
 
   function cleanupEventBossState() {
     const lockedOverlay = document.getElementById('lockedWorldOverlay');
@@ -83,20 +81,20 @@
     bossPhase = 1;
     isBossPhaseTwo = false;
 
-    if (OrbitGame.entities && OrbitGame.entities.boss) {
-      OrbitGame.entities.boss.triggerBossIntro();
+    if (OG.entities && OG.entities.boss) {
+      OG.entities.boss.triggerBossIntro();
     }
-    OrbitGame.core.loop.startMainLoop();
+    OG.core.loop.startMainLoop();
   }
 
   function startPhoenixRun() {
     console.debug('[event-runner] startPhoenixRun');
     // Stop any previous phoenix run
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
-      OrbitGame.systems.phoenixBoss.stop();
+    if (OG.systems && OG.systems.phoenixBoss) {
+      OG.systems.phoenixBoss.stop();
     }
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
-      OrbitGame.systems.phoenixBossV2.stop();
+    if (OG.systems && OG.systems.phoenixBossV2) {
+      OG.systems.phoenixBossV2.stop();
     }
     launchBossChallenge({
       id: 'phoenix',
@@ -112,18 +110,18 @@
       text: ''
     });
     // Start the phoenix boss system (runs the timer, phases, scoring)
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
-      OrbitGame.systems.phoenixBoss.start();
+    if (OG.systems && OG.systems.phoenixBoss) {
+      OG.systems.phoenixBoss.start();
     }
   }
 
   function startPhoenixRunV2() {
     console.debug('[event-runner] startPhoenixRunV2');
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBoss) {
-      OrbitGame.systems.phoenixBoss.stop();
+    if (OG.systems && OG.systems.phoenixBoss) {
+      OG.systems.phoenixBoss.stop();
     }
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
-      OrbitGame.systems.phoenixBossV2.stop();
+    if (OG.systems && OG.systems.phoenixBossV2) {
+      OG.systems.phoenixBossV2.stop();
     }
     launchBossChallenge({
       id: 'phoenix',
@@ -138,8 +136,8 @@
       blackout: null,
       text: ''
     });
-    if (OrbitGame.systems && OrbitGame.systems.phoenixBossV2) {
-      OrbitGame.systems.phoenixBossV2.start();
+    if (OG.systems && OG.systems.phoenixBossV2) {
+      OG.systems.phoenixBossV2.start();
     }
   }
 
@@ -158,4 +156,4 @@
   window.startAbyssRun = startAbyssRun;
   window.startPhoenixRun = startPhoenixRun;
   window.startPhoenixRunV2 = startPhoenixRunV2;
-})(window);
+})(window, window.OG);

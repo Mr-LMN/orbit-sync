@@ -1,6 +1,4 @@
-(function initTargetHitProfiles(window) {
-  const OG = window.OrbitGame;
-  OG.entities = OG.entities || {};
+(function initTargetHitProfiles(window, OG) {
 
   function inArc(normalizeAngle, a, start, end) {
     const s = normalizeAngle(start);
@@ -81,4 +79,4 @@
     isHit,
     getHitQuality
   };
-})(window);
+})(window, window.OG);

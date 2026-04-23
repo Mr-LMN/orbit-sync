@@ -1,6 +1,4 @@
-(function initTutorial(window, document) {
-  const OG = window.OrbitGame || {};
-  OG.systems = OG.systems || {};
+(function initTutorial(window, OG, document) {
 
   const STORAGE_KEY = 'orbitSync_masterTutorial_v2';
   const LEGACY_KEY  = 'orbitSync_masterTutorial';
@@ -984,4 +982,4 @@
     checkMenuRouting:    startMasterTutorialIfNeeded,
     completePhase:       function() {}
   };
-})(window, document);
+})(window, window.OG, document);

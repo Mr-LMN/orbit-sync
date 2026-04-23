@@ -1,5 +1,4 @@
-(function initMusicModule(window) {
-  const OG = window.OrbitGame;
+(function initMusicModule(window, OG) {
   const audio = OG.audio;
 
   async function loadAudioFile(url) {
@@ -75,7 +74,6 @@
         audio.baseSource.loop = true;
         audio.bossSource.loop = true;
 
-
         audio.baseGain = audio.audioCtx.createGain();
         audio.bossGain = audio.audioCtx.createGain();
 
@@ -95,7 +93,6 @@
         audio.baseGain.connect(audio.musicFilter);
         audio.bossSource.connect(audio.bossGain);
         audio.bossGain.connect(audio.musicFilter);
-
 
         const startTime = audio.audioCtx.currentTime + 0.1;
         audio.baseSource.start(startTime);
@@ -189,7 +186,6 @@
     updateMusicState(multiplier, !!isMusicBoss);
   }
 
-
   // ── ADAPTIVE MUSIC LAYERS — 8 explicit levels tied to combo multiplier ────
   // Each multiplier step is a full audio state: base volume, boss mix level,
   // playback rate, and music filter cutoff frequency.
@@ -273,7 +269,6 @@
     audio.bossGain.gain.linearRampToValueAtTime(bossVols[idx], now + 0.6);
   }
 
-
   audio.loadAudioFile = loadAudioFile;
   audio.getBaseTrackForLevel = getBaseTrackForLevel;
   audio.getBossTrackForLevel = getBossTrackForLevel;
@@ -321,4 +316,4 @@
   window.hasActiveMusicGraph = hasActiveMusicGraph;
   window.duckMusicForLastLife = duckMusicForLastLife;
   window.unduckMusic = unduckMusic;
-})(window);
+})(window, window.OG);

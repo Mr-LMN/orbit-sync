@@ -1,7 +1,4 @@
-(function initProgressionSystem(window) {
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
-  OG.systems.progression = OG.systems.progression || {};
+(function initProgressionSystem(window, OG) {
 
   const STAR_THRESHOLDS = {
     default: {
@@ -203,7 +200,6 @@
         }
       }
 
-
       saveData();
 
       if (wasBoss || worldAdvanced || campaignComplete) {
@@ -272,4 +268,4 @@
   OG.systems.progression.markStageStartRunStats = markStageStartRunStats;
   OG.systems.progression.updateWaveUI = updateWaveUI;
   OG.systems.progression.triggerStageClear = triggerStageClear;
-})(window);
+})(window, window.OG);

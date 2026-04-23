@@ -1,5 +1,4 @@
-(function initHaptics(window) {
-  const OG = window.OrbitGame;
+(function initHaptics(window, OG) {
   const audio = OG.audio;
 
   function vibrate(pattern) {
@@ -9,4 +8,4 @@
 
   audio.vibrate = vibrate;
   window.vibrate = vibrate;
-})(window);
+})(window, window.OG);

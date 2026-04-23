@@ -1,7 +1,4 @@
-(function initShop(window) {
-  const OG = window.OrbitGame;
-  OG.ui = OG.ui || {};
-  OG.ui.shop = OG.ui.shop || {};
+(function initShop(window, OG) {
 
   // Rarity color palette — single source used by both workshop and shop.
   const RARITY_COLOR = {
@@ -433,4 +430,4 @@
   OG.ui.shop.updateWorkshopUI = updateWorkshopUI;
   OG.ui.shop.buyItem          = buyItem;
   OG.ui.shop.equipSkin        = equipSkin;
-})(window);
+})(window, window.OG);

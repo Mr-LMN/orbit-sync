@@ -1,6 +1,4 @@
-(function initBoot(window) {
-  const OG = window.OrbitGame;
-  OG.boot = OG.boot || {};
+(function initBoot(window, OG) {
 
   function init() {
     if (OG.state.initialized) return true;
@@ -57,4 +55,4 @@
 
   OG.boot.init = init;
   OG.boot.init();
-})(window);
+})(window, window.OG);

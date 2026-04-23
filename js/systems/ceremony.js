@@ -1,7 +1,5 @@
-(function initCeremonySystem(window) {
+(function initCeremonySystem(window, OG) {
   'use strict';
-  const OG = window.OrbitGame;
-  OG.systems = OG.systems || {};
 
   let _showing = false;
 
@@ -240,4 +238,4 @@
     showWorldUnlock
   };
 
-})(window);
+})(window, window.OG);

@@ -1,7 +1,4 @@
-(function initMenus(window) {
-  const OG = window.OrbitGame;
-  OG.ui = OG.ui || {};
-  OG.ui.menus = OG.ui.menus || {};
+(function initMenus(window, OG) {
 
   let _pendingRunType = null;
   let tutorialHardModeSeen = false;
@@ -83,7 +80,7 @@
     markScoreCoinDirty(true);
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
-    OrbitGame.core.loop.startMainLoop();
+    OG.core.loop.startMainLoop();
   }
 
   function startCampaign() {
@@ -489,7 +486,7 @@
     if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
-    OrbitGame.core.loop.startMainLoop();
+    OG.core.loop.startMainLoop();
   }
 
   function startBestScoreRun() {
@@ -499,7 +496,7 @@
   function _launchHardMode() {
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
-    if (typeof OrbitGame !== 'undefined') OrbitGame.state.legacy.hardMode = true;
+    if (typeof OG !== 'undefined') OG.state.legacy.hardMode = true;
 
     // Hard Mode Augment Tutorial Check
     const hasSeenHardModeTutorial = OG.storage.getItem('orbitSync_hm_tutorial') === '1';
@@ -539,13 +536,12 @@
     document.body.classList.add('hard-mode');
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
-    OrbitGame.core.loop.startMainLoop();
+    OG.core.loop.startMainLoop();
   }
 
   function startHardModeRun() {
     _launchHardMode();
   }
-
 
   function selectAugment(augmentId, cost = 0, isTutorial = false) {
     // Check if player can afford it
@@ -634,30 +630,29 @@
   }
 
   function startPhoenixRun() {
-    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startPhoenixRun !== 'function') {
+    if (!OG.systems || !OG.systems.eventRunner || typeof OG.systems.eventRunner.startPhoenixRun !== 'function') {
       console.warn('[menus] eventRunner.startPhoenixRun is unavailable');
       return;
     }
-    return OrbitGame.systems.eventRunner.startPhoenixRun();
+    return OG.systems.eventRunner.startPhoenixRun();
   }
 
   function startPhoenixRunV2() {
-    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startPhoenixRunV2 !== 'function') {
+    if (!OG.systems || !OG.systems.eventRunner || typeof OG.systems.eventRunner.startPhoenixRunV2 !== 'function') {
       console.warn('[menus] eventRunner.startPhoenixRunV2 is unavailable');
       return;
     }
-    return OrbitGame.systems.eventRunner.startPhoenixRunV2();
+    return OG.systems.eventRunner.startPhoenixRunV2();
   }
 
   // Legacy alias kept for safety
   function startAbyssRun() {
-    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startAbyssRun !== 'function') {
+    if (!OG.systems || !OG.systems.eventRunner || typeof OG.systems.eventRunner.startAbyssRun !== 'function') {
       console.warn('[menus] eventRunner.startAbyssRun is unavailable');
       return;
     }
-    return OrbitGame.systems.eventRunner.startAbyssRun();
+    return OG.systems.eventRunner.startAbyssRun();
   }
-
 
 
   function refreshMenuWorldPreview() {
@@ -1318,4 +1313,4 @@
     startEventCountdownTicker();
   }, 160);
 
-})(window);
+})(window, window.OG);

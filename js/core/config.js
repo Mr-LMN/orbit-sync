@@ -1,7 +1,6 @@
-(function initConfig(window) {
-  const OG = window.OrbitGame;
+(function initConfig(window, OG) {
 
-  OG.config = Object.assign(OG.config || {}, {
+  OG.config = Object.assign(OG.config, {
     storageKeys: {
       settings: 'orbitSync.settings',
       profile: 'orbitSync.profile',
@@ -14,4 +13,4 @@
       currentWorld: 1
     }
   });
-})(window);
+})(window, window.OG);

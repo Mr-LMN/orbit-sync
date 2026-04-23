@@ -24,10 +24,7 @@
 //   Boolean effects are treated as flags (present = active).
 //   Numeric effects are additive deltas (see runtime.js getCombinedValue).
 
-(function(window) {
-  const OG = window.OrbitGame = window.OrbitGame || {};
-  OG.entities = OG.entities || {};
-  OG.entities.spheres = OG.entities.spheres || {};
+(function(window, OG) {
 
   const SPHERES = {
 
@@ -159,4 +156,4 @@
   };
 
   OG.entities.spheres.registry = SPHERES;
-})(window);
+})(window, window.OG);
