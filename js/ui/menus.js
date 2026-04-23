@@ -1284,6 +1284,7 @@
   window.startCampaign = startCampaign;
   window.toggleShop = toggleShop;
   window.toggleSettings = toggleSettings;
+  window.switchMenuTab = switchMenuTab;
 
   // ── PREVIEW ANIMATION LOOP ────────────────────────────────────────────────
   function _startPreviewAnimation() {
