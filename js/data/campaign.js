@@ -1,4 +1,5 @@
-(function initCampaign(window, OG) {
+(function initCampaign(window) {
+  const OG = window.OrbitGame;
 
   const campaign = [
     { id: '1-1', title: 'The Basics', hitsNeeded: 4, speed: 0.028, lives: 3, targets: 1, moveSpeed: 0, reverse: false, text: 'Tap when the orb enters the zone to score. Misses cost lives.' },
@@ -308,6 +309,8 @@
       text: 'BOSS: Extinguish the inferno.'
     }
   ];
+
+  OG.data = OG.data || {};
   if (typeof OG.data.registerCampaignStages === 'function') {
     OG.data.registerCampaignStages(campaign);
   } else {
@@ -322,4 +325,4 @@
 
   // Legacy alias for existing logic during migration.
   window.campaign = campaign;
-})(window, window.OG);
+})(window);

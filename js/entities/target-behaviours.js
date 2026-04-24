@@ -1,4 +1,6 @@
-(function initTargetBehaviours(window, OG) {
+(function initTargetBehaviours(window) {
+  const OG = window.OrbitGame;
+  OG.entities = OG.entities || {};
 
   function applyDualHit(t, hitCtx) {
     const centerAngle = (typeof t.angle === 'number') ? t.angle : hitCtx.normalizeAngle(t.start + (t.size / 2));
@@ -159,4 +161,4 @@
   }
 
   OG.entities.targetBehaviours = { applyHit };
-})(window, window.OG);
+})(window);

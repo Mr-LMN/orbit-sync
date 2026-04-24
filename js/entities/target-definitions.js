@@ -1,4 +1,6 @@
-(function initTargetDefinitions(window, OG) {
+(function initTargetDefinitions(window) {
+  const OG = window.OrbitGame;
+  OG.entities = OG.entities || {};
 
   const targetDefinitions = {
     standard: {
@@ -101,4 +103,4 @@
     all: targetDefinitions,
     get: getTargetDefinition
   };
-})(window, window.OG);
+})(window);

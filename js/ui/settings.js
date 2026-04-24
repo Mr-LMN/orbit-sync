@@ -1,5 +1,9 @@
-(function initSettings(window, OG) {
+(function initSettings(window) {
+  const OG = window.OrbitGame;
   const audio = OG.audio;
+  OG.ui = OG.ui || {};
+  OG.ui.settings = OG.ui.settings || {};
+  OG.debug = OG.debug || {};
 
   const ADMIN_HASH_TARGET = 3138968151; // hash of '040404'
   let adminPanelVisible = false;
@@ -381,13 +385,13 @@
 
   function setMusicVolume(val) {
     const v = parseInt(val, 10) / 100;
-    if (typeof OG !== 'undefined' && OG.audio) {
-      OG.audio.musicEnabled = v > 0;
-      if (OG.audio.baseGain && OG.audio.audioCtx) {
-        const now2 = OG.audio.audioCtx.currentTime;
+    if (typeof OrbitGame !== 'undefined' && OrbitGame.audio) {
+      OrbitGame.audio.musicEnabled = v > 0;
+      if (OrbitGame.audio.baseGain && OrbitGame.audio.audioCtx) {
+        const now2 = OrbitGame.audio.audioCtx.currentTime;
         const target2 = Math.min(0.48, v * 0.48);
-        OG.audio.baseGain.gain.cancelScheduledValues(now2);
-        OG.audio.baseGain.gain.linearRampToValueAtTime(target2, now2 + 0.3);
+        OrbitGame.audio.baseGain.gain.cancelScheduledValues(now2);
+        OrbitGame.audio.baseGain.gain.linearRampToValueAtTime(target2, now2 + 0.3);
       }
     }
     const btn = document.getElementById('musicMuteBtn');
@@ -400,8 +404,8 @@
 
   function setSfxVolume(val) {
     const v = parseInt(val, 10) / 100;
-    if (typeof OG !== 'undefined' && OG.audio) {
-      OG.audio.sfxEnabled = v > 0;
+    if (typeof OrbitGame !== 'undefined' && OrbitGame.audio) {
+      OrbitGame.audio.sfxEnabled = v > 0;
     }
     const btn = document.getElementById('sfxMuteBtn');
     const slider = document.getElementById('sfxVolumeSlider');
@@ -445,4 +449,4 @@
   OG.ui.settings.toggleHapticsSetting = toggleHapticsSetting;
   window.setMusicVolume = setMusicVolume;
   window.setSfxVolume = setSfxVolume;
-})(window, window.OG);
+})(window);

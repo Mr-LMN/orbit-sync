@@ -1,5 +1,7 @@
-(function initPrestigeSystem(window, OG) {
+(function initPrestigeSystem(window) {
   'use strict';
+  const OG = window.OrbitGame;
+  OG.systems = OG.systems || {};
 
   const STORAGE_KEY = 'orbitSync_orbitRank_v1';
 
@@ -306,4 +308,4 @@
     queueWorldUnlock,
   };
 
-})(window, window.OG);
+})(window);

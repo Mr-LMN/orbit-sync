@@ -1,6 +1,7 @@
-(function initUtils(window, OG) {
+(function initUtils(window) {
+  const OG = window.OrbitGame;
 
-  OG.utils = Object.assign(OG.utils, {
+  OG.utils = Object.assign(OG.utils || {}, {
     clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
     },
@@ -11,4 +12,4 @@
       return Math.random() * (max - min) + min;
     }
   });
-})(window, window.OG);
+})(window);

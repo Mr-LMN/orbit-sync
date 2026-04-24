@@ -1,4 +1,5 @@
-(function initSfxModule(window, OG) {
+(function initSfxModule(window) {
+  const OG = window.OrbitGame;
   const audio = OG.audio;
 
   // Global Delay/Reverb Bus setup for Tron-like spaciousness
@@ -39,8 +40,6 @@
     if (audio.shouldThrottleAudio(true)) return;
 
     initSynthBus();
-
-    if (!Number.isFinite(startTime)) startTime = audio.audioCtx.currentTime;
 
     const osc = audio.audioCtx.createOscillator();
     osc.type = type; // 'square', 'sawtooth', 'triangle', 'sine'
@@ -485,6 +484,7 @@
     soundGood(multiplier);
   }
 
+
   // ══════════════════════════════════════════════════════════
   // PHASE 2 AUDIO UPGRADES
   // ══════════════════════════════════════════════════════════
@@ -809,4 +809,4 @@
     soundSupernovaHit,
     cleanupPhoenixAudio
   });
-})(window, window.OG);
+})(window);

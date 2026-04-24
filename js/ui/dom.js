@@ -1,4 +1,5 @@
-(function initDom(window, OG, document) {
+(function initDom(window, document) {
+  const OG = window.OrbitGame;
 
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas ? canvas.getContext('2d') : null;
@@ -88,10 +89,10 @@
     adSimulationOverlay: document.getElementById('adSimulationOverlay')
 };
 
-  OG.dom = Object.assign(OG.dom, { canvas, ctx, ui });
+  OG.dom = Object.assign(OG.dom || {}, { canvas, ctx, ui });
 
   // Legacy aliases preserved while the monolith is decomposed.
   window.canvas = canvas;
   window.ctx = ctx;
   window.ui = ui;
-})(window, window.OG, document);
+})(window, document);

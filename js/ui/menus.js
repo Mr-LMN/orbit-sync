@@ -1,10 +1,12 @@
-(function initMenus(window, OG) {
+(function initMenus(window) {
+  const OG = window.OrbitGame;
+  OG.ui = OG.ui || {};
+  OG.ui.menus = OG.ui.menus || {};
 
   let _pendingRunType = null;
   let tutorialHardModeSeen = false;
   let _previewAnimFrame = 0;
   let _previewAnimInterval = null;
-  let _previewIsLocked = false;
   let _hubOrbAnimId = null;
 
   // ── HUB ORB LIVE RENDERER ─────────────────────────────────────────────────
@@ -81,7 +83,7 @@
     markScoreCoinDirty(true);
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
-    OG.core.loop.startMainLoop();
+    OrbitGame.core.loop.startMainLoop();
   }
 
   function startCampaign() {
@@ -487,7 +489,7 @@
     if (ui.arenaInfo) ui.arenaInfo.style.display = 'block';
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
-    OG.core.loop.startMainLoop();
+    OrbitGame.core.loop.startMainLoop();
   }
 
   function startBestScoreRun() {
@@ -497,7 +499,7 @@
   function _launchHardMode() {
     const maxUnlocked = Math.max(1, Number(maxWorldUnlocked) || 1);
     if (menuSelectedWorld > maxUnlocked) return;
-    if (typeof OG !== 'undefined') OG.state.legacy.hardMode = true;
+    if (typeof OrbitGame !== 'undefined') OrbitGame.state.legacy.hardMode = true;
 
     // Hard Mode Augment Tutorial Check
     const hasSeenHardModeTutorial = OG.storage.getItem('orbitSync_hm_tutorial') === '1';
@@ -537,12 +539,13 @@
     document.body.classList.add('hard-mode');
     setOverlayState('cinematic');
     loadLevel(currentLevelIdx);
-    OG.core.loop.startMainLoop();
+    OrbitGame.core.loop.startMainLoop();
   }
 
   function startHardModeRun() {
     _launchHardMode();
   }
+
 
   function selectAugment(augmentId, cost = 0, isTutorial = false) {
     // Check if player can afford it
@@ -631,29 +634,30 @@
   }
 
   function startPhoenixRun() {
-    if (!OG.systems || !OG.systems.eventRunner || typeof OG.systems.eventRunner.startPhoenixRun !== 'function') {
+    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startPhoenixRun !== 'function') {
       console.warn('[menus] eventRunner.startPhoenixRun is unavailable');
       return;
     }
-    return OG.systems.eventRunner.startPhoenixRun();
+    return OrbitGame.systems.eventRunner.startPhoenixRun();
   }
 
   function startPhoenixRunV2() {
-    if (!OG.systems || !OG.systems.eventRunner || typeof OG.systems.eventRunner.startPhoenixRunV2 !== 'function') {
+    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startPhoenixRunV2 !== 'function') {
       console.warn('[menus] eventRunner.startPhoenixRunV2 is unavailable');
       return;
     }
-    return OG.systems.eventRunner.startPhoenixRunV2();
+    return OrbitGame.systems.eventRunner.startPhoenixRunV2();
   }
 
   // Legacy alias kept for safety
   function startAbyssRun() {
-    if (!OG.systems || !OG.systems.eventRunner || typeof OG.systems.eventRunner.startAbyssRun !== 'function') {
+    if (!OrbitGame.systems || !OrbitGame.systems.eventRunner || typeof OrbitGame.systems.eventRunner.startAbyssRun !== 'function') {
       console.warn('[menus] eventRunner.startAbyssRun is unavailable');
       return;
     }
-    return OG.systems.eventRunner.startAbyssRun();
+    return OrbitGame.systems.eventRunner.startAbyssRun();
   }
+
 
 
   function refreshMenuWorldPreview() {
@@ -683,7 +687,6 @@
       window.currentWorldVisualTheme = currentWorldVisualTheme;
     }
 
-    _previewIsLocked = false;
     drawWorldPreviewCanvas(false);
   }
 
@@ -693,11 +696,10 @@
       || [];
     if (!campaignData.length) return;
     levelData = campaignData[0];
-    currentWorldPalette = { primary: '#444444', secondary: '#222222', color1: '#444444', color2: '#222222' };
+    currentWorldPalette = { color1: '#444', color2: '#222' };
     currentWorldShape = 'circle';
     currentWorldVisualTheme = { type: 'grid' };
 
-    _previewIsLocked = true;
     drawWorldPreviewCanvas(true);
   }
 
@@ -1280,18 +1282,13 @@
   window.switchMenuTab    = switchMenuTab;
   window.handleHeroPanelClick = handleHeroPanelClick;
   window.startContinueRun = startContinueRun;
-  window.changeWorld = changeWorld;
-  window.startCampaign = startCampaign;
-  window.toggleShop = toggleShop;
-  window.toggleSettings = toggleSettings;
-  window.switchMenuTab = switchMenuTab;
 
   // ── PREVIEW ANIMATION LOOP ────────────────────────────────────────────────
   function _startPreviewAnimation() {
     if (_previewAnimInterval) return; // Already running
     _previewAnimInterval = setInterval(() => {
       _previewAnimFrame = (_previewAnimFrame + 2) % 360;
-      drawWorldPreviewCanvas(_previewIsLocked);
+      drawWorldPreviewCanvas(false);
     }, 1000 / 30); // ~30fps for smooth animation
   }
 
@@ -1321,4 +1318,4 @@
     startEventCountdownTicker();
   }, 160);
 
-})(window, window.OG);
+})(window);
