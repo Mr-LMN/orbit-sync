@@ -435,7 +435,7 @@
               }
           }
           if (labelEl) labelEl.innerText = hasProgress ? 'CONTINUE' : 'START';
-          if (subEl) subEl.innerText = `W${world} · S${ctaStage}`;
+          if (subEl) subEl.innerText = `STAGE ${ctaStage} - WORLD ${world}`;
       }
 
       // ── Challenges & Streak ────────────────────────────────────────────────
