@@ -1,4 +1,7 @@
-(function initCollisionSystem(window, OG) {
+(function initCollisionSystem(window) {
+  const OG = window.OrbitGame;
+  OG.systems = OG.systems || {};
+  OG.systems.collision = OG.systems.collision || {};
 
   function normalizeAngle(a) {
     return ((a % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
@@ -25,4 +28,4 @@
   OG.systems.collision.normalizeAngle = normalizeAngle;
   OG.systems.collision.signedAngularDistance = signedAngularDistance;
   OG.systems.collision.getTargetApproachIntensity = getTargetApproachIntensity;
-})(window, window.OG);
+})(window);

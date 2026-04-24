@@ -1,4 +1,7 @@
-(function initOverlay(window, OG) {
+(function initOverlay(window) {
+  const OG = window.OrbitGame;
+  OG.ui = OG.ui || {};
+  OG.ui.overlay = OG.ui.overlay || {};
 
   let _adSimTimeout = null;
   window.showSimulatedAd = function(onComplete) {
@@ -113,4 +116,4 @@
   OG.ui.overlay.animateScore = animateScore;
   OG.ui.overlay.showXPEarned = showXPEarned;
   OG.ui.overlay.showRunGrade = showRunGrade;
-})(window, window.OG);
+})(window);

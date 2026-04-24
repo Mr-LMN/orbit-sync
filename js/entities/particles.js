@@ -1,4 +1,7 @@
-(function initParticles(window, OG) {
+(function initParticles(window) {
+  const OG = window.OrbitGame;
+  OG.entities = OG.entities || {};
+  OG.entities.particles = OG.entities.particles || {};
 
   function getParticle() {
     return particlePool.pop() || {};
@@ -54,4 +57,4 @@
   OG.entities.particles.releaseParticle = releaseParticle;
   OG.entities.particles.createParticles = createParticles;
   OG.entities.particles.createUpwardBurstParticles = createUpwardBurstParticles;
-})(window, window.OG);
+})(window);

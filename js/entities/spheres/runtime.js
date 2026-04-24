@@ -30,7 +30,10 @@
 //   equipPerk(sphereId, slotIndex, perkId|null)  → saves to storage
 //   grantXP(sphereId, amount)                    → { leveled, newLevel }
 
-(function(window, OG) {
+(function(window) {
+  const OG = window.OrbitGame = window.OrbitGame || {};
+  OG.entities = OG.entities || {};
+  OG.entities.spheres = OG.entities.spheres || {};
 
   // ── STORAGE ───────────────────────────────────────────────────
   // All sphere/perk progression data lives under a single JSON blob.
@@ -329,4 +332,4 @@
   };
 
   OG.entities.spheres.runtime = SphereRuntime;
-})(window, window.OG);
+})(window);

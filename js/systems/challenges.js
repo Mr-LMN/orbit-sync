@@ -1,5 +1,7 @@
-(function initChallengesSystem(window, OG) {
+(function initChallengesSystem(window) {
   'use strict';
+  const OG = window.OrbitGame;
+  OG.systems = OG.systems || {};
 
   const STORAGE_KEY = 'orbitSync_dailyChallenges_v1';
 
@@ -533,4 +535,4 @@
     refreshStreakUI();
   }, 300);
 
-})(window, window.OG);
+})(window);

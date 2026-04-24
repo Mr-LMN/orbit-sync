@@ -1,4 +1,7 @@
-(function initEffects(window, OG) {
+(function initEffects(window) {
+  const OG = window.OrbitGame;
+  OG.entities = OG.entities || {};
+  OG.entities.effects = OG.entities.effects || {};
 
   function getPopup() {
     return popupPool.pop() || {};
@@ -10,7 +13,7 @@
 
   function createPopup(x, y, text, color, hitQuality = null) {
     const isMobile = window.innerWidth < 768;
-    const useHeavyEffects = !isMobile || (typeof OG !== 'undefined' && OG.state && OG.state.legacy.multiplier > 5);
+    const useHeavyEffects = !isMobile || (typeof OrbitGame !== 'undefined' && OrbitGame.state && OrbitGame.state.legacy.multiplier > 5);
 
     // De-clutter strategy: Filter out mundane feedback unless requested heavily
     if (text === 'SLOPPY' || text === 'EARLY' || text === 'LATE' || text === 'GOOD' || hitQuality === 'ok' || hitQuality === 'good') {
@@ -209,4 +212,4 @@
   OG.entities.effects.triggerIntensity = triggerIntensity;
   OG.entities.effects.clearIntensity = clearIntensity;
   OG.entities.effects.showTempText = showTempText;
-})(window, window.OG);
+})(window);

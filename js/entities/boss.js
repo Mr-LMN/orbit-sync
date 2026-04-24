@@ -1,4 +1,7 @@
-(function initBossEntity(window, OG) {
+(function initBossEntity(window) {
+  const OG = window.OrbitGame;
+  OG.entities = OG.entities || {};
+  OG.entities.boss = OG.entities.boss || {};
   let introSequenceTimeouts = [];
   function getBossDisplayMeta() {
     if (!levelData || !levelData.boss) {
@@ -373,4 +376,4 @@
   OG.entities.boss.pauseGameplayBriefly = pauseGameplayBriefly;
   OG.entities.boss.triggerBossIntro = triggerBossIntro;
   OG.entities.boss.playBossCinematic = playBossCinematic;
-})(window, window.OG);
+})(window);

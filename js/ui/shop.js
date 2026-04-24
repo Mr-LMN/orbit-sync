@@ -1,4 +1,7 @@
-(function initShop(window, OG) {
+(function initShop(window) {
+  const OG = window.OrbitGame;
+  OG.ui = OG.ui || {};
+  OG.ui.shop = OG.ui.shop || {};
 
   // Rarity color palette — single source used by both workshop and shop.
   const RARITY_COLOR = {
@@ -127,29 +130,12 @@
         btn.className = 'btn btn-outline' + (isEquipped ? ' equipped' : '');
         btn.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:12px; text-align:left; width:100%;';
         btn.disabled = isEquipped;
-
-        const infoWrap = document.createElement('div');
-        const nameDiv = document.createElement('div');
-        nameDiv.style.fontFamily = "'Orbitron',sans-serif";
-        nameDiv.style.fontSize = '0.9rem';
-        nameDiv.textContent = perk.icon + ' ' + perk.name;
-
-        const descDiv = document.createElement('div');
-        descDiv.style.fontSize = '0.7rem';
-        descDiv.style.color = '#aaa';
-        descDiv.style.marginTop = '4px';
-        descDiv.textContent = perk.description;
-
-        infoWrap.appendChild(nameDiv);
-        infoWrap.appendChild(descDiv);
-
-        const statusDiv = document.createElement('div');
-        statusDiv.style.marginLeft = '12px';
-        statusDiv.style.whiteSpace = 'nowrap';
-        statusDiv.textContent = (isEquipped ? 'EQUIPPED' : 'SELECT');
-
-        btn.appendChild(infoWrap);
-        btn.appendChild(statusDiv);
+        btn.innerHTML =
+          '<div>' +
+            '<div style="font-family:\'Orbitron\',sans-serif; font-size:0.9rem;">' + perk.icon + ' ' + perk.name + '</div>' +
+            '<div style="font-size:0.7rem; color:#aaa; margin-top:4px;">' + perk.description + '</div>' +
+          '</div>' +
+          '<div style="margin-left:12px; white-space:nowrap;">' + (isEquipped ? 'EQUIPPED' : 'SELECT') + '</div>';
 
         if (!isEquipped) {
           btn.onclick = (function(pid) {
@@ -217,7 +203,7 @@
     if (starsEl) {
       if (maxStars > 1) {
         starsEl.style.display = 'block';
-        starsEl.textContent = '★'.repeat(currentStars) + '☆'.repeat(maxStars - currentStars);
+        starsEl.innerHTML = '★'.repeat(currentStars) + '☆'.repeat(maxStars - currentStars);
       } else {
         starsEl.style.display = 'none';
       }
@@ -275,19 +261,10 @@
         const perk = pid ? perkReg[pid] : null;
         if (perk) {
           slotDiv.className += ' slot-filled';
-          const iconSpan = document.createElement('span');
-          iconSpan.style.fontSize = '1.3rem';
-          iconSpan.title = perk.name;
-          iconSpan.textContent = perk.icon;
-          slotDiv.appendChild(iconSpan);
+          slotDiv.innerHTML = '<span style="font-size:1.3rem;" title="' + perk.name + '">' + perk.icon + '</span>';
         } else {
           slotDiv.className += ' slot-empty';
-          const plusSpan = document.createElement('span');
-          plusSpan.style.color = '#555';
-          plusSpan.style.fontSize = '1.4rem';
-          plusSpan.style.lineHeight = '1';
-          plusSpan.textContent = '+';
-          slotDiv.appendChild(plusSpan);
+          slotDiv.innerHTML = '<span style="color:#555; font-size:1.4rem; line-height:1;">+</span>';
         }
         slotDiv.addEventListener('click', (function(idx) {
           return function() { openPerkSelectionModal(idx); };
@@ -300,19 +277,9 @@
           if (slotMap[lvl] > i) { unlockAt = lvl; break; }
         }
         slotDiv.className += ' slot-locked';
-        const lockSpan = document.createElement('span');
-        lockSpan.style.fontSize = '0.5rem';
-        lockSpan.style.color = '#333';
-        lockSpan.style.textAlign = 'center';
-        lockSpan.style.lineHeight = '1.3';
-        lockSpan.style.fontFamily = "'Orbitron',sans-serif";
-        lockSpan.style.display = 'block';
-        lockSpan.textContent = '🔒';
-        const lvBreak = document.createElement('br');
-        lockSpan.appendChild(lvBreak);
-        lockSpan.appendChild(document.createTextNode('LV' + unlockAt));
-
-        slotDiv.appendChild(lockSpan);
+        slotDiv.innerHTML =
+          '<span style="font-size:0.5rem; color:#333; text-align:center; line-height:1.3; font-family:\'Orbitron\',sans-serif;">' +
+          '🔒<br>LV' + unlockAt + '</span>';
         slotDiv.title = 'Reach Level ' + unlockAt + ' to unlock';
       }
 
@@ -466,6 +433,4 @@
   OG.ui.shop.updateWorkshopUI = updateWorkshopUI;
   OG.ui.shop.buyItem          = buyItem;
   OG.ui.shop.equipSkin        = equipSkin;
-  window.buyItem   = buyItem;
-  window.equipSkin = equipSkin;
-})(window, window.OG);
+})(window);

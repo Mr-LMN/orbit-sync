@@ -1,4 +1,6 @@
-(function initTargetRenderers(window, OG) {
+(function initTargetRenderers(window) {
+  const OG = window.OrbitGame;
+  OG.entities = OG.entities || {};
 
   function renderCornerTarget(ctx, t, rc) {
     ctx.save();
@@ -350,4 +352,4 @@
     renderTarget,
     renderResonanceAccent
   };
-})(window, window.OG);
+})(window);
