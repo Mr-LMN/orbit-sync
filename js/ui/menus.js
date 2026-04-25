@@ -407,6 +407,8 @@
       const eventPanel  = document.getElementById('hubStatEventPanel');
       const eventValEl  = document.getElementById('hubStatEvent');
       const eventBtn    = document.getElementById('hubEventBtn');
+      const liveEventPanel = document.getElementById('liveEventPanel');
+      
       if (eventValEl) {
           eventValEl.innerText = eventActive ? '3D 14H' : 'LOCKED';
           eventValEl.style.color = eventActive ? '' : 'rgba(255,255,255,0.25)';
@@ -415,6 +417,15 @@
       if (eventBtn) {
           eventBtn.style.opacity = eventActive ? '1' : '0.4';
           eventBtn.style.pointerEvents = eventActive ? 'auto' : 'none';
+      }
+      if (liveEventPanel) {
+          liveEventPanel.style.opacity = eventActive ? '1' : '0.4';
+          liveEventPanel.style.pointerEvents = eventActive ? 'auto' : 'none';
+          const badge = liveEventPanel.querySelector('.event-panel-badge');
+          if (badge) {
+              badge.innerText = eventActive ? '🔴 LIVE NOW · WEEKLY EVENT' : '⬡ EVENT LOCKED';
+              badge.style.color = eventActive ? '' : 'rgba(255,255,255,0.4)';
+          }
       }
 
       // ── Primary CTA label ──────────────────────────────────────────────────

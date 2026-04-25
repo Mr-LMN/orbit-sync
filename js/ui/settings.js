@@ -366,6 +366,10 @@
           hardModeStatus.style.color = 'rgba(255,150,80,0.6)';
         }
       }
+      const inGameActions = document.getElementById('inGameSettingsActions');
+      if (inGameActions) {
+        inGameActions.style.display = (typeof inMenu !== 'undefined' && inMenu) ? 'none' : 'block';
+      }
     }
   }
 

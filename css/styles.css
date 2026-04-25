@@ -1383,8 +1383,8 @@ body.last-life #arenaInfo          { opacity: 0.35; }
 /* Settings modal compact */
 #settingsModal {
   height: auto;
-  max-height: 52%;
-  min-height: 220px;
+  max-height: 65%;
+  min-height: 280px;
 }
 .settings-header {
   padding: 14px 20px 12px;
@@ -4884,3 +4884,85 @@ body.landscape-stage #tutorialCard {
   position: absolute;
 }
 body.landscape-stage #tutorialMask { inset: 0; }
+
+/* ── Login Splash Overlay ───────────────────────────────────── */
+#loginSplashOverlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 1000;
+  background: rgba(4, 5, 12, 0.95);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+#loginSplashOverlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.login-card {
+  background: rgba(20, 25, 40, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 16px;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 229, 255, 0.1);
+  text-align: center;
+}
+
+.login-flame {
+  font-size: 3rem;
+  margin-bottom: -10px;
+  filter: drop-shadow(0 0 15px rgba(255, 100, 0, 0.8));
+}
+
+.login-streak-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.2rem;
+  color: #fff;
+  letter-spacing: 2px;
+  margin: 10px 0 20px;
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.6);
+}
+
+.login-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.login-reward-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 20px;
+}
+
+.login-reward-item .reward-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 1px;
+}
+
+.login-reward-item .reward-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  color: #ffaa00;
+  font-weight: bold;
+}

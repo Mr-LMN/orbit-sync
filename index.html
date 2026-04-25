@@ -633,9 +633,14 @@
       <div style="height:1px; background:rgba(255,255,255,0.07); margin:0 4px;"></div>
 
       <!-- HARD MODE ROW -->
-      <div class="settings-row" id="hardModeRow" style="opacity:0.45;">
-        <span>Hard Mode</span>
-        <span id="hardModeStatus" style="font-family:'Orbitron',sans-serif; font-size:0.55rem; letter-spacing:1px; color:rgba(255,80,100,0.7);">LOCKED</span>
+      <div class="settings-row" id="hardModeRow" style="opacity:0.45; padding: 20px 20px;">
+        <span style="font-size: 1.1rem;">Hard Mode</span>
+        <span id="hardModeStatus" style="font-family:'Orbitron',sans-serif; font-size:0.75rem; letter-spacing:2px; color:rgba(255,80,100,0.7);">LOCKED</span>
+      </div>
+
+      <!-- IN-GAME ACTIONS -->
+      <div id="inGameSettingsActions" style="display:none; margin-top: 16px; padding: 0 4px; width: 100%; box-sizing: border-box;">
+        <button class="btn btn-outline" style="border-color: rgba(255,51,102,0.5); color: #ff3366; width: 100%; box-shadow: 0 0 10px rgba(255,51,102,0.1);" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleSettings(false); setTimeout(() => { if (typeof returnToMenu === 'function') returnToMenu(); }, 150);">QUIT TO HUB</button>
       </div>
 
     </div>

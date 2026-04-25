@@ -3610,6 +3610,15 @@ function draw() {
         renderX = centerObj.x + (nx * safeTextRadius);
         renderY = centerObj.y + (ny * safeTextRadius);
       }
+
+      // Prevent clipping into HTML UI (top bar, score, multiplier)
+      const topSafeZone = 110;
+      const rightSafeZone = viewportWidth - 60;
+      const leftSafeZone = 30;
+      if (renderY < topSafeZone) renderY = topSafeZone;
+      if (renderX > rightSafeZone) renderX = rightSafeZone;
+      if (renderX < leftSafeZone) renderX = leftSafeZone;
+
       ctx.fillStyle = pop.color;
       ctx.globalAlpha = pop.life;
       const perfectFontSize = isMobile ? '2.2rem' : '1.95rem';
