@@ -189,6 +189,88 @@
       icon: '↯',
       role: 'economy',
       effects: { nearMissCoin: true, hitRadiusBonus: 0.05 }
+    },
+
+    // ── ADVANCED SYNERGIES (RISK/REWARD) ───────────────────────
+
+    // Glass Cannon: Huge precision, but lives are capped at 1.
+    'glass_cannon': {
+      id: 'glass_cannon',
+      name: 'Glass Cannon',
+      description: '+30% Hit Radius, Max Lives capped at 1',
+      icon: '☠️',
+      role: 'precision',
+      effects: { hitRadiusBonus: 0.30, glassCannon: true }
+    },
+
+    // Greed Protocol: Huge economy, but the game is faster.
+    'greed_protocol': {
+      id: 'greed_protocol',
+      name: 'Greed Protocol',
+      description: '+50% Coins, +15% Ring Speed',
+      icon: '📈',
+      role: 'economy',
+      effects: { coinMultiplierBonus: 0.50, speedMultiplier: 1.15 }
+    },
+
+    // Time Dilation: Slower game, but lower rewards.
+    'time_dilation': {
+      id: 'time_dilation',
+      name: 'Time Dilation',
+      description: '-10% Ring Speed, -15% Coins Earned',
+      icon: '⏳',
+      role: 'precision',
+      effects: { speedMultiplier: 0.90, coinMultiplierBonus: -0.15 }
+    },
+
+    // Momentum Engine: Build combo faster, but dropping a perfect resets it.
+    'momentum_engine': {
+      id: 'momentum_engine',
+      name: 'Momentum Engine',
+      description: '+1 Extra Combo on Perfect. Good/Ok hits reset Combo.',
+      icon: '🏎️',
+      role: 'combo',
+      effects: { momentumEngine: true, comboPerfectBonus: true }
+    },
+
+    // Resonance Field: Near misses grant a temporary precision buff.
+    'resonance_field': {
+      id: 'resonance_field',
+      name: 'Resonance Field',
+      description: 'Near Misses grant +10% Hit Radius for 3 seconds',
+      icon: '🔊',
+      role: 'economy',
+      effects: { resonanceField: true }
+    },
+
+    // Kinetic Converter: Losing your combo drops coins based on the combo size.
+    'kinetic_converter': {
+      id: 'kinetic_converter',
+      name: 'Kinetic Converter',
+      description: 'Losing Combo drops 1 Coin per 2 Combo lost',
+      icon: '⚙️',
+      role: 'economy',
+      effects: { kineticConverter: true }
+    },
+
+    // Adrenaline Gland: Game speeds up when near death, but score increases.
+    'adrenaline_gland': {
+      id: 'adrenaline_gland',
+      name: 'Adrenaline Gland',
+      description: 'When Lives = 1, +20% Speed but +20% Base Score',
+      icon: '🩸',
+      role: 'defensive',
+      effects: { adrenalineGland: true }
+    },
+
+    // Perfect Storm: Huge reward for extended perfect streaks.
+    'perfect_storm': {
+      id: 'perfect_storm',
+      name: 'Perfect Storm',
+      description: 'Every 10 PERFECT hits grants +50 Coins',
+      icon: '🌩️',
+      role: 'combo',
+      effects: { perfectStorm: true }
     }
 
   };

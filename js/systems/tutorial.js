@@ -372,7 +372,8 @@
 
   function safeGuidedFallback(copy, advanceFn) {
     clearGuidedHighlight();
-    showFreezeFrame(copy.title, copy.body, 'CONTINUE', advanceFn, copy.label);
+    showInGameTip(`${copy.title} - ${copy.body.substring(0, 40)}...`, 5000);
+    if (typeof advanceFn === 'function') advanceFn();
   }
 
   function showGuidedHighlight(options) {
@@ -530,14 +531,12 @@
     persistState();
 
     const targetNav = route === 'workshop' ? '#nav-workshop' : '#nav-shop';
-    showFreezeFrame(COPY.economy.title, COPY.economy.body, 'LET\'S GO', function() {
-      showGuidedHighlight({
-        target:     targetNav,
-        onSuccess:  function() { setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION); advanceMasterTutorial(); },
-        onFallback: function() { setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION); advanceMasterTutorial(); },
-        fallbackCopy: COPY.economy
-      });
-    }, COPY.economy.label);
+    showInGameTip(route === 'workshop' ? 'BUILD YOUR LOADOUT' : 'ACQUIRE A CORE', 4000);
+    showGuidedHighlight({
+      target:     targetNav,
+      onSuccess:  function() { setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION); advanceMasterTutorial(); },
+      onFallback: function() { setMasterTutorialPhase(PHASES.OWNERSHIP_ACTION); advanceMasterTutorial(); }
+    });
   }
 
   // Auto-migration: called when a save has real progression but is missing the tutorial
@@ -589,20 +588,14 @@
   function advanceMasterTutorial() {
     if (state.completed) return;
 
-    if (state.phase === PHASES.WELCOME) {
-      showFreezeFrame(COPY.welcome.title, COPY.welcome.body, 'UNDERSTOOD', function() {
-        setMasterTutorialPhase(PHASES.ORBIT_LOOP);
-        advanceMasterTutorial();
-      }, COPY.welcome.label);
-      return;
-    }
-
-    if (state.phase === PHASES.ORBIT_LOOP) {
-      showFreezeFrame(COPY.orbitLoop.title, COPY.orbitLoop.body, 'GOT IT', function() {
-        setMasterTutorialPhase(PHASES.CAMPAIGN_GATE);
-        advanceMasterTutorial();
-      }, COPY.orbitLoop.label);
-      return;
+    if (state.phase === PHASES.WELCOME || state.phase === PHASES.ORBIT_LOOP || state.phase === PHASES.WORLD_PREVIEW || state.phase === PHASES.WORLD_LADDER || state.phase === PHASES.FIRST_PLAY) {
+        setMasterTutorialPhase(PHASES.FIRST_PLAY);
+        showInGameTip('TAP PLAY TO BEGIN', 4000);
+        showGuidedHighlight({
+          target: '#menuPlayBtn',
+          onSuccess: function() { setMasterTutorialPhase(PHASES.HARD_MODE_INTRO); persistState(); }
+        });
+        return;
     }
 
     if (state.phase === PHASES.CAMPAIGN_GATE) {
@@ -610,53 +603,19 @@
       return;
     }
 
-    if (state.phase === PHASES.WORLD_PREVIEW) {
-      if (!document.getElementById('campaignView') || document.getElementById('campaignView').style.display === 'none') return;
-      showFreezeFrame(COPY.worldPreview.title, COPY.worldPreview.body, 'CONTINUE', function() {
-        setMasterTutorialPhase(PHASES.WORLD_LADDER);
-        advanceMasterTutorial();
-      }, COPY.worldPreview.label);
-      return;
-    }
-
-    if (state.phase === PHASES.WORLD_LADDER) {
-      const cards = COPY.ladder.slice();
-      const nextCard = function() {
-        const text = cards.shift();
-        if (!text) { setMasterTutorialPhase(PHASES.FIRST_PLAY); advanceMasterTutorial(); return; }
-        showFreezeFrame('WORLD LADDER', text, 'NEXT', nextCard, 'WORLD FILE');
-      };
-      nextCard();
-      return;
-    }
-
-    if (state.phase === PHASES.FIRST_PLAY) {
-      showFreezeFrame(COPY.firstPlay.title, COPY.firstPlay.body, 'PLAY', function() {
-        showGuidedHighlight({
-          target: '#menuPlayBtn',
-          fallbackCopy: COPY.firstPlay,
-          onSuccess: function() { setMasterTutorialPhase(PHASES.HARD_MODE_INTRO); persistState(); }
-        });
-      }, COPY.firstPlay.label);
-      return;
-    }
-
     if (state.phase === PHASES.HARD_MODE_INTRO && state.pending.hardModeUnlocked) {
-      showFreezeFrame(COPY.hardMode.title, COPY.hardMode.body, 'UNDERSTOOD', function() {
+        showInGameTip('HARD MODE UNLOCKED: LESS MERCY', 4000);
         const hmBtn = document.getElementById('menuHardModeBtn');
         if (hmBtn && hmBtn.style.display !== 'none') {
-          showGuidedHighlight({ target: hmBtn, fallbackCopy: COPY.hardMode });
+          showGuidedHighlight({ target: hmBtn });
         }
-      }, COPY.hardMode.label);
-      return;
+        return;
     }
 
     if (state.phase === PHASES.HARD_MODE_CLEAR && state.pending.hardModeCleared) {
-      showFreezeFrame(COPY.hardClear.title, COPY.hardClear.body, 'CONTINUE', function() {
         setMasterTutorialPhase(PHASES.ECONOMY_ROUTE);
         routeEconomyPhase();
-      }, COPY.hardClear.label);
-      return;
+        return;
     }
 
     if (state.phase === PHASES.ECONOMY_ROUTE) { routeEconomyPhase(); return; }
@@ -670,14 +629,12 @@
       if (state.pending.sphereIntroShown) { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); return; }
       state.pending.sphereIntroShown = true;
       persistState();
-      showFreezeFrame(COPY.sphereIntro.title, COPY.sphereIntro.body, 'LEVEL UP', function() {
-        showGuidedHighlight({
-          target: '#workshopEquippedLevel',
-          fallbackCopy: COPY.sphereIntro,
-          onSuccess: function() { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); },
-          onFallback: function() { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); }
-        });
-      }, COPY.sphereIntro.label);
+      showInGameTip('LEVEL UP YOUR CORE TO BOOST STATS', 4000);
+      showGuidedHighlight({
+        target: '#workshopEquippedLevel',
+        onSuccess: function() { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); },
+        onFallback: function() { setMasterTutorialPhase(PHASES.PERK_INTRO); advanceMasterTutorial(); }
+      });
       return;
     }
 
@@ -685,19 +642,17 @@
       if (state.pending.perkIntroShown) { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); return; }
       state.pending.perkIntroShown = true;
       persistState();
-      showFreezeFrame(COPY.perkIntro.title, COPY.perkIntro.body, 'EQUIP PERK', function() {
-        const perkSlot = document.querySelector('#workshopEquippedPerkSlots button');
-        if (perkSlot && isVisibleElement(perkSlot)) {
-          showGuidedHighlight({
-            target: perkSlot,
-            fallbackCopy: COPY.perkIntro,
-            onSuccess: function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); },
-            onFallback: function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); }
-          });
-        } else {
-          setTimeout(function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); }, 600);
-        }
-      }, COPY.perkIntro.label);
+      showInGameTip('SLOT PERKS FOR SYNERGIES', 4000);
+      const perkSlot = document.querySelector('#workshopEquippedPerkSlots button');
+      if (perkSlot && isVisibleElement(perkSlot)) {
+        showGuidedHighlight({
+          target: perkSlot,
+          onSuccess: function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); },
+          onFallback: function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); }
+        });
+      } else {
+        setTimeout(function() { setMasterTutorialPhase(PHASES.RANK_INTRO); advanceMasterTutorial(); }, 600);
+      }
       return;
     }
 
@@ -705,19 +660,17 @@
       if (state.pending.rankIntroShown) { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); return; }
       state.pending.rankIntroShown = true;
       persistState();
-      showFreezeFrame(COPY.rankIntro.title, COPY.rankIntro.body, 'CLIMB', function() {
-        const rankStrip = document.getElementById('hubRankLabel');
-        if (rankStrip && isVisibleElement(rankStrip)) {
-          showGuidedHighlight({
-            target: rankStrip,
-            fallbackCopy: COPY.rankIntro,
-            onSuccess: function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); },
-            onFallback: function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); }
-          });
-        } else {
-          setTimeout(function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); }, 600);
-        }
-      }, COPY.rankIntro.label);
+      showInGameTip('CLIMB THE RANKS FOR PASSIVE BONUSES', 4000);
+      const rankStrip = document.getElementById('hubRankLabel');
+      if (rankStrip && isVisibleElement(rankStrip)) {
+        showGuidedHighlight({
+          target: rankStrip,
+          onSuccess: function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); },
+          onFallback: function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); }
+        });
+      } else {
+        setTimeout(function() { setMasterTutorialPhase(PHASES.DAILY_CHALLENGE); advanceMasterTutorial(); }, 600);
+      }
       return;
     }
 
@@ -725,29 +678,25 @@
       if (state.pending.dailyChallengeShown) { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); return; }
       state.pending.dailyChallengeShown = true;
       persistState();
-      showFreezeFrame(COPY.dailyChallengeIntro.title, COPY.dailyChallengeIntro.body, 'CHECK CHALLENGES', function() {
-        const challengeNav = document.querySelector('[onclick*="switchMenuTab"]') && document.querySelector('[onclick*="switchMenuTab(\'challenges\')"]');
-        const challengeBtn = challengeNav || document.getElementById('nav-challenges') || Array.from(document.querySelectorAll('button')).find(function(btn) {
-          return btn.textContent && btn.textContent.includes('CHALLENGES');
+      showInGameTip('CHECK YOUR DAILY CHALLENGES', 4000);
+      const challengeNav = document.querySelector('[onclick*="switchMenuTab"]') && document.querySelector('[onclick*="switchMenuTab(\'challenges\')"]');
+      const challengeBtn = challengeNav || document.getElementById('nav-challenges') || Array.from(document.querySelectorAll('button')).find(function(btn) {
+        return btn.textContent && btn.textContent.includes('CHALLENGES');
+      });
+      if (challengeBtn && isVisibleElement(challengeBtn)) {
+        showGuidedHighlight({
+          target: challengeBtn,
+          onSuccess: function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); },
+          onFallback: function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }
         });
-        if (challengeBtn && isVisibleElement(challengeBtn)) {
-          showGuidedHighlight({
-            target: challengeBtn,
-            fallbackCopy: COPY.dailyChallengeIntro,
-            onSuccess: function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); },
-            onFallback: function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }
-          });
-        } else {
-          setTimeout(function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }, 600);
-        }
-      }, COPY.dailyChallengeIntro.label);
+      } else {
+        setTimeout(function() { setMasterTutorialPhase(PHASES.COMPLETE); advanceMasterTutorial(); }, 600);
+      }
       return;
     }
 
     if (state.phase === PHASES.COMPLETE) {
-      showFreezeFrame(COPY.done.title, COPY.done.body, 'DISMISS', function() {
-        completeMasterTutorial();
-      }, COPY.done.label);
+      completeMasterTutorial();
     }
   }
 
@@ -773,29 +722,12 @@
     if (state.phase === PHASES.OWNERSHIP_ACTION && tabId === state.pending.economyRoute) {
       const isShop = tabId === 'shop';
       const target = isShop ? findFirstShopPurchaseTarget() : findFirstWorkshopEquipTarget();
-      showFreezeFrame(
-        isShop ? 'ACQUIRE YOUR FIRST CORE' : 'EQUIP YOUR NEXT CORE',
-        isShop
-          ? 'Purchase one core to unlock the ownership layer.'
-          : 'Equip a non-default owned core to confirm your first loadout action.',
-        'READY',
-        function() {
-          if (!target) {
-            showFreezeFrame(
-              isShop ? 'OPEN SHOP' : 'OPEN WORKSHOP',
-              isShop
-                ? 'Could not lock a specific purchase button. Buy any available core to continue.'
-                : 'Could not lock a specific equip button. Equip any non-default core to continue.',
-              'CONTINUE',
-              function() { suspendTutorialUI(); },
-              'SYSTEM NOTICE'
-            );
-            return;
-          }
-          showGuidedHighlight({ target, fallbackCopy: COPY.economy, onFallback: suspendTutorialUI });
-        },
-        'COMMAND'
-      );
+      showInGameTip(isShop ? 'ACQUIRE YOUR FIRST CORE' : 'EQUIP YOUR NEXT CORE', 4000);
+      if (!target) {
+        suspendTutorialUI();
+        return;
+      }
+      showGuidedHighlight({ target, onFallback: suspendTutorialUI });
     }
   }
 

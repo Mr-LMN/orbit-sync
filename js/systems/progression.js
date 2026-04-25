@@ -170,8 +170,8 @@
       }
 
       if (typeof activeSkin !== 'undefined' && activeSkin && OG.entities && OG.entities.spheres && OG.entities.spheres.runtime) {
-         let xpAmount = wasBoss ? 150 : 50;
-         if (levelData.id === 'abyss') xpAmount = 10;
+         let xpAmount = wasBoss ? 450 : 120; // Increased to fix mid-game pacing
+         if (levelData.id === 'abyss') xpAmount = 25;
          const xpResult = OG.entities.spheres.runtime.grantXP(activeSkin, xpAmount);
          if (xpResult && xpResult.leveled && typeof createPopup !== 'undefined') {
              const _pop = createPopup(centerObj.x, centerObj.y - orbitRadius - 60, `CORE LVL ${xpResult.newLevel}!`, '#ffaa00');
@@ -192,8 +192,8 @@
       // ── Orbit Rank XP ────────────────────────────────────────────────────
       if (OG.systems && OG.systems.prestige) {
         const _isFlawlessRun = typeof runPerfectHitsOnly !== 'undefined' && runPerfectHitsOnly;
-        const _orbitXP = wasBoss ? 50 : 10;
-        const _flawlessBonus = _isFlawlessRun ? 15 : 0;
+        const _orbitXP = wasBoss ? 150 : 35; // Increased Orbit XP
+        const _flawlessBonus = _isFlawlessRun ? 50 : 0;
         OG.systems.prestige.grantOrbitXP(_orbitXP + _flawlessBonus);
         // World 1 completion — give ceremony if new player
         if (wasBoss && worldAdvanced && currentWorld === 1) {
@@ -207,10 +207,11 @@
       saveData();
 
       if (wasBoss || worldAdvanced || campaignComplete) {
+        const _streakBonusMult = 1.0 + ((typeof runBestStreak !== 'undefined' ? runBestStreak : 0) * 0.05); // 5% bonus per max combo
         showWorldClearSequence({
           nextLevelIdx: nextLevelObj ? nextLevelIdx : null,
           nextWorld: nextWorld || currentWorld,
-          coinsEarned: Math.floor(runCents / 3),
+          coinsEarned: Math.floor(runCents * _streakBonusMult), // Removed harsh /3 division, added streak bonus
           isCampaignClear: campaignComplete
         });
       } else {

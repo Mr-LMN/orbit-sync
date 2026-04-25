@@ -292,6 +292,26 @@ let runLastLifeHits = 0;   // hits landed while on last life
 let runOkCount = 0;        // total ok/sloppy hits this run
 let runGoodCount = 0;      // total good hits this run
 let runPerfectCount = 0;   // total perfect/filthy-perfect hits this run
+let resonanceEndTime = 0;
+
+function resetCombo() {
+  if (streak > 0 && OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('kineticConverter')) {
+    const coins = Math.floor(streak / 2);
+    if (coins > 0) {
+      runCents += coins;
+      createPopup(centerObj.x, centerObj.y - 40, `+${coins} KINETIC`, '#ffd27a');
+    }
+  }
+  streak = 0;
+  perfectLifeStreak = 0;
+  updateStreakUI();
+}
+
+function addScore(amount) {
+  const m = (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('adrenalineGland') && lives === 1) ? 1.2 : 1;
+  score += Math.ceil(amount * m);
+}
+
 let isBossPhaseTwo = false; let bossPhase = 1;
 let currentReviveCost = 50;
 let reviveCount = 0;
@@ -1248,6 +1268,8 @@ function resetRunState() {
   clearRunTransientTimers();
   const _sr = OrbitGame.entities.spheres.runtime;
   maxLives = 3 + (_sr ? _sr.getCombinedValue('maxLivesBonus') : 0);
+  if (_sr && _sr.getCombinedValue('glassCannon')) maxLives = 1;
+  resonanceEndTime = 0;
   score = 0; stageHits = 0; lives = (hardModeActive ? 2 : maxLives); multiplier = 1; streak = 0;
   timeScale = 1.0;
   targetTimeScale = 1.0;
@@ -3731,7 +3753,11 @@ function update() {
   }
   // ─────────────────────────────────────────────────────────────────────────
 
-  const _hmSpeedMult = hardModeActive ? 1.35 : 1.0;
+  const _loopSr = OrbitGame.entities.spheres.runtime;
+  const _isAdrenaline = _loopSr && _loopSr.getCombinedValue('adrenalineGland') && lives === 1;
+  const _speedMult = _loopSr ? (_loopSr.getCombinedValue('speedMultiplier') || 1) : 1;
+  const _finalSpeedMult = _speedMult * (_isAdrenaline ? 1.2 : 1);
+  const _hmSpeedMult = (hardModeActive ? 1.35 : 1.0) * _finalSpeedMult;
   let moveStep = (inMenu ? 0.02 : levelData.speed * _hmSpeedMult) * direction;
   if (!inMenu) {
     moveStep *= (1 + Math.min(0.2, totalStageDistance / (Math.PI * 48)));
@@ -3808,6 +3834,27 @@ function update() {
     echoHistory.length = 0;
     echoAngle = angle;
     targetTimeScale = 1.0;
+
+    // ── Contextual Tutorial Slowdown (World 1-1) ─────────────
+    if (isPlaying && !inMenu && !isHitStopPaused && !isStageClearHoldPaused) {
+      if (levelData && levelData.id === '1-1' && OrbitGame && OrbitGame.systems && OrbitGame.systems.tutorial && OrbitGame.systems.tutorial.isNewPlayerProfile && OrbitGame.systems.tutorial.isNewPlayerProfile()) {
+        const normAngle = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+        let nearTarget = false;
+        for (let i = 0; i < targets.length; i++) {
+          const t = targets[i];
+          if (t.active) {
+            const startEdge = normalizeAngle(t.start);
+            const distToStart = Math.abs(signedAngularDistance(normAngle, startEdge));
+            // Slow down as they approach the target and while inside it
+            if (distToStart < 0.3 || isInsideTarget(normAngle, t)) {
+              nearTarget = true;
+              break;
+            }
+          }
+        }
+        if (nearTarget) targetTimeScale = 0.2;
+      }
+    }
   }
 
   // ── BLACKOUT TICK (World 5 / Abyss) ───────────────────────
@@ -3904,7 +3951,11 @@ function update() {
       createParticles(expPt.x, expPt.y, '#555', 10);
       continue;
     }
-    const _hmMoveMult = hardModeActive ? 1.5 : 1.0;
+    const _tLoopSr = OrbitGame.entities.spheres.runtime;
+    const _tIsAdrenaline = _tLoopSr && _tLoopSr.getCombinedValue('adrenalineGland') && lives === 1;
+    const _tSpeedMult = _tLoopSr ? (_tLoopSr.getCombinedValue('speedMultiplier') || 1) : 1;
+    const _tFinalSpeedMult = _tSpeedMult * (_tIsAdrenaline ? 1.2 : 1);
+    const _hmMoveMult = (hardModeActive ? 1.5 : 1.0) * _tFinalSpeedMult;
     let currentMoveSpeed = (t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed)) * _hmMoveMult;
     const isWorld2PrismSequenceNode = levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex);
     if (!inMenu && t.isBossShield && bossPhase === 2 && !isWorld2PrismSequenceNode && frameNow >= (t.nextDirectionSwapAt || 0)) {
@@ -4165,8 +4216,7 @@ function handleFail(reason, failEdgeDistance = Infinity) {
   const streakBeforeFail = streak;
   loseLife(reason);
   distanceTraveled = 0; multiplier = 1; updateMultiplierUI();
-  streak = 0;
-  updateStreakUI();
+  resetCombo();
   triggerScreenShake(10);
   if (lives > 0) {
     runPerfectHitsOnly = false;
@@ -4608,7 +4658,10 @@ function tap() {
     const hitTimingOffset = signedAngularDistance(hitAngleForEffects, targetCenterAngle);
     const hitTimingAccuracy = Math.abs(hitTimingOffset);
     const _augWideMult = (activeAugment === 'wide_sync') ? 1.2 : 1.0;
-    const _hitRadiusBonus = OrbitGame.entities.spheres.runtime ? OrbitGame.entities.spheres.runtime.getCombinedValue('hitRadiusBonus') : 0;
+    let _hitRadiusBonus = OrbitGame.entities.spheres.runtime ? OrbitGame.entities.spheres.runtime.getCombinedValue('hitRadiusBonus') : 0;
+    if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('resonanceField') && Date.now() < resonanceEndTime) {
+      _hitRadiusBonus += 0.10;
+    }
     const _skinEchoMult = 1.0 + _hitRadiusBonus;
     const _hmTightMult = (hardModeActive) ? 0.82 : 1.0;
 
@@ -4691,8 +4744,7 @@ function tap() {
         if (t.sequenceIndex !== expectedIdx) {
           world2BossSequenceProgress = 0;
           multiplier = 1;
-          streak = 0;
-          updateStreakUI();
+          resetCombo();
           updateMultiplierUI();
           triggerScreenShake(16);
           pulseBrightness(1.8, 180);
@@ -5151,7 +5203,7 @@ function tap() {
     if (t.isCornerBonus) {
       const worldNum = parseInt((levelData && levelData.id ? levelData.id.split('-')[0] : '1'), 10);
       const cornerBonusScore = 5;
-      score += cornerBonusScore;
+      addScore(cornerBonusScore);
       runCents += cornerBonusScore;
       markScoreCoinDirty();
       createPopup(hitX, hitY - 24, `CORNER +${cornerBonusScore}`, '#ffd54a');
@@ -5175,7 +5227,7 @@ function tap() {
       if (hitQuality === "perfect" || hitQuality === "good" || hitQuality === "ok") {
         soundCoreDamage();
         if (bossPhase === 1) {
-          bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; streak = 0; updateStreakUI(); updateMultiplierUI();
+          bossPhase = 2; isBossPhaseTwo = false; multiplier = 1; resetCombo(); updateMultiplierUI();
           if (OG.systems && OG.systems.bossCores) {
             OG.systems.bossCores.updatePhase(bossPhase);
             OG.systems.bossCores.updateHealth(50); // Phase 2 starts at 50% health
@@ -5214,7 +5266,7 @@ function tap() {
           return;
         }
       } else {
-        multiplier = 1; streak = 0; updateStreakUI(); updateMultiplierUI();
+        multiplier = 1; resetCombo(); updateMultiplierUI();
         createPopup(centerObj.x, centerObj.y - 50, "REGENERATING...", "#ffaa00");
         if (bossPhase === 1) ui.bossPhase1.className = "boss-segment active-segment";
         else ui.bossPhase2.className = "boss-segment active-segment";
@@ -5224,7 +5276,7 @@ function tap() {
 
     if (t.pulseConfig && t.pulseAtMinimum) {
       const pulseBonus = Math.max(1, Math.min(3, t.pulseConfig.minHitBonus ?? 1));
-      score += pulseBonus;
+      addScore(pulseBonus);
       runCents += pulseBonus;
       ringHitFlash = Math.max(ringHitFlash, 0.32);
       createPopup(hitX, hitY - 44, `PULSE +${pulseBonus}`, '#7dfffb');
@@ -5255,7 +5307,7 @@ function tap() {
       }
       soundMultiplierUp(multiplier);
       let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 2 : 0;
-      score += (4 * multiplier) + frenzyBonusScore;
+      addScore((4 * multiplier) + frenzyBonusScore);
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -5343,7 +5395,7 @@ function tap() {
       }
       soundMultiplierUp(multiplier);
       let frenzyBonusScore = (levelData && levelData.isFrenzy) ? 1 : 0;
-      score += (3 * multiplier) + frenzyBonusScore;
+      addScore((3 * multiplier) + frenzyBonusScore);
       const normalX = hitX - centerObj.x;
       const normalY = hitY - centerObj.y;
       const normalLen = Math.hypot(normalX, normalY) || 1;
@@ -5386,25 +5438,37 @@ function tap() {
         _psPopup.shadow = 10;
         _psPopup.scale = 0.72;
       }
+      if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('perfectStorm') && perfectLifeStreak > 0 && perfectLifeStreak % 10 === 0) {
+        runCents += 50;
+        createPopup(hitX, hitY - 60, "STORM +50", "#ffd27a");
+      }
     }
     else if (hitTimingTier === 'good' || hitQuality === "good") {
-      perfectLifeStreak = 0;
+      if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('momentumEngine')) {
+        resetCombo();
+      } else {
+        perfectLifeStreak = 0;
+      }
       runGoodCount++;
       if (lives === 1) runLastLifeHits++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.28 + Math.min(multiplier, 8) * 0.025);
-      score += (2 * multiplier);
+      addScore(2 * multiplier);
       canvas.style.filter = 'brightness(1.4)';
       setTimeout(() => canvas.style.filter = 'brightness(1)', 60);
       soundGood(multiplier);
       vibrate(20);
     }
     else {
-      perfectLifeStreak = 0;
+      if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('momentumEngine')) {
+        resetCombo();
+      } else {
+        perfectLifeStreak = 0;
+      }
       runOkCount++;
       runPerfectHitsOnly = false;
       ringHitFlash = Math.max(ringHitFlash, 0.08);
-      multiplier = 1; score += (1 * multiplier);
+      multiplier = 1; addScore(1 * multiplier);
       const okTimingLabel = hitTimingOffset < -0.012 ? 'LATE' : (hitTimingOffset > 0.012 ? 'EARLY' : null);
       createPopup(hitX, hitY - 24, okTimingLabel ? `${okTimingLabel}` : 'SLOPPY', '#ff6677', 'ok');
       canvas.style.filter = 'brightness(1.5) hue-rotate(320deg) saturate(1.4)';
@@ -5468,7 +5532,7 @@ function tap() {
     const _multContrib = 1 + Math.log2(Math.max(1, multiplier)) * 0.4;
     let centsEarned = _baseEarn * _multContrib;
     const _coinBonus = OrbitGame.entities.spheres.runtime ? OrbitGame.entities.spheres.runtime.getCombinedValue('coinMultiplierBonus') : 0;
-    if (_coinBonus > 0) centsEarned *= (1 + _coinBonus);
+    if (_coinBonus !== 0) centsEarned *= (1 + _coinBonus);
     if (activeAugment === 'coin_surge') centsEarned = Math.ceil(centsEarned * 1.5);
   if (isPremium) centsEarned *= 2; // Premium x2 coins
     runCents += centsEarned;
@@ -5594,11 +5658,13 @@ function tap() {
 
     if (isNearMiss) {
       lastNearMissAt = now;
-      perfectLifeStreak = 0;
+      if (OrbitGame.entities.spheres.runtime && OrbitGame.entities.spheres.runtime.getCombinedValue('resonanceField')) {
+        resonanceEndTime = now + 3000;
+        createPopup(hitX, hitY - 50, "RESONANCE ACTIVE", "#a26eff");
+      }
       const _wasComboing = streak >= 5;
       multiplier = 1;
-      streak = 0;
-      updateStreakUI();
+      resetCombo();
       updateMultiplierUI();
       if (_wasComboing && ui.combo) {
         ui.combo.animate(
