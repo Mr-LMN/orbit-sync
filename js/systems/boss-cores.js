@@ -67,42 +67,69 @@
   // ─── AEGIS CORE (Shield orb that breaks away) ─────────────────────────────
   function renderAegisCore(ctx, x, y, phase, health, animTime) {
     const size = 70;
-    const healthPercent = health / 100;
     
-    // Shield integrity rings
-    ctx.strokeStyle = '#0099ff';
-    ctx.lineWidth = 3;
-    ctx.globalAlpha = healthPercent;
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
-    ctx.stroke();
+    // Calculate shield count based on targets array to pulse/break sequentially
+    let activeShields = 0;
+    let maxShields = 4; // Assume max 4 for Aegis
+    if (window.targets) {
+        for (let i = 0; i < window.targets.length; i++) {
+            if (window.targets[i].isBossShield && window.targets[i].active) {
+                activeShields++;
+            }
+        }
+    }
+    const healthPercent = phase === 1 ? (activeShields / maxShields) : (health / 100);
+
+    const isExposed = phase === 2;
+    const pulseFactor = Math.sin(animTime * 0.008);
     
-    ctx.globalAlpha = Math.max(0, healthPercent - 0.33);
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.55, 0, Math.PI * 2);
-    ctx.stroke();
-    
-    ctx.globalAlpha = Math.max(0, healthPercent - 0.66);
-    ctx.beginPath();
-    ctx.arc(x, y, size * 0.3, 0, Math.PI * 2);
-    ctx.stroke();
-    
+    if (!isExposed) {
+      // Shield integrity rings
+      ctx.strokeStyle = '#0099ff';
+      ctx.lineWidth = 3;
+
+      // Outer ring
+      if (activeShields >= 3) {
+          ctx.globalAlpha = 0.8 + (pulseFactor * 0.2);
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
+          ctx.stroke();
+      }
+
+      // Middle ring
+      if (activeShields >= 2) {
+          ctx.globalAlpha = 0.8 + (pulseFactor * 0.2);
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.55, 0, Math.PI * 2);
+          ctx.stroke();
+      }
+
+      // Inner ring
+      if (activeShields >= 1) {
+          ctx.globalAlpha = 0.8 + (pulseFactor * 0.2);
+          ctx.beginPath();
+          ctx.arc(x, y, size * 0.3, 0, Math.PI * 2);
+          ctx.stroke();
+      }
+    }
+
     // Core nucleus
     ctx.globalAlpha = 1;
-    const gradient = ctx.createRadialGradient(x - size * 0.2, y - size * 0.2, 0, x, y, size * 0.35);
+    const corePulse = isExposed ? (1 + Math.sin(animTime * 0.015) * 0.2) : 1;
+    const gradient = ctx.createRadialGradient(x - size * 0.2, y - size * 0.2, 0, x, y, size * 0.35 * corePulse);
     gradient.addColorStop(0, '#ffffff');
     gradient.addColorStop(0.5, '#00ff88');
     gradient.addColorStop(1, '#0099ff');
     ctx.fillStyle = gradient;
     ctx.beginPath();
-    ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
+    ctx.arc(x, y, size * 0.35 * corePulse, 0, Math.PI * 2);
     ctx.fill();
     
     // Pulsing outer glow
-    drawGlow(ctx, x, y, size * 0.4, '#0099ff', healthPercent);
-    ctx.fillStyle = 'rgba(0, 255, 136, 0.1)';
+    drawGlow(ctx, x, y, size * 0.4, isExposed ? '#00ff88' : '#0099ff', isExposed ? 1.0 : healthPercent);
+    ctx.fillStyle = isExposed ? 'rgba(0, 255, 136, 0.3)' : 'rgba(0, 255, 136, 0.1)';
     ctx.beginPath();
-    ctx.arc(x, y, size * (1 + Math.sin(animTime * 0.008) * 0.15), 0, Math.PI * 2);
+    ctx.arc(x, y, size * (1 + pulseFactor * 0.15), 0, Math.PI * 2);
     ctx.fill();
     drawGlowStop(ctx);
   }
