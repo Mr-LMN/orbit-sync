@@ -210,27 +210,32 @@
   function soundOk() {
     if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
-    // Tight retro click/blip
-    playSynth(300, 'square', 0.1, 0.002, 0.05, t, 400, false);
+    // Dull, muffled thud for sloppy hits
+    playSynth(180, 'square', 0.12, 0.005, 0.08, t, 150, false);
+    playNoiseBurst(0.05, 0.04, t, 'lowpass', 600, 1.0);
   }
 
   function soundGood(multiplier) {
     if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
     const baseFreq = 220 + (multiplier * 40);
-    // Warm retro chord pluck
-    playSynth(baseFreq, 'sawtooth', 0.12, 0.005, 0.15, t, 1000, true);
-    playSynth(baseFreq * 1.5, 'square', 0.08, 0.005, 0.12, t, 800, false);
+    // Warm analog synth pluck, slightly richer but not crystalline
+    playSynth(baseFreq, 'sawtooth', 0.15, 0.005, 0.20, t, 800, false);
+    playSynth(baseFreq * 1.01, 'square', 0.10, 0.005, 0.18, t, 600, false); // Slight detune for warmth
   }
 
   function soundPerfect(multiplier) {
     if (!audio.audioCtx || audio.shouldThrottleAudio()) return;
     const t = audio.audioCtx.currentTime;
     const baseFreq = 440 + (multiplier * 20); // Higher, cleaner base pitch
-    // Tight, satisfying crystal ding - much shorter decay
-    playSynth(baseFreq, 'sine', 0.25, 0.001, 0.12, t, 0, false);
-    playSynth(baseFreq * 1.5, 'triangle', 0.15, 0.001, 0.08, t, 0, false);
-    playNoiseBurst(0.03, 0.04, t, 'highpass', 3000, 1.0); // Very short, subtle transient click
+    
+    // Rich, glassy bell chord (Root + Octave + Perfect Fifth)
+    playSynth(baseFreq, 'sine', 0.25, 0.001, 0.20, t, 0, true); // True = route through delay bus
+    playSynth(baseFreq * 2, 'triangle', 0.15, 0.001, 0.15, t, 0, true);
+    playSynth(baseFreq * 1.5, 'sine', 0.10, 0.001, 0.25, t, 0, true);
+    
+    // Snappy "glass shatter" transient crack
+    playNoiseBurst(0.06, 0.06, t, 'highpass', 4000, 1.5); 
   }
 
   function soundCornerBonus(worldNum = 1) {
@@ -248,10 +253,11 @@
     const freq = multiNotes[Math.min(multiplier, 8)];
     const vol = 0.15 + (Math.min(multiplier, 8) * 0.01);
 
-    // Epic synthwave chord swell
-    playSynth(freq, 'sawtooth', vol, 0.02, 0.3, t, 1500, true);
+    // Epic, deeper synthwave chord swell
+    playSynth(freq * 0.5, 'sawtooth', vol * 0.8, 0.04, 0.4, t, 2000, true); // Added sub-octave
+    playSynth(freq, 'sawtooth', vol, 0.02, 0.35, t, 1500, true);
     playSynth(freq * 1.5, 'square', vol * 0.6, 0.02, 0.3, t, 1000, true);
-    playSynth(freq * 2, 'sine', vol * 0.4, 0.02, 0.4, t, 0, true);
+    playSynth(freq * 2, 'sine', vol * 0.4, 0.02, 0.45, t, 0, true);
 
     if (multiplier === 8) {
       // Max combo explosion
@@ -469,7 +475,10 @@
 
   function soundUIClick() {
     if (!audio.sfxEnabled || !audio.audioCtx || audio.shouldThrottleAudio()) return;
-    playSynth(800, 'square', 0.05, 0.005, 0.05, audio.audioCtx.currentTime, 1200, false);
+    const t = audio.audioCtx.currentTime;
+    // Modern, crisp "tick"
+    playSynth(1200, 'sine', 0.04, 0.001, 0.02, t, 0, false);
+    playNoiseBurst(0.02, 0.015, t, 'highpass', 4000, 1.0);
   }
 
   function playPop(multiplier, isPerfect, isFail = false) {
@@ -501,16 +510,17 @@
     const rootHz    = 880;
     const freq      = rootHz * Math.pow(2, semitones[n - 1] / 12);
 
-    // Sharp transient — very fast click noise (the "crack")
-    playNoiseBurst(0.22, 0.038, t, 'highpass', freq * 1.6, 3.5);
+    // Sharp transient — glassy shatter "crack"
+    playNoiseBurst(0.25, 0.045, t, 'highpass', freq * 2.0, 4.0);
 
-    // Crystal sine body — the satisfying ring-out
-    playSynth(freq,       'sine',     0.30, 0.001, 0.14, t, 0, false);
-    playSynth(freq * 2,   'triangle', 0.15, 0.001, 0.09, t, 0, false);
+    // Rich crystal body with delay
+    playSynth(freq,       'sine',     0.35, 0.001, 0.25, t, 0, true);
+    playSynth(freq * 2,   'triangle', 0.18, 0.001, 0.15, t, 0, true);
+    playSynth(freq * 1.5, 'sine',     0.15, 0.002, 0.20, t, 0, true);
 
-    // On FILTHY perfect (3+), add a second harmonic shimmer
+    // On FILTHY perfect (3+), add an angelic high shimmer
     if (n >= 3) {
-      playSynth(freq * 1.5, 'sine', 0.10, 0.002, 0.07, t + 0.01, 0, false);
+      playSynth(freq * 2.5, 'sine', 0.12, 0.005, 0.30, t, 0, true);
     }
   }
 

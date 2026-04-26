@@ -546,7 +546,8 @@
         // Spawn at least 60° ahead of the orb so the player doesn't wait a full revolution
         const _minGap = Math.PI / 3;
         const _spread = Math.PI * 1.5;
-        const _base = ((angle + _minGap) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const _currentAngle = (OG.core && OG.core.loop && typeof OG.core.loop.getAngle === 'function') ? OG.core.loop.getAngle() : 0;
+        const _base = ((_currentAngle + _minGap) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
         const _spawnAngle = (_base + Math.random() * _spread) % (Math.PI * 2);
         targets.push(buildTarget(_spawnAngle, Math.PI / 8, {
           color: w5Color, active: true, hp: 1, moveSpeed: 0

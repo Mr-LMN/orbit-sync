@@ -6098,3 +6098,4 @@ OrbitGame.core.loop.update = update;
 OrbitGame.core.loop.draw = draw;
 OrbitGame.core.loop.startMainLoop = startMainLoop;
 OrbitGame.core.loop.stopMainLoop = stopMainLoop;
+OrbitGame.core.loop.getAngle = () => angle;
