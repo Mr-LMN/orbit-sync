@@ -36,7 +36,7 @@
     </div>
   </div>
   <span id="streakCount" style="display:none;">0</span>
-  <button id="pauseBtn" class="pause-fab" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)" style="display:none;"><img src="assets/icon-pause.png" width="22" height="22" alt="Pause"></button>
+  <button id="pauseBtn" class="pause-fab" aria-label="Pause game" onclick="if(audioCtx) soundUIClick(); toggleSettings(true)" style="display:none;"><img src="assets/icon-pause.png" width="22" height="22" alt="Pause"></button>
 
   <div id="bigMultiplier" style="display: none;">x<span id="multiplierCount">1</span></div>
 
@@ -620,13 +620,13 @@
 
       <!-- AUDIO ROW -->
       <div class="settings-audio-row">
-        <button id="musicMuteBtn" class="audio-icon-btn" onclick="toggleMusicSetting()"><img src="assets/icon-music.png" width="22" height="22" alt="Music"></button>
+        <button id="musicMuteBtn" class="audio-icon-btn" aria-label="Toggle music" onclick="toggleMusicSetting()"><img src="assets/icon-music.png" width="22" height="22" alt="Music"></button>
         <input type="range" id="musicVolumeSlider" class="audio-slider" min="0" max="100" value="60" aria-label="Music volume"
           oninput="setMusicVolume(this.value)" onchange="setMusicVolume(this.value)">
-        <button id="sfxMuteBtn" class="audio-icon-btn" onclick="toggleSfxSetting()"><img src="assets/icon-sfx.png" width="22" height="22" alt="SFX"></button>
+        <button id="sfxMuteBtn" class="audio-icon-btn" aria-label="Toggle sound effects" onclick="toggleSfxSetting()"><img src="assets/icon-sfx.png" width="22" height="22" alt="SFX"></button>
         <input type="range" id="sfxVolumeSlider" class="audio-slider" min="0" max="100" value="80" aria-label="SFX volume"
           oninput="setSfxVolume(this.value)" onchange="setSfxVolume(this.value)">
-        <button id="hapticsIconBtn" class="audio-icon-btn" onclick="toggleHapticsSetting()" title="Haptics"><img src="assets/icon-haptics.png" width="22" height="22" alt="Haptics"></button>
+        <button id="hapticsIconBtn" class="audio-icon-btn" aria-label="Toggle haptics" onclick="toggleHapticsSetting()" title="Haptics"><img src="assets/icon-haptics.png" width="22" height="22" alt="Haptics"></button>
       </div>
 
       <!-- DIVIDER -->
