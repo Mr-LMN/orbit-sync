@@ -401,7 +401,7 @@
           ui.tutorialTextContainer.style.opacity = '1';
         }
         const _hmCore = typeof isHardModeActive === 'function' && isHardModeActive();
-        targets.push(buildTarget(Math.random() * Math.PI * 2, _hmCore ? Math.PI / 14 : Math.PI / 10, { color: '#ffffff', active: true, hp: 1 }));
+        targets.push(buildTarget(Math.random() * Math.PI * 2, _hmCore ? Math.PI / 14 : Math.PI / 10, { color: '#ffffff', active: true, hp: 1, isAegisFinalCore: true }));
       }
       return;
     }

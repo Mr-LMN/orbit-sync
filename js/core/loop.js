@@ -4817,6 +4817,26 @@ function tap() {
         createPopup(centerObj.x, centerObj.y - 80, `SHIELDS ${shieldsLeft}`, '#ffffff');
       }
       if (shieldsLeft === 0 && !isBossPhaseTwo) {
+        // ─── AEGIS PHASE TRANSITIONS ─────────────────
+        if (levelData.boss === 'aegis' && bossPhase === 1) {
+          bossPhase = 2;
+          isBossPhaseTwo = true;
+          ui.bossPhase1.className = 'boss-segment';
+          ui.bossPhase2.className = 'boss-segment active-segment';
+          pauseGameplayBriefly(900);
+          triggerScreenShake(26);
+          pulseBrightness(2.2, 160);
+          createShockwave('#00e5ff', 36);
+          createShockwave('#ffffff', 52);
+          createParticles(centerObj.x, centerObj.y, '#00e5ff', 40);
+          createPopup(centerObj.x, centerObj.y - 70, 'SHIELDS BROKEN', '#00e5ff');
+          createPopup(centerObj.x, centerObj.y - 34, 'CORE EXPOSED', '#ffffff');
+          escalateBossDrone();
+          vibrate([50, 20, 60]);
+          scheduleBossSpawn(900);
+          return;
+        }
+
         // ─── SOLAR CORE TRANSITIONS ─────────────────
         if (levelData.boss === 'solar_core' && bossPhase === 1) {
           bossPhase = 2;
@@ -4951,6 +4971,44 @@ function tap() {
           scheduleBossSpawn(760);
         }
       } return;
+    }
+
+    // ─── AEGIS CORE DEFEAT ──────────────────────
+    if (
+      levelData &&
+      levelData.boss === 'aegis' &&
+      isBossPhaseTwo &&
+      t.isAegisFinalCore
+    ) {
+      t.active = false;
+      ui.bossPhase2.className = 'boss-segment';
+      triggerScreenShake(34);
+      pulseBrightness(3.0, 260);
+      createShockwave('#ffffff', 40);
+      createShockwave('#00ff88', 56);
+      createShockwave('#0099ff', 76);
+      createParticles(centerObj.x, centerObj.y, '#ffffff', 60);
+      createParticles(centerObj.x, centerObj.y, '#00ff88', 40);
+      createUpwardBurstParticles(centerObj.x, centerObj.y - 8, '#ffffff', 50);
+      createPopup(centerObj.x, centerObj.y - 60, 'AEGIS', '#0099ff');
+      createPopup(centerObj.x, centerObj.y - 26, 'CORE SHATTERED', '#00ff88');
+      soundBossDefeated();
+      stopBossDrone();
+      vibrate([100, 40, 100, 40, 150]);
+      // Track boss defeat for challenges
+      if (OG.systems && OG.systems.challenges) OG.systems.challenges.onBossDefeated();
+
+      if (OG.systems && OG.systems.bossCores) {
+        OG.systems.bossCores.updateHealth(0);
+        OG.systems.bossCores.deactivate();
+      }
+
+      stageHits = 999;
+      isPlaying = false;
+      canvas.style.filter = 'brightness(2.5) saturate(2) hue-rotate(180deg)';
+      setTimeout(() => { canvas.style.filter = 'brightness(1)'; }, 200);
+      setTimeout(() => { triggerStageClear(); }, 1800);
+      return;
     }
 
     // ─── SOLAR CORE DEFEAT ──────────────────────
