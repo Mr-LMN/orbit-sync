@@ -1329,4 +1329,14 @@
     startEventCountdownTicker();
   }, 160);
 
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      if (document.activeElement && document.activeElement.getAttribute('role') === 'button') {
+        e.preventDefault();
+        document.activeElement.click();
+      }
+    }
+  });
+
 })(window);
