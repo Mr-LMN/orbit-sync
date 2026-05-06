@@ -44,6 +44,18 @@
     if (listenersBound) return;
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('mousedown', onMouseDown);
+
+    // Global keyboard accessibility for custom role="button" elements
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        const target = event.target;
+        if (target && target.getAttribute('role') === 'button' && target.tagName !== 'BUTTON') {
+          event.preventDefault(); // Prevent page scroll on Space
+          target.click();
+        }
+      }
+    });
+
     listenersBound = true;
   }
 
