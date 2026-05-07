@@ -266,6 +266,8 @@
           slotDiv.className += ' slot-empty';
           slotDiv.innerHTML = '<span style="color:#555; font-size:1.4rem; line-height:1;">+</span>';
         }
+        slotDiv.setAttribute('role', 'button');
+        slotDiv.setAttribute('tabindex', '0');
         slotDiv.addEventListener('click', (function(idx) {
           return function() { openPerkSelectionModal(idx); };
         })(i));

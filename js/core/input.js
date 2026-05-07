@@ -40,10 +40,21 @@
     tap();
   }
 
+  function onKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.getAttribute('role') === 'button') {
+        e.preventDefault();
+        activeEl.click();
+      }
+    }
+  }
+
   function bind() {
     if (listenersBound) return;
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     listenersBound = true;
   }
 
