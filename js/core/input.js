@@ -40,10 +40,40 @@
     tap();
   }
 
+  function onKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const active = document.activeElement;
+
+      // If we are focused on an interactive element other than body, try to activate it
+      if (active && active !== document.body) {
+        if (typeof active.click === 'function') {
+          e.preventDefault(); // Prevent default scroll on Space
+          active.click();
+        } else if (active.tagName === 'A' || active.tagName === 'BUTTON' || active.hasAttribute('tabindex')) {
+          e.preventDefault();
+          // Fallback if .click() doesn't exist, though it usually does for buttons/links
+          const event = new MouseEvent('click', {
+            view: window,
+            bubbles: true,
+            cancelable: true
+          });
+          active.dispatchEvent(event);
+        }
+      } else {
+        // If nothing is focused (or just body), default to tapping (gameplay)
+        if (!isBlockedTarget(e.target)) {
+          e.preventDefault();
+          tap();
+        }
+      }
+    }
+  }
+
   function bind() {
     if (listenersBound) return;
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     listenersBound = true;
   }
 
