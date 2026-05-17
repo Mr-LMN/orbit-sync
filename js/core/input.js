@@ -40,10 +40,36 @@
     tap();
   }
 
+  function onKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const active = document.activeElement;
+      const isInteractive = active && (
+        active.tagName === 'BUTTON' ||
+        active.tagName === 'A' ||
+        active.tagName === 'INPUT' ||
+        active.hasAttribute('tabindex')
+      );
+
+      if (isInteractive) {
+        if (active.tagName !== 'BUTTON' && active.tagName !== 'INPUT' && active.tagName !== 'A') {
+          e.preventDefault();
+          active.click();
+        }
+        return;
+      }
+
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+
+      e.preventDefault();
+      if (typeof tap === 'function') tap();
+    }
+  }
+
   function bind() {
     if (listenersBound) return;
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     listenersBound = true;
   }
 
