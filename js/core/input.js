@@ -40,10 +40,29 @@
     tap();
   }
 
+  function onKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        return; // Let default typing happen
+      }
+      if (activeEl && (BLOCKED_TAGS.has(activeEl.tagName) || activeEl.hasAttribute('tabindex'))) {
+        e.preventDefault();
+        activeEl.click();
+      } else {
+        if (!isBlockedTarget(e.target)) {
+          e.preventDefault();
+          tap();
+        }
+      }
+    }
+  }
+
   function bind() {
     if (listenersBound) return;
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     listenersBound = true;
   }
 
