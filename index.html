@@ -22,7 +22,7 @@
       <div class="top-stat top-stat-coins">🪙 <span id="coinCount">0</span></div>
       <div class="top-stat top-stat-crystals">
         💎 <span id="crystalCount">0</span>
-        <button class="add-currency-btn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">+</button>
+        <button class="add-currency-btn" aria-label="Open shop to get crystals" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">+</button>
       </div>
       <div id="vipBadge" class="top-stat vip-badge" style="display:none;" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">VIP</div>
     </div>
@@ -30,7 +30,7 @@
       <div class="top-stat top-stat-lives">LIVES <span id="livesCount">3</span></div>
     </div>
     <div class="top-bar-right">
-      <button id="menuSettingsBtn" class="settings-btn top-settings-btn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleSettings(true)">
+      <button id="menuSettingsBtn" class="settings-btn top-settings-btn" aria-label="Settings" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleSettings(true)">
         <img src="assets/icon-settings.png" width="16" height="16" alt="Settings">
       </button>
     </div>
