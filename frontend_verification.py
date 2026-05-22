@@ -1,18 +1,29 @@
-from playwright.sync_api import sync_playwright
+import asyncio
+from playwright.async_api import async_playwright, expect
 
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page()
-    page.goto("http://localhost:3000/")
+async def main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        page = await browser.new_page()
 
-    try:
-        page.evaluate("if (window.ui && window.ui.playBtn) window.ui.playBtn.click()")
-        page.wait_for_timeout(1000)
+        # Navigate to the local server
+        await page.goto("http://localhost:3000/")
 
-        # Take a screenshot to verify UI doesn't crash on start
-        page.screenshot(path="screenshot.png")
-        print("Screenshot taken!")
-    except Exception as e:
-        print("Error:", e)
+        # Wait for elements to be visible
+        await page.wait_for_selector('.top-bar-left')
 
-    browser.close()
+        # Take screenshot of the top bar to verify visually
+        await page.locator('#topBar').screenshot(path="screenshot.png")
+
+        # Verify the aria labels exist (this will throw if they don't)
+        # Note: aria-label="Open shop to get crystals" is for the add-currency-btn
+        # aria-label="Settings" is for the menuSettingsBtn
+        currency_btn = page.locator('button[aria-label="Open shop to get crystals"]')
+        settings_btn = page.locator('button[aria-label="Settings"]')
+
+        await expect(currency_btn).to_be_attached()
+        await expect(settings_btn).to_be_attached()
+
+        await browser.close()
+
+asyncio.run(main())
