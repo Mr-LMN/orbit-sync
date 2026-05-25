@@ -40,10 +40,36 @@
     tap();
   }
 
+  function onKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const activeEl = document.activeElement;
+
+      if (activeEl && (
+          activeEl.tagName === 'BUTTON' ||
+          activeEl.tagName === 'A' ||
+          activeEl.hasAttribute('tabindex'))) {
+
+        // Allow default typing behavior in input fields
+        if (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') {
+            return;
+        }
+
+        e.preventDefault();
+        activeEl.click();
+      } else {
+        if (!isBlockedTarget(activeEl)) {
+          e.preventDefault();
+          tap();
+        }
+      }
+    }
+  }
+
   function bind() {
     if (listenersBound) return;
     document.addEventListener('touchstart', onTouchStart, { passive: false });
     document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
     listenersBound = true;
   }
 
