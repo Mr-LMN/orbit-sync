@@ -1,18 +1,29 @@
 from playwright.sync_api import sync_playwright
 
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page()
-    page.goto("http://localhost:3000/")
+def run_cuj(page):
+    page.goto("http://localhost:3000")
+    page.wait_for_timeout(2000)
 
-    try:
-        page.evaluate("if (window.ui && window.ui.playBtn) window.ui.playBtn.click()")
-        page.wait_for_timeout(1000)
+    # Hover/focus on the bottom nav to see the explicit labels (though aria labels won't be visibly rendered,
+    # the screenshot will capture the bottom nav to show it looks visually identical to before).
+    nav = page.query_selector("#bottomNavBar")
 
-        # Take a screenshot to verify UI doesn't crash on start
-        page.screenshot(path="screenshot.png")
-        print("Screenshot taken!")
-    except Exception as e:
-        print("Error:", e)
+    if nav:
+        nav.screenshot(path="/home/jules/verification/screenshots/verification.png")
+    else:
+        page.screenshot(path="/home/jules/verification/screenshots/verification.png")
 
-    browser.close()
+    page.wait_for_timeout(1000)
+
+if __name__ == "__main__":
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(
+            record_video_dir="/home/jules/verification/videos"
+        )
+        page = context.new_page()
+        try:
+            run_cuj(page)
+        finally:
+            context.close()
+            browser.close()
