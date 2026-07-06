@@ -22,7 +22,7 @@
       <div class="top-stat top-stat-coins">🪙 <span id="coinCount">0</span></div>
       <div class="top-stat top-stat-crystals">
         💎 <span id="crystalCount">0</span>
-        <button class="add-currency-btn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">+</button>
+        <button class="add-currency-btn" aria-label="Add Currency" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">+</button>
       </div>
       <div id="vipBadge" class="top-stat vip-badge" style="display:none;" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">VIP</div>
     </div>
@@ -550,23 +550,23 @@
     <!-- BOTTOM NAV BAR -->
     <div id="bottomNavBar" class="bottom-nav">
       <button class="nav-item active" id="nav-home" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('home')">
-        <div class="nav-icon">⌂</div>
+        <div class="nav-icon" aria-hidden="true">⌂</div>
         <div class="nav-label">Home</div>
       </button>
       <button class="nav-item" id="nav-campaign" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('campaign')">
-        <div class="nav-icon">🗺</div>
+        <div class="nav-icon" aria-hidden="true">🗺</div>
         <div class="nav-label">Campaign</div>
       </button>
       <button class="nav-item" id="nav-workshop" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('workshop')">
-        <div class="nav-icon">⚙</div>
+        <div class="nav-icon" aria-hidden="true">⚙</div>
         <div class="nav-label">Workshop</div>
       </button>
       <button class="nav-item" id="nav-shop" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('shop')">
-        <div class="nav-icon">🛒</div>
+        <div class="nav-icon" aria-hidden="true">🛒</div>
         <div class="nav-label">Shop</div>
       </button>
       <button class="nav-item" id="nav-profile" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); switchMenuTab('profile')">
-        <div class="nav-icon">👤</div>
+        <div class="nav-icon" aria-hidden="true">👤</div>
         <div class="nav-label">Profile</div>
       </button>
     </div>
