@@ -24,7 +24,7 @@
         💎 <span id="crystalCount">0</span>
         <button class="add-currency-btn" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">+</button>
       </div>
-      <div id="vipBadge" class="top-stat vip-badge" style="display:none;" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">VIP</div>
+      <div id="vipBadge" class="top-stat vip-badge" style="display:none;" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click();" onclick="if(typeof audioCtx !== 'undefined' && audioCtx) soundUIClick(); toggleShop(true)">VIP</div>
     </div>
     <div class="top-bar-center">
       <div class="top-stat top-stat-lives">LIVES <span id="livesCount">3</span></div>
@@ -177,7 +177,7 @@
         </div>
 
         <!-- Next Goal Panel — "what am I working towards?" -->
-        <div id="nextGoalPanel" role="button" aria-label="Current goal" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();if(OG&&OG.ui&&OG.ui.menus&&OG.ui.menus.triggerNextGoal)OG.ui.menus.triggerNextGoal();">
+        <div id="nextGoalPanel" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click();" aria-label="Current goal" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();if(OG&&OG.ui&&OG.ui.menus&&OG.ui.menus.triggerNextGoal)OG.ui.menus.triggerNextGoal();">
           <div class="next-goal-icon" id="nextGoalIcon">⬡</div>
           <div class="next-goal-body">
             <div class="next-goal-label" id="nextGoalLabel">NEXT GOAL</div>
@@ -187,7 +187,7 @@
         </div>
 
         <!-- Live Event Panel -->
-        <div id="liveEventPanel" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('event')" role="button" aria-label="Enter Phoenix Trial event">
+        <div id="liveEventPanel" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')this.click();" onclick="if(typeof audioCtx!=='undefined'&&audioCtx)soundUIClick();switchMenuTab('event')" aria-label="Enter Phoenix Trial event">
           <div class="event-panel-icon">🔥</div>
           <div class="event-panel-info">
             <div class="event-panel-badge">🔴 LIVE NOW · WEEKLY EVENT</div>
