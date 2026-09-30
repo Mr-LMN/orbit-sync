@@ -1,7 +1,9 @@
 (function initStorage(window) {
   const OG = window.OrbitGame;
   const SECRET = 'orbit-sync-s3cr3t';
-  const fallbackStorage = {};
+  const fallbackStorage = Object.create(null);
+  let revision = 0;
+  if (window.addEventListener) window.addEventListener('storage', () => { revision++; });
 
   function _hash(str) {
     let hash = 5381;
@@ -14,16 +16,17 @@
   function setItem(key, value) {
     try {
       const strValue = String(value);
-      const encoded = window.btoa(strValue);
+      const encoded = window.btoa(unescape(encodeURIComponent(strValue)));
       const signature = _hash(encoded + SECRET);
-      const finalValue = `${encoded}.${signature}`;
+      const finalValue = `v2:${encoded}.${signature}`;
+      fallbackStorage[key] = finalValue;
+      revision++;
       try {
         window.localStorage.setItem(key, finalValue);
+        delete fallbackStorage[key];
       } catch (e) {
         fallbackStorage[key] = finalValue;
-        if (e.name === 'QuotaExceededError' || e.message === 'QuotaExceededError') {
-          return false;
-        }
+        return false;
       }
       return true;
     } catch (err) {
@@ -33,21 +36,26 @@
 
   function getItem(key, fallback) {
     try {
-      let raw = null;
+      let raw = Object.prototype.hasOwnProperty.call(fallbackStorage, key) ? fallbackStorage[key] : null;
       try {
-        raw = window.localStorage.getItem(key);
+        if (raw === null) raw = window.localStorage.getItem(key);
       } catch (e) {
-        raw = fallbackStorage.hasOwnProperty(key) ? fallbackStorage[key] : null;
+        raw = Object.prototype.hasOwnProperty.call(fallbackStorage, key) ? fallbackStorage[key] : null;
       }
 
       if (raw === null) return fallback;
 
-      const parts = raw.split('.');
-      if (parts.length === 2) {
+      const unicode = raw.startsWith('v2:');
+      if (!unicode && raw.trim() !== '' && Number.isFinite(Number(raw))) return raw;
+      const parts = (unicode ? raw.slice(3) : raw).split('.');
+      // Plain decimal legacy values are not signed payloads.
+      const looksSigned = parts.length === 2 && /^[0-9a-f]{1,8}$/.test(parts[1]) && /^[A-Za-z0-9+/]*={0,2}$/.test(parts[0]) && parts[0].length % 4 === 0;
+      if (unicode || looksSigned) {
         const [encoded, signature] = parts;
         if (_hash(encoded + SECRET) === signature) {
           try {
-            return window.atob(encoded);
+            const decoded = window.atob(encoded);
+            return unicode ? decodeURIComponent(escape(decoded)) : decoded;
           } catch (e) {
             return fallback;
           }
@@ -79,6 +87,8 @@
   }
 
   function removeItem(key) {
+    revision++;
+    delete fallbackStorage[key];
     try {
       window.localStorage.removeItem(key);
     } catch (e) {
@@ -87,6 +97,7 @@
   }
 
   OG.storage = Object.assign(OG.storage || {}, {
+    getRevision: () => revision,
     getItem,
     setItem,
     getJSON,

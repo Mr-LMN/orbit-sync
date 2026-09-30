@@ -1,3 +1,6 @@
+const { describe, test, beforeEach } = require('node:test');
+const assert = require('node:assert/strict');
+const expect = value => ({ toBe: expected => assert.equal(value, expected) });
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');

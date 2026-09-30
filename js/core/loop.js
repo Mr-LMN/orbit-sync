@@ -1,8 +1,6 @@
 const canvas = window.canvas || document.getElementById('gameCanvas');
-// willReadFrequently forces CPU-side (software) rendering which tanks mobile FPS.
-// glitchCanvas already skips getImageData on mobile, so only opt-in on desktop.
-const _isMobileBrowser = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-const ctx = canvas.getContext('2d', _isMobileBrowser ? {} : { willReadFrequently: true });
+// Keep the animation canvas GPU-friendly on every device.
+const ctx = canvas.getContext('2d', { alpha: false });
 const ui = window.ui || OrbitGame.dom.ui;
 
 // --- SENSORY FEEDBACK (Audio & Haptics) ---
@@ -363,8 +361,8 @@ let targetTimeScale = 1.0;
 let targets = []; let particles = []; let popups = []; let trail = []; let shockwaves = []; let bgDust = [];
 let targetHitRipples = [];
 
-let viewportWidth = window.innerWidth;
-let viewportHeight = window.innerHeight;
+let viewportWidth = document.documentElement.clientWidth;
+let viewportHeight = document.documentElement.clientHeight;
 let dpr = Math.min(2, window.devicePixelRatio || 1);
 const centerObj = { x: viewportWidth / 2, y: viewportHeight / 2 };
 let orbitRadius = Math.min(viewportWidth, viewportHeight) * 0.28;
@@ -380,6 +378,9 @@ let currentWorldVisualTheme = {
 };
 let drawTick = 0;
 let lastFrameTime = performance.now();
+let lastDrawTime = lastFrameTime;
+let vignetteCache = null;
+let atmosphereCache = null;
 let hudScoreCoinDirty = false;
 let pendingHudUpdates = 0;
 let hudLastFlushAt = 0;
@@ -573,8 +574,8 @@ function _syncPauseBtn() {
 // portrait use the full viewport; laptops/desktops in landscape get a 9:16
 // centered frame so the mobile-first HUD doesn't sprawl across a wide canvas.
 function shouldUseLandscapeStage() {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const w = document.documentElement.clientWidth;
+  const h = document.documentElement.clientHeight;
   if (!w || !h) return false;
   const isWide = (w / h) > 1.05;
   const isTouchMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -587,11 +588,11 @@ function shouldUseLandscapeStage() {
 
 function computeStageSize(landscape) {
   if (!landscape) {
-    return { w: window.innerWidth, h: window.innerHeight };
+    return { w: document.documentElement.clientWidth, h: document.documentElement.clientHeight };
   }
-  const h = window.innerHeight;
+  const h = document.documentElement.clientHeight;
   const portraitW = h * 9 / 16;
-  const w = Math.min(window.innerWidth, portraitW, 560);
+  const w = Math.min(document.documentElement.clientWidth, portraitW, 560);
   return { w: Math.round(w), h: Math.round(h) };
 }
 
@@ -602,7 +603,9 @@ function updateCanvasSize() {
   const stage = computeStageSize(landscape);
   viewportWidth = stage.w;
   viewportHeight = stage.h;
-  dpr = Math.min(2, window.devicePixelRatio || 1);
+  dpr = Math.min(OrbitGame.core.preferences.lowEffects() ? 1 : 2, window.devicePixelRatio || 1);
+  vignetteCache = null;
+  atmosphereCache = null;
   canvas.style.width = `${viewportWidth}px`;
   canvas.style.height = `${viewportHeight}px`;
   canvas.width = Math.floor(viewportWidth * dpr);
@@ -624,7 +627,9 @@ window.addEventListener('resize', () => {
   _resizeTimer = setTimeout(() => {
     _resizeTimer = null;
     // Only resize if not actively playing — prevents mid-frame corruption
-    if (!isPlaying || inMenu) {
+    const rotated = Math.abs(document.documentElement.clientWidth - viewportWidth) > 80 && !shouldUseLandscapeStage();
+    if (rotated && isPlaying && !inMenu) toggleSettings(true);
+    if (!isPlaying || inMenu || rotated) {
       updateCanvasSize();
     } else {
       // Queue resize for next time player returns to menu
@@ -1098,10 +1103,10 @@ function renderShopOrbPreview(previewEl, skinId) {
   const reg = OrbitGame.entities && OrbitGame.entities.spheres && OrbitGame.entities.spheres.registry;
   const meta = reg ? reg[skinId] : null;
   const rColor = (meta && RARITY_COLOR[meta.rarity]) ? RARITY_COLOR[meta.rarity] : '#aaaaaa';
-  
+
   const sr = OrbitGame.entities.spheres.runtime;
   const prog = sr ? sr.getSphereProgress(skinId) : {stars: 1};
-  
+
   const cx = canvasEl.width / 2;
   const cy = canvasEl.height / 2;
 
@@ -1924,7 +1929,9 @@ function draw() {
   const railGlowScale = theme.railGlowScale || 1;
   const now = performance.now();
   const splitPulseTime = now * 0.015;
-  const useHeavyEffects = !isMobile || multiplier > 5;
+  const visualDelta = OrbitGame.core.timing.frameDelta(now, lastDrawTime);
+  lastDrawTime = now;
+  const useHeavyEffects = !isMobile && !OrbitGame.core.preferences.lowEffects();
   const shadowBlurCap = useHeavyEffects ? 999 : 8;
   const setShadowBlur = (value) => { ctx.shadowBlur = Math.min(shadowBlurCap, value); };
   drawTick++;
@@ -1942,106 +1949,120 @@ function draw() {
   }
 
   // World atmosphere glow — faint radial wash behind everything
-  // On mobile, only render every 4th frame — it's a slow-changing ambient effect
-  if (!inMenu && (!isMobile || drawTick % 4 === 0)) {
-    const _atmTime = now * 0.0004;
-    const _atmPulse = (Math.sin(_atmTime) + 1) * 0.5;
-    let _atmColor = null;
-    let _atmR = viewportWidth * 0.7;
-
-    if (levelData && levelData.id === 'abyss') {
-      // Swirling Vortex / Abyss theme
-      const _abyssPulse = (Math.sin(now * 0.0007) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(80 + _abyssPulse * 40)}, ${Math.round(10 + _abyssPulse * 20)}, ${Math.round(100 + _abyssPulse * 40)}, ${0.12 + _atmPulse * 0.05})`;
-    } else if (hardModeActive && !isBoss) {
-      // Hard Mode override — red threat atmosphere regardless of world
-      _atmColor = `rgba(160, 10, 30, ${0.07 + _atmPulse * 0.04})`;
-    } else if (worldNum === 1 && !isBoss) {
-      // Deep space — cold blue-teal nebula, very faint
-      _atmColor = `rgba(0, 80, 180, ${0.04 + _atmPulse * 0.02})`;
-    } else if (worldNum === 2 && !isBoss) {
-      // Crystal — cyan-to-magenta shifting shimmer, more visible
-      const _w2shift = (Math.sin(now * 0.0004) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(10 + _w2shift * 160)}, ${Math.round(80 + _w2shift * 100)}, 255, ${0.1 + _atmPulse * 0.06})`;
-    } else if (worldNum === 3 && !isBoss) {
-      // Echo/resonance — amber-orange warmth
-      _atmColor = `rgba(180, 80, 10, ${0.04 + _atmPulse * 0.02})`;
-    } else if (worldNum === 4 && !isBoss) {
-      // Glitch Protocol — deep purple with green pulse
-      const _w4glitch = (Math.sin(now * 0.0008) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(80 + _w4glitch * 40)}, ${Math.round(20 + _w4glitch * 10)}, ${Math.round(140 + _w4glitch * 60)}, ${0.08 + _atmPulse * 0.04})`;
-    } else if (worldNum === 5 && !isBoss) {
-      // The Void — completely black with cold blue bloom. Increased intensity from original
-      const _w5pulse = (Math.sin(now * 0.00025) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(5 + _w5pulse * 10)}, ${Math.round(10 + _w5pulse * 20)}, ${Math.round(40 + _w5pulse * 40)}, ${0.12 + _atmPulse * 0.05})`;
-    } else if (worldNum === 6 && !isBoss) {
-      // Inferno Core - Deep heat waves
-      const _w6pulse = (Math.sin(now * 0.0005) + 1) * 0.5;
-      _atmColor = `rgba(${Math.round(180 + _w6pulse * 75)}, ${Math.round(40 + _w6pulse * 60)}, 0, ${0.1 + _atmPulse * 0.05})`;
-    } else if (isBoss) {
-      // Boss — deep red threat, steady
-      _atmColor = `rgba(120, 0, 20, ${0.06 + _atmPulse * 0.03})`;
+  // Never skip painted frames: the opaque clear would make the lighting flicker.
+  if (!inMenu && !OrbitGame.core.preferences.lowEffects()) {
+    if (!atmosphereCache) {
+      const layer = document.createElement('canvas');
+      layer.width = viewportWidth;
+      layer.height = viewportHeight;
+      atmosphereCache = { layer, ctx: layer.getContext('2d'), at: -Infinity, key: '' };
     }
+    const key = `${levelData.id}:${hardModeActive}`;
+    if (key !== atmosphereCache.key || now - atmosphereCache.at >= 100) {
+      const ctx = atmosphereCache.ctx;
+      ctx.clearRect(0, 0, viewportWidth, viewportHeight);
+      atmosphereCache.at = now;
+      atmosphereCache.key = key;
+      const _atmTime = now * 0.0004;
+      const _atmPulse = (Math.sin(_atmTime) + 1) * 0.5;
+      let _atmColor = null;
+      let _atmR = viewportWidth * 0.7;
 
-    if (_atmColor) {
-      const _atmGrad = ctx.createRadialGradient(
-        centerObj.x, centerObj.y, 0,
-        centerObj.x, centerObj.y, _atmR
-      );
-      _atmGrad.addColorStop(0, _atmColor);
-      _atmGrad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = _atmGrad;
-      ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-
-      // W2 only: add a corner-offset magenta counter-glow for crystal feel
-      if (worldNum === 2 && !isBoss) {
-        const _w2MagPulse = (Math.sin(now * 0.0006 + 1.8) + 1) * 0.5;
-        const _magGrad = ctx.createRadialGradient(
-          viewportWidth * 0.8, viewportHeight * 0.2, 0,
-          viewportWidth * 0.8, viewportHeight * 0.2, viewportWidth * 0.55
-        );
-        _magGrad.addColorStop(0, `rgba(200, 40, 180, ${0.04 + _w2MagPulse * 0.03})`);
-        _magGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = _magGrad;
-        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-      }
-      if (worldNum === 4 && !isBoss) {
-        // Glitch Protocol: opposing corner green signal flare
-        const _w4GreenPulse = (Math.sin(now * 0.0009 + 2.4) + 1) * 0.5;
-        const _gGrad = ctx.createRadialGradient(
-          viewportWidth * 0.15, viewportHeight * 0.82, 0,
-          viewportWidth * 0.15, viewportHeight * 0.82, viewportWidth * 0.48
-        );
-        _gGrad.addColorStop(0, `rgba(0, 200, 50, ${0.04 + _w4GreenPulse * 0.035})`);
-        _gGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = _gGrad;
-        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-      }
-      if (worldNum === 5 && !isBoss) {
-        // The Void: barely visible cold blue bloom from top of screen
-        const _w5BluePulse = (Math.sin(now * 0.00018 + 0.9) + 1) * 0.5;
-        const _vGrad = ctx.createRadialGradient(
-          viewportWidth * 0.5, 0, 0,
-          viewportWidth * 0.5, 0, viewportHeight * 0.65
-        );
-        _vGrad.addColorStop(0, `rgba(100, 180, 255, ${0.04 + _w5BluePulse * 0.03})`);
-        _vGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = _vGrad;
-        ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-      }
       if (levelData && levelData.id === 'abyss') {
-        // Abyss swirling vignette
-        const _abyssOrangePulse = (Math.sin(now * 0.0011 + 3.1) + 1) * 0.5;
-        const _abyssGrad = ctx.createRadialGradient(
-          centerObj.x, centerObj.y, orbitRadius * 0.8,
-          centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight)
+        // Swirling Vortex / Abyss theme
+        const _abyssPulse = (Math.sin(now * 0.0007) + 1) * 0.5;
+        _atmColor = `rgba(${Math.round(80 + _abyssPulse * 40)}, ${Math.round(10 + _abyssPulse * 20)}, ${Math.round(100 + _abyssPulse * 40)}, ${0.12 + _atmPulse * 0.05})`;
+      } else if (hardModeActive && !isBoss) {
+        // Hard Mode override — red threat atmosphere regardless of world
+        _atmColor = `rgba(160, 10, 30, ${0.07 + _atmPulse * 0.04})`;
+      } else if (worldNum === 1 && !isBoss) {
+        // Deep space — cold blue-teal nebula, very faint
+        _atmColor = `rgba(0, 80, 180, ${0.04 + _atmPulse * 0.02})`;
+      } else if (worldNum === 2 && !isBoss) {
+        // Crystal — cyan-to-magenta shifting shimmer, more visible
+        const _w2shift = (Math.sin(now * 0.0004) + 1) * 0.5;
+        _atmColor = `rgba(${Math.round(10 + _w2shift * 160)}, ${Math.round(80 + _w2shift * 100)}, 255, ${0.1 + _atmPulse * 0.06})`;
+      } else if (worldNum === 3 && !isBoss) {
+        // Echo/resonance — amber-orange warmth
+        _atmColor = `rgba(180, 80, 10, ${0.04 + _atmPulse * 0.02})`;
+      } else if (worldNum === 4 && !isBoss) {
+        // Glitch Protocol — deep purple with green pulse
+        const _w4glitch = (Math.sin(now * 0.0008) + 1) * 0.5;
+        _atmColor = `rgba(${Math.round(80 + _w4glitch * 40)}, ${Math.round(20 + _w4glitch * 10)}, ${Math.round(140 + _w4glitch * 60)}, ${0.08 + _atmPulse * 0.04})`;
+      } else if (worldNum === 5 && !isBoss) {
+        // The Void — completely black with cold blue bloom. Increased intensity from original
+        const _w5pulse = (Math.sin(now * 0.00025) + 1) * 0.5;
+        _atmColor = `rgba(${Math.round(5 + _w5pulse * 10)}, ${Math.round(10 + _w5pulse * 20)}, ${Math.round(40 + _w5pulse * 40)}, ${0.12 + _atmPulse * 0.05})`;
+      } else if (worldNum === 6 && !isBoss) {
+        // Inferno Core - Deep heat waves
+        const _w6pulse = (Math.sin(now * 0.0005) + 1) * 0.5;
+        _atmColor = `rgba(${Math.round(180 + _w6pulse * 75)}, ${Math.round(40 + _w6pulse * 60)}, 0, ${0.1 + _atmPulse * 0.05})`;
+      } else if (isBoss) {
+        // Boss — deep red threat, steady
+        _atmColor = `rgba(120, 0, 20, ${0.06 + _atmPulse * 0.03})`;
+      }
+
+      if (_atmColor) {
+        const _atmGrad = ctx.createRadialGradient(
+          centerObj.x, centerObj.y, 0,
+          centerObj.x, centerObj.y, _atmR
         );
-        _abyssGrad.addColorStop(0, 'rgba(0,0,0,0)');
-        _abyssGrad.addColorStop(1, `rgba(255, 60, 0, ${0.1 + _abyssOrangePulse * 0.08})`);
-        ctx.fillStyle = _abyssGrad;
+        _atmGrad.addColorStop(0, _atmColor);
+        _atmGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = _atmGrad;
         ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+
+        // W2 only: add a corner-offset magenta counter-glow for crystal feel
+        if (worldNum === 2 && !isBoss) {
+          const _w2MagPulse = (Math.sin(now * 0.0006 + 1.8) + 1) * 0.5;
+          const _magGrad = ctx.createRadialGradient(
+            viewportWidth * 0.8, viewportHeight * 0.2, 0,
+            viewportWidth * 0.8, viewportHeight * 0.2, viewportWidth * 0.55
+          );
+          _magGrad.addColorStop(0, `rgba(200, 40, 180, ${0.04 + _w2MagPulse * 0.03})`);
+          _magGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = _magGrad;
+          ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+        }
+        if (worldNum === 4 && !isBoss) {
+          // Glitch Protocol: opposing corner green signal flare
+          const _w4GreenPulse = (Math.sin(now * 0.0009 + 2.4) + 1) * 0.5;
+          const _gGrad = ctx.createRadialGradient(
+            viewportWidth * 0.15, viewportHeight * 0.82, 0,
+            viewportWidth * 0.15, viewportHeight * 0.82, viewportWidth * 0.48
+          );
+          _gGrad.addColorStop(0, `rgba(0, 200, 50, ${0.04 + _w4GreenPulse * 0.035})`);
+          _gGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = _gGrad;
+          ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+        }
+        if (worldNum === 5 && !isBoss) {
+          // The Void: barely visible cold blue bloom from top of screen
+          const _w5BluePulse = (Math.sin(now * 0.00018 + 0.9) + 1) * 0.5;
+          const _vGrad = ctx.createRadialGradient(
+            viewportWidth * 0.5, 0, 0,
+            viewportWidth * 0.5, 0, viewportHeight * 0.65
+          );
+          _vGrad.addColorStop(0, `rgba(100, 180, 255, ${0.04 + _w5BluePulse * 0.03})`);
+          _vGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = _vGrad;
+          ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+        }
+        if (levelData && levelData.id === 'abyss') {
+          // Abyss swirling vignette
+          const _abyssOrangePulse = (Math.sin(now * 0.0011 + 3.1) + 1) * 0.5;
+          const _abyssGrad = ctx.createRadialGradient(
+            centerObj.x, centerObj.y, orbitRadius * 0.8,
+            centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight)
+          );
+          _abyssGrad.addColorStop(0, 'rgba(0,0,0,0)');
+          _abyssGrad.addColorStop(1, `rgba(255, 60, 0, ${0.1 + _abyssOrangePulse * 0.08})`);
+          ctx.fillStyle = _abyssGrad;
+          ctx.fillRect(0, 0, viewportWidth, viewportHeight);
+        }
       }
     }
+    ctx.drawImage(atmosphereCache.layer, 0, 0, viewportWidth, viewportHeight);
   }
 
   // Ambient background dust — on mobile skip every other particle to halve draw calls
@@ -2051,13 +2072,11 @@ function draw() {
     let speedMult = isBoss ? 3.5 : 1;
     speedMult *= timeScale;
     if (worldNum === 2 && !isBoss) {
-      d.x += Math.sin((now * 0.0012) + d.driftPhase + (d.y * 0.005)) * d.driftAmp;
+      d.x += Math.sin((now * 0.0012) + d.driftPhase + (d.y * 0.005)) * d.driftAmp * visualDelta;
       if (d.x < -2) d.x = viewportWidth + 2;
       if (d.x > viewportWidth + 2) d.x = -2;
     }
-    if (drawTick % (isMobile ? 3 : 1) === 0) {
-      d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult;
-    }
+    d.y -= (inMenu ? d.speed * 2 : d.speed) * speedMult * visualDelta;
     if (d.y < 0) { d.y = viewportHeight; d.x = Math.random() * viewportWidth; }
     if (isMobile && (_di & 1)) continue; // skip odd-indexed particles on mobile
     ctx.beginPath();
@@ -3446,9 +3465,9 @@ function draw() {
   // Shockwaves (preserved behaviour + integration)
   for (let i = shockwaves.length - 1; i >= 0; i--) {
     let sw = shockwaves[i];
-    sw.radius += sw.speed;
-    sw.opacity -= 0.03;
-    sw.width += 1.5;
+    sw.radius += sw.speed * visualDelta;
+    sw.opacity -= 0.03 * visualDelta;
+    sw.width += 1.5 * visualDelta;
 
     if (sw.opacity <= 0) {
       shockwaves.splice(i, 1);
@@ -3472,8 +3491,8 @@ function draw() {
   // Target-local hit ripples
   for (let i = targetHitRipples.length - 1; i >= 0; i--) {
     const ripple = targetHitRipples[i];
-    ripple.radius += ripple.speed;
-    ripple.life -= 0.085;
+    ripple.radius += ripple.speed * visualDelta;
+    ripple.life -= 0.085 * visualDelta;
     if (ripple.life <= 0) {
       targetHitRipples.splice(i, 1);
       continue;
@@ -3565,8 +3584,8 @@ function draw() {
     ctx.shadowColor = '#ffffff';
     ctx.stroke();
   }
-  ringHitFlash *= 0.82;
-  perfectFlash *= 0.8;
+  ringHitFlash *= Math.pow(0.82, visualDelta);
+  perfectFlash *= Math.pow(0.8, visualDelta);
   if (ringHitFlash < 0.01) ringHitFlash = 0;
   if (perfectFlash < 0.01) perfectFlash = 0;
   ctx.globalAlpha = 1.0;
@@ -3575,9 +3594,9 @@ function draw() {
   // PARTICLES / POPUPS (preserved)
   for (let i = particles.length - 1; i >= 0; i--) {
     let p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.life -= 0.04;
+    p.x += p.vx * visualDelta;
+    p.y += p.vy * visualDelta;
+    p.life -= 0.04 * visualDelta;
     if (p.life <= 0) {
       const deadParticle = particles.splice(i, 1)[0];
       if (deadParticle) releaseParticle(deadParticle);
@@ -3603,8 +3622,8 @@ function draw() {
     let pop = popups[i];
     const riseSpeed = pop.riseSpeed || 1;
     const fadeSpeed = pop.fadeSpeed || 0.02;
-    pop.y -= riseSpeed;
-    pop.life -= fadeSpeed;
+    pop.y -= riseSpeed * visualDelta;
+    pop.life -= fadeSpeed * visualDelta;
     if (pop.life <= 0) {
       const deadPopup = popups.splice(i, 1)[0];
       if (deadPopup) releasePopup(deadPopup);
@@ -3670,19 +3689,22 @@ function draw() {
   }
 
   // Vignette — dark edges deepen with multiplier for tunnel-vision focus
-  // On mobile, only draw vignette every 3rd frame to save gradient allocation cost
-  if (!inMenu && (!isMobile || drawTick % 3 === 0)) {
+  // Cache the gradient, but paint it every frame to avoid strobing.
+  if (!inMenu) {
     const _vigMult = Math.min(multiplier, 8);
     const _vigAlpha = hardModeActive
       ? 0.42 + (_vigMult * 0.032)
       : 0.28 + (_vigMult * 0.025);
-    const _vigGrad = ctx.createRadialGradient(
-      centerObj.x, centerObj.y, orbitRadius * 0.8,
-      centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight) * 0.75
-    );
-    _vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
-    _vigGrad.addColorStop(1, `rgba(0,0,0,${_vigAlpha})`);
-    ctx.fillStyle = _vigGrad;
+    if (!vignetteCache || vignetteCache.alpha !== _vigAlpha) {
+      const _vigGrad = ctx.createRadialGradient(
+        centerObj.x, centerObj.y, orbitRadius * 0.8,
+        centerObj.x, centerObj.y, Math.max(viewportWidth, viewportHeight) * 0.75
+      );
+      _vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      _vigGrad.addColorStop(1, `rgba(0,0,0,${_vigAlpha})`);
+      vignetteCache = { alpha: _vigAlpha, gradient: _vigGrad };
+    }
+    ctx.fillStyle = vignetteCache.gradient;
     ctx.globalAlpha = 1.0;
     ctx.fillRect(0, 0, viewportWidth, viewportHeight);
   }
@@ -3711,6 +3733,8 @@ function queueNextMainLoopFrame() {
 function startMainLoop() {
   // Guard against duplicate RAF chains after revive/restart/start flows.
   if (isMainLoopRunning || mainLoopRafId !== null) return false;
+  lastFrameTime = performance.now();
+  lastDrawTime = lastFrameTime;
   queueNextMainLoopFrame();
   return true;
 }
@@ -3726,12 +3750,14 @@ function stopMainLoop() {
 function update() {
   mainLoopRafId = null;
   isMainLoopRunning = true;
+  const frameNow = performance.now();
+  const delta = OrbitGame.core.timing.frameDelta(frameNow, lastFrameTime);
+  lastFrameTime = frameNow;
+  if (document.hidden) { queueNextMainLoopFrame(); return; }
+  if (ui.settingsModal.dataset.open === 'true') { draw(); queueNextMainLoopFrame(); return; }
   if (isCinematicIntro) { queueNextMainLoopFrame(); return; }
   if (bossIntroPlaying) { draw(); queueNextMainLoopFrame(); return; }
   if (!isPlaying && !inMenu) { draw(); queueNextMainLoopFrame(); return; }
-  const frameNow = performance.now();
-  const delta = Math.min(2.2, Math.max(0.6, (frameNow - lastFrameTime) / 16.6667));
-  lastFrameTime = frameNow;
 
   // Lerp timeScale
   timeScale += (targetTimeScale - timeScale) * 0.1 * delta;
@@ -3951,11 +3977,7 @@ function update() {
       createParticles(expPt.x, expPt.y, '#555', 10);
       continue;
     }
-    const _tLoopSr = OrbitGame.entities.spheres.runtime;
-    const _tIsAdrenaline = _tLoopSr && _tLoopSr.getCombinedValue('adrenalineGland') && lives === 1;
-    const _tSpeedMult = _tLoopSr ? (_tLoopSr.getCombinedValue('speedMultiplier') || 1) : 1;
-    const _tFinalSpeedMult = _tSpeedMult * (_tIsAdrenaline ? 1.2 : 1);
-    const _hmMoveMult = (hardModeActive ? 1.5 : 1.0) * _tFinalSpeedMult;
+    const _hmMoveMult = (hardModeActive ? 1.5 : 1.0) * _finalSpeedMult;
     let currentMoveSpeed = (t.moveSpeed !== undefined ? t.moveSpeed : (inMenu ? 0.01 : levelData.moveSpeed)) * _hmMoveMult;
     const isWorld2PrismSequenceNode = levelData && levelData.id === '2-6' && levelData.boss === 'prism' && bossPhase === 2 && Number.isFinite(t.sequenceIndex);
     if (!inMenu && t.isBossShield && bossPhase === 2 && !isWorld2PrismSequenceNode && frameNow >= (t.nextDirectionSwapAt || 0)) {
@@ -3968,12 +3990,12 @@ function update() {
     }
 
     if (currentMoveSpeed !== 0) {
-      t.start += currentMoveSpeed * delta;
+      t.start += currentMoveSpeed * delta * timeScale * nearMissSpeedScale;
       if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
       if (t.start < 0) t.start += Math.PI * 2;
     }
-    if (t.drift) {
-      t.start += t.drift * delta;
+    if (t.drift && !isBossTransitionPaused && !isStageClearHoldPaused && !isHitStopPaused) {
+      t.start += t.drift * delta * timeScale * nearMissSpeedScale;
       if (t.start > Math.PI * 2) t.start -= Math.PI * 2;
       if (t.start < 0) t.start += Math.PI * 2;
     }
@@ -4119,51 +4141,16 @@ function update() {
 
 
 function glitchCanvas(duration, callback) {
-  // On mobile, skip pixel manipulation entirely —
-  // getImageData/putImageData force GPU-CPU sync which
-  // causes severe frame drops on mobile hardware.
-  if (isMobile) {
-    callback();
-    return;
-  }
-
+  // Keep transitions GPU-friendly; completion is independent of animation events.
+  if (OrbitGame.core.preferences.reducedMotion()) { callback(); return; }
   glitchActive = true;
-  const startTime = Date.now();
-  let originalImageData;
-  try {
-    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  } catch (e) {
-    // getImageData can fail on some browsers — fall back gracefully
+  canvas.classList.add('fail-transition');
+  setTimeout(() => {
+    canvas.classList.remove('fail-transition');
+    if (!glitchActive) return;
     glitchActive = false;
     callback();
-    return;
-  }
-
-  function glitchFrame() {
-    // Cancel if revive/restart happened mid-glitch
-    if (!glitchActive) return;
-
-    if (Date.now() - startTime > duration) {
-      glitchActive = false;
-      callback();
-      return;
-    }
-    ctx.putImageData(originalImageData, 0, 0);
-    // Reduce from 6 slices to 3 — half the GPU readbacks
-    const slices = 3;
-    for (let s = 0; s < slices; s++) {
-      const sliceY = Math.random() * canvas.height;
-      // Use a fixed-size slice buffer instead of getImageData each time
-      const sliceH = Math.floor(Math.random() * 20 + 5);
-      const shift = Math.floor((Math.random() - 0.5) * 24);
-      try {
-        const slice = ctx.getImageData(0, sliceY, canvas.width, sliceH);
-        ctx.putImageData(slice, shift, sliceY);
-      } catch (e) {}
-    }
-    requestAnimationFrame(glitchFrame);
-  }
-  glitchFrame();
+  }, Math.min(duration, 240));
 }
 
 function scrambleText(element, finalText, duration) {
@@ -6099,3 +6086,25 @@ OrbitGame.core.loop.draw = draw;
 OrbitGame.core.loop.startMainLoop = startMainLoop;
 OrbitGame.core.loop.stopMainLoop = stopMainLoop;
 OrbitGame.core.loop.getAngle = () => angle;
+
+// Rebase active deadlines after an explicit pause instead of consuming them offscreen.
+OrbitGame.core.loop.resumeClock = function(pausedAt) {
+  const now = performance.now();
+  const elapsed = Math.max(0, now - pausedAt);
+  const shift = deadline => deadline > pausedAt ? deadline + elapsed : deadline;
+  bossPauseUntil = shift(bossPauseUntil);
+  stageClearHoldUntil = shift(stageClearHoldUntil);
+  hitStopUntil = shift(hitStopUntil);
+  nearMissReplayUntil = shift(nearMissReplayUntil);
+  world2BossNextForcedReverseAt = shift(world2BossNextForcedReverseAt);
+  _nextBlackoutAt = shift(_nextBlackoutAt);
+  _blackoutEndsAt = shift(_blackoutEndsAt);
+  targets.forEach(t => { if (t.nextDirectionSwapAt) t.nextDirectionSwapAt = shift(t.nextDirectionSwapAt); });
+  echoHistory.length = 0;
+  lastFrameTime = now;
+  lastDrawTime = now;
+  ['phoenixBoss', 'phoenixBossV2'].forEach(key => {
+    const boss = OrbitGame.systems[key];
+    if (boss && boss.resumeClock) boss.resumeClock(pausedAt, now);
+  });
+};

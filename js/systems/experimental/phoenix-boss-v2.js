@@ -843,4 +843,11 @@
   // ─── EXPORT ──────────────────────────────────────────────────────────────
   OG.systems.phoenixBossV2 = { start, stop, tick, spawnWave, onTargetHit, onMiss, endRun, isActive, getPhaseIdx };
 
+
+  OG.systems.phoenixBossV2.resumeClock = function(pausedAt, now) {
+    if (!_active) return;
+    _lastFrameAt = now;
+    if (_wrathNextAt > pausedAt) _wrathNextAt += now - pausedAt;
+    if (_wrathEndsAt > pausedAt) _wrathEndsAt += now - pausedAt;
+  };
 })(window);

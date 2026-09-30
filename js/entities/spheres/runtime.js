@@ -48,8 +48,12 @@
   const STORAGE_KEY  = 'orbitSync_progression';
   const LEGACY_KEY   = 'undefined'; // accidental key from previous no-arg getJSON calls
 
+  let cachedRevision = -1;
+  let cachedBlob = null;
   function _readBlob() {
     if (!OG.storage) return {};
+    const revision = OG.storage.getRevision ? OG.storage.getRevision() : null;
+    if (revision !== null && cachedBlob && revision === cachedRevision) return cachedBlob;
     let blob = OG.storage.getJSON(STORAGE_KEY, null);
     if (blob === null) {
       // One-time silent migration from the legacy accidental key
@@ -59,7 +63,9 @@
         OG.storage.setJSON(STORAGE_KEY, blob);
       }
     }
-    return blob || {};
+    cachedBlob = blob || {};
+    cachedRevision = OG.storage.getRevision ? OG.storage.getRevision() : -1;
+    return cachedBlob;
   }
 
   function _writeBlob(blob) {
