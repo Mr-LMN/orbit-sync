@@ -1,52 +1,46 @@
 (function initInputCore(window, document) {
   const OG = window.OrbitGame;
   OG.core = OG.core || {};
-  OG.core.input = OG.core.input || {};
-
-  // Elements that should never pass through to tap()
-  const BLOCKED_TAGS = new Set(['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL', 'A']);
-
-  // IDs of containers — touches inside these never reach tap()
-  const BLOCKED_CONTAINERS = [
-    'settingsModal', 'shopModal', 'augmentSelect',
-    'challengePreview', 'adminToolsPanel', 'screenOverlay',
-    'lockedWorldOverlay', 'mainMenu', 'tutorialOverlay'
-  ];
+  const blocked = 'button, input, select, textarea, label, a, [role="button"], [contenteditable], [onclick], ' +
+    '#settingsModal, #shopModal, #augmentSelect, #challengePreview, #adminToolsPanel, ' +
+    '#screenOverlay, #lockedWorldOverlay, #mainMenu, #tutorialOverlay, #tutorialMask, ' +
+    '#perkSelectionModal, #adSimulationOverlay, #loginSplashOverlay';
+  let listenersBound = false;
 
   function isBlockedTarget(target) {
-    if (!target) return false;
-    // Block interactive element types
-    if (BLOCKED_TAGS.has(target.tagName)) return true;
-    // Block if inside any modal container
-    for (const id of BLOCKED_CONTAINERS) {
-      const el = document.getElementById(id);
-      if (el && el.contains(target)) return true;
-    }
-    // Block if settings modal is visible (bottom = 0)
+    if (target && target.closest && target.closest(blocked)) return true;
     const settings = document.getElementById('settingsModal');
-    if (settings && settings.style.bottom === '0' ||
-        settings && settings.style.bottom === '0px') return true;
-    return false;
+    return !!(settings && settings.dataset.open === 'true');
   }
 
-  function onTouchStart(e) {
-    if (isBlockedTarget(e.target)) return;
-    e.preventDefault();
+  function onPointerDown(event) {
+    if (event.isPrimary === false || event.button !== 0 || isBlockedTarget(event.target)) return;
+    // One pointer stream avoids synthetic mouse events following a touch.
+    if (event.pointerType !== 'mouse') event.preventDefault();
     tap();
   }
 
-  function onMouseDown(e) {
-    if (isBlockedTarget(e.target)) return;
+  function onKeyDown(event) {
+    if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.code === 'Escape') {
+      if (inMenu) return;
+      event.preventDefault();
+      const modal = document.getElementById('settingsModal');
+      if (modal.dataset.open === 'true') toggleSettings(false);
+      else if (isPlaying) toggleSettings(true);
+      return;
+    }
+    if (event.code !== 'Space' || isBlockedTarget(event.target)) return;
+    if (inMenu || !isPlaying) return;
+    event.preventDefault();
     tap();
   }
 
   function bind() {
     if (listenersBound) return;
-    document.addEventListener('touchstart', onTouchStart, { passive: false });
-    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('pointerdown', onPointerDown, { passive: false });
+    document.addEventListener('keydown', onKeyDown);
     listenersBound = true;
   }
-
-  let listenersBound = false;
-  OG.core.input.bind = bind;
+  OG.core.input = { bind, isBlockedTarget };
 })(window, document);

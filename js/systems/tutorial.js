@@ -462,10 +462,8 @@
     // Its presence means this is definitely a returning player.
     if (storage.getItem('orbitSync_sessionArcDone') === '1') return false;
 
-    // Check if the player has collected coins or crystals
-    const coins = parseInt(storage.getItem('orbitSync_coins'), 10) || 0;
-    const crystals = parseInt(storage.getItem('orbitSync_crystals'), 10) || 0;
-    if (coins > 0 || crystals > 0) return false;
+    // Login gifts and purchases are not proof of playing the tutorial.
+    // Use completed stages, unlocks and scores below instead of wallet balance.
 
     // World unlock counter — window.maxWorldUnlocked is a `let` var in loop.js and is
     // NOT exposed on the window object; read from storage as the authoritative source.

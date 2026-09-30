@@ -673,4 +673,11 @@
     getPhaseIdx
   };
 
+
+  OG.systems.phoenixBoss.resumeClock = function(pausedAt, now) {
+    if (!_active) return;
+    _lastFrameAt = now;
+    if (_wrathNextAt > pausedAt) _wrathNextAt += now - pausedAt;
+    if (_wrathEndsAt > pausedAt) _wrathEndsAt += now - pausedAt;
+  };
 })(window);

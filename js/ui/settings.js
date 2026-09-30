@@ -285,14 +285,35 @@
     }, 350);
   }
 
+  let resumeTimer = null;
+  let pausedAt = null;
+  let resumeAfterSettings = false;
   function toggleSettings(show) {
+    const wasResuming = resumeTimer !== null && resumeAfterSettings;
+    if (resumeTimer !== null) { clearTimeout(resumeTimer); resumeTimer = null; }
+    if (show && ui.settingsModal.dataset.open !== 'true') {
+      resumeAfterSettings = !inMenu && (isPlaying || wasResuming);
+      pausedAt = resumeAfterSettings ? (pausedAt ?? performance.now()) : null;
+    }
+    ui.settingsModal.dataset.open = String(show);
+    ui.settingsModal.inert = !show;
+    OG.core.preferences.syncUI();
     ui.settingsModal.style.bottom = show ? '0' : '-100%';
     if (!inMenu) {
       if (show) {
         isPlaying = false;
       } else {
         // Delay resume so modal animation completes before tap() can fire
-        setTimeout(() => { if (!inMenu) isPlaying = true; }, 340);
+        if (resumeAfterSettings) resumeTimer = setTimeout(() => {
+          resumeTimer = null;
+          if (!inMenu && ui.settingsModal.dataset.open !== 'true' && !document.hidden) {
+            OG.core.loop.resumeClock(pausedAt);
+            isPlaying = true;
+            initAudio();
+          }
+          resumeAfterSettings = false;
+          pausedAt = null;
+        }, 340);
       }
     }
     if (!show) {
@@ -372,6 +393,17 @@
       }
     }
   }
+
+  // App switching must never silently consume a run. Return to a paused panel.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) return;
+    if (!inMenu && (isPlaying || resumeTimer !== null)) {
+      // Preserve the original resume intent when hiding during the close animation.
+      if (resumeTimer !== null) isPlaying = resumeAfterSettings;
+      toggleSettings(true);
+    }
+    if (audio.audioCtx && audio.audioCtx.state === 'running') audio.audioCtx.suspend().catch(() => {});
+  });
 
   function applySettingsUI() {
     const musicMute = document.getElementById('musicMuteBtn');

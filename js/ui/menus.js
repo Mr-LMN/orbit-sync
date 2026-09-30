@@ -34,6 +34,10 @@
     const skinColor = _HUB_SKIN_COLORS[skin] || '#00e5ff';
 
     function frame() {
+      if (document.hidden || !inMenu || !document.getElementById('homeView').classList.contains('active-view')) {
+        _hubOrbAnimId = requestAnimationFrame(frame);
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       ctx.save();
       // Clip to circle so skin stays within the sphere shape
@@ -1298,6 +1302,7 @@
   function _startPreviewAnimation() {
     if (_previewAnimInterval) return; // Already running
     _previewAnimInterval = setInterval(() => {
+      if (document.hidden || !inMenu || !document.getElementById('campaignView').classList.contains('active-view')) return;
       _previewAnimFrame = (_previewAnimFrame + 2) % 360;
       drawWorldPreviewCanvas(false);
     }, 1000 / 30); // ~30fps for smooth animation

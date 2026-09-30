@@ -149,6 +149,7 @@
   }
 
   function triggerScreenShake(intensity = 5) {
+    if (OG.core.preferences.reducedMotion()) return;
     // On mobile, cap shake intensity to reduce CSS repaint cost
     const _mobileIntensity = isMobile ? Math.min(intensity, 12) : intensity;
     canvas.style.transform = `translate(${(Math.random() - 0.5) * _mobileIntensity}px, ${(Math.random() - 0.5) * _mobileIntensity}px)`;
@@ -158,6 +159,7 @@
   // Throttle CSS filter changes on mobile — they trigger expensive repaints
   let _lastFilterChangeAt = 0;
   function pulseBrightness(amount = 1.6, duration = 120) {
+    if (OG.core.preferences.reducedMotion() || OG.core.preferences.lowEffects()) return;
     const now = performance.now();
     if (isMobile && (now - _lastFilterChangeAt) < 150) return;
     _lastFilterChangeAt = now;

@@ -1,4 +1,42 @@
-# Orbit Sync – Recent Changes & Roadmap
+# Orbit Sync
+
+A canvas timing game: tap (or press **Space**) while your orb is inside a target. **Escape** opens/closes the pause panel.
+
+## Stability and performance refresh
+
+- Refresh-rate-independent movement and feedback animation, including 120/144/240 Hz displays.
+- Pointer input ignores nested buttons, menus and secondary touches.
+- Explicit resume, app-switch auto-pause, pause timer race fixes and rotation handling.
+- GPU-friendly canvas rendering; cached ambient lighting and vignette without skipped-frame flicker.
+- Cached sphere progression reads, invalidated by saves and cross-tab storage changes.
+- Existing saves remain readable; Unicode saves and storage-quota fallback are covered by tests.
+- Daily login gifts no longer skip onboarding; new runs start from the Start button.
+- Named navigation destinations, SVG icons, clearer settings, reduced motion and battery-saver graphics.
+  The five toolbar icons now total 1,306 bytes instead of 4,400,817 bytes. Original PNGs are retained for compatibility but no longer requested by the page.
+
+## Run and test
+
+Serve the repository using `python3 -m http.server 3000`, then open `http://localhost:3000`.
+
+Unit tests (Node 22+; no dependencies):
+
+```sh
+node --test tests/*.test.js
+```
+
+Browser regression checks (Playwright/Chromium):
+
+```sh
+npm install --no-save playwright
+npx playwright install chromium
+node tests/browser-smoke.cjs
+```
+
+Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to use an existing Chromium installation. The browser test starts and stops its own local server. It checks mobile input, scoring, settings persistence, pause races, visibility, rotation, 30 regular campaign stage loads/renders, Phoenix pause/cleanup, and desktop keyboard play. Stage smoke tests are not full campaign playthroughs; real-device frame rates and late-game balance still need hands-on testing.
+
+---
+
+## Earlier changes and roadmap
 
 ## 📦 What we’ve done
 
