@@ -1,0 +1,77 @@
+/* Expedition is an isolated mode; campaign layout and progression stay independent. */
+.exp-entry { display:flex;align-items:center;gap:12px;flex-shrink:0;width:calc(100% - 28px);margin:12px auto;padding:14px 16px;text-align:left;color:#eaf7ff;background:linear-gradient(110deg,#123841,#182239);border:1px solid #4d918f;border-radius:16px;cursor:pointer; }
+.exp-entry>span:first-child {font:32px/1 system-ui;color:#75f2d9;}
+.exp-entry strong {display:block;font:700 14px/1.4 system-ui;letter-spacing:.4px;}
+.exp-entry small {display:block;font:12px/1.6 system-ui;color:#abc6d5;}
+.exp-entry>b {margin-left:auto;font:24px system-ui;color:#75f2d9;}
+#homeView {overflow-y:auto;overscroll-behavior:contain;}
+body.expedition-active > :not(#expeditionRoot):not(script):not(style) {visibility:hidden !important;}
+#expeditionRoot {position:absolute;inset:0;z-index:200;background:#070e1b;color:#edf6ff;font-family:system-ui,-apple-system,sans-serif;overflow:hidden;touch-action:none;isolation:isolate;}
+#expeditionRoot[hidden],#expeditionRoot [hidden] {display:none !important;}
+#expCanvas {position:absolute;inset:0;width:100%;height:100%;outline-offset:-5px;}
+#expeditionRoot button {font:inherit;cursor:pointer;touch-action:manipulation;}
+#expeditionRoot button:focus-visible {outline:3px solid #f2d68b;outline-offset:3px;}
+#expeditionRoot button:disabled {opacity:.42;cursor:default;}
+.exp-panel {position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:stretch;justify-content:safe center;gap:12px;padding:max(26px,env(safe-area-inset-top)) clamp(18px,6vw,34px) max(24px,env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;background:linear-gradient(160deg,#0d1c2af5,#080e1bf5 65%);box-sizing:border-box;}
+.exp-panel h1 {margin:0;color:#eef9ff;font:650 clamp(30px,8vw,46px)/1.07 system-ui;letter-spacing:-1.5px;text-shadow:none;text-align:left;}
+.exp-panel h1 em {color:#75ead5;font-style:normal;}
+.exp-panel h1:focus {outline:none;}
+.exp-eyebrow {font:700 10px/1.5 system-ui;letter-spacing:2px;color:#84c7c5;text-transform:uppercase;}
+.exp-lead {font:15px/1.6 system-ui;color:#b6c9db;margin:2px 0 8px;}
+.exp-setup-stats {display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-block:1px solid #273748;font:10px/1.4 system-ui;color:#93aabd;letter-spacing:1px;}
+.exp-setup-stats b {display:block;font-size:17px;color:#e9f9ff;letter-spacing:0;}
+.exp-section-label {margin-top:8px;font:700 11px/1.5 system-ui;letter-spacing:1px;color:#d4e5ed;}
+.exp-section-label>span {display:block;font:12px/1.5 system-ui;letter-spacing:0;color:#8da8bf;}
+.exp-cores {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.exp-core {display:flex;flex-direction:column;gap:7px;align-items:flex-start;min-width:0;padding:13px 10px;border:1px solid #34445b;border-radius:14px;background:#131e30;text-align:left;color:#dae8f5;}
+.exp-core.selected {border-color:var(--core-color);background:#1c3042;box-shadow:inset 0 0 0 1px var(--core-color);}
+.exp-core-mark {font:28px/1 system-ui;color:var(--core-color);}
+.exp-core strong {font:650 14px/1.3 system-ui;}
+.exp-core small {font:11px/1.5 system-ui;color:#b3c6d7;}
+.exp-how {display:flex;flex-direction:column;gap:7px;padding:15px;background:#102635;border-left:2px solid #69dbc9;border-radius:0 12px 12px 0;}
+.exp-how b {font-size:12px;letter-spacing:.6px;}
+.exp-how span {font-size:13px;line-height:1.5;color:#aec6d7;}
+.exp-button {min-height:46px;flex-shrink:0;border:1px solid #3d516b;border-radius:12px;background:#132036;color:#d9e8f5;padding:12px 16px;letter-spacing:1px;font-size:12px !important;font-weight:700 !important;}
+.exp-primary {background:#76e8d5;border-color:#76e8d5;color:#072129;box-shadow:0 7px 30px #63dfbc13;}
+.exp-button:hover,.exp-upgrades button:hover {filter:brightness(1.1);}
+.exp-sector-glyph {font:56px/1.3 system-ui;color:#91e6d8;padding:20px 0;}
+.exp-routes {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.exp-routes button {display:flex;flex-direction:column;gap:6px;padding:15px 10px;background:#101d30;border:1px solid #334960;border-radius:12px;color:#d6e5f5;}
+.exp-routes .selected {border-color:#6ce1cd;background:#16383d;}
+.exp-routes b {font-size:12px;letter-spacing:1px;}.exp-routes span {font-size:11px;color:#b2c5d4;}
+.exp-upgrades {display:grid;gap:10px;}
+.exp-upgrades button {display:flex;flex-direction:column;gap:5px;align-items:flex-start;text-align:left;border:1px solid #3c506b;border-radius:13px;padding:16px;background:linear-gradient(110deg,#1a2b42,#121d30);color:#e8f3ff;}
+.exp-upgrades b {font-size:19px;}.exp-upgrades span:last-child {font-size:13px;color:#b0c5d7;line-height:1.4;}
+.exp-footnote {font:12px/1.6 system-ui;color:#8fa6bc;margin:2px 0;}
+.exp-hud {position:absolute;z-index:2;top:max(16px,env(safe-area-inset-top));left:22px;right:22px;pointer-events:none;}
+.exp-top {display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.exp-top>div {display:flex;flex-direction:column;gap:3px;}
+#expScore {font:650 30px/1.1 system-ui;letter-spacing:-1px;color:#e5f6ff;}
+.exp-icon-button {pointer-events:auto;width:46px;height:46px;border-radius:14px;border:1px solid #3f5874;background:#142338;color:#dff9ff;font-size:23px !important;}
+.exp-stats {display:flex;justify-content:space-between;margin-top:15px;font:700 11px/1.4 system-ui;color:#a1b8d0;}
+#expLives {color:#8be3cd;}
+.exp-meter-label {display:flex;justify-content:space-between;font:700 9px/1.4 system-ui;letter-spacing:1.2px;color:#cdbb8a;margin-top:14px;}
+.exp-meter,.exp-boss-meter {height:5px;background:#253145;border-radius:4px;overflow:hidden;margin-top:5px;}
+.exp-meter i,.exp-boss-meter i {display:block;height:100%;width:0;background:linear-gradient(90deg,#73e8cc,#ffe2a1);border-radius:4px;transition:width 80ms linear;}
+#expBossBar {margin-top:12px;font:700 9px/1.4 system-ui;letter-spacing:1.5px;color:#ec8e9e;}
+.exp-boss-meter i {background:#f5869c;}
+.exp-arena-copy {position:absolute;top:calc(51% + min(34vw,21vh) + 30px);left:15px;right:15px;pointer-events:none;text-align:center;}
+#expFeedback {min-height:20px;font:700 13px/1.3 system-ui;letter-spacing:1px;color:#dff9ff;}
+#expFeedback[data-quality="perfect"] {color:#ffe4a1;}
+#expFeedback[data-quality="miss"] {color:#ff9bb0;}
+#expTiming {margin-top:5px;font:12px/1.4 system-ui;color:#a4b9cd;min-height:17px;}
+.exp-bottom {position:absolute;bottom:max(32px,env(safe-area-inset-bottom));left:20px;right:20px;display:flex;flex-direction:column;gap:9px;align-items:center;pointer-events:none;text-align:center;}
+#expInstruction {font:700 12px/1.5 system-ui;letter-spacing:.8px;color:#d4ecec;}
+#expProgress {font:10px/1.4 system-ui;color:#8fa8c0;letter-spacing:.9px;}
+.exp-result-score {font:650 56px/1 system-ui;letter-spacing:-2px;color:#92efdb;margin:16px 0;}
+.exp-result-score>span {display:block;font:700 10px/1.5 system-ui;letter-spacing:2px;color:#8baabe;margin-top:10px;}
+.exp-result-grid {display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding-block:17px;border-block:1px solid #293b4e;}
+.exp-result-grid>div {display:flex;flex-direction:column;gap:5px;}.exp-result-grid b{font-size:24px;}.exp-result-grid span{font-size:11px;color:#a2b8cc;}
+.exp-practice-list {display:flex;flex-direction:column;gap:10px;}
+.exp-practice-item {display:flex;flex-direction:column;text-align:left;gap:6px;padding:16px;border:1px solid #34506a;border-radius:12px;color:#e1f7fc;background:#142537;}
+.exp-practice-item span {font-size:12px;color:#a0b9cd;}
+@media(max-height:650px) { .exp-panel{justify-content:flex-start;padding-top:22px;padding-bottom:22px;}.exp-panel h1{font-size:32px;}.exp-cores{gap:6px;}.exp-bottom{bottom:20px;} }
+@media(max-height:500px) {
+ .exp-hud{top:12px;left:16px;right:16px;}.exp-top>div{max-width:70%;}#expScore{font-size:22px;}.exp-stats{position:absolute;right:65px;top:4px;gap:12px;margin:0;}.exp-meter-label{margin-top:8px;}.exp-meter{max-width:36%;}#expBossBar{max-width:36%;margin-top:8px;}.exp-bottom{bottom:12px;}.exp-arena-copy{top:auto;bottom:60px;left:auto;right:10px;width:26%;}#expFeedback{font-size:11px;}.exp-panel{padding-inline:8%;}
+}
+@media(prefers-reduced-motion:reduce) {.exp-meter i,.exp-boss-meter i{transition:none;}}

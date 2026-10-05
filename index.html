@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#080d19">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/refresh.css">
+  <link rel="stylesheet" href="css/expedition.css">
 </head>
 <body>
 
@@ -163,6 +164,8 @@
           </button>
 
         </div>
+
+        <button class="exp-entry" id="expeditionEntry" onclick="OrbitGame.systems.expedition.open()"><span aria-hidden="true">◎</span><span><strong>ORBITAL EXPEDITION</strong><small>New targets · build a run · face the Guardian</small></span><b aria-hidden="true">→</b></button>
 
         <!-- Orbit Rank Strip -->
         <div id="orbitRankStrip">
@@ -851,6 +854,8 @@
   <script src="js/systems/ceremony.js"></script>
   <script src="js/core/loop.js"></script>
   <script src="js/game-compat.js"></script>
+  <script src="js/systems/expedition-engine.js"></script>
+  <script src="js/ui/expedition.js"></script>
   <script src="js/core/boot.js"></script>
 </body>
 </html>

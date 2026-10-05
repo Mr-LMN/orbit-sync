@@ -2,6 +2,19 @@
 
 A canvas timing game: tap (or press **Space**) while your orb is inside a target. **Escape** opens/closes the pause panel.
 
+## Orbital Expedition
+
+Open **Orbital Expedition** from the home hub. Choose Anchor (forgiving), Prism (precision rewards), or Pulse (streak-driven speed and score), then clear three sectors and defeat the Gatekeeper. Between sectors choose a free upgrade and a steady or volatile route.
+
+- Tap targets, hold-and-release arcs, numbered links, and gold precision targets.
+- Perfect hits charge a seven-second Overdrive with double hit scores; upgrades can change charge rate and duration.
+- The Guardian telegraphs hold, link, and precision shield patterns before exposing its core.
+- Practice mechanics unlock as you reach their sector. Practice has unlimited lives and does not update run records.
+- Results show hit rate, perfects, streak, Overdrives and timing bias. Personal records use a separate save key; campaign progress is unaffected.
+- Tap/hold the arena or use Space. Escape, app switching, and resizing pause active runs. Interrupted holds restart without a penalty. Active runs are held in memory; reloading the page ends the current run.
+
+The new engine is independent of the campaign loop and uses small simulation steps. Run `node --test tests/*.test.js` for model regression tests and `node tests/expedition-browser.cjs` for the Playwright touch, hold, full boss-run, upgrade, practice and persistence checks. The browser setup instructions below also apply. `EXPEDITION_SCREENSHOTS=/path/to/folder` optionally captures mobile and landscape screenshots.
+
 ## Stability and performance refresh
 
 - Refresh-rate-independent movement and feedback animation, including 120/144/240 Hz displays.
