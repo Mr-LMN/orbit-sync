@@ -2,6 +2,16 @@
 
 A canvas timing game: tap (or press **Space**) while your orb is inside a target. **Escape** opens/closes the pause panel.
 
+## Campaign clarity refresh
+
+- Home cards keep their natural height and scroll on small screens; campaign and Expedition buttons no longer overlap.
+- Low health no longer dims or flashes the arena or paints a red pulse over the target rail. The lives badge carries the warning.
+- Active targets have a dark outline, bright body and visible timing boundaries, including mobile rendering. Dual targets outline only their remaining halves; decoy, echo and timed Phoenix cues retain their mechanics.
+- Stage/wave information sits outside the arena; combo and multiplier readouts are compact. The boost screen has readable cards and owns its overlay layer.
+- Timing feedback is always shown on phones, replacing the previous timing popup instead of accumulating text.
+
+Run `node tests/clarity-browser.cjs` for compact/landscape home layout, six low-life stage renders, and boost overlay checks. Set `CLARITY_SCREENSHOTS=/path/to/folder` to capture the views. These are browser checks, not a physical-device performance benchmark.
+
 ## Orbital Expedition
 
 Open **Orbital Expedition** from the home hub. Choose Anchor (forgiving), Prism (precision rewards), or Pulse (streak-driven speed and score), then clear three sectors and defeat the Gatekeeper. Between sectors choose a free upgrade and a steady or volatile route.

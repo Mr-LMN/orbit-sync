@@ -1941,13 +1941,6 @@ function draw() {
   ctx.fillStyle = '#07070a';
   ctx.fillRect(0, 0, viewportWidth, viewportHeight);
 
-  // Last-life background bleed — very subtle warm red tint over the whole arena
-  if (lives === 1 && !inMenu && isPlaying) {
-    const _llTint = (Math.sin(now * 0.0072) + 1) * 0.5;
-    ctx.fillStyle = `rgba(180, 10, 40, ${0.04 + _llTint * 0.06})`;
-    ctx.fillRect(0, 0, viewportWidth, viewportHeight);
-  }
-
   // World atmosphere glow — faint radial wash behind everything
   // Never skip painted frames: the opaque clear would make the lighting flicker.
   if (!inMenu && !OrbitGame.core.preferences.lowEffects()) {
@@ -2148,20 +2141,6 @@ function draw() {
     ctx.globalAlpha = 0.42;
     setShadowBlur(16);
     ctx.shadowColor = '#ff5a1f';
-    ctx.stroke();
-    ctx.globalAlpha = 1.0;
-    ctx.shadowBlur = 0;
-  }
-
-  // LAST-LIFE RING PULSE — drawn directly on the rail, pulses in canvas space
-  if (lives === 1 && !inMenu && isPlaying && !levelData.boss) {
-    const _llPhase = (Math.sin(now * 0.0072) + 1) * 0.5; // ~0.92Hz
-    buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, orbitRadius, 0, Math.PI * 2);
-    ctx.lineWidth = 3 + _llPhase * 8;
-    ctx.strokeStyle = '#ff2255';
-    ctx.globalAlpha = 0.22 + _llPhase * 0.42;
-    setShadowBlur(18 + _llPhase * 38);
-    ctx.shadowColor = '#ff2255';
     ctx.stroke();
     ctx.globalAlpha = 1.0;
     ctx.shadowBlur = 0;
@@ -2387,7 +2366,7 @@ function draw() {
 
   const orbColor = multiColors[Math.min(multiplier - 1, 7)];
   const baseBodyWidth = Math.max(4, Math.min(8, orbitRadius * 0.018));
-  const shouldDrawTargetMarkers = useHeavyEffects || worldShape === 'circle' || worldShape === 'pentagon';
+  const shouldDrawTargetMarkers = true; // Timing boundaries must survive mobile/battery rendering.
   const shouldDrawWorld2MechanicBrackets = shouldDrawTargetMarkers && worldNum === 2 && worldShape === 'diamond' && !isBoss;
 
   // TARGETS
@@ -2462,6 +2441,33 @@ function draw() {
     }
     targetAlpha *= phoenixAlphaMult;
     targetCoreAlpha *= phoenixAlphaMult;
+    // Keep playable arcs legible independently of world colour and graphics quality.
+    // Decoys, phased echoes, dual halves and timed Phoenix targets retain their own cues.
+    if (!t.isPhantom && !t.isEchoTarget && !t.isAccelerant && !t.isDual && !isPhoenixBossTarget) {
+      ctx.save();
+      ctx.globalAlpha = 1;
+      ctx.shadowBlur = 0;
+      ctx.lineCap = 'butt';
+      buildShapePath(ctx, worldShape, centerObj.x, centerObj.y, dynamicRadius, t.start, t.start + t.size);
+      ctx.strokeStyle = '#040911';
+      ctx.lineWidth = 16;
+      ctx.stroke();
+      ctx.strokeStyle = t.isLifeZone ? '#8dffd0' : '#fff1bd';
+      ctx.lineWidth = 10;
+      ctx.stroke();
+      // Boundary ticks use shape geometry, not circle-only angles.
+      for (const edge of [t.start, t.start + t.size]) {
+        const pt = getPointOnShape(edge, worldShape, centerObj.x, centerObj.y, dynamicRadius);
+        const dx = pt.x - centerObj.x, dy = pt.y - centerObj.y;
+        const length = Math.hypot(dx, dy) || 1;
+        ctx.beginPath();
+        ctx.moveTo(pt.x - dx / length * 9, pt.y - dy / length * 9);
+        ctx.lineTo(pt.x + dx / length * 9, pt.y + dy / length * 9);
+        ctx.strokeStyle = '#040911'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+      }
+      ctx.restore();
+    }
     const drawWorld2AngularBracket = (angle, config = {}) => {
       if (!shouldDrawWorld2MechanicBrackets) return;
       const radial = getPointOnShape(angle, worldShape, centerObj.x, centerObj.y, dynamicRadius);

@@ -12,12 +12,15 @@
   }
 
   function createPopup(x, y, text, color, hitQuality = null) {
-    const isMobile = window.innerWidth < 768;
-    const useHeavyEffects = !isMobile || (typeof OrbitGame !== 'undefined' && OrbitGame.state && OrbitGame.state.legacy.multiplier > 5);
-
-    // De-clutter strategy: Filter out mundane feedback unless requested heavily
-    if (text === 'SLOPPY' || text === 'EARLY' || text === 'LATE' || text === 'GOOD' || hitQuality === 'ok' || hitQuality === 'good') {
-         if (!useHeavyEffects && Math.random() > 0.3) return null;
+    // Timing feedback is instruction, not decoration: never randomly discard it on phones.
+    // Replace the previous timing popup so quick links stay readable without extra clutter.
+    const timingLabels = ['SLOPPY', 'EARLY', 'LATE', 'GOOD', 'PERFECT'];
+    if (timingLabels.includes(text) || hitQuality) {
+      for (let i = popups.length - 1; i >= 0; i--) {
+        if (popups[i].hitQuality || timingLabels.includes(popups[i].text)) {
+          releasePopup(popups.splice(i, 1)[0]);
+        }
+      }
     }
 
     if (popups.length >= MAX_POPUPS) {

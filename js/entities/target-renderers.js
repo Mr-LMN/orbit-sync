@@ -117,6 +117,17 @@
     const bodyAlpha = isDiamondWorld ? 0.93 : 0.74;
     const halfPad = isDiamondWorld ? 0.0018 : 0;
 
+    // Outline only live halves: never advertise a cleared half as hittable.
+    const liveHalves = [];
+    if (t.dualState === 'full' || t.dualState === 'left') liveHalves.push([leftStart, leftEnd]);
+    if (t.dualState === 'full' || t.dualState === 'right') liveHalves.push([rightStart, rightEnd]);
+    for (const [start, end] of liveHalves) {
+      rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, start, end);
+      ctx.globalAlpha = 1; ctx.shadowBlur = 0; ctx.lineCap = 'butt';
+      ctx.strokeStyle = '#040911'; ctx.lineWidth = 16; ctx.stroke();
+      ctx.strokeStyle = '#fff1bd'; ctx.lineWidth = 10; ctx.stroke();
+    }
+
     if (t.dualState === 'full' || t.dualState === 'left') {
       rc.buildShapePath(ctx, rc.worldShape, rc.centerObj.x, rc.centerObj.y, rc.dynamicRadius, leftStart + halfPad, leftEnd - halfPad);
       ctx.strokeStyle = shellColor; ctx.globalAlpha = shellAlpha * dualBreath; ctx.lineWidth = shellWidth; ctx.lineCap = 'butt';
