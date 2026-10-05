@@ -27,7 +27,8 @@ const server=http.createServer((req,res)=>{
     await page.waitForTimeout(700);
     assert.equal(await page.evaluate(()=>OrbitGame.systems.tutorial.isNewPlayerProfile()),true,'daily gift must not bypass onboarding');
     assert.equal(await page.evaluate(()=>inMenu),true,'no automatic run behind daily rewards');
-    await page.getByRole('button',{name:'COLLECT',exact:true}).click();
+    const collect=page.getByRole('button',{name:'COLLECT',exact:true});
+    if(await collect.isVisible()) await collect.click();
     await page.waitForTimeout(400);
     await page.evaluate(()=>{window.inputCalls=0;window.originalTap=tap;tap=()=>{window.inputCalls++;};});
     await page.locator('#menuSettingsBtn img').tap();
