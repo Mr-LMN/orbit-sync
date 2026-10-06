@@ -2,6 +2,18 @@
 
 A canvas timing game: tap (or press **Space**) while your orb is inside a target. **Escape** opens/closes the pause panel.
 
+## Orbit Breaker prototype
+
+Open **Orbit Breaker · Prototype** on the home hub. This is a separate 90-second action experiment: two connected orbits and a moving Hunter with 24 hull.
+
+- Tap cyan safe arcs for 18 energy or narrower gold precision arcs for 32. Let unwanted targets pass. Purple repairs restore one hull but reset your chain; empty taps cost 6 energy. The orbit you occupy has brighter targets.
+- Hold anywhere in the arena (or hold Space) to brake and aim. Release with at least 40 energy to launch to the other orbit. The aim line turns mint when the Hunter is aligned for impact. A release in the gold charge window (0.65–1.05 seconds) deals 5 damage; other launches deal 3.
+- Dodge telegraphed red strikes by braking or switching orbits. The Hunter reverses direction and attacks more often below half hull.
+- At half damage or 45 seconds, choose **Echo** (a delayed repeat of your shot for 2 damage if it connects) or **Slingshot** (dodging grants 20 energy and +2 damage on the next launch). Choice and pause screens stop the timer.
+- Retry directly from results. Local records use `orbitSync_breaker_v1`, separate from campaign and Expedition. Active runs do not survive reload. Returning to the hub abandons the run.
+
+This is a playtesting prototype, not a campaign replacement or a claim that retention has improved. It needs human feedback on the decisions and controls. Model tests cover complete wins with both upgrades at 30/60/144 Hz. `node tests/breaker-browser.cjs` checks touch/hold, hit damage, cancellation, pause/visibility/rotation, upgrades, retry, local records and keyboard input. Set `BREAKER_SCREENSHOTS=/path/to/folder` to capture screens. Browser tests accelerate setup/results with controlled model state; model win tests play through normal movement and input.
+
 ## Campaign clarity refresh
 
 - Home cards keep their natural height and scroll on small screens; campaign and Expedition buttons no longer overlap.
