@@ -38,8 +38,8 @@ test('time limit and death finish once; ended runs reject input',()=>{
  const s=new BreakerEngine();s.hp=1;s.threat={angle:s.angle,ring:1,time:.01};s.tick(.02);assert.equal(s.status,'ended');assert.equal(s.hp,0);
 });
 // Plays through normal movement and input, with no position/energy/health edits.
-function play(hz,upgrade){
- const e=new BreakerEngine(42);let brake=false;
+function play(hz,upgrade,focused=false){
+ const e=new BreakerEngine(42,focused);let brake=false;
  for(let i=0;i<100*hz && e.status!=='ended';i++){
   if(e.status==='upgrade')e.choose(upgrade);
   if(!e.flight){
@@ -63,4 +63,9 @@ test('both builds can win complete moving encounters at 30, 60 and 144 Hz',()=>{
  for(const hz of [30,60,144])for(const upgrade of ['echo','slingshot']){
   const e=play(hz,upgrade);assert.equal(e.won,true,`${hz}Hz ${upgrade}: time=${e.time} hp=${e.hp} enemy=${e.enemyHP} shots=${e.shots} hits=${e.hits}`);assert.ok(e.time<90);assert.equal(e.damage,24);
  }
+});
+
+test('focused game earns echo without an upgrade menu and can win at every tested refresh rate',()=>{
+ const e=new BreakerEngine(1,true);e.enemyHP=12;e.tick(.02);assert.equal(e.status,'playing');assert.equal(e.upgrade,'echo');assert.equal(e.drainEvents().some(e=>e.type==='choice'),false);
+ for(const hz of [30,60,144])assert.equal(play(hz,'echo',true).won,true);
 });

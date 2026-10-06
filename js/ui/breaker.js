@@ -1,23 +1,41 @@
 (function initBreaker(window,document){
   'use strict';
+  const focused=document.documentElement.dataset.experience==='focused';
   const OG=window.OrbitGame,{BreakerEngine,TAU,distance}=OG.systems.breakerModel;
-  const root=document.createElement('section');root.id='breakerRoot';root.hidden=true;root.setAttribute('aria-label','Orbit Breaker prototype');
+  const root=document.createElement('section');root.id='breakerRoot';root.hidden=true;root.setAttribute('aria-label',focused?'Orbit Sync':'Orbit Breaker prototype');
   root.innerHTML=`<canvas id="breakerCanvas" aria-label="Tap to collect targets. Hold to brake and aim, release to launch."></canvas>
     <div class="br-hud" hidden><div class="br-row"><div><div class="br-label">ORBIT BREAKER</div><strong id="brTime">90s</strong></div><span id="brHealth" class="br-health"></span><button id="brPause" aria-label="Pause Orbit Breaker">Ⅱ</button></div><div class="br-row br-label"><span>HUNTER HULL</span><span id="brEnemy"></span></div><div class="br-meter"><i id="brEnemyBar"></i></div><div class="br-row br-label"><span id="brScore"></span><span id="brMutation"></span></div></div>
     <div class="br-bottom" hidden><div id="brFeedback" aria-live="polite"></div><div id="brCharge"></div><div class="br-meter br-energy"><i id="brEnergy"></i></div><div class="br-legend"><span><b style="color:#7cead8">●</b>SAFE +18</span><span><b style="color:#ffdc85">◇</b>PRECISE +32</span><span><b style="color:#d3adff">+</b>REPAIR</span></div><div class="br-help">Tap to collect · Hold to aim · Release to launch</div></div>
     <div id="brPanel" class="br-panel" role="dialog" aria-modal="true" aria-labelledby="brTitle"></div>`;
   document.body.appendChild(root);
   const $=id=>root.querySelector('#'+id),canvas=$('breakerCanvas'),ctx=canvas.getContext('2d',{alpha:false}),panel=$('brPanel'),hud=root.querySelector('.br-hud'),bottom=root.querySelector('.br-bottom');
-  const KEY='orbitSync_breaker_v1';
+  const KEY=focused?'orbitSync_hunt_v1':'orbitSync_breaker_v1';
   let open=false,engine=null,raf=null,last=0,lastHUD=0,pointer=null,space=false,observer=null,focus=null;
   let width=390,height=700,cx=195,cy=350,radius=140,recorded=false,feedbackUntil=0,particles=[],beams=[];
   const colours={safe:'#7cead8',precision:'#ffdc85',repair:'#d3adff'};
   function read(){const r=OG.storage.getJSON(KEY,{})||{};const n=v=>Number.isFinite(v)&&v>=0?Math.floor(v):0;return {best:n(r.best),runs:n(r.runs),wins:n(r.wins)};}
   let record=read();
   function show(html){panel.innerHTML='<div>'+html+'</div>';panel.hidden=false;const h=$('brTitle');h.tabIndex=-1;h.focus({preventScroll:true});}
-  function buttons(primary,label='PLAY AGAIN'){return `<div class="br-buttons"><button class="primary" id="${primary}">${label}</button><button id="brExit">BACK TO HUB</button></div>`;}
+  function buttons(primary,label='PLAY AGAIN'){return `<div class="br-buttons"><button class="primary" id="${primary}">${label}</button><button id="brExit">${focused?'MAIN MENU':'BACK TO HUB'}</button></div>`;}
   function exitButton(){$('brExit').onclick=close;}
+  function home(){
+    engine=null;hud.hidden=true;bottom.hidden=true;particles=[];beams=[];
+    show(`<div class="br-kicker">ORBIT SYNC</div><div class="hunt-mark" aria-hidden="true"><i></i><b>↗</b></div><h1 id="brTitle">Charge.<br>Aim. Break.</h1><p>Two orbits. One Hunter. 90 seconds.<br>Collect energy, line up your shot, and launch.</p><div class="hunt-record"><span>PERSONAL BEST<strong>${record.best.toLocaleString()}</strong></span><span>HUNTERS DEFEATED<strong>${record.wins}</strong></span></div><div class="br-buttons"><button class="primary" id="brStart">PLAY</button><div class="hunt-secondary"><button id="huntHelp">HOW TO PLAY</button><button id="huntSettings">SETTINGS</button></div></div>`);
+    $('brStart').onclick=start;$('huntHelp').onclick=help;$('huntSettings').onclick=settings;
+  }
+  function help(){
+    show(`<div class="br-kicker">ONE FIGHT. THREE MOVES.</div><h1 id="brTitle">Learn the hunt.</h1><div class="br-rule"><b>1</b><span><strong>Tap to charge</strong>Your white orb moves by itself. Tap anywhere when it enters a cyan or gold arc. Let unwanted targets pass. Purple restores health but resets your scoring chain.</span></div><div class="br-rule"><b>2</b><span><strong>Hold to aim. Release to attack.</strong>Holding slows your orb. With 40 energy, release when the aim line turns green to strike the orange Hunter and switch orbits. A gold charge adds damage.</span></div><div class="br-rule"><b>3</b><span><strong>Stay out of the red arc</strong>Hold to brake or launch to the other orbit before the warning ends. Echo unlocks during the fight: your launches repeat automatically.</span></div><p>Destroy the Hunter before 90 seconds or five lost lives. Space also controls the orb; Escape pauses. Unfinished runs end if you reload.</p>${buttons('brStart','PLAY')}`);$('brStart').onclick=start;exitButton();
+  }
+  function settings(){
+    show(`<div class="br-kicker">MAKE IT COMFORTABLE</div><h1 id="brTitle">Settings.</h1><div class="hunt-options"><label>Sound effects<input id="huntSound" type="checkbox" ${OG.audio.sfxEnabled?'checked':''}></label><label>Vibration<input id="huntHaptic" type="checkbox" ${OG.audio.hapticsEnabled?'checked':''}></label><label>Reduced motion<input id="huntMotion" type="checkbox" ${OG.core.preferences.reducedMotion()?'checked':''}></label><label>Battery saver<input id="huntBattery" type="checkbox" ${OG.core.preferences.lowEffects()?'checked':''}></label></div><div class="br-buttons"><button class="primary" id="brExit">DONE</button></div>`);
+    $('huntSound').onchange=e=>{OG.audio.sfxEnabled=e.target.checked;OG.storage.setItem('orbitSync_hunt_sound',e.target.checked?'1':'0');};
+    $('huntHaptic').onchange=e=>{OG.audio.hapticsEnabled=e.target.checked;OG.storage.setItem('orbitSync_hunt_haptic',e.target.checked?'1':'0');};
+    $('huntMotion').onchange=e=>OG.core.preferences.setReducedMotion(e.target.checked);
+    $('huntBattery').onchange=e=>{OG.core.preferences.setQuality(e.target.checked?'low':'auto');resize();};exitButton();
+  }
+  if(focused){OG.audio.sfxEnabled=OG.storage.getItem('orbitSync_hunt_sound','1')!=='0';OG.audio.hapticsEnabled=OG.storage.getItem('orbitSync_hunt_haptic','1')!=='0';}
   function setup(){
+    if(focused){home();return;}
     engine=null;hud.hidden=true;bottom.hidden=true;
     show(`<div class="br-kicker">NEW EXPERIMENT / 90 SECONDS</div><h1 id="brTitle">Stop circling.<br>Start hunting.</h1><p>Break the moving Hunter before time runs out. Choose your pickups. Cross its path. Make the shot count.</p>
       <div class="br-rule"><b>01</b><span><strong>Tap for energy</strong>Collect cyan or gold arcs as your orb reaches them. Purple repairs cost your chain. Let unwanted targets pass.</span></div>
@@ -27,8 +45,9 @@
     $('brStart').onclick=start;exitButton();
   }
   function start(){
-    engine=new BreakerEngine(Date.now());recorded=false;particles=[];beams=[];pointer=null;space=false;panel.hidden=true;hud.hidden=false;bottom.hidden=false;last=performance.now();
-    $('brFeedback').textContent='45 ENERGY LOADED · HOLD TO LINE UP YOUR FIRST SHOT';feedbackUntil=performance.now()+5000;updateHUD();canvas.focus({preventScroll:true});
+    try{OG.audio.initAudio();}catch{}
+    engine=new BreakerEngine(Date.now(),focused);recorded=false;particles=[];beams=[];pointer=null;space=false;panel.hidden=true;hud.hidden=false;bottom.hidden=false;last=performance.now();
+    $('brFeedback').textContent='HOLD TO AIM · RELEASE WHEN THE LINE TURNS GREEN';feedbackUntil=performance.now()+5000;updateHUD();canvas.focus({preventScroll:true});
   }
   function resetInput(){engine?.cancel();space=false;if(pointer!==null&&canvas.hasPointerCapture(pointer))canvas.releasePointerCapture(pointer);pointer=null;}
   function pause(){if(!engine||engine.status!=='playing'||engine.paused)return;engine.pause();resetInput();show(`<div class="br-kicker">HUNT SUSPENDED</div><h1 id="brTitle">Take a breath.</h1><p>Your timer is frozen. Resume when you’re ready.</p>${buttons('brResume','RESUME HUNT')}`);$('brResume').onclick=()=>{panel.hidden=true;engine.resume();last=performance.now();canvas.focus({preventScroll:true});};exitButton();}
@@ -36,11 +55,11 @@
   function result(){
     resetInput();const e=engine,previous=record.best;
     if(!recorded){recorded=true;record.runs++;if(e.won)record.wins++;record.best=Math.max(record.best,e.score);OG.storage.setJSON(KEY,record);}
-    show(`<div class="br-kicker">${e.score>previous?'NEW PERSONAL BEST':'HUNT COMPLETE'}</div><h1 id="brTitle">${e.won?'Core broken.':e.hp<=0?'Outmanoeuvred.':'Time escaped.'}</h1><p>${e.won?'That is how you end an orbit. Try the other mutation next.':e.hits===0?'Hold to slow down. Align the aim line with the Hunter, then release.':'Choose your next opening: gold for energy, purple to survive, then launch.'}</p><div class="br-summary"><div><strong>${e.score.toLocaleString()}</strong>SCORE</div><div><strong>${e.damage} / 24</strong>DAMAGE</div><div><strong>${e.hits} / ${e.shots}</strong>LAUNCHES HIT</div><div><strong>${e.dodges}</strong>STRIKES DODGED</div></div><p>${Math.ceil(e.time)}s played · Best ${record.best.toLocaleString()} · ${e.upgrade||'No mutation'}</p>${buttons('brRetry')}`);$('brRetry').onclick=start;exitButton();
+    show(`<div class="br-kicker">${e.score>previous?'NEW PERSONAL BEST':'HUNT COMPLETE'}</div><h1 id="brTitle">${e.won?'Core broken.':e.hp<=0?'Outmanoeuvred.':'Time escaped.'}</h1><p>${e.won?(focused?'Hunter defeated. Can you do it with fewer missed shots?':'That is how you end an orbit. Try the other mutation next.'):e.hits===0?'Hold to slow down. Align the aim line with the Hunter, then release.':'Choose your next opening: gold for energy, purple to survive, then launch.'}</p><div class="br-summary"><div><strong>${e.score.toLocaleString()}</strong>SCORE</div><div><strong>${e.damage} / 24</strong>DAMAGE</div><div><strong>${e.hits} / ${e.shots}</strong>LAUNCHES HIT</div><div><strong>${e.dodges}</strong>STRIKES DODGED</div></div><p>${Math.ceil(e.time)}s played · Best ${record.best.toLocaleString()} · ${e.upgrade||(focused?'Hunter encounter':'No mutation')}</p>${buttons('brRetry')}`);$('brRetry').onclick=start;exitButton();
   }
   function resize(){const r=root.getBoundingClientRect();width=r.width;height=r.height;const dpr=Math.min(OG.core.preferences.lowEffects()?1:2,window.devicePixelRatio||1);canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);cx=width/2;cy=height<500?height*.52:height*.48;radius=Math.min(width*.39,height<500?height*.36:height*.235);}
-  function enter(){if(open||!inMenu)return;focus=document.activeElement;open=true;root.hidden=false;record=read();OG.core.loop.stopMainLoop();inMenu=false;isPlaying=false;OG.systems.tutorial?.suspendTutorialUI?.();if(typeof stopDynamicMusic==='function')stopDynamicMusic();document.body.classList.add('breaker-active');resize();setup();observer=new ResizeObserver(()=>{pause();resize();});observer.observe(root);last=performance.now();raf=requestAnimationFrame(frame);}
-  function close(){resetInput();open=false;root.hidden=true;engine=null;cancelAnimationFrame(raf);observer?.disconnect();document.body.classList.remove('breaker-active');inMenu=true;isPlaying=false;OG.core.loop.startMainLoop();focus?.focus({preventScroll:true});}
+  function enter(){if(open||!inMenu)return;focus=document.activeElement;open=true;root.hidden=false;if(focused){for(const el of document.body.children)if(el!==root&&!['SCRIPT','STYLE'].includes(el.tagName))el.inert=true;root.querySelector('.br-hud .br-label').textContent='ORBIT SYNC';$('brPause').setAttribute('aria-label','Pause game');}record=read();OG.core.loop.stopMainLoop();inMenu=false;isPlaying=false;OG.systems.tutorial?.suspendTutorialUI?.();if(typeof stopDynamicMusic==='function')stopDynamicMusic();document.body.classList.add('breaker-active');resize();setup();observer=new ResizeObserver(()=>{pause();resize();});observer.observe(root);last=performance.now();raf=requestAnimationFrame(frame);}
+  function close(){if(focused){resetInput();home();return;}resetInput();open=false;root.hidden=true;engine=null;cancelAnimationFrame(raf);observer?.disconnect();document.body.classList.remove('breaker-active');inMenu=true;isPlaying=false;OG.core.loop.startMainLoop();focus?.focus({preventScroll:true});}
   function point(a,ring){const r=radius*(.57+.43*ring);return {x:cx+Math.cos(a)*r,y:cy+Math.sin(a)*r};}
   function burst(a,ring,color){if(OG.core.preferences.reducedMotion()||OG.core.preferences.lowEffects())return;const p=point(a,ring);for(let i=0;i<14;i++){const t=i*TAU/14;particles.push({x:p.x,y:p.y,vx:Math.cos(t)*65,vy:Math.sin(t)*65,life:.5,color});}if(particles.length>100)particles.splice(0,particles.length-100);}
   function processEvents(){
@@ -54,7 +73,7 @@
       if(ev.type==='choice')choose();if(ev.type==='finish')result();
     }if(events.length||performance.now()-lastHUD>100){updateHUD();lastHUD=performance.now();}
   }
-  function updateHUD(){if(!engine)return;const e=engine;$('brTime').textContent=`${Math.ceil(90-e.time)}s`;$('brHealth').textContent='●'.repeat(e.hp)+'○'.repeat(5-e.hp);$('brHealth').setAttribute('aria-label',`${e.hp} of 5 hull`);$('brEnemy').textContent=`${e.enemyHP} / 24`;$('brEnemyBar').style.width=e.enemyHP/24*100+'%';$('brScore').textContent=`${e.score} PTS · CHAIN ${e.combo}`;$('brMutation').textContent=e.upgrade?e.upgrade.toUpperCase():'NO MUTATION';$('brEnergy').style.width=e.energy+'%';$('brCharge').textContent=`${e.energy} ENERGY · ${e.energy>=40?'LAUNCH READY':'40 NEEDED TO LAUNCH'}`;}
+  function updateHUD(){if(!engine)return;const e=engine;$('brTime').textContent=`${Math.ceil(90-e.time)}s`;$('brHealth').textContent='●'.repeat(e.hp)+'○'.repeat(5-e.hp);$('brHealth').setAttribute('aria-label',`${e.hp} of 5 hull`);$('brEnemy').textContent=`${e.enemyHP} / 24`;$('brEnemyBar').style.width=e.enemyHP/24*100+'%';$('brScore').textContent=focused?`${e.score} POINTS`:`${e.score} PTS · CHAIN ${e.combo}`;$('brMutation').textContent=focused?(e.upgrade?'ECHO ONLINE':'BREAK THE HUNTER'):(e.upgrade?e.upgrade.toUpperCase():'NO MUTATION');$('brEnergy').style.width=e.energy+'%';$('brCharge').textContent=`${e.energy} ENERGY · ${e.energy>=40?'LAUNCH READY':'40 NEEDED TO LAUNCH'}`;}
   function arc(r,a,b,color,line=2){ctx.beginPath();ctx.arc(cx,cy,r,a,b);ctx.strokeStyle=color;ctx.lineWidth=line;ctx.stroke();}
   function draw(dt,now){
     ctx.fillStyle='#091020';ctx.fillRect(0,0,width,height);

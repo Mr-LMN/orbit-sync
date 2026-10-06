@@ -4,7 +4,8 @@
   const wrap = a => ((a % TAU) + TAU) % TAU;
   const distance = (a,b) => Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
   class BreakerEngine {
-    constructor(seed = 1) {
+    constructor(seed = 1, focused = false) {
+      this.focused=focused;
       this.seed=seed>>>0; this.time=0; this.status='playing'; this.paused=false;
       this.angle=-Math.PI/2; this.ring=1; this.energy=45; this.hp=5; this.enemyHP=24;
       this.enemyAngle=.6; this.enemyRing=.5; this.combo=0; this.score=0;
@@ -85,7 +86,9 @@
         this.emit('warning','RED ARC INCOMING · BRAKE OR SWITCH ORBITS');
       }
       if(!this.offered&&!this.flight&&!this.echo&&(this.time>=45||this.enemyHP<=12)){
-        this.offered=true;this.status='upgrade';this.cancel();this.emit('choice','CHOOSE YOUR MUTATION');
+        this.offered=true;
+        if(this.focused){this.upgrade='echo';this.emit('upgrade','ECHO ONLINE · EVERY LAUNCH STRIKES TWICE');}
+        else {this.status='upgrade';this.cancel();this.emit('choice','CHOOSE YOUR MUTATION');}
       }
     }
   }

@@ -74,7 +74,7 @@ const _lastStreakDay = OG.storage.getItem('orbitSync_streakDay') || '0';
 let dailyLoginStreak = parseInt(_lastStreakDay, 10) || 0;
 let _dailyBonusToShow = 0;
 
-if (_lastLoginStr !== _todayStr) {
+if (document.documentElement.dataset.experience !== 'focused' && _lastLoginStr !== _todayStr) {
   const _yesterday = new Date();
   _yesterday.setDate(_yesterday.getDate() - 1);
   const _wasYesterday = _lastLoginStr === _yesterday.toDateString();
