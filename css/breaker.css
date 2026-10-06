@@ -46,3 +46,19 @@ body.breaker-active > :not(#breakerRoot):not(script):not(style) {visibility:hidd
   .br-hud .br-label {font-size:9px;letter-spacing:1px;}
   .br-hud strong {font-size:22px;}
 }
+/* The main release has one home and one gameplay loop. Archived UI stays inert. */
+html[data-experience="focused"] body > :not(#breakerRoot):not(script):not(style) {display:none!important;}
+html[data-experience="focused"] .br-panel {background:radial-gradient(ellipse at 70% 20%,#193647,#091020 65%);}
+html[data-experience="focused"] .br-panel h1 {font-size:clamp(38px,11vw,58px);}
+.hunt-mark {width:94px;height:94px;border:1px solid #4c7585;border-radius:50%;margin:20px 0;display:grid;place-items:center;position:relative;}
+.hunt-mark i {position:absolute;inset:18px;border:2px solid #ffbc91;border-radius:50%;}
+.hunt-mark b {color:#93f6de;font:42px system-ui;z-index:1;}
+.hunt-record {display:flex;gap:30px;color:#a4bcd5;font-size:9px;letter-spacing:1.3px;margin:24px 0;}
+.hunt-record strong {display:block;color:#eef8ff;font-size:25px;letter-spacing:0;}
+.hunt-secondary {display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#breakerRoot .hunt-secondary button {font-size:11px;padding-inline:8px;}
+.hunt-options label {display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid #354359;font-size:16px;}
+.hunt-options input {width:24px;height:24px;accent-color:#8cf0d5;}
+@media(max-height:700px){.hunt-mark{width:66px;height:66px;margin:12px 0;}.hunt-mark i{inset:12px;}html[data-experience="focused"] .br-panel h1{margin:10px 0;}.hunt-record{margin:16px 0;}}
+/* Headings receive programmatic focus for screen readers, not a control outline. */
+#brTitle:focus {outline:none;}

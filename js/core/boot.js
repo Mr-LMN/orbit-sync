@@ -4,6 +4,11 @@
 
   function init() {
     if (OG.state.initialized) return true;
+    if (document.documentElement.dataset.experience === 'focused') {
+      OG.state.initialized = true;
+      OG.systems.breaker.open();
+      return true;
+    }
     if (!Array.isArray(campaign) || campaign.length === 0) {
       console.error('Campaign data is missing; boot aborted.');
       return false;

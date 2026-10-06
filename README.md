@@ -1,6 +1,10 @@
 # Orbit Sync
 
-A canvas timing game: tap (or press **Space**) while your orb is inside a target. **Escape** opens/closes the pause panel.
+Orbit Sync now opens into one game: **collect energy → hold to aim → release through the Hunter → switch orbits**. One Play button starts a 90-second encounter. At half enemy hull or 45 seconds, Echo activates automatically without a build-selection interruption. The enemy reverses direction below half hull. Every run uses the same controls and goal.
+
+The main menu has Play, How to Play, Settings, personal best and victories. There are no mode selectors, shops, currencies, daily rewards or campaign maps in this experience. Sound, vibration, reduced motion and battery saver are available in its own settings. Main-game records use `orbitSync_hunt_v1`; prior records and campaign saves are preserved. Active runs do not survive reload.
+
+`node tests/focused-browser.cjs` checks the default experience. Set `FOCUSED_SCREENSHOTS` to capture it. Earlier browser suites target `legacy.html`, an archived entry point retained for regression testing and old saves; it is not linked from the main game. The older systems below document that archive.
 
 ## Orbit Breaker prototype
 

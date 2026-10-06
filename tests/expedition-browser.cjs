@@ -9,7 +9,7 @@ try { ({chromium}=require('playwright')); }
 catch { ({chromium}=require(path.join(process.env.CODEX_PRIMARY_RUNTIME_NODE_MODULES,'playwright'))); }
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{
-  const filename=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0] === '/' ? '/index.html' : req.url.split('?')[0]));
+  const filename=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0] === '/' ? '/legacy.html' : req.url.split('?')[0]));
   if(!filename.startsWith(root+path.sep)){res.writeHead(403);return res.end();}
   const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.png':'image/png','.mp3':'audio/mpeg'};
   try{res.setHeader('Content-Type',types[path.extname(filename)]||'application/octet-stream');res.end(fs.readFileSync(filename));}
