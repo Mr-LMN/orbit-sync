@@ -2,7 +2,7 @@
   const OG = window.OrbitGame;
   OG.core = OG.core || {};
   const blocked = 'button, input, select, textarea, label, a, [role="button"], [contenteditable], [onclick], ' +
-    '#expeditionRoot, #settingsModal, #shopModal, #augmentSelect, #challengePreview, #adminToolsPanel, ' +
+    '#breakerRoot, #expeditionRoot, #settingsModal, #shopModal, #augmentSelect, #challengePreview, #adminToolsPanel, ' +
     '#screenOverlay, #lockedWorldOverlay, #mainMenu, #tutorialOverlay, #tutorialMask, ' +
     '#perkSelectionModal, #adSimulationOverlay, #loginSplashOverlay';
   let listenersBound = false;
@@ -21,7 +21,7 @@
   }
 
   function onKeyDown(event) {
-    if (OG.systems.expedition?.isOpen()) return;
+    if (OG.systems.expedition?.isOpen() || OG.systems.breaker?.isOpen()) return;
     if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.code === 'Escape') {
       if (inMenu) return;
