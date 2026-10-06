@@ -59,12 +59,14 @@
       let remaining=Math.min(.25,Math.max(0,dt));
       while(remaining>0&&this.status==='playing') {const step=Math.min(remaining,1/120);this.step(step);remaining-=step;}
     }
+    enemyVelocity(){return this.enemyHP<=12?-.48:.38;}
+    attackDelay(){return this.enemyHP<=12?4.4:6;}
     step(dt){
       this.time+=dt;
       if(this.time>=90){this.time=90;this.finish(false);return;}
       if(this.holding)this.held+=dt;
       if(!this.flight)this.angle=wrap(this.angle+dt*1.4*(this.holding&&this.held>=.18?.28:1));
-      this.enemyAngle=wrap(this.enemyAngle+dt*(this.enemyHP<=12?-.48:.38));
+      this.enemyAngle=wrap(this.enemyAngle+dt*this.enemyVelocity());
       this.enemyRing=.5+Math.sin(this.time*.8)*.13;
       for(const t of this.targets)t.cooldown=Math.max(0,t.cooldown-dt);
       if(this.flight){
@@ -82,7 +84,7 @@
           else {this.dodges++;if(this.upgrade==='slingshot'){this.energy=Math.min(100,this.energy+20);this.slingshot=true;}this.emit('dodge',this.upgrade==='slingshot'?'DODGE · +20 ENERGY · NEXT SHOT +2':'DODGED');}
         }
       }else if(this.time>=this.nextAttack){
-        this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.nextAttack=this.time+(this.enemyHP<=12?4.4:6);
+        this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.nextAttack=this.time+this.attackDelay();
         this.emit('warning','RED ARC INCOMING · BRAKE OR SWITCH ORBITS');
       }
       if(!this.offered&&!this.flight&&!this.echo&&(this.time>=45||this.enemyHP<=12)){
