@@ -14,7 +14,7 @@
     ['Event horizon','wraith',36,65,'The final hunt. Stay calm, charge gold, launch clean.']
   ].map(([name,kind,hull,par,hint],id)=>({id,name,kind,hull,par,hint,region:['AFTERGLOW','IRON VEIL','DEEP SIGNAL'][Math.floor(id/3)]}));
   const skins=[{id:'mint',name:'Ion',stars:0,color:'#a8ffe7'},{id:'gold',name:'Solar',stars:6,color:'#ffdc85'},{id:'violet',name:'Nebula',stars:15,color:'#d3adff'},{id:'rose',name:'Nova',stars:24,color:'#ff9eb7'}];
-  const frames=[{id:'orb',name:'Orb',stars:0},{id:'diamond',name:'Prism',stars:3},{id:'comet',name:'Comet',stars:12}];
+  const frames=[{id:'orb',name:'Orb',stars:0},{id:'diamond',name:'Prism',stars:1},{id:'comet',name:'Comet',stars:12}];
   const trails=[{id:'stream',name:'Stream',stars:0},{id:'sparks',name:'Stardust',stars:9},{id:'ribbon',name:'Ribbon',stars:18}];
   const guides={
     stage: {title:'Know your target',focus:'enemy'},
@@ -30,7 +30,7 @@
     raw=raw&&typeof raw==='object'?raw:{};old=old&&typeof old==='object'?old:{};
     const medals=encounters.map((_,i)=>integer(raw.medals?.[i],3));
     const times=encounters.map((_,i)=>Number.isFinite(raw.times?.[i])&&raw.times[i]>0?raw.times[i]:null);
-    const p={version:2,tutorial:raw.tutorial===true,medals,times,best:integer(raw.best??old.best),runs:integer(raw.runs??old.runs),wins:integer(raw.wins??old.wins),skin:raw.skin||'mint',frame:raw.frame||'orb',trail:raw.trail||'stream',coaching:raw.coaching!==false,seen:guideKeys.filter(k=>Array.isArray(raw.seen)&&raw.seen.includes(k))};
+    const p={version:2,tutorial:raw.tutorial===true,introV3:raw.introV3===true,medals,times,best:integer(raw.best??old.best),runs:integer(raw.runs??old.runs),wins:integer(raw.wins??old.wins),skin:raw.skin||'mint',frame:raw.frame||'orb',trail:raw.trail||'stream',coaching:raw.coaching!==false,seen:guideKeys.filter(k=>Array.isArray(raw.seen)&&raw.seen.includes(k))};
     if(!skins.some(s=>s.id===p.skin&&s.stars<=total(p)))p.skin='mint';
     for(const [key,items] of [['frame',frames],['trail',trails]])if(!items.some(i=>i.id===p[key]&&i.stars<=total(p)))p[key]=items[0].id;return p;
   }
@@ -45,17 +45,33 @@
     return {stars,objectives,gained:p.medals[e.encounter.id]-old,unlocks:[...skins,...frames,...trails].filter(s=>s.stars>before&&s.stars<=total(p))};
   }
   class HuntEngine extends BreakerEngine {
-    constructor(id=0,seed=1,training=false){
+    constructor(id=0,seed=1,training=false,guidedRun=false){
       super(seed,true);this.encounter=encounters[integer(id,8)];this.maxEnemyHP=this.encounter.hull;this.enemyHP=this.maxEnemyHP;
-      this.training=training;this.lesson=training?'collect':null;this.offered=true; // One stable moveset; no mid-fight mutations.
+      this.guidedRun=guidedRun&&this.encounter.id===0;training=training||this.guidedRun;this.training=training;this.lesson=training?'collect':null;this.offered=true; // One stable moveset; no mid-fight mutations.
       this.nextAttack=training?Infinity:7;this.targets.forEach(t=>{if(t.kind==='safe')t.width=.39;});
-      if(training){this.energy=22;this.maxEnemyHP=5;this.enemyHP=5;this.angle=this.targets.find(t=>t.ring===1&&t.kind==='safe').angle;this.enemyAngle=this.angle;}
+      if(training){this.lessonTargets=this.targets;this.energy=0;this.maxEnemyHP=3;this.enemyHP=3;this.angle=-Math.PI/2;this.enemyAngle=this.angle;this.setLesson('collect');}
+    }
+    get enemyVisible(){return !this.training||this.lesson==='aim';}
+    setLesson(lesson){
+      this.lesson=lesson;this.cancel();this.flight=null;
+      const kind={collect:'safe',gold:'precision',repair:'repair'}[lesson];
+      this.targets=kind?[{ring:this.ring,kind,angle:this.angle,width:kind==='precision'?.14:.39,cooldown:0}]:[];
+      if(lesson==='repair')this.hp=4;
+      if(lesson==='aim'){this.energy=Math.max(40,this.energy);this.enemyAngle=this.angle;}
+      if(lesson==='dodge')this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};
+      this.emit('lesson',lesson);
+    }
+    completeIntro(){
+      this.cancel();this.threat=null;
+      if(!this.guidedRun){super.finish(true);return;}
+      // Teaching is part of stage one, but practice damage/time never earns medals.
+      this.training=false;this.lesson=null;this.targets=this.lessonTargets;this.enemyHP=this.encounter.hull;this.maxEnemyHP=this.enemyHP;
+      this.hp=5;this.energy=45;this.angle=-Math.PI/2;this.ring=1;this.enemyAngle=.6;
+      this.score=0;this.hits=0;this.shots=0;this.damage=0;this.dodges=0;this.repairs=0;this.combo=0;this.time=0;this.nextAttack=7;
+      this.emit('introduced','Now defeat the moving enemy.');
     }
     finish(won){
-      if(this.training&&won){
-        if(this.lesson==='aim'){this.lesson='dodge';this.enemyHP=0;this.cancel();this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.emit('lesson','3 / 3 · HOLD TO BRAKE · STAY OUT OF THE RED ARC');}
-        return;
-      }
+      if(this.training&&won){if(this.lesson==='aim')this.setLesson('dodge');return;}
       super.finish(won);
     }
     get shielded(){return !this.training&&this.encounter.kind==='sentinel'&&this.time%5<2.5;}
@@ -67,13 +83,14 @@
     }
     attackDelay(){return this.encounter.kind==='wraith'?4.8:6-this.encounter.id%3*.6;}
     collect(){
+      const valid=this.training&&this.targets.some(t=>t.ring===this.ring&&t.cooldown<=0&&distance(this.angle,t.angle)<=t.width);
       super.collect();
-      if(this.training&&this.lesson==='collect'&&this.energy>=40){this.lesson='aim';this.emit('lesson','NOW HOLD · RELEASE WHEN THE CHARGE TURNS GOLD');}
+      if(valid){const next={collect:'gold',gold:'repair',repair:'aim'}[this.lesson];if(next)this.setLesson(next);}
     }
     release(){
-      if(this.training&&this.lesson==='collect'&&this.held>=.18){this.cancel();this.emit('lesson','QUICK TAP FIRST · COLLECT THE CYAN ARC');return;}
+      if(this.training&&['collect','gold','repair'].includes(this.lesson)&&this.held>=.18){this.cancel();this.emit('miss','A quick tap collects this pickup.');return;}
       super.release();
-      if(this.training&&this.energy<40)this.energy=40;
+      if(this.training&&this.lesson==='aim'&&this.energy<40)this.energy=40;
     }
     strike(a,damage,perfect,echo=false){
       if(this.shielded&&distance(a,this.enemyAngle)<=.3){this.emit('blocked','SHIELDED · WAIT FOR OPEN');return;}
@@ -84,7 +101,7 @@
       const a=this.angle;super.step(dt);this.time=0;
       // Safe, hands-on rehearsal: the target waits, then the launch is aligned.
       if(this.lesson!=='dodge'&&!this.flight){this.angle=a;this.enemyAngle=a;}
-      if(this.lesson==='dodge'){this.hp=5;if(this.dodges>0){super.finish(true);return;}if(!this.threat){this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.emit('lesson','TRY AGAIN · HOLD TO SLOW DOWN BEFORE THE STRIKE');}}
+      if(this.lesson==='dodge'){this.hp=5;if(this.dodges>0){this.completeIntro();return;}if(!this.threat){this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.emit('lesson','TRY AGAIN · HOLD TO SLOW DOWN BEFORE THE STRIKE');}}
     }
   }
   const api={HuntEngine,encounters,skins,frames,trails,guides,profile,total,unlocked,award};

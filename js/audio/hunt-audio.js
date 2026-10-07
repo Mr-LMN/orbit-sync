@@ -5,7 +5,7 @@
   a.sfxEnabled=OG.storage.getItem('orbitSync_hunt_sound','1')!=='0';
   a.musicEnabled=OG.storage.getItem('orbitSync_hunt_music','1')!=='0';
   a.hapticsEnabled=OG.storage.getItem('orbitSync_hunt_haptic','1')!=='0';
-  a.initAudio=()=>{try{if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ctx=new AC();bus=ctx.createGain();bus.gain.value=.5;bus.connect(ctx.destination);}ctx.resume().catch(()=>{});}catch{}};
+  a.initAudio=()=>{try{if(!ctx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ctx=new AC();bus=ctx.createGain();bus.gain.value=.5;bus.connect(ctx.destination);}return ctx.resume().catch(()=>{});}catch{}};
   function note(freq,type,duration,volume,at=ctx?.currentTime||0){
     if(!ctx||ctx.state!=='running')return;
     const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=freq;
@@ -18,6 +18,7 @@
     if(sounds[type])note(...sounds[type]);
   };
   a.victory=()=>{if(ctx&&bus){bus.gain.setValueAtTime(.5,ctx.currentTime);a.effect('finish');}};
+  a.test=async()=>{await a.initAudio();if(!ctx||ctx.state!=='running')return false;bus.gain.setValueAtTime(.5,ctx.currentTime);note(523,'sine',.25,.2);note(784,'sine',.3,.15,ctx.currentTime+.15);return true;};
   a.play=()=>{a.initAudio();active=true;next=ctx?.currentTime||0;};
   a.stop=()=>{active=false;if(ctx&&bus){bus.gain.cancelScheduledValues(ctx.currentTime);bus.gain.setValueAtTime(0,ctx.currentTime);}};
   a.update=(e)=>{

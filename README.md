@@ -2,7 +2,7 @@
 
 One game: **tap to collect → hold to aim → release to attack and switch orbits**. The default page is now a standalone nine-hunt campaign. It loads seven scripts instead of the archived game's entire runtime and UI. No external fonts, audio downloads or build step are required.
 
-- A safe, hands-on first lesson waits for a real energy pickup, a held launch and a successful dodge. Mistakes in the dodge drill reset the attempt without losing hull; there is no time limit and can be replayed from How to Play.
+- Stage one teaches one mechanic at a time: cyan energy, gold energy, purple repair, an explicitly labelled enemy and a safe dodge. Only the relevant pickup/ring/HUD is visible. It then continues directly into the first real campaign fight. Teaching has no timer or failure penalty and can be replayed from How to Play.
 - Three enemy families keep the same controls: Hunters reverse at half hull, Sentinels alternate shields and openings every 2.5 seconds, and Wraiths reverse every four seconds. Each has three encounters, increasing hull and pressure. Shield status and reversal countdowns are visible in the HUD.
 - Clear a hunt to unlock the next. Three medals reward a clear, the displayed time target, and at least 70% launch accuracy with three hull remaining. Best medal totals and fastest clear times persist. Replays cannot farm duplicate medals.
 - Earn Solar, Nebula and Nova trails at 6, 15 and 24 medals. Equip them in Campaign; they do not change combat stats. Results show the next hunt, objective outcomes and rewards.
@@ -10,16 +10,22 @@ One game: **tap to collect → hold to aim → release to attack and switch orbi
 
 Progress uses `orbitSync_hunt_campaign_v2`. Existing hunt best score/run/win totals migrate once when this profile is first saved; old records and campaign saves are untouched. Active fights do not survive reload. Saves are local to this browser; clearing site data clears progress. When browser storage is blocked, results explain the session-only fallback.
 
+## First campaign onboarding
+
+Players who have not completed this version of onboarding are offered stage one first, without losing any earned campaign progress or cosmetics. The five introductory actions require real input. Practice hits, time and score reset before the actual fight and cannot earn medals. Clearing that fight awards normal progression; even a one-medal clear now unlocks the Prism frame. Existing unlock thresholds are otherwise unchanged.
+
+Music, combat effects, vibration and all cosmetic options are retained. A home-screen Sound toggle restores both music and effects on request; Settings retains separate switches and adds a short Test Sound control. Browser audio still requires an input gesture and audible device volume.
+
 ## Clear colour controls
 
-The arena uses one changing action prompt instead of simultaneous legends and centre instructions. Hull and energy are labelled explicitly; score remains on results. The Colour Guide explains white player, cyan/gold energy arcs, purple repair arcs, red danger arcs, enemy triangles, green/orange/grey aim lines, the gold charge window, white enemy shields and faded pickups. First-time players see it before practice; the in-fight button freezes the timer and resumes the same encounter. Brief hit/pickup/miss feedback shares the instruction slot.
+The arena uses one changing action prompt instead of simultaneous legends and centre instructions. Hull and energy are labelled explicitly; score remains on results. The Colour Guide explains white player, cyan/gold energy arcs, purple repair arcs, red danger arcs, enemy triangles, green/orange/grey aim lines, the gold charge window, white enemy shields and faded pickups. The first campaign starts directly with a single cyan pickup; the full guide stays optional; the in-fight button freezes the timer and resumes the same encounter. Brief hit/pickup/miss feedback shares the instruction slot.
 
 ## Guided mastery and customization
 
 - Every unseen stage opens a field guide with the enemy highlighted in the frozen arena. First incoming strikes, Hunter reversals, Sentinel openings, Wraith reversals and low-hull repairs get contextual explanations. Coaching waits until a hold or flight finishes before interrupting. Seen explanations persist in the existing profile.
 - Dismiss a coach to resume with the timer unchanged. Automatic guidance can be disabled from a coach or Settings. The pause menu can reopen the current enemy briefing at any time during a normal hunt. Core practice remains replayable through How to Play.
 - Tutorial pickup, enemy and danger-arc highlights use white outlines and labels; animation and colour are not their only cues. Portrait and landscape coaching reserve separate space for the arena and instructions. Dialog controls trap keyboard focus.
-- Customize offers four colours, three frames and three trail styles, independently combinable. Locked rewards can be previewed without equipping them. Prism unlocks at 3 medals, Stardust at 9, Comet at 12 and Ribbon at 18, in addition to the existing colour rewards. All appearance choices preserve combat geometry and stats. A white player centre remains visible with every loadout.
+- Customize offers four colours, three frames and three trail styles, independently combinable. Locked rewards can be previewed without equipping them. Prism unlocks at 1 medal (the first campaign clear), Stardust at 9, Comet at 12 and Ribbon at 18, in addition to the existing colour rewards. All appearance choices preserve combat geometry and stats. A white player centre remains visible with every loadout.
 - Save migration validates new appearance and guidance fields. Existing progress stays intact; unavailable storage uses the existing session fallback. Previewing and cancelling do not alter the equipped look.
 
 ## Validation and playtesting
