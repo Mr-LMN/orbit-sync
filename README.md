@@ -1,10 +1,28 @@
-# Orbit Sync
+# Orbit Sync — The Hunt
 
-Orbit Sync now opens into one game: **collect energy → hold to aim → release through the Hunter → switch orbits**. One Play button starts a 90-second encounter. At half enemy hull or 45 seconds, Echo activates automatically without a build-selection interruption. The enemy reverses direction below half hull. Every run uses the same controls and goal.
+One game: **tap to collect → hold to aim → release to attack and switch orbits**. The default page is now a standalone nine-hunt campaign. It loads seven scripts instead of the archived game's entire runtime and UI. No external fonts, audio downloads or build step are required.
 
-The main menu has Play, How to Play, Settings, personal best and victories. There are no mode selectors, shops, currencies, daily rewards or campaign maps in this experience. Sound, vibration, reduced motion and battery saver are available in its own settings. Main-game records use `orbitSync_hunt_v1`; prior records and campaign saves are preserved. Active runs do not survive reload.
+- A safe, hands-on first lesson waits for a real energy pickup and a held launch. It has no timer or incoming attacks and can be replayed from How to Play.
+- Three enemy families keep the same controls: Hunters reverse at half hull, Sentinels alternate shields and openings every 2.5 seconds, and Wraiths reverse every four seconds. Each has three encounters, increasing hull and pressure. Shield status and reversal countdowns are visible in the HUD.
+- Clear a hunt to unlock the next. Three medals reward a clear, the displayed time target, and at least 70% launch accuracy with three hull remaining. Best medal totals and fastest clear times persist. Replays cannot farm duplicate medals.
+- Earn Solar, Nebula and Nova trails at 6, 15 and 24 medals. Equip them in Campaign; they do not change combat stats. Results show the next hunt, objective outcomes and rewards.
+- Original synthesized music builds as the enemy loses hull. Separate music, effects, vibration, reduced-motion and battery-saver controls persist. Audio stops on pause, backgrounding and menus; battery saver caps rendering at 30 Hz. Visual effects have bounded particle counts.
 
-`node tests/focused-browser.cjs` checks the default experience. Set `FOCUSED_SCREENSHOTS` to capture it. Earlier browser suites target `legacy.html`, an archived entry point retained for regression testing and old saves; it is not linked from the main game. The older systems below document that archive.
+Progress uses `orbitSync_hunt_campaign_v2`. Existing hunt best score/run/win totals migrate once when this profile is first saved; old records and campaign saves are untouched. Active fights do not survive reload. Saves are local to this browser; clearing site data clears progress. When browser storage is blocked, results explain the session-only fallback.
+
+## Validation and playtesting
+
+Run `node --test tests/*.test.js` and `node tests/focused-browser.cjs`. The browser suite uses Playwright; set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` for a custom Chromium path and `FOCUSED_SCREENSHOTS` to capture screens. Model tests play all nine hunts through normal controls at 30, 60 and 144 Hz. Browser checks cover real tutorial input, held launches, pause, unlocks, save reload, settings, keyboard and phone layouts. Result fixtures accelerate UI checks; model win tests do not edit combat state.
+
+This patch creates a coherent progression loop; it does not establish commercial readiness or prove retention. Before expanding content, watch new players complete the tutorial and first three hunts. Measure tutorial completion, first-hunt wins, retries after losses, medals chased and next-day voluntary returns. Tune early difficulty from those observations. Test sound latency, touch responsiveness and battery use on physical iOS and Android devices. No analytics or network tracking is added.
+
+## Jules findings
+
+The screenshot's storage warning was already fixed on main: the fallback map has a null prototype and reads use `Object.prototype.hasOwnProperty.call`. The new default runtime uses namespaced audio and does not load legacy audio aliases. The archive retains its compatibility layer because its older callers still need it. The other 26 findings were not included in the screenshot and have not been claimed as reviewed.
+
+## Archived game
+
+`legacy.html` retains the previous hub and modes for old saves and regression checks. It is not linked from the current campaign. Earlier browser suites explicitly target that archive. The sections below describe those older systems.
 
 ## Orbit Breaker prototype
 

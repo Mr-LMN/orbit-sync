@@ -65,3 +65,8 @@ test('sphere progression is cached between writes and invalidated by a save', ()
   assert.equal(runtime.getSphereProgress('classic').level,3);
   assert.equal(reads,2);
 });
+
+test('fallback storage handles prototype-like keys without shadowing its own checks',()=>{
+ const {api}=storage({},true);
+ for(const key of ['hasOwnProperty','__proto__','constructor']){api.setItem(key,'safe');assert.equal(api.getItem(key),'safe');api.removeItem(key);assert.equal(api.getItem(key,null),null);}
+});
