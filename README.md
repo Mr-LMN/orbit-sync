@@ -2,13 +2,21 @@
 
 One game: **tap to collect → hold to aim → release to attack and switch orbits**. The default page is now a standalone nine-hunt campaign. It loads seven scripts instead of the archived game's entire runtime and UI. No external fonts, audio downloads or build step are required.
 
-- A safe, hands-on first lesson waits for a real energy pickup and a held launch. It has no timer or incoming attacks and can be replayed from How to Play.
+- A safe, hands-on first lesson waits for a real energy pickup, a held launch and a successful dodge. Mistakes in the dodge drill reset the attempt without losing hull; there is no time limit and can be replayed from How to Play.
 - Three enemy families keep the same controls: Hunters reverse at half hull, Sentinels alternate shields and openings every 2.5 seconds, and Wraiths reverse every four seconds. Each has three encounters, increasing hull and pressure. Shield status and reversal countdowns are visible in the HUD.
 - Clear a hunt to unlock the next. Three medals reward a clear, the displayed time target, and at least 70% launch accuracy with three hull remaining. Best medal totals and fastest clear times persist. Replays cannot farm duplicate medals.
 - Earn Solar, Nebula and Nova trails at 6, 15 and 24 medals. Equip them in Campaign; they do not change combat stats. Results show the next hunt, objective outcomes and rewards.
 - Original synthesized music builds as the enemy loses hull. Separate music, effects, vibration, reduced-motion and battery-saver controls persist. Audio stops on pause, backgrounding and menus; battery saver caps rendering at 30 Hz. Visual effects have bounded particle counts.
 
 Progress uses `orbitSync_hunt_campaign_v2`. Existing hunt best score/run/win totals migrate once when this profile is first saved; old records and campaign saves are untouched. Active fights do not survive reload. Saves are local to this browser; clearing site data clears progress. When browser storage is blocked, results explain the session-only fallback.
+
+## Guided mastery and customization
+
+- Every unseen stage opens a field guide with the enemy highlighted in the frozen arena. First incoming strikes, Hunter reversals, Sentinel openings, Wraith reversals and low-hull repairs get contextual explanations. Coaching waits until a hold or flight finishes before interrupting. Seen explanations persist in the existing profile.
+- Dismiss a coach to resume with the timer unchanged. Automatic guidance can be disabled from a coach or Settings. The pause menu can reopen the current enemy briefing at any time during a normal hunt. Core practice remains replayable through How to Play.
+- Tutorial pickup, enemy and danger-arc highlights use white outlines and labels; animation and colour are not their only cues. Portrait and landscape coaching reserve separate space for the arena and instructions. Dialog controls trap keyboard focus.
+- Customize offers four colours, three frames and three trail styles, independently combinable. Locked rewards can be previewed without equipping them. Prism unlocks at 3 medals, Stardust at 9, Comet at 12 and Ribbon at 18, in addition to the existing colour rewards. All appearance choices preserve combat geometry and stats. A white player centre remains visible with every loadout.
+- Save migration validates new appearance and guidance fields. Existing progress stays intact; unavailable storage uses the existing session fallback. Previewing and cancelling do not alter the equipped look.
 
 ## Validation and playtesting
 

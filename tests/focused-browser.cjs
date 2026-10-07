@@ -32,9 +32,10 @@ const server=http.createServer((req,res)=>{
   await page.locator('#brStart').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),true);
   await page.touchscreen.tap(195,350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'aim');
   await page.mouse.move(195,350);await page.mouse.down();await page.waitForTimeout(760);await page.mouse.up();
+  await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'dodge');await page.mouse.down();await page.waitForTimeout(1800);await page.mouse.up();
   await page.locator('#brRetry').waitFor();assert.ok(await page.getByText('Ready to hunt.').isVisible());
   assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).tutorial),true);
-  await page.locator('#brRetry').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),false);
+  await page.locator('#brRetry').click();await page.locator('#coachContinue').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),false);
   if(shots)await page.screenshot({path:path.join(shots,'fight.png')});
   await page.locator('#brPause').click();const paused=await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time),paused);await page.locator('#brExit').click();
   await page.locator('#huntRoute').click();assert.equal(await page.locator('[data-hunt="1"]').isDisabled(),true);assert.equal(await page.locator('[data-skin="gold"]').isDisabled(),true);await page.locator('#brExit').click();
@@ -44,11 +45,24 @@ const server=http.createServer((req,res)=>{
   await page.locator('#huntNext').waitFor();if(shots)await page.screenshot({path:path.join(shots,'results.png')});
   assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).medals[0]),3);
   await page.locator('#huntNext').click();assert.ok(await page.getByText('Crossfire',{exact:true}).isVisible());
+  await page.locator('#huntWorkshop').click();await page.locator('[data-pick="skin:rose"]').click();assert.equal(await page.locator('#huntEquip').isDisabled(),true);
+  await page.locator('[data-pick="skin:mint"]').click();await page.locator('[data-pick="frame:diamond"]').click();await page.locator('#huntEquip').click();assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).frame),'diamond');if(shots)await page.screenshot({path:path.join(shots,'workshop.png')});await page.locator('#brExit').click();
   await page.reload();await page.locator('#huntSettings').click();assert.equal(await page.locator('#huntSound').isChecked(),false);assert.equal(await page.locator('#huntMusic').isChecked(),false);assert.equal(await page.locator('#huntBattery').isChecked(),true);await page.locator('#brExit').click();
   await page.locator('#huntRoute').click();assert.equal(await page.locator('[data-hunt="1"]').isDisabled(),false);if(shots)await page.screenshot({path:path.join(shots,'campaign.png')});await page.locator('[data-hunt="1"]').click();
   await page.setViewportSize({width:360,height:640});if(shots)await page.screenshot({path:path.join(shots,'small-home.png')});
-  await page.locator('#brStart').click();await page.keyboard.down('Space');await page.waitForTimeout(750);await page.keyboard.up('Space');await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().shots),1);await page.keyboard.press('Escape');assert.ok(await page.locator('#brResume').isVisible());
+  await page.locator('#brStart').click();await page.locator('#coachContinue').click();await page.keyboard.down('Space');await page.waitForTimeout(750);await page.keyboard.up('Space');await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().shots),1);await page.keyboard.press('Escape');assert.ok(await page.locator('#brResume').isVisible());
   await page.setViewportSize({width:740,height:360});await page.locator('#brResume').click();await page.waitForTimeout(150);if(shots)await page.screenshot({path:path.join(shots,'landscape.png')});
-  assert.deepEqual(errors,[]);console.log('PASS standalone boot, preserved old saves, real touch tutorial, held launch, pause, campaign locks, medals/results/reload, settings, small screen and keyboard');
+  await page.evaluate(()=>{const p=OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{});p.medals=[3,3,3,0,0,0,0,0,0];p.coaching=true;p.seen=[];OrbitGame.storage.setJSON('orbitSync_hunt_campaign_v2',p);});
+  await page.reload();await page.locator('#brStart').click();assert.equal(await page.locator('#coachTitle').textContent(),'The shell');const frozen=await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time),frozen);if(shots)await page.screenshot({path:path.join(shots,'field-guide-landscape.png')});await page.locator('#coachContinue').click();
+  await page.evaluate(()=>{OrbitGame.systems.breaker.getEngine().time=2.6;});await page.locator('#coachContinue').waitFor();assert.ok(await page.getByText('The shield is open',{exact:true}).isVisible());await page.locator('#coachContinue').click();
+  await page.locator('#brPause').click();await page.locator('#huntFieldGuide').click();assert.ok(await page.locator('#coachContinue').isVisible());await page.locator('#coachContinue').click();
+  await page.evaluate(()=>{const p=OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{});p.medals=[3,3,3,3,3,3,0,0,0];p.seen=[];OrbitGame.storage.setJSON('orbitSync_hunt_campaign_v2',p);});
+  await page.reload();await page.setViewportSize({width:360,height:640});await page.locator('#brStart').click();if(shots)await page.screenshot({path:path.join(shots,'field-guide.png')});await page.locator('#coachContinue').click();await page.evaluate(()=>{OrbitGame.systems.breaker.getEngine().time=4.1;});await page.locator('#coachContinue').waitFor();assert.ok(await page.getByText('Watch the reversal',{exact:true}).isVisible());await page.locator('#coachDisable').click();assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).coaching),false);
+  await page.evaluate(()=>{const p=OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{});p.medals=Array(9).fill(0);p.coaching=true;p.seen=[];OrbitGame.storage.setJSON('orbitSync_hunt_campaign_v2',p);});await page.reload();await page.locator('#brStart').click();await page.locator('#coachContinue').click();
+  for(const [fixture,title] of [['reversal','The Hunter turns'],['repair','Purple repairs your hull'],['warning','Get out of the red arc']]){
+    await page.evaluate(f=>{const e=OrbitGame.systems.breaker.getEngine();if(f==='reversal')e.enemyHP=9;if(f==='repair')e.hp=3;if(f==='warning')e.threat={ring:e.ring,angle:e.angle+2,time:1.8};},fixture);
+    await page.locator('#coachContinue').waitFor();assert.equal(await page.locator('#coachTitle').textContent(),title);await page.locator('#coachContinue').click();
+  }
+  assert.deepEqual(errors,[]);console.log('PASS three-step real-input tutorial; all mechanic coaches; frozen timers; replay/disable guidance; cosmetic preview, locks and equip persistence; campaign, settings, keyboard and mobile layouts');
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});
