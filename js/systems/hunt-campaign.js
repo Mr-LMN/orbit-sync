@@ -10,17 +10,29 @@
     ['Siege engine','sentinel',28,70,'Use shield time to collect energy and line up.'],
     ['Iron heart','sentinel',34,65,'Break the shielded core. Every opening counts.'],
     ['Ghost signal','wraith',24,75,'The Wraith reverses at each pulse. Watch its trail.'],
-    ['Slipstream','wraith',30,70,'Faster pulses. Follow the aim line through each turn.'],
+    ['Slipstream','wraith',30,70,'More hull to break. Follow the aim line through each turn.'],
     ['Event horizon','wraith',36,65,'The final hunt. Stay calm, charge gold, launch clean.']
   ].map(([name,kind,hull,par,hint],id)=>({id,name,kind,hull,par,hint,region:['AFTERGLOW','IRON VEIL','DEEP SIGNAL'][Math.floor(id/3)]}));
   const skins=[{id:'mint',name:'Ion',stars:0,color:'#a8ffe7'},{id:'gold',name:'Solar',stars:6,color:'#ffdc85'},{id:'violet',name:'Nebula',stars:15,color:'#d3adff'},{id:'rose',name:'Nova',stars:24,color:'#ff9eb7'}];
+  const frames=[{id:'orb',name:'Orb',stars:0},{id:'diamond',name:'Prism',stars:3},{id:'comet',name:'Comet',stars:12}];
+  const trails=[{id:'stream',name:'Stream',stars:0},{id:'sparks',name:'Stardust',stars:9},{id:'ribbon',name:'Ribbon',stars:18}];
+  const guides={
+    stage: {title:'Know your target',focus:'enemy'},
+    warning:{title:'Get out of the red arc',focus:'threat',text:'The red arc is where the strike will land. Hold anywhere to slow your orb, or launch to switch orbits. You have until its countdown reaches zero.',action:'TRY THE DODGE'},
+    reversal:{title:'The Hunter turns',focus:'enemy',text:'At half hull the Hunter reverses direction. Keep following the enemy, then release when the aim line says RELEASE TO HIT.',action:'FOLLOW THE TURN'},
+    shield:{title:'The shield is open',focus:'enemy',text:'The solid shield has become a broken ring. This is your damage window. Line up and release before the OPEN countdown ends.',action:'TAKE THE OPENING'},
+    turn:{title:'Watch the reversal',focus:'enemy',text:'The Wraith changes direction every four seconds. Its trail shows its movement. Keep aiming after the turn; an old aim line can miss.',action:'TRACK THE WRAITH'},
+    repair:{title:'Purple repairs your hull',focus:'repair',text:'Tap as your white orb reaches a purple + arc to restore one hull. Repairs reset your scoring chain. You can always let a pickup pass.',action:'KEEP HUNTING'}
+  };
+  const guideKeys=[...encounters.map(e=>'stage'+e.id),'warning','reversal','shield','turn','repair'];
   const integer=(v,max=Number.MAX_SAFE_INTEGER)=>Number.isFinite(v)?Math.min(max,Math.max(0,Math.floor(v))):0;
   function profile(raw={},old={}){
     raw=raw&&typeof raw==='object'?raw:{};old=old&&typeof old==='object'?old:{};
     const medals=encounters.map((_,i)=>integer(raw.medals?.[i],3));
     const times=encounters.map((_,i)=>Number.isFinite(raw.times?.[i])&&raw.times[i]>0?raw.times[i]:null);
-    const p={version:2,tutorial:raw.tutorial===true,medals,times,best:integer(raw.best??old.best),runs:integer(raw.runs??old.runs),wins:integer(raw.wins??old.wins),skin:raw.skin||'mint'};
-    if(!skins.some(s=>s.id===p.skin&&s.stars<=total(p)))p.skin='mint';return p;
+    const p={version:2,tutorial:raw.tutorial===true,medals,times,best:integer(raw.best??old.best),runs:integer(raw.runs??old.runs),wins:integer(raw.wins??old.wins),skin:raw.skin||'mint',frame:raw.frame||'orb',trail:raw.trail||'stream',coaching:raw.coaching!==false,seen:guideKeys.filter(k=>Array.isArray(raw.seen)&&raw.seen.includes(k))};
+    if(!skins.some(s=>s.id===p.skin&&s.stars<=total(p)))p.skin='mint';
+    for(const [key,items] of [['frame',frames],['trail',trails]])if(!items.some(i=>i.id===p[key]&&i.stars<=total(p)))p[key]=items[0].id;return p;
   }
   const total=p=>p.medals.reduce((a,b)=>a+b,0);
   const unlocked=p=>{const first=p.medals.findIndex(n=>n===0);return first<0?8:first;};
@@ -30,7 +42,7 @@
     const objectives=[!!e.won,!!e.won&&e.time<=e.encounter.par,!!e.won&&e.hp>=3&&e.hits/Math.max(1,e.shots)>=.7];
     const stars=objectives.filter(Boolean).length;
     if(e.won){p.wins++;p.medals[e.encounter.id]=Math.max(old,stars);p.times[e.encounter.id]=Math.min(p.times[e.encounter.id]||Infinity,e.time);}
-    return {stars,objectives,gained:p.medals[e.encounter.id]-old,unlocks:skins.filter(s=>s.stars>before&&s.stars<=total(p))};
+    return {stars,objectives,gained:p.medals[e.encounter.id]-old,unlocks:[...skins,...frames,...trails].filter(s=>s.stars>before&&s.stars<=total(p))};
   }
   class HuntEngine extends BreakerEngine {
     constructor(id=0,seed=1,training=false){
@@ -38,6 +50,13 @@
       this.training=training;this.lesson=training?'collect':null;this.offered=true; // One stable moveset; no mid-fight mutations.
       this.nextAttack=training?Infinity:7;this.targets.forEach(t=>{if(t.kind==='safe')t.width=.39;});
       if(training){this.energy=22;this.maxEnemyHP=5;this.enemyHP=5;this.angle=this.targets.find(t=>t.ring===1&&t.kind==='safe').angle;this.enemyAngle=this.angle;}
+    }
+    finish(won){
+      if(this.training&&won){
+        if(this.lesson==='aim'){this.lesson='dodge';this.enemyHP=0;this.cancel();this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.emit('lesson','3 / 3 · HOLD TO BRAKE · STAY OUT OF THE RED ARC');}
+        return;
+      }
+      super.finish(won);
     }
     get shielded(){return !this.training&&this.encounter.kind==='sentinel'&&this.time%5<2.5;}
     enemyVelocity(){
@@ -64,10 +83,11 @@
       if(!this.training){super.step(dt);return;}
       const a=this.angle;super.step(dt);this.time=0;
       // Safe, hands-on rehearsal: the target waits, then the launch is aligned.
-      if(!this.flight){this.angle=a;this.enemyAngle=a;}
+      if(this.lesson!=='dodge'&&!this.flight){this.angle=a;this.enemyAngle=a;}
+      if(this.lesson==='dodge'){this.hp=5;if(this.dodges>0){super.finish(true);return;}if(!this.threat){this.threat={ring:this.ring,angle:wrap(this.angle+1.4*1.8),time:1.8};this.emit('lesson','TRY AGAIN · HOLD TO SLOW DOWN BEFORE THE STRIKE');}}
     }
   }
-  const api={HuntEngine,encounters,skins,profile,total,unlocked,award};
+  const api={HuntEngine,encounters,skins,frames,trails,guides,profile,total,unlocked,award};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
   if(root.OrbitGame)root.OrbitGame.systems.hunt=api;
 })(typeof window!=='undefined'?window:globalThis);
