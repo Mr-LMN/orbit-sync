@@ -10,6 +10,10 @@ One game: **tap to collect → hold to aim → release to attack and switch orbi
 
 Progress uses `orbitSync_hunt_campaign_v2`. Existing hunt best score/run/win totals migrate once when this profile is first saved; old records and campaign saves are untouched. Active fights do not survive reload. Saves are local to this browser; clearing site data clears progress. When browser storage is blocked, results explain the session-only fallback.
 
+## Clear colour controls
+
+The arena uses one changing action prompt instead of simultaneous legends and centre instructions. Hull and energy are labelled explicitly; score remains on results. The Colour Guide explains white player, cyan/gold energy arcs, purple repair arcs, red danger arcs, enemy triangles, green/orange/grey aim lines, the gold charge window, white enemy shields and faded pickups. First-time players see it before practice; the in-fight button freezes the timer and resumes the same encounter. Brief hit/pickup/miss feedback shares the instruction slot.
+
 ## Guided mastery and customization
 
 - Every unseen stage opens a field guide with the enemy highlighted in the frozen arena. First incoming strikes, Hunter reversals, Sentinel openings, Wraith reversals and low-hull repairs get contextual explanations. Coaching waits until a hold or flight finishes before interrupting. Seen explanations persist in the existing profile.

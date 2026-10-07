@@ -29,7 +29,7 @@ const server=http.createServer((req,res)=>{
   const shots=process.env.FOCUSED_SCREENSHOTS;if(shots)fs.mkdirSync(shots,{recursive:true});
   if(shots)await page.screenshot({path:path.join(shots,'home.png')});
   await page.locator('#huntSettings').click();await page.locator('#huntSound').uncheck();await page.locator('#huntMusic').uncheck();await page.locator('#huntBattery').check();await page.locator('#brExit').click();
-  await page.locator('#brStart').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),true);
+  await page.locator('#brStart').click();assert.ok(await page.getByText('Cyan arc · tap for energy',{exact:true}).isVisible());if(shots)await page.screenshot({path:path.join(shots,'colour-guide.png')});await page.locator('#colourPlay').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),true);
   await page.touchscreen.tap(195,350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'aim');
   await page.mouse.move(195,350);await page.mouse.down();await page.waitForTimeout(760);await page.mouse.up();
   await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'dodge');await page.mouse.down();await page.waitForTimeout(1800);await page.mouse.up();
@@ -37,6 +37,7 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).tutorial),true);
   await page.locator('#brRetry').click();await page.locator('#coachContinue').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),false);
   if(shots)await page.screenshot({path:path.join(shots,'fight.png')});
+  await page.locator('#huntColours').click();const colourTime=await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time),colourTime);await page.locator('#colourPlay').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().paused),false);
   await page.locator('#brPause').click();const paused=await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time),paused);await page.locator('#brExit').click();
   await page.locator('#huntRoute').click();assert.equal(await page.locator('[data-hunt="1"]').isDisabled(),true);assert.equal(await page.locator('[data-skin="gold"]').isDisabled(),true);await page.locator('#brExit').click();
   await page.locator('#brStart').click();
