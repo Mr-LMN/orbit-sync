@@ -3,7 +3,7 @@
   const OG=window.OrbitGame,{TAU,distance}=OG.systems.breakerModel;
   const campaign=OG.systems.hunt,{HuntEngine,encounters,skins,frames,trails,guides}=campaign;
   const KEY2='orbitSync_hunt_campaign_v2';
-  let progress=campaign.profile(OG.storage.getJSON(KEY2,{}),OG.storage.getJSON('orbitSync_hunt_v1',{})),selected=campaign.unlocked(progress),report=null;
+  let progress=campaign.profile(OG.storage.getJSON(KEY2,{}),OG.storage.getJSON('orbitSync_hunt_v1',{})),selected=progress.introV3?campaign.unlocked(progress):0,report=null;
   function save(){return OG.storage.setJSON(KEY2,progress);}
   const skin=()=>skins.find(s=>s.id===progress.skin)||skins[0];
   let coaching=null,actionText='',actionUntil=0;
@@ -26,8 +26,8 @@
     coaching=null;$('huntCoach').hidden=true;
     OG.audio.stop();engine=null;hud.hidden=true;bottom.hidden=true;particles=[];beams=[];
     const next=encounters[selected],stars=campaign.total(progress),unlock=[...skins,...frames,...trails].filter(s=>s.stars>stars).sort((a,b)=>a.stars-b.stars)[0];
-    show(`<div class="br-kicker">ORBIT SYNC / THE HUNT</div><div class="hunt-mark" aria-hidden="true"><i></i><b>↗</b></div><h1 id="brTitle">Make every<br>launch count.</h1><p class="hunt-tagline">Charge. Aim. Break.</p><div class="hunt-contract"><span>${next.region} · HUNT ${selected+1} / 9</span><h2>${next.name}</h2><p>${next.hint}</p><div class="hunt-stars">${'★'.repeat(progress.medals[selected])}${'☆'.repeat(3-progress.medals[selected])}<small> Clear · Under ${next.par}s · 70% accuracy + 3 hull</small>${progress.times[selected]?`<small>YOUR FASTEST · ${progress.times[selected].toFixed(1)}s</small>`:''}</div></div><div class="br-buttons"><button class="primary" id="brStart">${!progress.tutorial?'LEARN TO HUNT':progress.medals[selected]?'HUNT AGAIN':'HUNT '+(selected+1)}</button><button id="huntWorkshop">CUSTOMIZE YOUR ORB</button><div class="hunt-secondary"><button id="huntRoute">CAMPAIGN · ${stars}/27 ★</button><button id="huntSettings">SETTINGS</button></div></div><div class="hunt-unlock">${unlock?`${unlock.name} · ${Math.max(0,unlock.stars-stars)} more medals to unlock`:'All cosmetics earned. Master every hunt.'}</div><button class="hunt-text" id="huntHelp">How to play</button>`);
-    $('brStart').onclick=()=>progress.tutorial?start(false):help();$('huntHelp').onclick=help;$('huntSettings').onclick=settings;$('huntRoute').onclick=route;$('huntWorkshop').onclick=()=>workshop();
+    show(`<div class="br-kicker">ORBIT SYNC / THE HUNT</div><div class="hunt-mark" aria-hidden="true"><i></i><b>↗</b></div><h1 id="brTitle">Make every<br>launch count.</h1><p class="hunt-tagline">Charge. Aim. Break.</p><div class="hunt-contract"><span>${next.region} · HUNT ${selected+1} / 9</span><h2>${next.name}</h2><p>${next.hint}</p><div class="hunt-stars">${'★'.repeat(progress.medals[selected])}${'☆'.repeat(3-progress.medals[selected])}<small> Clear · Under ${next.par}s · 70% accuracy + 3 hull</small>${progress.times[selected]?`<small>YOUR FASTEST · ${progress.times[selected].toFixed(1)}s</small>`:''}</div></div><div class="br-buttons"><button class="primary" id="brStart">${selected===0&&!progress.introV3?'START CAMPAIGN':progress.medals[selected]?'HUNT AGAIN':'HUNT '+(selected+1)}</button><button id="huntWorkshop">CUSTOMIZE YOUR ORB</button><div class="hunt-secondary"><button id="huntRoute">CAMPAIGN · ${stars}/27 ★</button><button id="huntSettings">SETTINGS</button></div></div><div class="hunt-unlock">${unlock?`${unlock.name} · ${Math.max(0,unlock.stars-stars)} more medals to unlock`:'All cosmetics earned. Master every hunt.'}</div><div class="hunt-secondary"><button class="hunt-text" id="huntHelp">How to play</button><button class="hunt-text" id="huntSoundQuick">SOUND ${OG.audio.musicEnabled||OG.audio.sfxEnabled?'ON':'OFF'}</button></div>`);
+    $('brStart').onclick=()=>start(false);$('huntHelp').onclick=help;$('huntSettings').onclick=settings;$('huntRoute').onclick=route;$('huntWorkshop').onclick=()=>workshop();$('huntSoundQuick').onclick=()=>{const on=!(OG.audio.musicEnabled||OG.audio.sfxEnabled);OG.audio.musicEnabled=on;OG.audio.sfxEnabled=on;OG.storage.setItem('orbitSync_hunt_music',on?'1':'0');OG.storage.setItem('orbitSync_hunt_sound',on?'1':'0');if(on)OG.audio.test();$('huntSoundQuick').textContent='SOUND '+(on?'ON':'OFF');};
   }
   function route(){
     const available=campaign.unlocked(progress);
@@ -75,7 +75,8 @@
     $('colourPlay').onclick=()=>{if(resume){panel.hidden=true;panel.inert=true;canvas.inert=false;engine.resume();OG.audio.play();last=performance.now();canvas.focus({preventScroll:true});}else start(true);};if(!resume)exitButton();
   }
   function settings(){
-    show(`<div class="br-kicker">MAKE IT COMFORTABLE</div><h1 id="brTitle">Settings.</h1><div class="hunt-options"><label>Guided introductions<input id="huntGuidance" type="checkbox" ${progress.coaching?'checked':''}></label><label>Sound effects<input id="huntSound" type="checkbox" ${OG.audio.sfxEnabled?'checked':''}></label><label>Music<input id="huntMusic" type="checkbox" ${OG.audio.musicEnabled?'checked':''}></label><label>Vibration<input id="huntHaptic" type="checkbox" ${OG.audio.hapticsEnabled?'checked':''}></label><label>Reduced motion<input id="huntMotion" type="checkbox" ${OG.core.preferences.reducedMotion()?'checked':''}></label><label>Battery saver<input id="huntBattery" type="checkbox" ${OG.core.preferences.lowEffects()?'checked':''}></label></div><div class="br-buttons"><button class="primary" id="brExit">DONE</button></div>`);
+    show(`<div class="br-kicker">MAKE IT COMFORTABLE</div><h1 id="brTitle">Settings.</h1><div class="hunt-options"><label>Guided introductions<input id="huntGuidance" type="checkbox" ${progress.coaching?'checked':''}></label><label>Sound effects<input id="huntSound" type="checkbox" ${OG.audio.sfxEnabled?'checked':''}></label><label>Music<input id="huntMusic" type="checkbox" ${OG.audio.musicEnabled?'checked':''}></label><label>Vibration<input id="huntHaptic" type="checkbox" ${OG.audio.hapticsEnabled?'checked':''}></label><label>Reduced motion<input id="huntMotion" type="checkbox" ${OG.core.preferences.reducedMotion()?'checked':''}></label><label>Battery saver<input id="huntBattery" type="checkbox" ${OG.core.preferences.lowEffects()?'checked':''}></label></div><div class="br-buttons"><button id="huntTestAudio">TEST SOUND</button><button class="primary" id="brExit">DONE</button></div>`);
+    $('huntTestAudio').onclick=async()=>{$('huntTestAudio').textContent=await OG.audio.test()?'SOUND READY · CHECK DEVICE VOLUME':'AUDIO UNAVAILABLE';};
     $('huntGuidance').onchange=e=>{progress.coaching=e.target.checked;save();};
     $('huntMusic').onchange=e=>{OG.audio.musicEnabled=e.target.checked;OG.storage.setItem('orbitSync_hunt_music',e.target.checked?'1':'0');};
     $('huntSound').onchange=e=>{OG.audio.sfxEnabled=e.target.checked;OG.storage.setItem('orbitSync_hunt_sound',e.target.checked?'1':'0');};
@@ -84,7 +85,7 @@
     $('huntBattery').onchange=e=>{OG.core.preferences.setQuality(e.target.checked?'low':'auto');resize();};exitButton();
   }
   function start(training=false){
-    coaching=null;actionText='';actionUntil=0;$('huntCoach').hidden=true;hud.inert=false;OG.audio.play();engine=new HuntEngine(selected,Date.now(),training===true);recorded=false;report=null;particles=[];beams=[];pointer=null;space=false;panel.hidden=true;panel.inert=true;canvas.inert=false;hud.hidden=false;bottom.hidden=false;last=performance.now();
+    coaching=null;actionText='';actionUntil=0;$('huntCoach').hidden=true;hud.inert=false;OG.audio.play();engine=new HuntEngine(training===true?0:selected,Date.now(),training===true,training!==true&&selected===0&&!progress.introV3);recorded=false;report=null;particles=[];beams=[];pointer=null;space=false;panel.hidden=true;panel.inert=true;canvas.inert=false;hud.hidden=false;bottom.hidden=false;last=performance.now();
     $('brFeedback').textContent=engine.training?'QUICK TAP ANYWHERE · COLLECT THE CYAN ARC':engine.encounter.hint;feedbackUntil=performance.now()+5000;updateHUD();draw(0,performance.now());canvas.focus({preventScroll:true});
     if(!engine.training&&progress.coaching&&!progress.seen.includes('stage'+selected))coach('stage'+selected);
   }
@@ -93,7 +94,7 @@
   function result(){
     resetInput();OG.audio.stop();const e=engine;if(e.won)OG.audio.victory();
     if(e.training){
-      progress.tutorial=true;save();show(`<div class="br-kicker">CONTROLS LEARNED</div><h1 id="brTitle">Ready to hunt.</h1><p>You collected energy, landed a launch and dodged a strike. In a real hunt the enemy moves: hold to slow down, then release when your aim line turns green.</p><p>Red arcs show where a strike will land. Brake to let it pass, or launch to the other orbit.</p>${buttons('brRetry','START HUNT '+(selected+1))}`);$('brRetry').onclick=()=>start(false);exitButton();return;
+      progress.tutorial=true;progress.introV3=true;save();show(`<div class="br-kicker">CONTROLS LEARNED</div><h1 id="brTitle">Ready to hunt.</h1><p>You collected energy, landed a launch and dodged a strike. In a real hunt the enemy moves: hold to slow down, then release when your aim line turns green.</p><p>Red arcs show where a strike will land. Brake to let it pass, or launch to the other orbit.</p>${buttons('brRetry','START HUNT '+(selected+1))}`);$('brRetry').onclick=()=>start(false);exitButton();return;
     }
     if(!recorded){recorded=true;report=campaign.award(progress,e);report.saved=save();}
     const labels=['Core destroyed',`Finished under ${e.encounter.par}s`,'70% accuracy and at least 3 hull'];
@@ -114,17 +115,23 @@
         if(ev.type==='hit'){burst(ev.angle,engine.enemyRing,'#ffbc91');beams.push({angle:ev.angle,life:.3});if(OG.audio.hapticsEnabled&&!OG.core.preferences.reducedMotion()&&navigator.vibrate)navigator.vibrate(20);}
         if(ev.type==='collect')burst(ev.angle,ev.ring,'#7cead8');
       }
+      if(ev.type==='introduced'){resetInput();progress.tutorial=true;progress.introV3=true;for(const key of ['stage0','warning','repair'])if(!progress.seen.includes(key))progress.seen.push(key);save();actionText='Now the enemy moves. Charge, aim and defeat it to clear Stage 1.';actionUntil=performance.now()+4500;}
+      if(ev.type==='lesson'||ev.type==='introduced'){particles=[];beams=[];}
       if(ev.type==='finish')result();
-    }if(events.length||performance.now()-lastHUD>100){updateHUD();lastHUD=performance.now();}
+    }if(events.length||performance.now()-lastHUD>100){updateHUD();lastHUD=performance.now();}if(events.some(e=>e.type==='lesson'||e.type==='introduced'))draw(0,performance.now());
   }
   function updateHUD(){if(!engine)return;const e=engine;
-    root.querySelector('.br-hud .br-label').textContent=e.training?'FLIGHT SCHOOL':`${selected+1} / 9 · ${e.encounter.name.toUpperCase()}`;
-    $('brTime').textContent=e.training?'PRACTICE':`${Math.ceil(90-e.time)}s`;
+    root.querySelector('.br-hud .br-label').textContent=e.training?(e.guidedRun?'STAGE 1 · FIRST CONTACT':'REPLAY THE BASICS'):`${selected+1} / 9 · ${e.encounter.name.toUpperCase()}`;
+    $('brTime').textContent=e.training?`${['collect','gold','repair','aim','dodge'].indexOf(e.lesson)+1} / 5`:`${Math.ceil(90-e.time)}s`;
     $('brHealth').textContent=`HULL ${e.hp}/5`;$('brHealth').setAttribute('aria-label',`${e.hp} of 5 hull`);
+    $('brHealth').hidden=e.training&&['collect','gold'].includes(e.lesson);
+    $('brEnemy').parentElement.hidden=!e.enemyVisible;$('brEnemyBar').parentElement.hidden=!e.enemyVisible;
+    $('brMutation').parentElement.hidden=e.training;
+    $('brCharge').hidden=e.training&&['repair','dodge'].includes(e.lesson);$('brEnergy').parentElement.hidden=$('brCharge').hidden;
     $('brEnemy').textContent=`${e.enemyHP} / ${e.maxEnemyHP}`;$('brEnemyBar').style.width=e.enemyHP/e.maxEnemyHP*100+'%';
     $('brScore').textContent=e.training?'NO TIMER · NO DAMAGE':`${e.score} POINTS`;
     $('brMutation').textContent=e.training?'LEARN BY DOING':e.encounter.kind==='sentinel'?(e.shielded?`SHIELD ${Math.ceil(2.5-e.time%5)}s`:`OPEN ${Math.ceil(5-e.time%5)}s`):e.encounter.kind==='wraith'?`REVERSAL IN ${Math.ceil(4-e.time%4)}s`:'BREAK THE HUNTER';
-    $('brEnergy').style.width=e.energy+'%';$('brCharge').textContent=`${e.energy} / 100 ENERGY · LAUNCH COSTS 40`;
+    $('brEnergy').style.width=e.energy+'%';$('brCharge').textContent=e.training&&['collect','gold'].includes(e.lesson)?`ENERGY ${e.energy} / 100`:`${e.energy} / 100 ENERGY · LAUNCH COSTS 40`;
   }
   function arc(r,a,b,color,line=2){ctx.beginPath();ctx.arc(cx,cy,r,a,b);ctx.strokeStyle=color;ctx.lineWidth=line;ctx.stroke();}
   function draw(dt,now){
@@ -133,7 +140,7 @@
     if(!low){const g=ctx.createRadialGradient(cx,cy,0,cx,cy,radius*1.5);g.addColorStop(0,'#142f45');g.addColorStop(1,'#091020');ctx.fillStyle=g;ctx.fillRect(0,0,width,height);}
     for(let i=0;i<32;i++){ctx.fillStyle='#45607c';ctx.fillRect((i*137%997)/997*width,(i*233%991)/991*height,1,1);}
     const e=engine;if(!e)return;
-    for(const ring of [0,1]){arc(radius*(.57+.43*ring),0,TAU,ring===e.ring?'#6c8eab':'#31465f',ring===e.ring?2:1);}
+    for(const ring of (e.training&&['collect','gold','repair'].includes(e.lesson)?[1]:[0,1])){arc(radius*(.57+.43*ring),0,TAU,ring===e.ring?'#6c8eab':'#31465f',ring===e.ring?2:1);}
     // A moving enemy between the lanes is the target of radial launches.
     const enemy=point(e.enemyAngle,e.enemyRing);
     for(const t of e.targets){
@@ -141,18 +148,19 @@
       arc(r,t.angle-t.width,t.angle+t.width,'#030815',14);arc(r,t.angle-t.width,t.angle+t.width,color,8);
       const mark=point(t.angle,t.ring);ctx.fillStyle='#06131f';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t.kind==='precision'?'◇':t.kind==='repair'?'+':'•',mark.x,mark.y);ctx.globalAlpha=1;
     }
-    if(e.threat){const t=e.threat,r=radius*(.57+.43*t.ring);arc(r,t.angle-.5,t.angle+.5,'#060910',19);arc(r,t.angle-.5,t.angle+.5,'#ff6c89',11);const p=point(t.angle,t.ring);ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.fillText('!',p.x,p.y);ctx.fillStyle='#ff97ae';ctx.font='bold 10px system-ui';ctx.fillText('STRIKE '+t.time.toFixed(1)+'s',cx,cy+23);}
-    ctx.save();ctx.translate(enemy.x,enemy.y);ctx.rotate(e.enemyAngle+Math.PI/2);ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(12,8);ctx.lineTo(0,4);ctx.lineTo(-12,8);ctx.closePath();ctx.fillStyle=e.encounter.kind==='wraith'?'#d3adff':e.encounter.kind==='sentinel'?'#ffdc85':'#ff987e';ctx.shadowColor='#ff886d';ctx.shadowBlur=low||reduced?0:16;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ffe4bd';ctx.lineWidth=2;ctx.stroke();ctx.restore();
+    if(e.threat){const t=e.threat,r=radius*(.57+.43*t.ring);arc(r,t.angle-.5,t.angle+.5,'#060910',19);arc(r,t.angle-.5,t.angle+.5,'#ff6c89',11);const p=point(t.angle,t.ring);ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.fillText('!',p.x,p.y);ctx.fillStyle='#ff97ae';ctx.font='bold 10px system-ui';if(!e.training&&!coaching)ctx.fillText('STRIKE '+t.time.toFixed(1)+'s',cx,cy+23);}
+    if(e.enemyVisible){ctx.save();ctx.translate(enemy.x,enemy.y);ctx.rotate(e.enemyAngle+Math.PI/2);ctx.beginPath();ctx.moveTo(0,-13);ctx.lineTo(12,8);ctx.lineTo(0,4);ctx.lineTo(-12,8);ctx.closePath();ctx.fillStyle=e.encounter.kind==='wraith'?'#d3adff':e.encounter.kind==='sentinel'?'#ffdc85':'#ff987e';ctx.shadowColor='#ff886d';ctx.shadowBlur=low||reduced?0:16;ctx.fill();ctx.shadowBlur=0;ctx.strokeStyle='#ffe4bd';ctx.lineWidth=2;ctx.stroke();ctx.restore();
     if(e.encounter.kind==='sentinel'){ctx.beginPath();ctx.arc(enemy.x,enemy.y,20,0,TAU);ctx.strokeStyle=e.shielded?'#e8f3ff':'#698283';ctx.lineWidth=e.shielded?4:1;ctx.setLineDash(e.shielded?[]:[3,4]);ctx.stroke();ctx.setLineDash([]);}
     if(e.encounter.kind==='wraith'){for(let i=1;i<=3;i++){const p=point(e.enemyAngle-e.enemyVelocity()*.13*i,e.enemyRing);ctx.globalAlpha=.35/i;ctx.fillStyle='#d3adff';ctx.beginPath();ctx.arc(p.x,p.y,9-i,0,TAU);ctx.fill();}ctx.globalAlpha=1;}
+    }
     if(coaching)ctx.globalAlpha=0;
     ctx.textAlign='center';ctx.textBaseline='middle';
-    if(e.holding&&e.held>=.18){
+    if(e.holding&&e.held>=.18&&(!e.training||e.lesson==='aim')){
       const predicted=e.enemyAngle+e.enemyVelocity()*.28,aligned=distance(e.angle,predicted)<=.3&&!e.shielded;
       const a=point(e.angle,0),b=point(e.angle,1),perfect=e.held>=.65&&e.held<=1.05;
       ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineWidth=3;ctx.strokeStyle=e.energy<40?'#62758c':aligned?'#a8ffe7':'#ffb38a';ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle=perfect?'#ffdc85':'#c7daed';ctx.font='bold 13px system-ui';ctx.fillText(perfect?'5 DAMAGE':'3 DAMAGE',cx,cy-8);
-      arc(radius*.33,-Math.PI/2,-Math.PI/2+Math.min(1,e.held/1.05)*TAU,perfect?'#ffdc85':'#728caa',3);
+      ctx.fillStyle=perfect?'#ffdc85':'#c7daed';ctx.font='bold 13px system-ui';if(!e.training)ctx.fillText(perfect?'5 DAMAGE':'3 DAMAGE',cx,cy-8);
+      if(!e.training)arc(radius*.33,-Math.PI/2,-Math.PI/2+Math.min(1,e.held/1.05)*TAU,perfect?'#ffdc85':'#728caa',3);
     }
     ctx.globalAlpha=1;
     let ring=e.ring;if(e.flight)ring=e.flight.from+(e.flight.to-e.flight.from)*Math.min(1,e.flight.time/e.flight.duration);
@@ -163,24 +171,27 @@
     for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.life-=dt;if(p.life<=0){particles.splice(i,1);continue;}p.x+=p.vx*dt;p.y+=p.vy*dt;ctx.globalAlpha=p.life*2;ctx.fillStyle=p.color;ctx.fillRect(p.x,p.y,3,3);}ctx.globalAlpha=1;
     let instruction;
     if(e.training&&e.lesson==='collect')instruction='Your white orb is on cyan. Tap anywhere for energy.';
+    else if(e.training&&e.lesson==='gold')instruction='Gold gives more energy. Tap anywhere to collect it.';
+    else if(e.training&&e.lesson==='repair')instruction='Purple + repairs your missing hull. Tap anywhere now.';
     else if(e.training&&e.lesson==='dodge')instruction='Hold to slow your orb. Stay out of the red arc.';
     else if(e.holding&&e.held>=.18){
       const aligned=distance(e.angle,e.enemyAngle+e.enemyVelocity()*.28)<=.3;
-      instruction=e.energy<40?'Keep holding to slow down. Tap cyan or gold for energy.':e.shielded?'White shield blocks damage. Wait for OPEN.':aligned?(e.held>=.65&&e.held<=1.05?'Release now: green aim + gold charge = strong hit.':'Green aim line: release now to hit the triangle.'):'Keep holding. Release when the aim line turns green.';
-    }else if(e.training&&e.lesson==='aim')instruction='Hold anywhere to aim at the triangle. Then release on green.';
+      instruction=e.energy<40?'Keep holding to slow down. Tap cyan or gold for energy.':e.shielded?'White shield blocks damage. Wait for OPEN.':aligned?(!e.training&&e.held>=.65&&e.held<=1.05?'Release now: green aim + gold charge = strong hit.':'Green aim line: release now to hit the triangle.'):'Keep holding. Release when the aim line turns green.';
+    }else if(e.training&&e.lesson==='aim')instruction='That triangle is the enemy. Hold anywhere, then release on green to attack.';
     else if(e.threat)instruction='Red arc incoming: hold to slow down, or launch away.';
     else if(e.energy<40)instruction='Tap when your white orb reaches a cyan or gold arc.';
     else instruction='Hold to aim at the triangle. Release when the line turns green.';
     if(!e.training&&!e.holding&&!e.threat&&now<actionUntil)instruction=actionText;
     if($('brFeedback').textContent!==instruction)$('brFeedback').textContent=instruction;
-    const focus=coaching?.focus||(e.training?(e.lesson==='collect'?'pickup':e.lesson==='dodge'?'threat':'enemy'):null);
+    if(e.training&&['collect','gold','repair'].includes(e.lesson)){ctx.fillStyle='#fff';ctx.font='bold 12px system-ui';ctx.textAlign='center';ctx.fillText('YOU',p.x,p.y-24);}
+    const focus=coaching?.focus||(e.training?(['collect','gold','repair'].includes(e.lesson)?'pickup':e.lesson==='dodge'?'threat':'enemy'):null);
     if(focus){
-      const t=focus==='pickup'?e.targets.find(t=>t.kind==='safe'&&t.ring===e.ring):focus==='repair'?e.targets.find(t=>t.kind==='repair'&&t.ring===e.ring):focus==='threat'?e.threat:null;
+      const t=focus==='pickup'?e.targets.find(t=>t.ring===e.ring):focus==='repair'?e.targets.find(t=>t.kind==='repair'&&t.ring===e.ring):focus==='threat'?e.threat:null;
       const q=t?point(t.angle,t.ring):enemy;
       ctx.beginPath();ctx.arc(q.x,q.y,25,0,TAU);ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();ctx.setLineDash([]);
-      const label=focus==='pickup'?'TAP ANYWHERE NOW':focus==='repair'?'REPAIR +':focus==='threat'?'AVOID THIS ARC':e.training?'YOUR TARGET':'ENEMY';
+      const label=focus==='pickup'?'':focus==='repair'?'REPAIR +':focus==='threat'?'AVOID THIS ARC':'ENEMY · ATTACK';
       const labelX=Math.max(64,Math.min(width-64,q.x)),labelY=q.y>cy?q.y-38:q.y+38;
-      ctx.fillStyle='#07111f';ctx.fillRect(labelX-64,labelY-12,128,24);ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.fillText(label,labelX,labelY);
+      ctx.fillStyle='#07111f';if(label)ctx.fillRect(labelX-64,labelY-12,128,24);ctx.fillStyle='#fff';ctx.font='bold 10px system-ui';ctx.textAlign='center';ctx.fillText(label,labelX,labelY);
     }
 
   }

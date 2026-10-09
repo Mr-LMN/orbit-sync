@@ -25,17 +25,24 @@ const server=http.createServer((req,res)=>{
   assert.equal(await page.locator('#mainMenu').count(),0);assert.equal(await page.locator('#expeditionRoot').count(),0);
   assert.equal(await page.evaluate(()=>localStorage.getItem('orbitSync_coins')),'123');
   assert.equal(await page.evaluate(()=>typeof window.initAudio),'undefined','no legacy audio alias');
-  assert.equal(await page.getByRole('button',{name:'LEARN TO HUNT',exact:true}).count(),1);
+  assert.equal(await page.getByRole('button',{name:'START CAMPAIGN',exact:true}).count(),1);
   const shots=process.env.FOCUSED_SCREENSHOTS;if(shots)fs.mkdirSync(shots,{recursive:true});
   if(shots)await page.screenshot({path:path.join(shots,'home.png')});
-  await page.locator('#huntSettings').click();await page.locator('#huntSound').uncheck();await page.locator('#huntMusic').uncheck();await page.locator('#huntBattery').check();await page.locator('#brExit').click();
-  await page.locator('#brStart').click();assert.ok(await page.getByText('Cyan arc · tap for energy',{exact:true}).isVisible());if(shots)await page.screenshot({path:path.join(shots,'colour-guide.png')});await page.locator('#colourPlay').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),true);
+  await page.locator('#huntSettings').click();await page.locator('#huntSound').uncheck();await page.locator('#huntMusic').uncheck();await page.locator('#huntBattery').check();await page.locator('#huntTestAudio').click();await page.waitForFunction(()=>document.querySelector('#huntTestAudio').textContent.includes('SOUND READY'));await page.locator('#brExit').click();
+  await page.locator('#brStart').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().guidedRun),true);
+  assert.equal(await page.locator('#brEnemy').isVisible(),false);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().enemyVisible),false);
+  if(shots)await page.screenshot({path:path.join(shots,'first-cyan.png')});
+  await page.touchscreen.tap(195,350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'gold');
+  if(shots)await page.screenshot({path:path.join(shots,'gold.png')});
+  await page.touchscreen.tap(195,350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'repair');
+  if(shots)await page.screenshot({path:path.join(shots,'repair.png')});
   await page.touchscreen.tap(195,350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'aim');
+  if(shots)await page.screenshot({path:path.join(shots,'enemy-introduction.png')});
   await page.mouse.move(195,350);await page.mouse.down();await page.waitForTimeout(760);await page.mouse.up();
-  await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'dodge');await page.mouse.down();await page.waitForTimeout(1800);await page.mouse.up();
-  await page.locator('#brRetry').waitFor();assert.ok(await page.getByText('Ready to hunt.').isVisible());
-  assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).tutorial),true);
-  await page.locator('#brRetry').click();await page.locator('#coachContinue').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),false);
+  await page.waitForTimeout(350);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().lesson),'dodge');if(shots)await page.screenshot({path:path.join(shots,'dodge.png')});await page.mouse.down();await page.waitForTimeout(1800);await page.mouse.up();
+  assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().training),false);assert.equal(await page.locator('#brPanel').isVisible(),false);
+  assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).introV3),true);
+  assert.equal(await page.evaluate(()=>OrbitGame.storage.getJSON('orbitSync_hunt_campaign_v2',{}).medals[0]),0);
   if(shots)await page.screenshot({path:path.join(shots,'fight.png')});
   await page.locator('#huntColours').click();const colourTime=await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time),colourTime);await page.locator('#colourPlay').click();assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().paused),false);
   await page.locator('#brPause').click();const paused=await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time);await page.waitForTimeout(150);assert.equal(await page.evaluate(()=>OrbitGame.systems.breaker.getEngine().time),paused);await page.locator('#brExit').click();
@@ -64,6 +71,6 @@ const server=http.createServer((req,res)=>{
     await page.evaluate(f=>{const e=OrbitGame.systems.breaker.getEngine();if(f==='reversal')e.enemyHP=9;if(f==='repair')e.hp=3;if(f==='warning')e.threat={ring:e.ring,angle:e.angle+2,time:1.8};},fixture);
     await page.locator('#coachContinue').waitFor();assert.equal(await page.locator('#coachTitle').textContent(),title);await page.locator('#coachContinue').click();
   }
-  assert.deepEqual(errors,[]);console.log('PASS three-step real-input tutorial; all mechanic coaches; frozen timers; replay/disable guidance; cosmetic preview, locks and equip persistence; campaign, settings, keyboard and mobile layouts');
+  assert.deepEqual(errors,[]);console.log('PASS five-step real-input campaign onboarding and audio unlock; all mechanic coaches; frozen timers; replay/disable guidance; cosmetic preview, locks and equip persistence; campaign, settings, keyboard and mobile layouts');
  }finally{await browser.close();server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;server.close();});

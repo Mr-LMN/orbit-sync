@@ -5,7 +5,7 @@ const advance=(e,t)=>{for(let i=0;i<t*120;i++)e.tick(1/120);};
 test('hands-on lesson requires pickup, launch and safe dodge; failures remain retryable',()=>{
  const e=new HuntEngine(0,1,true);advance(e,100);assert.equal(e.time,0);assert.equal(e.hp,5);assert.equal(e.lesson,'collect');
  e.press();advance(e,.8);e.release();assert.equal(e.shots,0);
- e.press();e.release();assert.equal(e.lesson,'aim');assert.equal(e.energy,40);
+ assert.equal(e.enemyVisible,false);assert.equal(e.targets.length,1);e.press();e.release();assert.equal(e.lesson,'gold');assert.equal(e.energy,18);assert.equal(e.targets[0].kind,'precision');e.press();e.release();assert.equal(e.lesson,'repair');assert.equal(e.hp,4);assert.equal(e.energy,50);e.press();e.release();assert.equal(e.lesson,'aim');assert.equal(e.hp,5);assert.equal(e.enemyVisible,true);assert.equal(e.targets.length,0);
  e.press();advance(e,.75);e.release();advance(e,.4);assert.equal(e.lesson,'dodge');assert.equal(e.hits,1);advance(e,2);assert.equal(e.status,'playing');assert.equal(e.hp,5);e.press();advance(e,2);assert.equal(e.won,true);assert.ok(e.dodges>0);
 });
 test('Sentinel shield rejects damage and visibly timed opening accepts it',()=>{
@@ -58,4 +58,14 @@ test('new profile fields migrate safely and only earned cosmetics survive reload
 test('first frame unlock is awarded once and keeps cosmetic stats out of combat',()=>{
  const p=profile(),e=new HuntEngine();e.won=true;e.time=30;e.hp=5;e.hits=4;e.shots=4;
  assert.ok(award(p,e).unlocks.some(x=>x.id==='diamond'));assert.equal(award(p,e).unlocks.length,0);
+});
+
+test('guided stage one transitions into the real campaign without awarding practice medals',()=>{
+ const e=new HuntEngine(0,42,false,true);
+ for(let i=0;i<3;i++){e.press();e.release();}
+ e.press();advance(e,.75);e.release();advance(e,.4);e.press();advance(e,2);
+ assert.equal(e.training,false);assert.equal(e.status,'playing');assert.equal(e.enemyHP,18);assert.equal(e.hp,5);assert.equal(e.shots,0);assert.equal(e.hits,0);assert.equal(e.score,0);assert.equal(e.won,undefined);assert.equal(e.targets.length,6);assert.equal(e.holding,false);assert.ok(e.drainEvents().some(e=>e.type==='introduced'));
+});
+test('even a one-medal first clear unlocks Prism without changing existing unlocks',()=>{
+ const p=profile(),e=new HuntEngine();e.won=true;e.hp=1;e.time=89;e.shots=10;e.hits=1;const result=award(p,e);assert.equal(result.stars,1);assert.ok(result.unlocks.some(x=>x.id==='diamond'));
 });
