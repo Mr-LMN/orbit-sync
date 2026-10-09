@@ -46,7 +46,7 @@
   }
   class HuntEngine extends BreakerEngine {
     constructor(id=0,seed=1,training=false,guidedRun=false){
-      super(seed,true);this.encounter=encounters[integer(id,8)];this.maxEnemyHP=this.encounter.hull;this.enemyHP=this.maxEnemyHP;
+      super(seed,true);this.initialSeed=seed>>>0;this.encounter=encounters[integer(id,8)];this.maxEnemyHP=this.encounter.hull;this.enemyHP=this.maxEnemyHP;
       this.guidedRun=guidedRun&&this.encounter.id===0;training=training||this.guidedRun;this.training=training;this.lesson=training?'collect':null;this.offered=true; // One stable moveset; no mid-fight mutations.
       this.nextAttack=training?Infinity:7;this.targets.forEach(t=>{if(t.kind==='safe')t.width=.39;});
       if(training){this.lessonTargets=this.targets;this.energy=0;this.maxEnemyHP=3;this.enemyHP=3;this.angle=-Math.PI/2;this.enemyAngle=this.angle;this.setLesson('collect');}
@@ -65,7 +65,7 @@
       this.cancel();this.threat=null;
       if(!this.guidedRun){super.finish(true);return;}
       // Teaching is part of stage one, but practice damage/time never earns medals.
-      this.training=false;this.lesson=null;this.targets=this.lessonTargets;this.enemyHP=this.encounter.hull;this.maxEnemyHP=this.enemyHP;
+      this.training=false;this.lesson=null;this.seed=this.initialSeed;this.targets=this.lessonTargets;this.enemyHP=this.encounter.hull;this.maxEnemyHP=this.enemyHP;
       this.hp=5;this.energy=45;this.angle=-Math.PI/2;this.ring=1;this.enemyAngle=.6;
       this.score=0;this.hits=0;this.shots=0;this.damage=0;this.dodges=0;this.repairs=0;this.combo=0;this.time=0;this.nextAttack=7;
       this.emit('introduced','Now defeat the moving enemy.');
