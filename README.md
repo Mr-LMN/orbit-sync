@@ -1,6 +1,6 @@
 # Orbit Sync — The Hunt
 
-One game: **tap to collect → hold to aim → release to attack and switch orbits**. The default page is now a standalone nine-hunt campaign. It loads seven scripts instead of the archived game's entire runtime and UI. No external fonts, audio downloads or build step are required.
+One game: **tap to collect → hold to aim → release to attack and switch orbits**. The default page is now a standalone nine-hunt campaign. It loads eight scripts instead of the archived game's entire runtime and UI. No external fonts, audio downloads or build step are required.
 
 - Stage one teaches one mechanic at a time: cyan energy, gold energy, purple repair, an explicitly labelled enemy and a safe dodge. Only the relevant pickup/ring/HUD is visible. It then continues directly into the first real campaign fight. Teaching has no timer or failure penalty and can be replayed from How to Play.
 - Three enemy families keep the same controls: Hunters reverse at half hull, Sentinels alternate shields and openings every 2.5 seconds, and Wraiths reverse every four seconds. Each has three encounters, increasing hull and pressure. Shield status and reversal countdowns are visible in the HUD.
@@ -9,6 +9,12 @@ One game: **tap to collect → hold to aim → release to attack and switch orbi
 - Original synthesized music builds as the enemy loses hull. Separate music, effects, vibration, reduced-motion and battery-saver controls persist. Audio stops on pause, backgrounding and menus; battery saver caps rendering at 30 Hz. Visual effects have bounded particle counts.
 
 Progress uses `orbitSync_hunt_campaign_v2`. Existing hunt best score/run/win totals migrate once when this profile is first saved; old records and campaign saves are untouched. Active fights do not survive reload. Saves are local to this browser; clearing site data clears progress. When browser storage is blocked, results explain the session-only fallback.
+
+## Showcase and friends challenge
+
+The home screen now keeps the campaign, customization and a pass-and-play challenge within reach. Brighter impact rings, a visible aim marker and distinct launch/pickup/hit sounds reinforce the existing controls. The original synth soundtrack adds percussion as the hunt intensifies. Master volume persists; sound stops immediately on pause and menus. Battery saver removes HUD blur and limits visual effects.
+
+**Challenge Friends** uses one seeded Hunter encounter. Save a name and result on this device, pass the phone around, or share a `?challenge=0000cafe` link for the same initial layout on another phone. Winning scores reward time, accuracy and surviving hull. Training resets before the scored fight, so first-time and returning players get identical initial combat states. Challenge runs never award campaign medals. The board is local to each browser, with up to ten entries per seed; it is not an online leaderboard or verified competition.
 
 ## First campaign onboarding
 
